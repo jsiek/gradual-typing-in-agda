@@ -267,12 +267,17 @@ module EfficientParamCasts
     ... | done (V-const {k = false}) = step β-if-false
     ... | done (V-cast {c = c} {i = i} v) =
             contradiction i (baseNotInert c B-Bool)
-    progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
+    progress (_⟨_⟩ {∅}{A}{B} M d) with M
+    ... | M' ⟨ c ⟩ = step compose-casts
+    ... | _ = {!!}
+{-
+    with progress M
     ... | step {N} R = {!!}
     ... | error E-blame = {!!}
     ... | done v with ActiveOrInert c
     ...    | inj₁ a = step (cast v {a})
     ...    | inj₂ i = done (V-cast {c = c} {i = i} v)
+-}
     progress {C₁ `× C₂} (cons M₁ M₂) with progress M₁
     ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
     ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
