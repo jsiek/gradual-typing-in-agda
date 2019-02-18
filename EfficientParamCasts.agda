@@ -9,7 +9,7 @@ open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Data.Empty using (⊥; ⊥-elim)
 
-module ParamCastReduction
+module EfficientParamCasts
   (Cast : Type → Set)
   (Inert : ∀{A} → Cast A → Set)
   (Active : ∀{A} → Cast A → Set)  
@@ -65,8 +65,8 @@ module ParamCastReduction
     (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B')
     (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
     (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c)
+    (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C))
     where
-
 
     data Frame : {Γ : Context} → Type → Type → Set where
 
@@ -108,10 +108,6 @@ module ParamCastReduction
         → Γ ⊢ B ⇒ C
         → Frame {Γ} (A `⊎ B) C
 
-      F-cast : ∀ {Γ A B}
-        → Cast (A ⇒ B)
-        → Frame {Γ} A B
-
     plug : ∀{Γ A B} → Γ ⊢ A → Frame {Γ} A B → Γ ⊢ B
     plug L (F-·₁ M)      = L · M
     plug M (F-·₂ L)      = L · M
@@ -123,87 +119,98 @@ module ParamCastReduction
     plug M (F-inl)      = inl M
     plug M (F-inr)      = inr M
     plug L (F-case M N) = case L M N
-    plug M (F-cast c) = M ⟨ c ⟩
 
-    infix 2 _—→_
-    data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+    data BypassCast : Set where
+      allow : BypassCast
+      disallow : BypassCast
 
-      ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
-        → M —→ M′
+    infix 2 _/_—→_
+    data _/_—→_ : ∀ {Γ A} → BypassCast → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+
+      ξ : ∀ {P Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
+        → allow / M —→ M′
           ---------------------
-        → plug M F —→ plug M′ F
+        → P / plug M F —→ plug M′ F
 
-      ξ-blame : ∀ {Γ A B} {F : Frame {Γ} A B} {ℓ}
+      ξ-cast : ∀ {Γ A B} {c : Cast (A ⇒ B)} {M M′ : Γ ⊢ A}
+        → disallow / M —→ M′
+          -----------------------------
+        → allow / (M ⟨ c ⟩) —→ M′ ⟨ c ⟩
+
+      ξ-blame : ∀ {P Γ A B} {F : Frame {Γ} A B} {ℓ}
           ---------------------------
-        → plug (blame ℓ) F —→ blame ℓ
+        → P / plug (blame ℓ) F —→ blame ℓ
 
-      β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
+      β : ∀ {P Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
         → Value W
           ------------------------
-        → (ƛ A , N) · W —→ N [ W ]
+        → P / (ƛ A , N) · W —→ N [ W ]
 
-      δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A}
-        {ab} {a} {b}
+      δ : ∀ {P} {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
           --------------------------------------------
-        → ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+        → P / ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
-      β-if-true :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
+      β-if-true : ∀{P Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           --------------------------------------
-        → if (($ true){f}) M N —→ M
+        → P / if (($ true){f}) M N —→ M
 
-      β-if-false :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
+      β-if-false : ∀ {P Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           ---------------------
-        → if (($ false){f}) M N —→ N
+        → P / if (($ false){f}) M N —→ N
 
-      β-fst :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-fst : ∀ {P Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → fst (cons V W) —→ V
+        → P / fst (cons V W) —→ V
 
-      β-snd :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-snd :  ∀ {P Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → snd (cons V W) —→ W
+        → P / snd (cons V W) —→ W
 
-      β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseL : ∀ {P Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → case (inl V) L M —→ L · V
+        → P / case (inl V) L M —→ L · V
 
-      β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseR : ∀ {P Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → case (inr V) L M —→ M · V
+        → P / case (inr V) L M —→ M · V
 
-      cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+      cast : ∀ {P Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
         → (v : Value V) → {a : Active c}
           ----------------------------
-        → V ⟨ c ⟩ —→ applyCast V v c {a}
+        → P / V ⟨ c ⟩ —→ applyCast V v c {a}
 
-      fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
+      fun-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
           {c : Cast (A ⇒ (A' ⇒ B'))}
         → Value V → Value W → {i : Inert c}
           ---------------------------------
-        → (V ⟨ c ⟩) · W —→ funCast V c {i} W 
+        → P / (V ⟨ c ⟩) · W —→ funCast V c {i} W 
 
-      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
+      fst-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
           ---------------------------------
-        → fst (V ⟨ c ⟩) —→ fstCast V c {i}
+        → P / fst (V ⟨ c ⟩) —→ fstCast V c {i}
 
-      snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
+      snd-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
           ---------------------------------
-        → snd (V ⟨ c ⟩) —→ sndCast V c {i}
+        → P / snd (V ⟨ c ⟩) —→ sndCast V c {i}
 
-      case-cast : ∀ {Γ A A' B' C} {V : Γ ⊢ A}
+      case-cast : ∀ {P Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
           {c : Cast (A ⇒ (A' `⊎ B'))}
         → Value V → {i : Inert c}
           --------------------------------------------
-        → case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
+        → P / case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
+
+      compose-casts : ∀{Γ P A B C} {M : Γ ⊢ A } {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
+          ------------------------------------------
+        → P / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
 
 
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
@@ -216,7 +223,7 @@ module ParamCastReduction
     data Progress {A} (M : ∅ ⊢ A) : Set where
 
       step : ∀ {N : ∅ ⊢ A}
-        → M —→ N
+        → allow / M —→ N
           -------------
         → Progress M
 
@@ -242,7 +249,7 @@ module ParamCastReduction
     ...     | done V₂ with V₁
     ...         | V-ƛ = step (β V₂)
     ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v =
-                    step (fun-cast {∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
+                    step (fun-cast {allow}{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
     ...         | V-const {k = k₁} {f = f₁} with V₂
     ...             | V-const {k = k₂} {f = f₂} =
                       step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
@@ -261,8 +268,8 @@ module ParamCastReduction
     ... | done (V-cast {c = c} {i = i} v) =
             contradiction i (baseNotInert c B-Bool)
     progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
-    ... | step {N} R = step (ξ{F = F-cast c} R)
-    ... | error E-blame = step (ξ-blame{F = F-cast c})
+    ... | step {N} R = {!!}
+    ... | error E-blame = {!!}
     ... | done v with ActiveOrInert c
     ...    | inj₁ a = step (cast v {a})
     ...    | inj₂ i = done (V-cast {c = c} {i = i} v)
