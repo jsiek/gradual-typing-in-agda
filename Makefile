@@ -3,7 +3,7 @@
 	agda  $<
 
 AGDA = Labels.agda Types.agda Variables.agda \
-	GTLC.agda GTLC2CC.agda CastCalculus.agda \
+	GTLC.agda GTLC2CC.agda \
 	ParamCastCalculus.agda ParamCastReduction.agda \
 	GroundCast.agda GroundCoercions.agda \
 	SimpleCast.agda SimpleFunCast.agda SimpleCoercions.agda \
