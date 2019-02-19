@@ -127,90 +127,99 @@ module EfficientParamCasts
     infix 2 _/_—→_
     data _/_—→_ : ∀ {Γ A} → BypassCast → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
-      ξ : ∀ {P Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
+      switch : ∀ {Γ A} {M M′ : Γ ⊢ A} 
+        → disallow / M —→ M′
+          ------------------
+        → allow / M —→ M′       
+
+      ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
         → allow / M —→ M′
           ---------------------
-        → P / plug M F —→ plug M′ F
+        → disallow / plug M F —→ plug M′ F
 
       ξ-cast : ∀ {Γ A B} {c : Cast (A ⇒ B)} {M M′ : Γ ⊢ A}
         → disallow / M —→ M′
           -----------------------------
         → allow / (M ⟨ c ⟩) —→ M′ ⟨ c ⟩
 
-      ξ-blame : ∀ {P Γ A B} {F : Frame {Γ} A B} {ℓ}
+      ξ-blame : ∀ {Γ A B} {F : Frame {Γ} A B} {ℓ}
           ---------------------------
-        → P / plug (blame ℓ) F —→ blame ℓ
+        → disallow / plug (blame ℓ) F —→ blame ℓ
 
-      β : ∀ {P Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
+      ξ-cast-blame : ∀ {Γ A B} {c : Cast (A ⇒ B)} {ℓ}
+          ----------------------------------------------
+        → allow / ((blame {Γ}{A} ℓ) ⟨ c ⟩) —→ blame ℓ
+
+      β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
         → Value W
           ------------------------
-        → P / (ƛ A , N) · W —→ N [ W ]
+        → disallow / (ƛ A , N) · W —→ N [ W ]
 
-      δ : ∀ {P} {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
+      δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
           --------------------------------------------
-        → P / ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+        → disallow / ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
-      β-if-true : ∀{P Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
+      β-if-true : ∀{Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           --------------------------------------
-        → P / if (($ true){f}) M N —→ M
+        → disallow / if (($ true){f}) M N —→ M
 
-      β-if-false : ∀ {P Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
+      β-if-false : ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           ---------------------
-        → P / if (($ false){f}) M N —→ N
+        → disallow / if (($ false){f}) M N —→ N
 
-      β-fst : ∀ {P Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-fst : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → P / fst (cons V W) —→ V
+        → disallow / fst (cons V W) —→ V
 
-      β-snd :  ∀ {P Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-snd :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → P / snd (cons V W) —→ W
+        → disallow / snd (cons V W) —→ W
 
-      β-caseL : ∀ {P Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → P / case (inl V) L M —→ L · V
+        → disallow / case (inl V) L M —→ L · V
 
-      β-caseR : ∀ {P Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → P / case (inr V) L M —→ M · V
+        → disallow / case (inr V) L M —→ M · V
 
-      cast : ∀ {P Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+      cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
         → (v : Value V) → {a : Active c}
           ----------------------------
-        → P / V ⟨ c ⟩ —→ applyCast V v c {a}
+        → disallow / V ⟨ c ⟩ —→ applyCast V v c {a}
 
-      fun-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
+      fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
           {c : Cast (A ⇒ (A' ⇒ B'))}
         → Value V → Value W → {i : Inert c}
           ---------------------------------
-        → P / (V ⟨ c ⟩) · W —→ funCast V c {i} W 
+        → disallow / (V ⟨ c ⟩) · W —→ funCast V c {i} W 
 
-      fst-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A}
+      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
           ---------------------------------
-        → P / fst (V ⟨ c ⟩) —→ fstCast V c {i}
+        → disallow / fst (V ⟨ c ⟩) —→ fstCast V c {i}
 
-      snd-cast : ∀ {P Γ A A' B'} {V : Γ ⊢ A}
+      snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
           ---------------------------------
-        → P / snd (V ⟨ c ⟩) —→ sndCast V c {i}
+        → disallow / snd (V ⟨ c ⟩) —→ sndCast V c {i}
 
-      case-cast : ∀ {P Γ A A' B' C} {V : Γ ⊢ A}
+      case-cast : ∀ { Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
           {c : Cast (A ⇒ (A' `⊎ B'))}
         → Value V → {i : Inert c}
           --------------------------------------------
-        → P / case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
+        → disallow / case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
 
-      compose-casts : ∀{Γ P A B C} {M : Γ ⊢ A } {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
+      compose-casts : ∀{Γ A B C} {M : Γ ⊢ A } {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
           ------------------------------------------
-        → P / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
+        → disallow / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
 
 
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
@@ -223,6 +232,11 @@ module EfficientParamCasts
     data Progress {A} (M : ∅ ⊢ A) : Set where
 
       step : ∀ {N : ∅ ⊢ A}
+        → disallow / M —→ N
+          -------------
+        → Progress M
+
+      stepc : ∀ {N : ∅ ⊢ A}
         → allow / M —→ N
           -------------
         → Progress M
@@ -237,19 +251,31 @@ module EfficientParamCasts
           ----------
         → Progress M
 
+    data CastOrNot : ∀ {A} → (M : ∅ ⊢ A) → Set where
+      iscast : ∀{A B}
+        → (M' : ∅ ⊢ B) → (c : Cast (B ⇒ A))
+          --------------------------------
+        → CastOrNot (M' ⟨ c ⟩)
+      notcast : ∀ {A } {M : ∅ ⊢ A}{B} {M' : ∅ ⊢ B} {c : Cast (B ⇒ A)}
+         → M ≢ (M' ⟨ c ⟩)
+           --------------
+         → CastOrNot M
+
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
     progress (ƛ A , M) = done V-ƛ
     progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
-    ... | step R = step (ξ {F = F-·₁ M₂} R)
+    ... | step R = step (ξ {F = F-·₁ M₂} (switch R))
+    ... | stepc R = step (ξ {F = F-·₁ M₂} R)
     ... | error E-blame = step (ξ-blame {F = F-·₁ M₂})
     ... | done V₁ with progress M₂
-    ...     | step R' = step (ξ {F = (F-·₂ M₁){V₁}} R')
+    ...     | step R' = step (ξ {F = (F-·₂ M₁){V₁}} (switch R'))
+    ...     | stepc R' = step (ξ {F = (F-·₂ M₁){V₁}} R')
     ...     | error E-blame = step (ξ-blame {F = (F-·₂ M₁){V₁}})
     ...     | done V₂ with V₁
     ...         | V-ƛ = step (β V₂)
     ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v =
-                    step (fun-cast {allow}{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
+                    step (fun-cast{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
     ...         | V-const {k = k₁} {f = f₁} with V₂
     ...             | V-const {k = k₂} {f = f₂} =
                       step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
@@ -261,32 +287,34 @@ module EfficientParamCasts
     ...             | V-inr v = contradiction f₁ ¬P-Sum
     progress ($ k) = done V-const
     progress (if L M N) with progress L
-    ... | step {L'} R = step (ξ{F = F-if M N} R)
+    ... | step R = step (ξ{F = F-if M N} (switch R))
+    ... | stepc R = step (ξ{F = F-if M N} R)
     ... | error E-blame = step (ξ-blame{F = F-if M N})
     ... | done (V-const {k = true}) = step β-if-true
     ... | done (V-const {k = false}) = step β-if-false
     ... | done (V-cast {c = c} {i = i} v) =
             contradiction i (baseNotInert c B-Bool)
-    progress (_⟨_⟩ {∅}{A}{B} M d) with M
-    ... | M' ⟨ c ⟩ = step compose-casts
-    ... | _ = {!!}
-{-
-    with progress M
-    ... | step {N} R = {!!}
-    ... | error E-blame = {!!}
+    progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
+    ... | step {N} R = stepc (ξ-cast R)
+    ... | stepc (switch R) = stepc (ξ-cast R)
+    ... | stepc (ξ-cast R) = step compose-casts
+    ... | stepc (ξ-cast-blame) = step compose-casts
+    ... | error E-blame = stepc ξ-cast-blame
     ... | done v with ActiveOrInert c
     ...    | inj₁ a = step (cast v {a})
     ...    | inj₂ i = done (V-cast {c = c} {i = i} v)
--}
     progress {C₁ `× C₂} (cons M₁ M₂) with progress M₁
-    ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
+    ... | step R = step (ξ {F = F-×₂ M₂} (switch R))
+    ... | stepc R = step (ξ {F = F-×₂ M₂} R)
     ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
     ... | done V with progress M₂
-    ...    | step {N} R' = step (ξ {F = F-×₁ M₁} R')
+    ...    | step {N} R' = step (ξ {F = F-×₁ M₁} (switch R'))
+    ...    | stepc R' = step (ξ {F = F-×₁ M₁} R')
     ...    | done V' = done (V-pair V V')
     ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁})
     progress (fst {Γ}{A}{B} M) with progress M
-    ... | step {N} R = step (ξ {F = F-fst} R)
+    ... | step R = step (ξ {F = F-fst} (switch R))
+    ... | stepc R = step (ξ {F = F-fst} R)
     ... | error E-blame = step (ξ-blame{F = F-fst})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v = step (fst-cast {c = c} v {i = i})
@@ -294,7 +322,8 @@ module EfficientParamCasts
     ...     | V-const {k = k} with k
     ...        | ()
     progress (snd {Γ}{A}{B} M) with progress M
-    ... | step {N} R = step (ξ {F = F-snd} R)
+    ... | step R = step (ξ {F = F-snd} (switch R))
+    ... | stepc R = step (ξ {F = F-snd} R)
     ... | error E-blame = step (ξ-blame{F = F-snd})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v = step (snd-cast {c = c} v {i = i})
@@ -302,17 +331,20 @@ module EfficientParamCasts
     ...     | V-const {k = k} with k
     ...        | ()
     progress (inl M) with progress M
-    ... | step R = step (ξ {F = F-inl} R)
+    ... | step R = step (ξ {F = F-inl} (switch R))
+    ... | stepc R = step (ξ {F = F-inl} R)
     ... | error E-blame = step (ξ-blame {F = F-inl})
     ... | done V = done (V-inl V)
 
     progress (inr M) with progress M
-    ... | step R = step (ξ {F = F-inr} R)
+    ... | step R = step (ξ {F = F-inr} (switch R))
+    ... | stepc R = step (ξ {F = F-inr} R)
     ... | error E-blame = step (ξ-blame {F = F-inr})
     ... | done V = done (V-inr V)
 
     progress (case L M N) with progress L
-    ... | step R = step (ξ {F = F-case M N} R)
+    ... | step R = step (ξ {F = F-case M N} (switch R))
+    ... | stepc R = step (ξ {F = F-case M N} R)
     ... | error E-blame = step (ξ-blame {F = F-case M N})
     ... | done V with V
     ...    | V-cast {c = c} {i = i} v = step (case-cast {c = c} v {i = i})
