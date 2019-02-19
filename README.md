@@ -24,3 +24,6 @@ Inventory
 * [LazyCast.agda](./LazyCast.agda): The "lazy D" calculus (Siek, Garcia, and Taha 2009).
 * [LazyCoercions.agda](./LazyCoercions.agda): The "lazy D" calculus expressed with
     coercions.
+* [EfficientParamCasts.agda](./EfficientParamCasts.agda): A space-efficient parameterized
+    cast calculus. This module requires, in addition, a compose function for casts.
+
