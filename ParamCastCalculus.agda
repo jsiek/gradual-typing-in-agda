@@ -1,5 +1,17 @@
 open import Types
 
+{-
+
+Here we define the Cast Calculus in a way that parameterizes over the
+actual casts, to enable the definition of many different cast calculi.
+The Agda type constructor for representing casts is given by the
+module parameter Cast.  The Type argument to Cast is typically a
+function type whose domain is the source of the cast and whose
+codomain is the target type of the cast. However, in cast calculi with
+fancy types such as intersections, the type of a cast may not
+literally be a function type.
+
+-}
 module ParamCastCalculus (Cast : Type → Set) where
 
 open import Variables
@@ -11,6 +23,16 @@ open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong; cong₂; cong-app)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
+
+{-
+
+We define well-typed expressions with the following typing judgment.
+Compared to the STLC, there are two important new features.
+The cast is written M ⟨ c ⟩, where M is an expression and c
+is a cast (whatever that may be). We also have blame ℓ for
+raising uncatchable exceptions.  
+
+-}
 
 infix  4 _⊢_
 data _⊢_ : Context → Type → Set where
@@ -81,6 +103,14 @@ data _⊢_ : Context → Type → Set where
     → Γ ⊢ B
 
   blame : ∀ {Γ A} → Label → Γ ⊢ A
+
+{-
+
+The addition of casts and blame does not introduce any
+complications regarding substitution. So the following
+definitions are essentially the same as for the STLC.
+
+-}
 
 
 ext : ∀ {Γ Δ}
