@@ -1,3 +1,17 @@
+{-
+
+  This module formalizes the λS calculus (Siek, Thiemann, Wadler 2015)
+  and proves type safety via progress and preservation. The calculus
+  uses Henglein's coercions to represent casts, and acheive space
+  efficiency.
+
+  This module is relatively small because it reuses the definitions
+  and proofs from the Efficient Parameterized Cast Calculus. This
+  module just has to provide the appropriate parameters, the most
+  important of which is the compose function, written ⨟.
+
+-}
+
 module EfficientGroundCoercions where
 
   open import Agda.Primitive
@@ -17,7 +31,16 @@ module EfficientGroundCoercions where
   data IntermediateCast : Type → Set
   data GroundCast : Type → Set
   data Cast : Type → Set
-  
+
+  {-
+
+   The following Cast data type (together with the data types
+   IntermediateCast and GroundCast) define a normal form for
+   coercions, following the grammar in Figure 5 of Siek, Thiemann, and
+   Wadler (2015).
+
+  -}
+
   data Cast where
     id⋆ : Cast (⋆ ⇒ ⋆)
     proj : ∀{B}
@@ -54,68 +77,30 @@ module EfficientGroundCoercions where
         -----------------------------------------
       → GroundCast ((A `⊎ A') ⇒ (B `⊎ B'))
 
-  size-gnd : ∀{A} → GroundCast A → ℕ
-  size-intmd : ∀{A} → IntermediateCast A → ℕ  
-  size-cast : ∀{A} → Cast A → ℕ  
+  {-
 
-  size-gnd cid = 1
-  size-gnd (cfun c d) = 1 + size-cast c + size-cast d
-  size-gnd (cpair c d) = 1 + size-cast c + size-cast d
-  size-gnd (csum c d) =  1 + size-cast c + size-cast d
+   We instantiate the ParamCastCalculus module to obtain the syntax
+   and type system of the cast calculus and the definition of
+   substitution.
 
-  size-intmd (inj G g) = 1 + size-gnd g
-  size-intmd (gnd g) = 1 + size-gnd g
-  size-intmd (cfail G H ℓ) = 1
-  
-  size-cast id⋆ = 1
-  size-cast (proj G ℓ i) = 1 + size-intmd i
-  size-cast (intmd i) = 1 + size-intmd i
-
-  size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ zero
-  size-gnd-pos {.(_ ⇒ _)} {cid} = λ ()
-  size-gnd-pos {.((_ ⇒ _) ⇒ (_ ⇒ _))} {cfun c d} = λ ()
-  size-gnd-pos {.(_ `× _ ⇒ _ `× _)} {cpair c d} = λ ()
-  size-gnd-pos {.(_ `⊎ _ ⇒ _ `⊎ _)} {csum c d} = λ ()
-
-  size-intmd-pos : ∀{A c} → size-intmd {A} c ≢ zero
-  size-intmd-pos {.(_ ⇒ ⋆)} {inj G x} = λ ()
-  size-intmd-pos {.(_ ⇒ _)} {gnd g} = λ ()
-  size-intmd-pos {.(_ ⇒ _)} {cfail G H x} = λ ()
-
-  size-cast-pos : ∀{A c} → size-cast {A} c ≢ zero
-  size-cast-pos {.(⋆ ⇒ ⋆)} {id⋆} = λ ()
-  size-cast-pos {.(⋆ ⇒ _)} {proj G x x₁} = λ ()
-  size-cast-pos {.(_ ⇒ _)} {intmd x} = λ ()
-
-  plus-zero1 : ∀{a}{b} → a + b ≡ zero → a ≡ zero
-  plus-zero1 {zero} {b} p = refl
-  plus-zero1 {suc a} {b} ()
-
-  plus-zero2 : ∀{a}{b} → a + b ≡ zero → b ≡ zero
-  plus-zero2 {zero} {b} p = p
-  plus-zero2 {suc a} {b} ()
-
-  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ zero → ⊥
-  plus-gnd-pos {A}{B}{c}{d} p =
-     let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-zero1 {size-gnd c}{size-gnd d} cd-z in
-     contradiction c-z (size-gnd-pos{A}{c})
-
-  plus-intmd-pos : ∀{A}{B}{c}{d} → size-intmd{A} c + size-intmd{B} d ≤ zero → ⊥
-  plus-intmd-pos {A}{B}{c}{d} p =
-     let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-zero1 {size-intmd c}{size-intmd d} cd-z in
-     contradiction c-z (size-intmd-pos{A}{c})
-
-  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ zero → ⊥
-  plus-cast-pos {A}{B}{c}{d} p =
-     let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-zero1 {size-cast c}{size-cast d} cd-z in
-     contradiction c-z (size-cast-pos{A}{c})
+  -}
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
   open CastCalc
+
+  {-
+
+   For the compilation of the GTLC to this cast calculus, we need a
+   function for compiling a cast between two types into a coercion.
+   Such a function is not directly given by Siek, Thiemann, and Wadler
+   (2015), but they do provide a compilation from the coercions of λC
+   to λS. Here we give a direction compilation from the casts of λB to
+   the coercions of λS. The following definitions are more complex
+   than one would hope for because of a workaround to satisfy Agda's
+   termination checker.
+
+  -}
 
   coerce-to-gnd : (A : Type) → (B : Type) → {g : Ground B}
      → ∀ {c : A ~ B}{a : A ≢ ⋆} → Label → GroundCast (A ⇒ B)
@@ -192,10 +177,34 @@ module EfficientGroundCoercions where
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =
     intmd (gnd (csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)  ))
 
+  {-
+
+   We instantiate the GTLC2CC module, creating a compiler from the
+   GTLC to λC.
+
+  -}
+  import GTLC2CC
+  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+
+
+  {-
+
+   To prepare for instantiating the ParamCastReduction module, we
+   categorize the coercions as either inert or active.  We do this for
+   each of the three kinds of coercions: for the ground, intermeidate,
+   and top-level coercions. For the ground coercions, only the
+   function coercion is inert.
+
+   -}
   data InertGround : ∀ {A} → GroundCast A → Set where
     I-cfun : ∀{A B A' B'}{s : Cast (B ⇒ A)} {t : Cast (A' ⇒ B')}
           → InertGround (cfun{A}{B}{A'}{B'} s t)
 
+  {-
+
+   The other three ground coercions are active.
+
+  -}
   data ActiveGround : ∀ {A} → GroundCast A → Set where
     A-cpair : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
           → ActiveGround (cpair{A}{B}{A'}{B'} s t)
@@ -204,6 +213,13 @@ module EfficientGroundCoercions where
     A-cid : ∀{B b}
           → ActiveGround (cid {B}{b})
 
+  {-
+
+   Of the intermediate coercions, injection is inert and
+   so is an inert ground coercion.
+   
+  -}
+
   data InertIntmd : ∀ {A} → IntermediateCast A → Set where
     I-inj : ∀{A G i}{g : GroundCast (A ⇒ G)}
           → InertIntmd (inj {A} G g {i})
@@ -211,18 +227,39 @@ module EfficientGroundCoercions where
           → InertGround g
           → InertIntmd (gnd {A}{B} g)
 
+  {-
+  
+   A failure coercion is active.  An active ground coercion is also an
+   active intermediate coercion.
+
+   -}
+
   data ActiveIntmd : ∀ {A} → IntermediateCast A → Set where
     A-gnd : ∀{A B}{g : GroundCast (A ⇒ B)}
           → ActiveGround g
           → ActiveIntmd (gnd {A}{B} g)
     A-cfail : ∀{A B G H ℓ}
           → ActiveIntmd (cfail {A}{B} G H ℓ)
-    
+
+  {-
+
+   At the top level, an inert intermediate coercion 
+   is also an inert top-level coercion.
+
+  -}
+
   data Inert : ∀ {A} → Cast A → Set where
     I-intmd : ∀{A B}{i : IntermediateCast (A ⇒ B)}
           → InertIntmd i
           → Inert (intmd{A}{B} i)
 
+  {-
+
+  The rest of the top-level coercions are active.  That is, the
+  identity and projection coercions and the active intermediate
+  coercions.
+
+  -}
   data Active : ∀ {A} → Cast A → Set where
     A-id⋆ : Active id⋆
     A-proj : ∀{B G ℓ g} {i : IntermediateCast (G ⇒ B)}
@@ -231,6 +268,12 @@ module EfficientGroundCoercions where
           → ActiveIntmd i
           → Active (intmd{A}{B} i)
 
+  {-
+
+   Regarding this categorization, we did not leave behind any
+   coercions.
+
+  -}
   
   ActiveOrInertGnd : ∀{A} → (c : GroundCast A) → ActiveGround c ⊎ InertGround c
   ActiveOrInertGnd cid = inj₁ A-cid
@@ -252,9 +295,80 @@ module EfficientGroundCoercions where
   ... | inj₁ a = inj₁ (A-intmd a)
   ... | inj₂ j = inj₂ (I-intmd j)
   
+  {-
+
+  We instantiate the outer module of EfficientParamCasts, obtaining
+  the definitions for values and frames.
+
+  -}
+
   import EfficientParamCasts
-  module PCR = EfficientParamCasts Cast Inert Active ActiveOrInert
-  open PCR
+  module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
+  open EPCR
+
+  {-
+   The following functions compute the size of the three kinds of coercions.
+   These are used in the termination argument of the compose function.
+   -}
+
+  size-gnd : ∀{A} → GroundCast A → ℕ
+  size-intmd : ∀{A} → IntermediateCast A → ℕ  
+  size-cast : ∀{A} → Cast A → ℕ  
+
+  size-gnd cid = 1
+  size-gnd (cfun c d) = 1 + size-cast c + size-cast d
+  size-gnd (cpair c d) = 1 + size-cast c + size-cast d
+  size-gnd (csum c d) =  1 + size-cast c + size-cast d
+
+  size-intmd (inj G g) = 1 + size-gnd g
+  size-intmd (gnd g) = 1 + size-gnd g
+  size-intmd (cfail G H ℓ) = 1
+  
+  size-cast id⋆ = 1
+  size-cast (proj G ℓ i) = 1 + size-intmd i
+  size-cast (intmd i) = 1 + size-intmd i
+
+  size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ zero
+  size-gnd-pos {.(_ ⇒ _)} {cid} = λ ()
+  size-gnd-pos {.((_ ⇒ _) ⇒ (_ ⇒ _))} {cfun c d} = λ ()
+  size-gnd-pos {.(_ `× _ ⇒ _ `× _)} {cpair c d} = λ ()
+  size-gnd-pos {.(_ `⊎ _ ⇒ _ `⊎ _)} {csum c d} = λ ()
+
+  size-intmd-pos : ∀{A c} → size-intmd {A} c ≢ zero
+  size-intmd-pos {.(_ ⇒ ⋆)} {inj G x} = λ ()
+  size-intmd-pos {.(_ ⇒ _)} {gnd g} = λ ()
+  size-intmd-pos {.(_ ⇒ _)} {cfail G H x} = λ ()
+
+  size-cast-pos : ∀{A c} → size-cast {A} c ≢ zero
+  size-cast-pos {.(⋆ ⇒ ⋆)} {id⋆} = λ ()
+  size-cast-pos {.(⋆ ⇒ _)} {proj G x x₁} = λ ()
+  size-cast-pos {.(_ ⇒ _)} {intmd x} = λ ()
+
+  plus-zero1 : ∀{a}{b} → a + b ≡ zero → a ≡ zero
+  plus-zero1 {zero} {b} p = refl
+  plus-zero1 {suc a} {b} ()
+
+  plus-zero2 : ∀{a}{b} → a + b ≡ zero → b ≡ zero
+  plus-zero2 {zero} {b} p = p
+  plus-zero2 {suc a} {b} ()
+
+  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ zero → ⊥
+  plus-gnd-pos {A}{B}{c}{d} p =
+     let cd-z = n≤0⇒n≡0 p in
+     let c-z = plus-zero1 {size-gnd c}{size-gnd d} cd-z in
+     contradiction c-z (size-gnd-pos{A}{c})
+
+  plus-intmd-pos : ∀{A}{B}{c}{d} → size-intmd{A} c + size-intmd{B} d ≤ zero → ⊥
+  plus-intmd-pos {A}{B}{c}{d} p =
+     let cd-z = n≤0⇒n≡0 p in
+     let c-z = plus-zero1 {size-intmd c}{size-intmd d} cd-z in
+     contradiction c-z (size-intmd-pos{A}{c})
+
+  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ zero → ⊥
+  plus-cast-pos {A}{B}{c}{d} p =
+     let cd-z = n≤0⇒n≡0 p in
+     let c-z = plus-zero1 {size-cast c}{size-cast d} cd-z in
+     contradiction c-z (size-cast-pos{A}{c})
 
   plus1-suc : ∀{n} → n + 1 ≡ suc n
   plus1-suc {zero} = refl
@@ -264,10 +378,10 @@ module EfficientGroundCoercions where
     Ugh, the following reasoning is tedious! Is there a better way? -Jeremy
   -}
 
-  metric3 : ∀{sc sd sc1 sd1 n}
+  inequality-3 : ∀{sc sd sc1 sd1 n}
        → sc + sd + suc (sc1 + sd1) ≤ n
        → sc + sc1 ≤ n
-  metric3{sc}{sd}{sc1}{sd1}{n} m =
+  inequality-3{sc}{sd}{sc1}{sd1}{n} m =
     begin sc + sc1
                ≤⟨ m≤m+n (sc + sc1) (sd + (sd1 + 1)) ⟩
           (sc + sc1) + (sd + (sd1 + 1))
@@ -294,21 +408,21 @@ module EfficientGroundCoercions where
           n
     ∎  
 
-  metric1 : ∀{sc sd sc1 sd1 n}
+  inequality-1 : ∀{sc sd sc1 sd1 n}
        → sc + sd + suc (sc1 + sd1) ≤ n
        → sc1 + sc ≤ n
-  metric1{sc}{sd}{sc1}{sd1}{n} m =
+  inequality-1{sc}{sd}{sc1}{sd1}{n} m =
     begin sc1 + sc
                ≤⟨ ≤-reflexive (+-comm sc1 sc) ⟩
           sc + sc1
-               ≤⟨ metric3{sc} m ⟩
+               ≤⟨ inequality-3{sc} m ⟩
           n
     ∎  
 
-  metric2 : ∀{sc sd sc1 sd1 n}
+  inequality-2 : ∀{sc sd sc1 sd1 n}
        → sc + sd + suc (sc1 + sd1) ≤ n 
        → sd + sd1 ≤ n
-  metric2{sc}{sd}{sc1}{sd1}{n} m =
+  inequality-2{sc}{sd}{sc1}{sd1}{n} m =
     begin
       sd + sd1
            ≤⟨ m≤m+n (sd + sd1) (sc + (sc1 + 1)) ⟩
@@ -338,10 +452,10 @@ module EfficientGroundCoercions where
       n
     ∎  
 
-  metric4 : ∀{g h n : ℕ}
+  inequality-4 : ∀{g h n : ℕ}
      → g + suc h ≤ n
      → g + h ≤ n
-  metric4{g}{h}{n} p =
+  inequality-4{g}{h}{n} p =
     begin
        g + h
           ≤⟨ m≤m+n (g + h) 1 ⟩
@@ -354,10 +468,10 @@ module EfficientGroundCoercions where
        n
     ∎  
 
-  metric5 : ∀{x i n : ℕ}
+  inequality-5 : ∀{x i n : ℕ}
      → suc (x + suc i) ≤ n
      → suc (x + i) ≤ n
-  metric5{x}{i}{n} p =
+  inequality-5{x}{i}{n} p =
     begin
       suc (x + i)
         ≤⟨ ≤-reflexive (sym plus1-suc) ⟩
@@ -372,10 +486,10 @@ module EfficientGroundCoercions where
       n
     ∎  
 
-  metric6 : ∀{x₁ x₂ n : ℕ}
+  inequality-6 : ∀{x₁ x₂ n : ℕ}
      → x₁ + suc x₂ ≤ n
      → x₁ + x₂ ≤ n
-  metric6{x₁}{x₂}{n} p =
+  inequality-6{x₁}{x₂}{n} p =
     begin
        x₁ + x₂
           ≤⟨ m≤m+n (x₁ + x₂) 1  ⟩
@@ -388,10 +502,10 @@ module EfficientGroundCoercions where
        n
     ∎  
 
-  metric7 : ∀ {x i n : ℕ}
+  inequality-7 : ∀ {x i n : ℕ}
       → suc (x + suc i) ≤ n
       → suc (x + i) ≤ n
-  metric7{x}{i}{n} p =
+  inequality-7{x}{i}{n} p =
     begin
       suc (x + i)
           ≤⟨ ≤-reflexive (sym plus1-suc) ⟩
@@ -406,10 +520,10 @@ module EfficientGroundCoercions where
       n
     ∎  
 
-  metric8 : ∀{g h n : ℕ}
+  inequality-8 : ∀{g h n : ℕ}
       → suc (g + suc (suc h)) ≤ n
       → g + h ≤ n
-  metric8{g}{h}{n} p =
+  inequality-8{g}{h}{n} p =
     begin
       g + h
           ≤⟨ m≤m+n (g + h) (1 + 1) ⟩
@@ -424,8 +538,11 @@ module EfficientGroundCoercions where
       n
     ∎  
 
+  m+n≡0⇒n≡0 : ∀{m n : ℕ} → m + n ≡ zero → n ≡ zero
+  m+n≡0⇒n≡0 {zero} {n} p = p
+  m+n≡0⇒n≡0 {suc m} {n} ()
 
-  compose : ∀{A B C} → (n : ℕ) → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
+  _⨟_ : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → {n : ℕ}  
           → {m : size-cast c + size-cast d ≤ n } → Cast (A ⇒ C)
 
   compose-gnd : ∀{A B C} → (n : ℕ) → (c : GroundCast (A ⇒ B)) → (d : GroundCast (B ⇒ C))
@@ -436,15 +553,15 @@ module EfficientGroundCoercions where
   compose-gnd (suc n) (cfun c d) cid = cfun c d
   compose-gnd (suc n) (cfun c d) (cfun c₁ d₁) {s≤s m} =
      let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in
-     cfun (compose n c₁ c {metric1{sc}{sd}{sc1} m}) (compose n d d₁{metric2{sc}{sd} m})
+     cfun ((c₁ ⨟ c) {n}{inequality-1{sc}{sd}{sc1} m}) ((d ⨟ d₁) {n}{inequality-2{sc}{sd} m})
   compose-gnd (suc n) (cpair c d) cid = cpair c d
   compose-gnd (suc n) (cpair c d) (cpair c₁ d₁) {s≤s m} =
     let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in  
-    cpair (compose n c c₁ {metric3{sc} m}) (compose n d d₁ {metric2{sc} m})
+    cpair ((c ⨟ c₁) {n}{inequality-3{sc} m}) ((d ⨟ d₁) {n}{inequality-2{sc} m})
   compose-gnd (suc n) (csum c d) cid = csum c d
   compose-gnd (suc n) (csum c d) (csum c₁ d₁){s≤s m} =
     let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in  
-    csum (compose n c c₁ {metric3{sc} m}) (compose n d d₁ {metric2{sc}{sd} m})
+    csum ((c ⨟ c₁) {n}{inequality-3{sc} m}) ((d ⨟ d₁) {n}{inequality-2{sc}{sd} m})
 
   compose-intmd : ∀{A B C} → (n : ℕ) → (c : IntermediateCast (A ⇒ B))
           → (d : IntermediateCast (B ⇒ C))
@@ -454,37 +571,90 @@ module EfficientGroundCoercions where
   compose-intmd (suc n) (inj G x) (inj .⋆ (cid {.⋆} {()}))
   compose-intmd (suc n) (inj G x) (gnd (cid {.⋆} {()}))
   compose-intmd (suc n) (inj G x) (cfail G₁ H x₁) = (cfail G₁ H x₁)
-  compose-intmd (suc n) (gnd g) (inj G h {x}){s≤s m} = inj G (compose-gnd n g h {metric4 m}) {x}  
-  compose-intmd (suc n) (gnd g) (gnd h){s≤s m} = gnd (compose-gnd n g h {metric4 m})
+  compose-intmd (suc n) (gnd g) (inj G h {x}){s≤s m} = inj G (compose-gnd n g h {inequality-4 m}) {x}  
+  compose-intmd (suc n) (gnd g) (gnd h){s≤s m} = gnd (compose-gnd n g h {inequality-4 m})
   compose-intmd (suc n) (gnd g) (cfail G H x) = cfail G H x
   compose-intmd (suc n) (cfail G H x) j = cfail G H x
 
-  compose{A}{B}{C} zero c d {m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
-  compose (suc n) id⋆ d = d
-  compose (suc n) (proj G x x₁ {g}) id⋆ = (proj G x x₁ {g})
-  compose (suc n) (proj {⋆} G ℓ (inj G₁ x {g1}) {g}) (proj H ℓ' i₂ {h}) {s≤s m} with gnd-eq? G₁ H {g1}{h}
-  ... | inj₁ eq rewrite eq = proj G ℓ (compose-intmd n (gnd x) i₂ {metric5 m}) {g}
-  ... | inj₂ neq = proj G ℓ (cfail G₁ H ℓ) {g}
-  compose (suc n) (proj .⋆ ℓ (gnd cid) {G-Base ()}) (proj H ℓ' i₂ {h})
-  compose (suc n) (proj G ℓ (cfail G₁ H₁ x) {g}) (proj H ℓ' i₂ {h}) =
-     proj G ℓ (cfail G₁ H₁ x) {g}
-  compose (suc n) (proj G ℓ x₁ {g}) (intmd x₂){s≤s m} =
-     proj G ℓ (compose-intmd n x₁ x₂ {metric6 m}) {g}
-  compose (suc n) (intmd (inj G x {g})) id⋆ = intmd (inj G x {g})
-  compose (suc n) (intmd (inj G x {g})) (proj H ℓ i₂ {h}) {s≤s m} with gnd-eq? G H {g}{h}
-  ... | inj₁ eq rewrite eq = intmd (compose-intmd n (gnd x) i₂ {metric7 m})
+  inequality-9 : ∀ {g i n : ℕ} 
+       → g + suc i ≤ n
+       → suc (g + i) ≤ n
+  inequality-9{g}{i}{n} m = 
+      begin
+        1 + (g + i)
+           ≤⟨ ≤-reflexive (+-comm 1 (g + i)) ⟩
+        (g + i) + 1
+           ≤⟨ ≤-reflexive (+-assoc (g) (i) 1) ⟩
+        g + (i + 1)
+           ≤⟨ ≤-reflexive (cong₂ (_+_) refl plus1-suc) ⟩
+        g + suc (i)
+           ≤⟨ m ⟩
+        n
+      ∎  
+
+  compose-intmd2 : ∀{A B C} → (i : IntermediateCast (A ⇒ B))
+          → (t : Cast (B ⇒ C))
+          → {n : ℕ} → {m : size-intmd i + size-cast t ≤ n }
+          → IntermediateCast (A ⇒ C)
+  compose-intmd2{A}{B}{C} i t {zero} {m} =
+    contradiction (m+n≡0⇒n≡0 (n≤0⇒n≡0 m)) (size-cast-pos{B ⇒ C}{t})
+  compose-intmd2 i id⋆ {suc n} {m} = i
+  compose-intmd2 (inj G g {Gg}) (proj H p i {h}) {suc n} {s≤s m} with gnd-eq? G H {Gg}{h}
+  ... | inj₂ neq = cfail G H p
+  ... | inj₁ eq rewrite eq = compose-intmd n (gnd g) i {inequality-9 m}
+  compose-intmd2 (gnd (cid {.⋆} {()})) (proj G p i) {suc n} {m}
+  compose-intmd2 (cfail G₁ H p) (proj G x x₁) {suc n} {m} = (cfail G₁ H p)
+  compose-intmd2 i (intmd i₂) {suc n} {m} = compose-intmd n i i₂ {inequality}
+    where
+    X : suc (size-intmd i + size-intmd i₂) ≤ suc n
+    X = begin
+          1 + (size-intmd i + size-intmd i₂)
+            ≤⟨ ≤-reflexive (+-comm 1 (size-intmd i + size-intmd i₂)) ⟩
+          (size-intmd i + size-intmd i₂) + 1
+            ≤⟨ ≤-reflexive (+-assoc (size-intmd i) (size-intmd i₂) 1) ⟩
+          size-intmd i + (size-intmd i₂ + 1)
+            ≤⟨ ≤-reflexive (cong₂ (_+_) refl plus1-suc) ⟩
+          size-intmd i + suc (size-intmd i₂)
+            ≤⟨ m ⟩
+          suc n
+        ∎
+    inequality = begin size-intmd i + size-intmd i₂ ≤⟨ ≤-pred X ⟩ n ∎
+
+  _⨟_{A}{B}{C} s t {zero}{m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{s}{t} m)
+  
+  (id⋆ ⨟ t) {suc n}  = t
+
+  (proj{B} G p i {g} ⨟ t) {suc n}{m} = proj G p (compose-intmd2 i t {n}{≤-pred m}) {g}
+
+  ((intmd (inj G x {g})) ⨟ id⋆) {suc n} = intmd (inj G x {g})
+  ((intmd (gnd g)) ⨟ id⋆) {suc n}= intmd (gnd g)
+  ((intmd (inj G x {g})) ⨟ (proj H ℓ i₂ {h})) {suc n}{s≤s m} with gnd-eq? G H {g}{h}
+  ... | inj₁ eq rewrite eq = intmd (compose-intmd n (gnd x) i₂ {inequality-7 m})
   ... | inj₂ neq = intmd (cfail G H ℓ)
-  compose (suc n) (intmd (inj G i₁)) (intmd (inj .⋆ cid {G-Base ()}))
-  compose (suc n) (intmd (inj G i₁)) (intmd (gnd (cid {.⋆} {()})))
-  compose (suc n) (intmd (inj G i₁)) (intmd (cfail G₁ H ℓ)) = (intmd (cfail G₁ H ℓ))
-  compose (suc n) (intmd (gnd g)) id⋆ = intmd (gnd g)
-  compose (suc n) (intmd (gnd (cid {.⋆} {()}))) (proj G x x₁)
-  compose (suc n) (intmd (gnd g)) (intmd (inj G h {x})) {s≤s m} =
-     intmd (inj G (compose-gnd n g h {metric8 m}) {x})
-  compose (suc n) (intmd (gnd g)) (intmd (gnd h)) {s≤s m} =
-     intmd (gnd (compose-gnd n g h {metric8 m}))
-  compose (suc n) (intmd (gnd g)) (intmd (cfail G H x)) = (intmd (cfail G H x))
-  compose (suc n) (intmd (cfail G H x)) d = (intmd (cfail G H x))
+  ((intmd (gnd g)) ⨟ (intmd (inj G h {x}))) {suc n}{s≤s m} =
+     intmd (inj G (compose-gnd n g h {inequality-8 m}) {x})
+  ((intmd (gnd g)) ⨟ (intmd (gnd h))) {suc n}{s≤s m} =
+     intmd (gnd (compose-gnd n g h {inequality-8 m}))
+  ((intmd (gnd g)) ⨟ (intmd (cfail G H x))) {suc n} = (intmd (cfail G H x))
+  ((intmd (cfail G H x)) ⨟ d) {suc n} = (intmd (cfail G H x))
+  ((intmd (inj G i₁)) ⨟ (intmd (cfail G₁ H ℓ))) {suc n} = (intmd (cfail G₁ H ℓ))
+
+  {- The following cases are vacuous. -}
+  (intmd (gnd (cid {.⋆} {()}))) ⨟ (proj G x x₁)
+  (intmd (inj G i₁)) ⨟ (intmd (inj .⋆ cid {G-Base ()}))
+  (intmd (inj G i₁)) ⨟ (intmd (gnd (cid {.⋆} {()})))
+  
+
+  {-
+
+  We import the definition of Value and the canonical⋆ lemma from
+  the ParamCastReduction module, as they do not require modification.
+ 
+  -}
+
+  import ParamCastReduction
+  module PC = ParamCastReduction Cast Inert Active ActiveOrInert
+  open PC using (Value; V-ƛ; V-const; V-pair; V-inl; V-inr; V-cast; canonical⋆)
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id⋆ {a} = M
@@ -494,7 +664,7 @@ module EfficientGroundCoercions where
   applyCast M v (intmd (inj G x)) {A-intmd ()}
   applyCast M v (proj G ℓ i {g}) {a} with PCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =
-     M' ⟨ compose (size-cast c + size-cast (proj G ℓ i {g})) c (proj G ℓ i {g}) {≤-reflexive refl} ⟩
+     M' ⟨ (c ⨟ (proj G ℓ i {g})) {size-cast c + size-cast (proj G ℓ i {g})}{≤-reflexive refl} ⟩
   applyCast M v (intmd (gnd (cpair c d))) {a} =
     cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
   applyCast M v (intmd (gnd (csum{A₁}{B₁}{A₂}{B₂} c d))) {a} =
@@ -527,6 +697,4 @@ module EfficientGroundCoercions where
   module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
   open Red
 
-  import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
 

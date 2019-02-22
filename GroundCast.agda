@@ -1,10 +1,12 @@
 {-
 
-  This module formalizes the λB calculus (Siek, Thiemann, Wadler 2015)
-  and proves type safety via progress and preservation.
-  This module is relatively small because it reuses the definitions and
-  proofs for the Parameterized Cast Calculus. This module just has to
-  provide the appropriate parameters.  
+  This module formalizes the λB calculus (Siek, Thiemann, Wadler
+  2015), aka. the blame calculus without predicate types, and proves
+  type safety via progress and preservation.  
+
+  This module is relatively small because it reuses the definitions
+  and proofs from the Parameterized Cast Calculus. This module just
+  has to provide the appropriate parameters.
 
 -}
 

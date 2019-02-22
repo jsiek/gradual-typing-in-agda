@@ -1,3 +1,18 @@
+{-
+
+  This module formalizes the λC calculus (Siek, Thiemann, Wadler 2015)
+  and proves type safety via progress and preservation. The calculus
+  uses Henglein's coercions to represent casts, but this calculus is
+  not space efficient. This calculus is helpful in linking λB to λS
+  (the space-efficient version) and it is useful for pedagogical
+  purposes.
+
+  This module is relatively small because it reuses the definitions
+  and proofs from the Parameterized Cast Calculus. This module just
+  has to provide the appropriate parameters.
+
+-}
+
 module GroundCoercions where
 
   open import Data.Nat
@@ -8,6 +23,14 @@ module GroundCoercions where
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
   open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+
+  {-
+ 
+  The following data type defines the syntax and type system of the
+  Coercion Calculus. We omit the failure coercion because it is not
+  needed. (It is needed in λS.)
+
+  -}
 
   data Cast : Type → Set where
     id : ∀ {A : Type} {a : Atomic A} → Cast (A ⇒ A)
@@ -33,6 +56,20 @@ module GroundCoercions where
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
   open CastCalc
+
+  {-
+
+  For the compilation of the GTLC to this cast calculus, we need a
+  function for compiling a cast between two types into a coercion.
+  The coerce function, defined below, does this. Unfortunately, Agda
+  would not accept the version of coerce given in Figure 4 of the
+  paper of Siek, Thiemann, and Wadler (2015). To work around this
+  issue, we added the auxilliary functions coerse-to-gnd and
+  coerce-from-gnd. In initial version of these functions contained
+  considerable repetition of code, which we reduced by abstracting the
+  coerce-to⋆ and coerce-from⋆ functions.
+
+  -}
 
   coerce-to-gnd : (A : Type) → (B : Type) → {g : Ground B} → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce-from-gnd : (A : Type) → (B : Type) → {g : Ground A} → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
@@ -93,66 +130,149 @@ module GroundCoercions where
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =
     csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)  
 
+  {-
+
+  We instantiate the GTLC2CC module, creating a compiler from the GTLC
+  to λC.
+
+  -}
+
+  import GTLC2CC
+  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+
+  {-
+
+  To prepare for instantiating the ParamCastReduction module, we
+  categorize the coercions as either inert or active.  The inert
+  (value-forming) coercions are the injection and function coercions.
+
+   -}
+
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A i} → Inert (inj A {i})
+    I-fun : ∀{A B A' B' c d} → Inert (cfun {A}{B}{A'}{B'} c d)
+
+  {-
+  The rest of the coercions are active.
+  -}
 
   data Active : ∀ {A} → Cast A → Set where
     A-proj : ∀{ B ℓ j} → Active (proj B ℓ {j})
-    A-fun : ∀{A B A' B' c d} → Active (cfun {A}{B}{A'}{B'} c d)
     A-pair : ∀{A B A' B' c d} → Active (cpair {A}{B}{A'}{B'} c d)
     A-sum : ∀{A B A' B' c d} → Active (csum {A}{B}{A'}{B'} c d)
     A-id : ∀{A a} → Active (id {A}{a})
     A-seq : ∀{A B C c d} → Active (cseq {A}{B}{C} c d)
 
+  {-
+
+  We did not forget about any of the coercions in our categorization.
+
+  -}
+
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert id = inj₁ A-id
   ActiveOrInert (inj A) = inj₂ I-inj
   ActiveOrInert (proj B x) = inj₁ A-proj
-  ActiveOrInert (cfun c c₁) = inj₁ A-fun
+  ActiveOrInert (cfun c c₁) = inj₂ I-fun
   ActiveOrInert (cpair c c₁) = inj₁ A-pair
   ActiveOrInert (csum c c₁) = inj₁ A-sum
   ActiveOrInert (cseq c c₁) = inj₁ A-seq
 
+  {-
+
+  We instantiate the outer module of ParamCastReduction, obtaining the
+  definitions for values and frames.
+
+  -}
   import ParamCastReduction
   module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
   open PCR
-  
+
+  {- 
+
+  To instaniate the inner module that defines reduction and progress,
+  we need to define a few more functions. The first is applyCast,
+  which applies an active cast to a value. We comment each case with
+  the reduction rule from Siek, Thiemann, and Wadler (2015). The
+  definition of applyCast was driven by pattern matching on the
+  parameter {c : Cast (A ⇒ B)}. (Perhaps it would have been better
+  to pattern match on {a : Active c}.)
+
+  -}
+
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B
+  {-
+    V⟨id⟩    —→    V
+   -}
   applyCast M v id {a} = M
-  applyCast M v (inj A) {()}
+  {-
+    V⟨G!⟩⟨G?⟩    —→    V
+    V⟨G!⟩⟨H?p⟩   —→   blame p  if G ≠ H
+   -}
   applyCast{Γ} M v (proj B ℓ {gb}) {a} with PCR.canonical⋆ M v
-  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ I-inj {A'}{ga} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? A' B {ga} {gb}
+  ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {ga} {gb}
   ...    | inj₂ neq = blame ℓ
-  ...    | inj₁ eq = G  {- odd work-around -}
-           where G : Γ ⊢ B
-                 G rewrite eq = M'
-  applyCast{Γ} M v (cfun{A₁}{B₁}{A₂}{B₂} c d) {a} =
-     ƛ B₁ , (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
+  ...    | inj₁ eq = g  {- odd work-around -}
+           where g : Γ ⊢ B
+                 g rewrite eq = V
+  {-
+   V⟨c ; d⟩     —→    V⟨c⟩⟨d⟩
+   -}
+  applyCast M x (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
+  
   applyCast M v (cpair c d) {a} =
     cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
+    
   applyCast M v (csum{A₁}{B₁}{A₂}{B₂} c d) {a} =
     let l = inl ((` Z) ⟨ c ⟩) in
     let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ A₁ , l) (ƛ A₂ , r)
-  applyCast M x (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
+    
+  applyCast {Γ} M v (cfun {A₁} {B₁} {A₂} {B₂} c d) {()}
+  applyCast M v (inj A) {()}
 
+  {-
+   The following functions handle every elimination form, saying what
+   happens when the value is wrapped in an inert cast.  For function
+   application, we distribute the cast to the argument and return
+   value.
+   -}
+
+  {-
+   V⟨c→d⟩ W    —→     (V  W⟨c⟩)⟨d⟩
+  -}
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M c {()} N
+  funCast M (cfun c d) {I-fun} N = (M · (N ⟨ c ⟩)) ⟨ d ⟩
 
+
+  {-
+  The functions for pairs and sums are vacuous because we categorized these casts
+  as inert, not active.
+  -}
+  
   fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M c {()}
 
   sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
   sndCast M c {()}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
+  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c}
+           → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
   
+  {-
+  Finally, we show that casts to base type are not inert.
+  -}
+
   baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert (inj _) () I-inj
+  baseNotInert c B-Nat ()
+  baseNotInert c B-Bool ()
+
+  {-
+  We now instantiate the inner module of ParamCastReduction, thereby
+  proving type safety for λC. 
+  -}
 
   module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
   open Red
 
-  import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
