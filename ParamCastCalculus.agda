@@ -3,13 +3,13 @@ open import Types
 {-
 
 Here we define the Cast Calculus in a way that parameterizes over the
-actual casts, to enable the definition of many different cast calculi.
-The Agda type constructor for representing casts is given by the
-module parameter Cast.  The Type argument to Cast is typically a
-function type whose domain is the source of the cast and whose
-codomain is the target type of the cast. However, in cast calculi with
-fancy types such as intersections, the type of a cast may not
-literally be a function type.
+actual casts, to enable succinct definitions and proofs of type safety
+for many different cast calculi.  The Agda type constructor for
+representing casts is given by the module parameter named Cast.  The
+Type argument to Cast is typically a function type whose domain is the
+source of the cast and whose codomain is the target type of the
+cast. However, in cast calculi with fancy types such as intersections,
+the type of a cast may not literally be a function type.
 
 -}
 module ParamCastCalculus (Cast : Type → Set) where

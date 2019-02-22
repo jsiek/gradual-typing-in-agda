@@ -12,20 +12,6 @@ module SimpleCast where
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
 
-  data Injectible : Type → Set where
-    I-Base : ∀ {A} → Base A → Injectible A
-    I-Fun : ∀ {A B} → Injectible (A ⇒ B)
-    I-Pair : ∀ {A B} → Injectible (A `× B)
-    I-Sum : ∀ {A B} → Injectible (A `⊎ B)
-
-  not-unk-inj : ∀ {A} → A ≢ ⋆ → Injectible A
-  not-unk-inj {⋆} nd = ⊥-elim (nd refl)
-  not-unk-inj {Nat} nd = I-Base B-Nat
-  not-unk-inj {𝔹} nd = I-Base B-Bool
-  not-unk-inj {A ⇒ A₁} nd = I-Fun
-  not-unk-inj {A `× A₁} nd = I-Pair
-  not-unk-inj {A `⊎ A₁} nd = I-Sum
-
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B)
 

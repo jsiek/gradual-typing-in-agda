@@ -159,13 +159,18 @@ module ParamCastReduction
 
   {-
 
-  We are almost ready to define reduction, but first a few words about some more parameters.
-  Because casts are opaque, the calculus can't know how to reduce them. So instead we
-  require parameters that say how to reduce casts. The main one is the applyCast parameter,
-  which says how to apply an Active cast to a value. The next four parameters
-  (funCast, fstCast, sndCast, caseCast) say what to do with an elimination form,when
-  the thing being eliminated is a cast (in particular, an inert cast). Finally,
-  a cast to a base type is not allowed to be inert.
+  We need a few more parameters to define reduction in a generic way.
+  In particular, we need parameters that say how to reduce casts and
+  how to eliminate values wrapped in casts. 
+  * The applyCast parameter, applies an Active cast to a value. 
+  * The funCast parameter applies a function wrapped in an inert cast
+    to an argument.
+  * The fstCast and sndCast parameters take the first or second part
+    of a pair wrapped in an inert cast.
+  * The caseCast performs a case-elimination on a value of sum type (inl or inr)
+    that is wrapped in an inert cast.
+  * The baseNotInert parameter ensures that every cast to a base type
+    is not inert.
 
   We define a nested module named Reduction with these parameters
   because they all depend on parameters of the outer module, and it
@@ -185,8 +190,19 @@ module ParamCastReduction
 
     {-
 
-     -}
+      The following defines the reduction relation for the Parameterized Cast Calulus.
+      The reductions involving casts simply dispatch to the appropriate parameters 
+      of this module. This includes the cast, fun-cast, fst-cast, snd-cast, and
+      case-cast rules. To propagate blame to the top of the program, we have the
+      ξ-blame rule. All of the usual congruence rules are instances of the one
+      ξ rule with the appropriate choice of frame. The remaining rules are the
+      usual β and δ reduction rules of the STLC.
 
+      The reduction relation has a very specific type signature,
+      mapping only well-typed terms to well-typed terms, so
+      preservation is guaranteed by construction.
+
+     -}
 
     infix 2 _—→_
     data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
@@ -269,12 +285,19 @@ module ParamCastReduction
         → case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
 
 
+    {-
+
+     The Progress data type has an additional error case to
+     allow for cast errors, i.e., blame. We use the follow
+     Error data type to help express the error case.
+
+     -}
+
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
 
       E-blame : ∀ {Γ}{A}{ℓ}
           ---------------------
         → Error{Γ}{A} (blame ℓ)
-
 
     data Progress {A} (M : ∅ ⊢ A) : Set where
 
@@ -292,6 +315,40 @@ module ParamCastReduction
           Error M
           ----------
         → Progress M
+
+    {-
+
+     The proof of progress follows the same structure as the one for
+     the STLC, by induction on the structure of the expression (or
+     equivalently, the typing derivation). In the following, we
+     discuss the extra cases that are needed for this cast calculus.
+
+     Each recursive call to progress may result in an error,
+     in which case the current expression can take a step
+     via the ξ-blame rule with an appropriate frame.
+
+     On the other hand, if the recusive call produces a value, the
+     value may be a cast that is inert. In the case for function
+     application, the expression takes a step via the fun-cast rule
+     (which uses the funCast parameter).  In the case for fst and snd,
+     the expression takes a step via fst-cast or snd-cast
+     respectively. Regarding the case form, the expression takes a
+     step via case-cast.
+
+     Of course, we must add a case for the cast form.
+     If the recursive call produces a step, then we step via ξ.
+     Likewise, if the recursive call produces an error, we step via ξ-blame.
+     Otherwise, the recursive call produces a value.
+     We make use of the ActiveOrInert parameter to see which
+     kind of cast we are dealing with. If it is active, we reduce
+     via the cast rule. Otherwise we form a value using V-cast.
+
+     We must also consider the situations where the subexpression is
+     of base type: the argument of a primitive operator and the
+     condition of 'if'. In these two cases, the baseNotInert parameter
+     ensures that the value not a cast, it is a constant.
+
+     -}
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
