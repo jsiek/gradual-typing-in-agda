@@ -624,9 +624,11 @@ module EfficientGroundCoercions where
   
   (id⋆ ⨟ t) {suc n}  = t
 
+  ((intmd (inj G g {Gg})) ⨟ id⋆) {suc n} = intmd (inj G g {Gg})
+
   (proj{B} G p i {g} ⨟ t) {suc n}{m} = proj G p (compose-intmd2 i t {n}{≤-pred m}) {g}
 
-  ((intmd (inj G x {g})) ⨟ id⋆) {suc n} = intmd (inj G x {g})
+  
   ((intmd (gnd g)) ⨟ id⋆) {suc n}= intmd (gnd g)
   ((intmd (inj G x {g})) ⨟ (proj H ℓ i₂ {h})) {suc n}{s≤s m} with gnd-eq? G H {g}{h}
   ... | inj₁ eq rewrite eq = intmd (compose-intmd n (gnd x) i₂ {inequality-7 m})
