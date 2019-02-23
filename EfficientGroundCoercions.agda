@@ -59,7 +59,7 @@ module EfficientGroundCoercions where
     gnd : ∀{A B}
        → (g : GroundCast (A ⇒ B))
        → IntermediateCast (A ⇒ B)
-    cfail : ∀{A B} (G : Type) → (H : Type) → Label
+    cfail : ∀{A B} (G : Type) → (H : Type) → Label → {a : A ≢ ⋆}
        → IntermediateCast (A ⇒ B)
 
   data GroundCast where
@@ -238,8 +238,8 @@ module EfficientGroundCoercions where
     A-gnd : ∀{A B}{g : GroundCast (A ⇒ B)}
           → ActiveGround g
           → ActiveIntmd (gnd {A}{B} g)
-    A-cfail : ∀{A B G H ℓ}
-          → ActiveIntmd (cfail {A}{B} G H ℓ)
+    A-cfail : ∀{A B G H ℓ nd}
+          → ActiveIntmd (cfail {A}{B} G H ℓ {nd})
 
   {-
 
@@ -320,12 +320,12 @@ module EfficientGroundCoercions where
   size-gnd (cpair c d) = 1 + size-cast c + size-cast d
   size-gnd (csum c d) =  1 + size-cast c + size-cast d
 
-  size-intmd (inj G g) = 1 + size-gnd g
+  size-intmd (inj G g) = 2 + size-gnd g
   size-intmd (gnd g) = 1 + size-gnd g
   size-intmd (cfail G H ℓ) = 1
   
   size-cast id⋆ = 1
-  size-cast (proj G ℓ i) = 1 + size-intmd i
+  size-cast (proj G ℓ i) = 2 + size-intmd i
   size-cast (intmd i) = 1 + size-intmd i
 
   size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ zero
@@ -551,30 +551,17 @@ module EfficientGroundCoercions where
   compose-gnd{A}{B}{C} zero c d {m} = ⊥-elim (plus-gnd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
   compose-gnd (suc n) cid h = h
   compose-gnd (suc n) (cfun c d) cid = cfun c d
+  compose-gnd (suc n) (cpair c d) cid = cpair c d
+  compose-gnd (suc n) (csum c d) cid = csum c d
   compose-gnd (suc n) (cfun c d) (cfun c₁ d₁) {s≤s m} =
      let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in
      cfun ((c₁ ⨟ c) {n}{inequality-1{sc}{sd}{sc1} m}) ((d ⨟ d₁) {n}{inequality-2{sc}{sd} m})
-  compose-gnd (suc n) (cpair c d) cid = cpair c d
   compose-gnd (suc n) (cpair c d) (cpair c₁ d₁) {s≤s m} =
     let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in  
     cpair ((c ⨟ c₁) {n}{inequality-3{sc} m}) ((d ⨟ d₁) {n}{inequality-2{sc} m})
-  compose-gnd (suc n) (csum c d) cid = csum c d
   compose-gnd (suc n) (csum c d) (csum c₁ d₁){s≤s m} =
     let sc1 = size-cast c₁ in let sd1 = size-cast d₁ in let sc = size-cast c in let sd = size-cast d in  
     csum ((c ⨟ c₁) {n}{inequality-3{sc} m}) ((d ⨟ d₁) {n}{inequality-2{sc}{sd} m})
-
-  compose-intmd : ∀{A B C} → (n : ℕ) → (c : IntermediateCast (A ⇒ B))
-          → (d : IntermediateCast (B ⇒ C))
-          → {m : size-intmd c + size-intmd d ≤ n }
-          → IntermediateCast (A ⇒ C)
-  compose-intmd{A}{B}{C} zero c d {m} = ⊥-elim (plus-intmd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
-  compose-intmd (suc n) (inj G x) (inj .⋆ (cid {.⋆} {()}))
-  compose-intmd (suc n) (inj G x) (gnd (cid {.⋆} {()}))
-  compose-intmd (suc n) (inj G x) (cfail G₁ H x₁) = (cfail G₁ H x₁)
-  compose-intmd (suc n) (gnd g) (inj G h {x}){s≤s m} = inj G (compose-gnd n g h {inequality-4 m}) {x}  
-  compose-intmd (suc n) (gnd g) (gnd h){s≤s m} = gnd (compose-gnd n g h {inequality-4 m})
-  compose-intmd (suc n) (gnd g) (cfail G H x) = cfail G H x
-  compose-intmd (suc n) (cfail G H x) j = cfail G H x
 
   inequality-9 : ∀ {g i n : ℕ} 
        → g + suc i ≤ n
@@ -592,60 +579,68 @@ module EfficientGroundCoercions where
         n
       ∎  
 
+  gnd-nd : ∀{A B} → (g : GroundCast (A ⇒ B)) → A ≢ ⋆
+  gnd-nd {.Nat} {.Nat} (cid {.Nat} {B-Nat}) ()
+  gnd-nd {.𝔹} {.𝔹} (cid {.𝔹} {B-Bool}) ()
+  gnd-nd {.(_ ⇒ _)} {.(_ ⇒ _)} (cfun c d) ()
+  gnd-nd {.(_ `× _)} {.(_ `× _)} (cpair c d) ()
+  gnd-nd {.(_ `⊎ _)} {.(_ `⊎ _)} (csum c d) ()
+
+  gnd-tgt-nd : ∀{A B} → (g : GroundCast (A ⇒ B)) → B ≢ ⋆
+  gnd-tgt-nd {.⋆} {.⋆} (cid {.⋆} {()}) refl
+  gnd-tgt-nd (cfun c d) ()
+  gnd-tgt-nd (cpair c d) ()
+  gnd-tgt-nd (csum c d) ()
+
+  intmd-nd : ∀{A B} → (i : IntermediateCast (A ⇒ B)) → A ≢ ⋆
+  intmd-nd{A}{B} (inj G g) A≡⋆ = contradiction A≡⋆ (gnd-nd g)
+  intmd-nd{A}{B} (gnd g) A≡⋆ = contradiction A≡⋆ (gnd-nd g)
+  intmd-nd{A}{B} (cfail G H p {A≢⋆}) A≡⋆ = contradiction A≡⋆ A≢⋆
+
   compose-intmd2 : ∀{A B C} → (i : IntermediateCast (A ⇒ B))
           → (t : Cast (B ⇒ C))
           → {n : ℕ} → {m : size-intmd i + size-cast t ≤ n }
           → IntermediateCast (A ⇒ C)
   compose-intmd2{A}{B}{C} i t {zero} {m} =
     contradiction (m+n≡0⇒n≡0 (n≤0⇒n≡0 m)) (size-cast-pos{B ⇒ C}{t})
-  compose-intmd2 i id⋆ {suc n} {m} = i
-  compose-intmd2 (inj G g {Gg}) (proj H p i {h}) {suc n} {s≤s m} with gnd-eq? G H {Gg}{h}
-  ... | inj₂ neq = cfail G H p
-  ... | inj₁ eq rewrite eq = compose-intmd n (gnd g) i {inequality-9 m}
-  compose-intmd2 (gnd (cid {.⋆} {()})) (proj G p i) {suc n} {m}
-  compose-intmd2 (cfail G₁ H p) (proj G x x₁) {suc n} {m} = (cfail G₁ H p)
-  compose-intmd2 i (intmd i₂) {suc n} {m} = compose-intmd n i i₂ {inequality}
-    where
-    X : suc (size-intmd i + size-intmd i₂) ≤ suc n
-    X = begin
-          1 + (size-intmd i + size-intmd i₂)
-            ≤⟨ ≤-reflexive (+-comm 1 (size-intmd i + size-intmd i₂)) ⟩
-          (size-intmd i + size-intmd i₂) + 1
-            ≤⟨ ≤-reflexive (+-assoc (size-intmd i) (size-intmd i₂) 1) ⟩
-          size-intmd i + (size-intmd i₂ + 1)
-            ≤⟨ ≤-reflexive (cong₂ (_+_) refl plus1-suc) ⟩
-          size-intmd i + suc (size-intmd i₂)
-            ≤⟨ m ⟩
-          suc n
-        ∎
-    inequality = begin size-intmd i + size-intmd i₂ ≤⟨ ≤-pred X ⟩ n ∎
+  {- case analysis on i -}
+  compose-intmd2 {A} {.⋆} {.⋆} (inj G g {Gg}) id⋆ {suc n} {m} = inj G g {Gg}
+  compose-intmd2 {A} {.⋆} {C} (inj G g {Gg}) (proj H p i {Hg}) {suc n} {s≤s m} with gnd-eq? G H {Gg}{Hg}
+  ... | inj₂ neq = cfail G H p {gnd-nd g}
+  ... | inj₁ eq rewrite eq = compose-intmd2 (gnd g) (intmd i) {n} {{!!}}
+  compose-intmd2 {A} {B} {C} (inj G i₁) (intmd i₂) {suc n} {m} = contradiction refl (intmd-nd i₂)
+  compose-intmd2 {A} {.⋆} {.⋆} (gnd g) id⋆ {suc n} {m} = contradiction refl (gnd-tgt-nd g)
+  compose-intmd2 {A} {.⋆} {C} (gnd g) (proj G p i) {suc n} {m} = contradiction refl (gnd-tgt-nd g)
+  compose-intmd2 {A} {B} {.⋆} (gnd g) (intmd (inj G h {Gg})) {suc n} {s≤s m} =
+    inj G (compose-gnd n g h {{!!}}) {Gg}
+  compose-intmd2 {A} {B} {C} (gnd g) (intmd (gnd h)) {suc n} {s≤s m} =
+    gnd (compose-gnd n g h {{!!}})
+  compose-intmd2 {A} {B} {C} (gnd g) (intmd (cfail G H p {neq})) {suc n} {m} =
+    (cfail G H p {gnd-nd g})
+  compose-intmd2 {A} {B} {C} (cfail G H p {A≢⋆}) t {suc n} {m} = (cfail G H p {A≢⋆})
+
+  {-
+
+   The definition of compose first does case analysis on the fuel
+   parameter n. The case for zero is vacuous thanks to the metric m.
+
+   We then perform case analysis on parameter s, so we have three
+   cases. The first case is equation #3 in the paper and the second is
+   equation #5. The third case dispatches to a helper function for
+   composing an intermediate coercion with a top-level coercion.
+
+   -}
 
   _⨟_{A}{B}{C} s t {zero}{m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{s}{t} m)
-  
+
+  {- #3 id⋆ ⨟ t = t -}
   (id⋆ ⨟ t) {suc n}  = t
 
-  ((intmd (inj G g {Gg})) ⨟ id⋆) {suc n} = intmd (inj G g {Gg})
+  {- #5 (G? ; i) ⨟ t = G? ; (i ⨟ t) -}
+  (proj G p i {Gg} ⨟ t) {suc n} {s≤s m} = proj G p (compose-intmd2 i t {n}{{!!}}) {Gg}
 
-  (proj{B} G p i {g} ⨟ t) {suc n}{m} = proj G p (compose-intmd2 i t {n}{≤-pred m}) {g}
-
-  
-  ((intmd (gnd g)) ⨟ id⋆) {suc n}= intmd (gnd g)
-  ((intmd (inj G x {g})) ⨟ (proj H ℓ i₂ {h})) {suc n}{s≤s m} with gnd-eq? G H {g}{h}
-  ... | inj₁ eq rewrite eq = intmd (compose-intmd n (gnd x) i₂ {inequality-7 m})
-  ... | inj₂ neq = intmd (cfail G H ℓ)
-  ((intmd (gnd g)) ⨟ (intmd (inj G h {x}))) {suc n}{s≤s m} =
-     intmd (inj G (compose-gnd n g h {inequality-8 m}) {x})
-  ((intmd (gnd g)) ⨟ (intmd (gnd h))) {suc n}{s≤s m} =
-     intmd (gnd (compose-gnd n g h {inequality-8 m}))
-  ((intmd (gnd g)) ⨟ (intmd (cfail G H x))) {suc n} = (intmd (cfail G H x))
-  ((intmd (cfail G H x)) ⨟ d) {suc n} = (intmd (cfail G H x))
-  ((intmd (inj G i₁)) ⨟ (intmd (cfail G₁ H ℓ))) {suc n} = (intmd (cfail G₁ H ℓ))
-
-  {- The following cases are vacuous. -}
-  (intmd (gnd (cid {.⋆} {()}))) ⨟ (proj G x x₁)
-  (intmd (inj G i₁)) ⨟ (intmd (inj .⋆ cid {G-Base ()}))
-  (intmd (inj G i₁)) ⨟ (intmd (gnd (cid {.⋆} {()})))
-  
+  {- Dispatch to compose-intmd2 -}
+  ((intmd i) ⨟ t) {suc n}{m} = intmd (compose-intmd2 i t {n}{≤-pred m})
 
   {-
 
