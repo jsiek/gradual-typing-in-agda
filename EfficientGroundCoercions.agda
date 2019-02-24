@@ -663,8 +663,6 @@ module EfficientGroundCoercions where
   applyCast M v id⋆ {a} = M
   applyCast M v (intmd (gnd cid)) {a} = M
   applyCast M v (intmd (cfail G H ℓ)) {a} = blame ℓ
-  applyCast M v (intmd (gnd (c ↣ d))) {A-intmd (A-gnd ())}
-  applyCast M v (intmd (inj G x)) {A-intmd ()}
   applyCast M v (proj G ℓ i {g}) {a} with PCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =
      M' ⟨ (c ⨟ (proj G ℓ i {g})) {size-cast c + size-cast (proj G ℓ i {g})}{≤-reflexive refl} ⟩
@@ -674,6 +672,9 @@ module EfficientGroundCoercions where
     let l = inl ((` Z) ⟨ c ⟩) in
     let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ A₁ , l) (ƛ A₂ , r)
+  {- Vacuous cases -}
+  applyCast M v (intmd (gnd (c ↣ d))) {A-intmd (A-gnd ())}
+  applyCast M v (intmd (inj G x)) {A-intmd ()}
 
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M (proj G x x₁) {()} N
@@ -690,14 +691,18 @@ module EfficientGroundCoercions where
   sndCast M (proj G x x₁) {()}
   sndCast M (intmd .(gnd _)) {I-intmd (I-gnd ())}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
+  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L .(intmd (gnd _)) {I-intmd (I-gnd ())} M N
   
   baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
   baseNotInert .(intmd (inj _ _)) () (I-intmd I-inj)
   baseNotInert .(intmd (gnd (_ ↣ _))) () (I-intmd (I-gnd I-cfun))
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
+  compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
+  compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
+
+  module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert compose
   open Red
 
 
