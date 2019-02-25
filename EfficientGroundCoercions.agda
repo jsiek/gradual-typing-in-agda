@@ -668,20 +668,20 @@ module EfficientGroundCoercions where
      M' ⟨ (c ⨟ (proj G ℓ i {g})) {size-cast c + size-cast (proj G ℓ i {g})}{≤-reflexive refl} ⟩
   applyCast M v (intmd (gnd (c ×' d))) {a} =
     cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
-  applyCast M v (intmd (gnd (_+'_ {A₁}{B₁}{A₂}{B₂} c d))) {a} =
-    let l = inl ((` Z) ⟨ c ⟩) in
-    let r = inr ((` Z) ⟨ d ⟩) in
+  applyCast{A = A₁ `⊎ A₂} M v (intmd (gnd (c +' d))) {a} =
+    let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ A₁ , l) (ƛ A₂ , r)
   {- Vacuous cases -}
   applyCast M v (intmd (gnd (c ↣ d))) {A-intmd (A-gnd ())}
   applyCast M v (intmd (inj G x)) {A-intmd ()}
 
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M (intmd (gnd (c ↣ d))) {i} N =
+    (M · (N ⟨ c ⟩)) ⟨ d ⟩
+  {- Vacuous cases -}
   funCast M (proj G x x₁) {()} N
   funCast M (intmd (gnd cid)) {I-intmd (I-gnd ())} N
   funCast M (intmd (cfail G H ℓ)) {I-intmd ()} N
-  funCast M (intmd (gnd (c ↣ d))) {i} N =
-    (M · (N ⟨ c ⟩)) ⟨ d ⟩
 
   fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M (proj G x x₁) {()}
