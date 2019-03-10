@@ -35,6 +35,9 @@ raising uncatchable exceptions.
 -}
 
 infix  4 _⊢_
+infix 7 _·_
+infix 8 _⟨_⟩
+
 data _⊢_ : Context → Type → Set where
 
   `_ : ∀ {Γ} {A}
