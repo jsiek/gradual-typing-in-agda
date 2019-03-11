@@ -241,22 +241,28 @@ module GroundCoercions where
   {-
    V⟨c→d⟩ W    —→     (V  W⟨c⟩)⟨d⟩
   -}
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M (cfun c d) {I-fun} N = (M · (N ⟨ c ⟩)) ⟨ d ⟩
 
 
   {-
-  The functions for pairs and sums are vacuous because we categorized these casts
-  as inert, not active.
+
+  The functions for pairs and sums are vacuous because we categorized
+  these casts as inert, not active.
+
   -}
   
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M c {()}
 
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ B'
   sndCast M c {()}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c}
+  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+           → ∀ {i : Inert c}
            → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
   
@@ -273,6 +279,7 @@ module GroundCoercions where
   proving type safety for λC. 
   -}
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
+  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+                     baseNotInert
   open Red
 

@@ -19,8 +19,10 @@ module GroundCast where
   open import Labels
   open import Relation.Nullary using (¬_)
   open import Relation.Nullary.Negation using (contradiction)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to [_,_])
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to [_,_])
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
 
@@ -87,11 +89,16 @@ module GroundCast where
   ... | inj₂ neqa with ground? A
   ...    | inj₁ g = inj₂ (I-inj g (cast A ⋆ ℓ))
   ...    | inj₂ ng = inj₁ (A-inj (cast A ⋆ ℓ) ng neqa)
-  ActiveOrInert (cast .Nat .Nat ℓ {nat~}) = inj₁ (A-id {Nat}{A-Nat} (cast Nat Nat ℓ))
-  ActiveOrInert (cast .𝔹 .𝔹 ℓ {bool~}) = inj₁ (A-id {𝔹}{A-Bool} (cast 𝔹 𝔹 ℓ))
-  ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ {fun~ c c₁}) = inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ))
-  ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) = inj₁ (A-pair (cast (A `× B) (A' `× B') ℓ))
-  ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ {sum~ c c₁}) = inj₁ (A-sum (cast (A `⊎ B) (A' `⊎ B') ℓ))
+  ActiveOrInert (cast .Nat .Nat ℓ {nat~}) =
+     inj₁ (A-id {Nat}{A-Nat} (cast Nat Nat ℓ))
+  ActiveOrInert (cast .𝔹 .𝔹 ℓ {bool~}) =
+     inj₁ (A-id {𝔹}{A-Bool} (cast 𝔹 𝔹 ℓ))
+  ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ {fun~ c c₁}) =
+     inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ))
+  ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) =
+     inj₁ (A-pair (cast (A `× B) (A' `× B') ℓ))
+  ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ {sum~ c c₁}) =
+     inj₁ (A-sum (cast (A `⊎ B) (A' `⊎ B') ℓ))
 
   {-
 
@@ -134,14 +141,16 @@ module GroundCast where
    -}
   applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} with ground? B
   ... | inj₁ b-g with PCR.canonical⋆ M v
-  ...      | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq with gnd-eq? G B {inert-ground c' i} {b-g}
+  ...      | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
+                 with gnd-eq? G B {inert-ground c' i} {b-g}
   ...          | inj₁ ap-b rewrite ap-b = V
   ...          | inj₂ ap-b = blame ℓ
   {-
     V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
    -}
   applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} | inj₂ b-ng with ground B {b-nd}
-  ...    | [ H , [ h-g , cns ] ] = (M ⟨ cast ⋆ H ℓ {unk~L} ⟩) ⟨ cast H B ℓ {Sym~ cns} ⟩
+  ...    | [ H , [ h-g , cns ] ] =
+           (M ⟨ cast ⋆ H ℓ {unk~L} ⟩) ⟨ cast H B ℓ {Sym~ cns} ⟩
   
   applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ {pair~ c c₁}) {A-pair _} =
     cons (fst M ⟨ cast A₁ B₁ ℓ {c} ⟩) (snd M ⟨ cast A₂ B₂ ℓ {c₁}⟩)
@@ -161,23 +170,29 @@ module GroundCast where
   {-
    (V : A→B  ⇒p  A'→B') W   —→   (V (W : A' ⇒-p A)) : B ⇒p B'
    -}
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {cns}) {I-fun {A₁} {A₂} (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ)} N =
-     (M · (N ⟨ cast A' A₁ (flip ℓ) {Sym~ (~⇒L cns)} ⟩)) ⟨ cast A₂ B' ℓ {~⇒R cns} ⟩
+  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {cns})
+            {I-fun {A₁} {A₂} (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ)} N =
+   (M · (N ⟨ cast A' A₁ (flip ℓ) {Sym~ (~⇒L cns)} ⟩)) ⟨ cast A₂ B' ℓ {~⇒R cns} ⟩
 
   {-
-  The functions for pairs and sums are vacuous because we categorized these casts
-  as inert, not active.
+
+  The functions for pairs and sums are vacuous because we categorized
+  these casts as inert, not active.
+
   -}
 
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M c {()}
 
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ B'
   sndCast M c {()}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c}
-           → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
+  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+           → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
 
   {-
@@ -194,7 +209,8 @@ module GroundCast where
   proving type safety for λB. 
   -}
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
+  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+                   baseNotInert
   open Red
 
 
