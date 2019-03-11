@@ -149,7 +149,7 @@ module GroundCast where
   applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ {sum~ c c₁}) {A-sum _} =
     let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ {c}⟩) in
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
-    case M (ƛ A₁ , l) (ƛ A₂ , r)
+    case M (ƛ l) (ƛ r)
 
    {-
    The following functions handle every elimination form, saying what

@@ -7,8 +7,10 @@ module SimpleFunCast where
   open import Labels
   open import Relation.Nullary using (¬_)
   open import Relation.Nullary.Negation using (contradiction)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   import ParamCastReduction
@@ -70,7 +72,7 @@ module SimpleFunCast where
   applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ {sum~ c c₁}) {a} =
     let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ {c}⟩) in
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
-    case M (ƛ A₁ , l) (ƛ A₂ , r)
+    case M (ƛ l) (ƛ r)
 
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {cns}) {inert-fun {A₁} {A₂} (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ)} N =

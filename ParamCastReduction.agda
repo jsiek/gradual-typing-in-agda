@@ -48,8 +48,8 @@ module ParamCastReduction
   data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 
     V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
-        ---------------
-      → Value (ƛ A , N)
+        -----------
+      → Value (ƛ N)
 
     V-const : ∀ {Γ} {A : Type} {k : rep A} {f : Prim A}
         ------------------------
@@ -62,18 +62,18 @@ module ParamCastReduction
 
     V-inl : ∀ {Γ A B} {V : Γ ⊢ A}
       → Value V
-        ---------------------------
+        --------------------------
       → Value {Γ} {A `⊎ B} (inl V)
 
     V-inr : ∀ {Γ A B} {V : Γ ⊢ B}
       → Value V
-        -----------------
+        --------------------------
       → Value {Γ} {A `⊎ B} (inr V)
 
     V-cast : ∀ {Γ : Context} {A B : Type} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
         {i : Inert c}
       → Value V
-        -----------------------------------
+        ---------------
       → Value (V ⟨ c ⟩)
 
 
@@ -180,23 +180,30 @@ module ParamCastReduction
   -}
 
   module Reduction
-    (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B)
-    (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
-    (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A')
-    (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B')
-    (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
+    (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
+                 → ∀ {a : Active c} → Γ ⊢ B)
+    (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+                 → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
+    (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+                 → ∀ {i : Inert c} → Γ ⊢ A')
+    (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+                 → ∀ {i : Inert c} → Γ ⊢ B')
+    (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+                 → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
     (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c)
     where
 
     {-
 
-      The following defines the reduction relation for the Parameterized Cast Calulus.
-      The reductions involving casts simply dispatch to the appropriate parameters 
-      of this module. This includes the cast, fun-cast, fst-cast, snd-cast, and
-      case-cast rules. To propagate blame to the top of the program, we have the
-      ξ-blame rule. All of the usual congruence rules are instances of the one
-      ξ rule with the appropriate choice of frame. The remaining rules are the
-      usual β and δ reduction rules of the STLC.
+      The following defines the reduction relation for the
+      Parameterized Cast Calulus.  The reductions involving casts
+      simply dispatch to the appropriate parameters of this
+      module. This includes the cast, fun-cast, fst-cast, snd-cast,
+      and case-cast rules. To propagate blame to the top of the
+      program, we have the ξ-blame rule. All of the usual congruence
+      rules are instances of the one ξ rule with the appropriate
+      choice of frame. The remaining rules are the usual β and δ
+      reduction rules of the STLC.
 
       The reduction relation has a very specific type signature,
       mapping only well-typed terms to well-typed terms, so
@@ -218,8 +225,8 @@ module ParamCastReduction
 
       β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
         → Value W
-          ------------------------
-        → (ƛ A , N) · W —→ N [ W ]
+          --------------------
+        → (ƛ N) · W —→ N [ W ]
 
       δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A}
         {ab} {a} {b}
@@ -227,11 +234,11 @@ module ParamCastReduction
         → ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
       β-if-true :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
-          --------------------------------------
+          -------------------------
         → if (($ true){f}) M N —→ M
 
       β-if-false :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
-          ---------------------
+          --------------------------
         → if (($ false){f}) M N —→ N
 
       β-fst :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
@@ -256,25 +263,25 @@ module ParamCastReduction
 
       cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
         → (v : Value V) → {a : Active c}
-          ----------------------------
+          ------------------------------
         → V ⟨ c ⟩ —→ applyCast V v c {a}
 
       fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
           {c : Cast (A ⇒ (A' ⇒ B'))}
         → Value V → Value W → {i : Inert c}
-          ---------------------------------
+          ----------------------------------
         → (V ⟨ c ⟩) · W —→ funCast V c {i} W 
 
       fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
-          ---------------------------------
+          --------------------------------
         → fst (V ⟨ c ⟩) —→ fstCast V c {i}
 
       snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
-          ---------------------------------
+          --------------------------------
         → snd (V ⟨ c ⟩) —→ sndCast V c {i}
 
       case-cast : ∀ {Γ A A' B' C} {V : Γ ⊢ A}
@@ -352,7 +359,7 @@ module ParamCastReduction
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
-    progress (ƛ A , M) = done V-ƛ
+    progress (ƛ M) = done V-ƛ
     progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
     ... | step R = step (ξ {F = F-·₁ M₂} R)
     ... | error E-blame = step (ξ-blame {F = F-·₁ M₂})

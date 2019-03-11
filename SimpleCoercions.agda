@@ -76,13 +76,13 @@ module SimpleCoercions where
   ...    | inj₁ cns = M' ⟨ coerce A' B {cns} ℓ ⟩
   ...    | inj₂ incns = blame ℓ
   applyCast{Γ} M v (cfun{A₁}{B₁}{A₂}{B₂} c d) {a} =
-     ƛ B₁ , (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
+     ƛ (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
   applyCast M v (cpair c d) {a} =
     cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
   applyCast M v (csum{A₁}{B₁}{A₂}{B₂} c d) {a} =
     let l = inl ((` Z) ⟨ c ⟩) in
     let r = inr ((` Z) ⟨ d ⟩) in
-    case M (ƛ A₁ , l) (ƛ A₂ , r)
+    case M (ƛ l) (ƛ r)
 
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M c {()} N

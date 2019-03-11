@@ -45,8 +45,7 @@ data _⊢_ : Context → Type → Set where
       -----
     → Γ ⊢ A
 
-  ƛ_,_ :  ∀ {Γ B}
-    → (A : Type)
+  ƛ_ :  ∀ {Γ B A}
     → Γ , A ⊢ B
       ---------
     → Γ ⊢ A ⇒ B
@@ -129,7 +128,7 @@ rename : ∀ {Γ Δ}
     ------------------------
   → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
 rename ρ (` x)          = ` (ρ x)
-rename ρ (ƛ A , N)      =  ƛ A , (rename (ext ρ) N)
+rename ρ (ƛ N)          =  ƛ (rename (ext ρ) N)
 rename ρ (L · M)        =  (rename ρ L) · (rename ρ M)
 rename ρ (($ k) {f})    = ($ k) {f}
 rename ρ (if L M N)     =  if (rename ρ L) (rename ρ M) (rename ρ N)
@@ -154,7 +153,7 @@ subst : ∀ {Γ Δ}
     ------------------------
   → (∀ {A} → Γ ⊢ A → Δ ⊢ A)
 subst σ (` x)          =  σ x
-subst σ (ƛ A , N)          =  ƛ A , (subst (exts σ) N)
+subst σ (ƛ  N)         =  ƛ (subst (exts σ) N)
 subst σ (L · M)        =  (subst σ L) · (subst σ M)
 subst σ (($ k){f})     =  ($ k){f}
 subst σ (if L M N)     =  if (subst σ L) (subst σ M) (subst σ N)

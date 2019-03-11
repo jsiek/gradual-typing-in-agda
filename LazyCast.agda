@@ -51,12 +51,12 @@ module LazyCast where
   ... | inj₁ unk⌣R = applyCast⋆ M v (cast A₁ ⋆ ℓ) {a}
   ... | inj₁ nat⌣ = M
   ... | inj₁ bool⌣ = M
-  ... | inj₁ (fun⌣{A}{A'}{B}{B'}) = ƛ B , (((rename (λ {A₂} → S_) M) · ((` Z) ⟨ cast B A ℓ ⟩)) ⟨ cast A' B' ℓ ⟩)
+  ... | inj₁ (fun⌣{A}{A'}{B}{B'}) = ƛ (((rename (λ {A₂} → S_) M) · ((` Z) ⟨ cast B A ℓ ⟩)) ⟨ cast A' B' ℓ ⟩)
   ... | inj₁ (pair⌣{A}{A'}{B}{B'}) = cons (fst M ⟨ cast A B ℓ ⟩) (snd M ⟨ cast A' B' ℓ ⟩)
   ... | inj₁ (sum⌣{A}{A'}{B}{B'}) =
           let l = inl ((` Z) ⟨ cast A B ℓ ⟩) in
           let r = inr ((` Z) ⟨ cast A' B' ℓ ⟩) in
-          case M (ƛ A , l) (ƛ A' , r)
+          case M (ƛ l) (ƛ r)
   ... | inj₂ nsc = blame ℓ
   ... | (inj₁ unk⌣L) with PCR.canonical⋆ M v
   ...    | ⟨ A' , ⟨ M' , ⟨ c' , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =

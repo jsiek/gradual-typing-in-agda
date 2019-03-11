@@ -687,7 +687,7 @@ module EfficientGroundCoercions where
     cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
   applyCast{A = A₁ `⊎ A₂} M v (` ` c +' d) {a} =
     let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
-    case M (ƛ A₁ , l) (ƛ A₂ , r)
+    case M (ƛ l) (ƛ r)
   {- Vacuous cases -}
   applyCast M v (` ` c ↣ d) {A-intmd (A-gnd ())}
   applyCast M v (` (g ⨟!)) {A-intmd ()}

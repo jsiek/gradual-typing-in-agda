@@ -53,9 +53,9 @@ module GTLC2CC
   compile {Γ} (`_ x) with lookup Γ x
   ... | nothing = nothing
   ... | just (⟨ A , k ⟩) = just (⟨ A , ` k ⟩)
-  compile {Γ} (ƛ A , M) with compile {Γ , A} M
+  compile {Γ} (ƛ_,_ A M) with compile {Γ , A} M
   ... | nothing = nothing
-  ... | just (⟨ B , M' ⟩) = just (⟨ (A ⇒ B) , (ƛ A , M') ⟩)
+  ... | just (⟨ B , M' ⟩) = just (⟨ (A ⇒ B) , (ƛ M') ⟩)
   compile {Γ} (M · N at ℓ) with compile {Γ} M | compile {Γ} N
   ... | nothing | _ = nothing
   ... | just _ | nothing = nothing

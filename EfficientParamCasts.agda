@@ -165,8 +165,8 @@ module EfficientParamCasts
 
       β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
         → Value W
-          ------------------------
-        → disallow / (ƛ A , N) · W —→ N [ W ]
+          -------------------------------
+        → disallow / (ƛ N) · W —→ N [ W ]
 
       δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
           --------------------------------------------
@@ -303,7 +303,7 @@ module EfficientParamCasts
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
-    progress (ƛ A , M) = done V-ƛ
+    progress (ƛ M) = done V-ƛ
     progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
     ... | step-d R = step-d (ξ {F = F-·₁ M₂} (switch R))
     ... | step-a R = step-d (ξ {F = F-·₁ M₂} R)
