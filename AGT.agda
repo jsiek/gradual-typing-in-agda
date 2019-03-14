@@ -7,6 +7,8 @@ module AGT where
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary.Negation using (contradiction)
 
   data SType : Set where
     SNat : SType
@@ -14,6 +16,21 @@ module AGT where
     _⇒_ : SType → SType → SType
     _`×_ : SType → SType → SType
     _`⊎_ : SType → SType → SType
+
+  data _⌢_ : SType → SType → Set where
+    nat⌢ : SNat ⌢ SNat
+    bool⌢ : SBool ⌢ SBool
+    fun⌢ : ∀{A B A' B'}
+        -------------------
+      → (A ⇒ B) ⌢ (A' ⇒ B')
+    pair⌢ : ∀{A B A' B'}
+        -------------------
+      → (A `× B) ⌢ (A' `× B')
+    sum⌢ : ∀{A B A' B'}
+        -------------------
+      → (A `⊎ B) ⌢ (A' `⊎ B')
+      
+  {- Concretization -}
 
   data Conc : Type → SType → Set where
     c-nat : Conc Nat SNat
@@ -308,4 +325,168 @@ module AGT where
 
   {- to do: ceq-implies-cons -}
 
-  
+  {- Abstraction -}
+
+  data AllFuns : (SType → Set) → Set where
+    funs : ∀{P}
+      → (∀{T : SType} → P T → Σ[ T₁ ∈ SType ] Σ[ T₂ ∈ SType ]
+            T ≡ T₁ ⇒ T₂)
+        -----------------------------------------------------
+      → AllFuns P
+
+  data Dom : (SType → Set) → (SType → Set) → Set where
+    dom : ∀{P P₁ : (SType → Set)}
+      → (∀{T₁} → P₁ T₁ → Σ[ T₂ ∈ SType ] P (T₁ ⇒ T₂))
+      → (∀{T₁ T₂} → P (T₁ ⇒ T₂) → P₁ T₁)
+        ---------------------------------------------
+      → Dom P P₁
+
+  data Cod : (SType → Set) → (SType → Set) → Set where
+    cod : ∀{P P₂}
+      → (∀{T₂} → P₂ T₂ → Σ[ T₁ ∈ SType ] P (T₁ ⇒ T₂))
+      → (∀{T₁ T₂} → P (T₁ ⇒ T₂) → P₂ T₂)
+        ---------------------------------------------
+      → Cod P P₂
+
+  data Abs : (SType → Set) → Type → Set₁ where
+    abs-nat : ∀{P : SType → Set}
+      → (∀{T : SType} → P T → T ≡ SNat)
+        -------------------------------
+      → Abs P Nat
+    abs-bool : ∀{P : SType → Set}
+      → (∀{T : SType} → P T → T ≡ SBool)
+        --------------------------------
+      → Abs P 𝔹
+    abs-fun : ∀{P P₁ P₂ : SType → Set}{A B : Type}
+      → AllFuns P
+      → Dom P P₁  →   Abs P₁ A
+      → Cod P P₂  →   Abs P₂ B
+        ----------------------
+      → Abs P (A ⇒ B)
+    abs-any : ∀{P : SType → Set} {S T : SType}
+      → ¬ (S ⌢ T)
+      → P S → P T
+        ---------------
+      → Abs P ⋆
+
+  _⊆_ : (SType → Set) → (SType → Set) → Set
+  P ⊆ P' = ∀{T : SType} → P T → P' T
+
+
+  dom-dom : ∀ {P P' : SType → Set} {T T' : SType}
+    → Dom P P'  →  P (T ⇒ T')
+      -----------------------
+    → P' T
+  dom-dom (dom f g) p-tt' = g p-tt'
+
+  cod-cod : ∀ {P P' : SType → Set} {T T' : SType}
+    → Cod P P'  →  P (T ⇒ T')
+      -----------------------
+    → P' T'
+  cod-cod (cod f g) p-tt' = g p-tt'
+
+
+  conc-abs-sound : ∀{P : SType → Set}{A : Type}
+     → Abs P A  
+       ----------
+     → P ⊆ Conc A
+  conc-abs-sound (abs-nat p-nat) {T} pt
+    rewrite p-nat {T} pt = c-nat
+  conc-abs-sound (abs-bool p-bool) {T} pt
+    rewrite p-bool {T} pt = c-bool
+  conc-abs-sound (abs-fun allfun dom-p abs-a cod-p abs-b) pt
+      with allfun
+  ... | funs af
+      with af pt
+  ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq =
+        let ih1 = conc-abs-sound abs-a in
+        let ih2 = conc-abs-sound abs-b in
+        c-fun (ih1 (dom-dom dom-p pt)) (ih2 (cod-cod cod-p pt))
+  conc-abs-sound (abs-any a b c) pt = c-unk
+
+  c-any-nat  : ∀{A}
+     → Conc A SNat
+     → A ≡ Nat ⊎ A ≡ ⋆
+  c-any-nat c-nat = inj₁ refl
+  c-any-nat c-unk = inj₂ refl
+
+  c-any-bool  : ∀{A}
+     → Conc A SBool
+     → A ≡ 𝔹 ⊎ A ≡ ⋆
+  c-any-bool c-bool = inj₁ refl
+  c-any-bool c-unk = inj₂ refl
+
+  c-any-fun  : ∀{A T₁ T₂}
+     → Conc A (T₁ ⇒ T₂)
+     → (Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂ × Conc A₁ T₁ × Conc A₂ T₂)
+       ⊎ A ≡ ⋆
+  c-any-fun (c-fun{T₁}{T₂} c c₁) =
+      inj₁ ⟨ T₁ , ⟨ T₂ , ⟨ refl , ⟨ c , c₁ ⟩ ⟩ ⟩ ⟩
+  c-any-fun c-unk = inj₂ refl
+
+  conc-sh-cons : ∀{A T₁ T₂}
+     → Conc A T₁  →  Conc A T₂
+       -----------------------
+     → A ≡ ⋆ ⊎ (T₁ ⌢ T₂)
+  conc-sh-cons c-nat c-nat = inj₂ nat⌢
+  conc-sh-cons c-bool c-bool = inj₂ bool⌢
+  conc-sh-cons (c-fun a-t1 a-t3) (c-fun a-t2 a-t4) = inj₂ fun⌢
+  conc-sh-cons (c-pair a-t1 a-t3) (c-pair a-t2 a-t4) = inj₂ pair⌢
+  conc-sh-cons (c-sum a-t1 a-t3) (c-sum a-t2 a-t4) = inj₂ sum⌢
+  conc-sh-cons c-unk a-t2 = inj₁ refl
+
+  abs-optimal : ∀ {P : SType → Set} {A A' : Type}
+    → (Σ[ T ∈ SType ] P T)
+    → P ⊆ Conc A  →  Abs P A'
+      -------------------------
+    → A ⊑ A'
+  abs-optimal ⟨ T , pt ⟩ p-ca (abs-nat all-nat)
+      with pt
+  ... | pt'
+      rewrite all-nat pt
+      with c-any-nat (p-ca pt') 
+  ... | inj₁ eq rewrite eq = Refl⊑
+  ... | inj₂ eq rewrite eq = unk⊑
+  abs-optimal ⟨ T , pt ⟩ p-ca (abs-bool all-bool)
+      with pt
+  ... | pt'
+      rewrite all-bool pt
+      with c-any-bool (p-ca pt') 
+  ... | inj₁ eq rewrite eq = Refl⊑
+  ... | inj₂ eq rewrite eq = unk⊑
+  abs-optimal ⟨ T , pt ⟩ p-ca
+          (abs-fun{P}{P₁}{P₂}{B₁}{B₂} allf dom-pp1 abs-p1-b1 cod-p-p2 abs-p2-b2)
+      with allf
+  ... | funs af
+      with af pt
+  ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq
+      with dom-pp1
+  ... | dom dom-f dom-g 
+      with cod-p-p2
+  ... | cod cod-f cod-g 
+      with c-any-fun (p-ca pt)
+  ... | inj₁ ⟨ A₁ , ⟨ A₂ , ⟨ a=a12 , ⟨ c1 , c2 ⟩ ⟩ ⟩ ⟩ rewrite a=a12 =
+      let ih1 = abs-optimal ⟨ T₁ , (dom-g pt) ⟩ p1-a1 abs-p1-b1 in
+      let ih2 = abs-optimal ⟨ T₂ , (cod-g pt) ⟩ p2-a2 abs-p2-b2 in
+      fun⊑ ih1 ih2
+      where
+      p1-a1 : P₁ ⊆ Conc A₁
+      p1-a1 {T} p1t with dom-f p1t
+      ... | ⟨ T₂ , p-tt2 ⟩
+          with p-ca p-tt2 
+      ... | c-fun c1 c2 = c1
+
+      p2-a2 : P₂ ⊆ Conc A₂
+      p2-a2 {T} p1t with cod-f p1t
+      ... | ⟨ T₁ , p-t1t ⟩
+          with p-ca p-t1t 
+      ... | c-fun c1 c2 = c2
+
+  ... | inj₂ a=unk rewrite a=unk =
+      unk⊑
+  abs-optimal ⟨ T , pt ⟩ p-ca (abs-any a b c)
+      with conc-sh-cons (p-ca b) (p-ca c) 
+  ... | inj₁ A≡⋆ rewrite A≡⋆ = 
+        unk⊑
+  ... | inj₂ x = 
+        contradiction x a
