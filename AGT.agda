@@ -490,3 +490,14 @@ module AGT where
         unk⊑
   ... | inj₂ x = 
         contradiction x a
+
+  {- 
+
+   Evidence and Interiors:
+
+   In the GTLC, the evidence for consistency is the lub of the two
+   types.
+
+   -}
+
+   
