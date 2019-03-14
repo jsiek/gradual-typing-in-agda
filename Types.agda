@@ -3,8 +3,10 @@ module Types where
   open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
   open import Data.Bool
   open import Data.Unit
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to ⟨_,_⟩)
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_)
   open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -150,6 +152,30 @@ module Types where
   ⊑L⋆ : ∀{A} → A ⊑ ⋆ → A ≡ ⋆
   ⊑L⋆ {⋆} unk⊑ = refl
 
+  ⊑R𝔹 : ∀{C} → 𝔹 ⊑ C → C ≡ 𝔹
+  ⊑R𝔹 {𝔹} bool⊑ = refl
+
+  ⊑L⇒ : ∀{A B₁ B₂} → A ⊑ (B₁ ⇒ B₂)
+        → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
+                   (A ≡ A₁ ⇒ A₂) × (A₁ ⊑ B₁) × (A₂ ⊑ B₂)
+  ⊑L⇒ {.⋆} {B₁} {B₂} unk⊑ = inj₁ refl
+  ⊑L⇒ {A ⇒ B} {B₁} {B₂} (fun⊑ d d₁) =
+    inj₂ ⟨ A , ⟨ B , ⟨ refl , ⟨ d , d₁ ⟩ ⟩ ⟩ ⟩
+
+  ⊑L× : ∀{A B₁ B₂} → A ⊑ (B₁ `× B₂)
+        → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
+                   (A ≡ A₁ `× A₂) × (A₁ ⊑ B₁) × (A₂ ⊑ B₂)
+  ⊑L× {.⋆} {B₁} {B₂} unk⊑ = inj₁ refl
+  ⊑L× {A `× B} {B₁} {B₂} (pair⊑ d d₁) =
+    inj₂ ⟨ A , ⟨ B , ⟨ refl , ⟨ d , d₁ ⟩ ⟩ ⟩ ⟩
+
+  ⊑L⊎ : ∀{A B₁ B₂} → A ⊑ (B₁ `⊎ B₂)
+        → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
+                   (A ≡ A₁ `⊎ A₂) × (A₁ ⊑ B₁) × (A₂ ⊑ B₂)
+  ⊑L⊎ {.⋆} {B₁} {B₂} unk⊑ = inj₁ refl
+  ⊑L⊎ {A `⊎ B} {B₁} {B₂} (sum⊑ d d₁) =
+    inj₂ ⟨ A , ⟨ B , ⟨ refl , ⟨ d , d₁ ⟩ ⟩ ⟩ ⟩
+
 
   data _~_ : Type → Type → Set where
     unk~L : ∀ {A} → ⋆ ~ A
@@ -185,6 +211,24 @@ module Types where
   consis (pair⊑ ac ac₁) (pair⊑ bc bc₁) = pair~ (consis ac bc) (consis ac₁ bc₁)
   consis (sum⊑ ac ac₁) unk⊑ = unk~R
   consis (sum⊑ ac ac₁) (sum⊑ bc bc₁) = sum~ (consis ac bc) (consis ac₁ bc₁)
+
+  consis-ub : ∀{A B} → A ~ B → Σ[ C ∈ Type ] A ⊑ C × B ⊑ C
+  consis-ub{B = B} unk~L = ⟨ B , ⟨ unk⊑ , Refl⊑ ⟩ ⟩
+  consis-ub{A = A} unk~R = ⟨ A , ⟨ Refl⊑ , unk⊑ ⟩ ⟩
+  consis-ub nat~ = ⟨ Nat , ⟨ nat⊑ , nat⊑ ⟩ ⟩
+  consis-ub bool~ = ⟨ 𝔹 , ⟨ bool⊑ , bool⊑ ⟩ ⟩
+  consis-ub (fun~ ab₁ ab₂)
+      with consis-ub ab₁ | consis-ub ab₂
+  ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
+        ⟨ C₁ ⇒ C₂ , ⟨ (fun⊑ ac1 ac2) , fun⊑ bc1 bc2 ⟩ ⟩
+  consis-ub (pair~ ab₁ ab₂)
+      with consis-ub ab₁ | consis-ub ab₂
+  ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
+        ⟨ C₁ `× C₂ , ⟨ (pair⊑ ac1 ac2) , pair⊑ bc1 bc2 ⟩ ⟩
+  consis-ub (sum~ ab₁ ab₂)
+      with consis-ub ab₁ | consis-ub ab₂
+  ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
+        ⟨ C₁ `⊎ C₂ , ⟨ (sum⊑ ac1 ac2) , sum⊑ bc1 bc2 ⟩ ⟩
 
   Refl~ : ∀ {A} → A ~ A
   Refl~ {A} = consis Refl⊑ Refl⊑
@@ -245,6 +289,9 @@ module Types where
 
   _⊔_ : (A : Type) → (B : Type) → ∀ { c : A ~ B } → Type
   (A ⊔ B) {c} = proj₁ ((A `⊔ B) {c})
+
+  ⋆⊔B=B : ∀{B} → (⋆ ⊔ B) {unk~L} ≡ B
+  ⋆⊔B=B {B} = refl
 
   ⊔L : ∀ {A A'} {c : A ~ A'} → A ~ ((A ⊔ A') {c})
   ⊔L {A}{A'}{c} with (A `⊔ A') {c}
@@ -371,6 +418,9 @@ module Types where
     →  ¬ ((A `⊎ A') ~ (B `⊎ B'))
   ¬~sR {A} {B} {A'} {B'} d1 (sum~ c c₁) = d1 c₁
 
+  ⊑𝔹→~𝔹 : ∀{A} → A ⊑ 𝔹 → A ~ 𝔹
+  ⊑𝔹→~𝔹 unk⊑ = unk~L
+  ⊑𝔹→~𝔹 bool⊑ = bool~
 
   _`~_ : (A : Type) → (B : Type) → (A ~ B) ⊎ (¬ (A ~ B))
   ⋆ `~ B = inj₁ unk~L

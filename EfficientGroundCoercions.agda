@@ -211,22 +211,22 @@ module EfficientGroundCoercions where
    function coercion is inert.
 
    -}
-  data InertGround : ∀ {A} → gCast A → Set where
+  data InertgCast : ∀ {A} → gCast A → Set where
     I-cfun : ∀{A B A' B'}{s : Cast (B ⇒ A)} {t : Cast (A' ⇒ B')}
-          → InertGround (s ↣ t)
+          → InertgCast (s ↣ t)
 
   {-
 
    The other three ground coercions are active.
 
   -}
-  data ActiveGround : ∀ {A} → gCast A → Set where
+  data ActivegCast : ∀ {A} → gCast A → Set where
     A-cpair : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
-          → ActiveGround (s ×' t)
+          → ActivegCast (s ×' t)
     A-csum : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
-          → ActiveGround (s +' t)
+          → ActivegCast (s +' t)
     A-idι : ∀{B b}
-          → ActiveGround (idι {B}{b})
+          → ActivegCast (idι {B}{b})
 
   {-
 
@@ -239,7 +239,7 @@ module EfficientGroundCoercions where
     I-inj : ∀{A G i}{g : gCast (A ⇒ G)}
           → InertiCast ((g ⨟!) {i})
     I-gnd : ∀{A B}{g : gCast (A ⇒ B)}
-          → InertGround g
+          → InertgCast g
           → InertiCast (` g)
 
   {-
@@ -251,7 +251,7 @@ module EfficientGroundCoercions where
 
   data ActiveiCast : ∀ {A} → iCast A → Set where
     A-gnd : ∀{A B}{g : gCast (A ⇒ B)}
-          → ActiveGround g
+          → ActivegCast g
           → ActiveiCast (` g)
     A-cfail : ∀{A B G H ℓ nd}
           → ActiveiCast (cfail {A}{B} G H ℓ {nd})
@@ -290,7 +290,7 @@ module EfficientGroundCoercions where
 
   -}
   
-  ActiveOrInertGnd : ∀{A} → (c : gCast A) → ActiveGround c ⊎ InertGround c
+  ActiveOrInertGnd : ∀{A} → (c : gCast A) → ActivegCast c ⊎ InertgCast c
   ActiveOrInertGnd idι = inj₁ A-idι
   ActiveOrInertGnd (c ↣ d) = inj₂ I-cfun
   ActiveOrInertGnd (c ×' d) = inj₁ A-cpair

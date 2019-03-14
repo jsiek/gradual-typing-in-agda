@@ -360,10 +360,12 @@ module ParamCastReduction
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
     progress (ƛ M) = done V-ƛ
-    progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
+    progress (_·_ {∅}{A}{B} M₁ M₂)
+        with progress M₁
     ... | step R = step (ξ {F = F-·₁ M₂} R)
     ... | error E-blame = step (ξ-blame {F = F-·₁ M₂})
-    ... | done V₁ with progress M₂
+    ... | done V₁
+            with progress M₂
     ...     | step R' = step (ξ {F = (F-·₂ M₁){V₁}} R')
     ...     | error E-blame = step (ξ-blame {F = (F-·₂ M₁){V₁}})
     ...     | done V₂ with V₁

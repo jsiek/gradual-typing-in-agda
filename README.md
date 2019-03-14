@@ -9,6 +9,9 @@ Inventory
    Bruijn indices.
 * [GTLC.agda](./GTLC.agda): Syntax and type system of the Gradually
    Typed Lambda Calculus with pairs and sums.
+* [GTLC-materialize.agda](./GTLC-materialize.agda): A version of the GTLC
+   that uses the materialize rule (subsumption with precision)
+   instead of using the consistency relation.
 * [ParamCastCalculus.agda](./ParamCastCalculus.agda): Syntax and type
    system (it is intrinsically typed) for the Parameterized Cast
    Calculus. This also includes the definition of substitution.
@@ -39,3 +42,5 @@ Inventory
    calculus (Siek, Garcia, and Taha 2009).
 * [LazyCoercions.agda](./LazyCoercions.agda): Type safety for the
    "lazy D" calculus, with casts represented as coercions.
+* [AGT.agda](./AGT.agda): A start at Abstracting Gradual Typing.
+

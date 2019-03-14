@@ -9,128 +9,65 @@ module GTLC2CC
   where
 
   open import GTLC
+  open import GTLC-materialize
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
   open CastCalc
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
+  
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Maybe
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_; refl; trans; sym; cong; cong-app)
 
-  {- to do: change to dom/cod a la AGT -}
-  match⇒ : (A : Type) → Maybe (Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ~ (A₁ ⇒ A₂))
-  match⇒ ⋆ = just (⟨ ⋆ , (⟨ ⋆ , unk~L ⟩) ⟩)
-  match⇒ Nat = nothing
-  match⇒ 𝔹 = nothing
-  match⇒ (A ⇒ A₁) = just (⟨ A , (⟨ A₁ , Refl~ ⟩) ⟩)
-  match⇒ (A `× A₁) = nothing
-  match⇒ (A `⊎ A₁) = nothing
+  compile : ∀ {Γ M A} → (Γ ⊢ M ⦂ A) → (Γ ⊢ A)
+  compile (⊢` {k = k} lk) = ` k
+  compile (⊢ƛ d) = ƛ (compile d)
+  compile (⊢app{Γ}{L}{M}{A}{A₁}{A₂}{B}{ℓ} d₁ m d₂ c) =
+     let d₁' = (compile d₁) ⟨ cast A (A₁ ⇒ A₂) ℓ {consis (▹⇒⊑ m) Refl⊑} ⟩ in
+     let d₂' = (compile d₂) ⟨ cast B A₁ ℓ {Sym~ c} ⟩ in
+     d₁' · d₂'
+  compile (⊢const{k = k}{p = p}) = ($ k) {p}
+  compile (⊢if{Γ}{L}{M}{N}{ℓ}{A}{A'}{B} d d₁ d₂ bb c)
+      with (A `⊔ A') {c}
+  ... | ⟨ A⊔A' , ⟨ ub , _ ⟩ ⟩ =
+     let d' = (compile d) ⟨ cast B 𝔹 ℓ {bb} ⟩ in
+     let d₁' = (compile d₁) ⟨ cast A A⊔A' ℓ {consis (proj₁ ub) Refl⊑} ⟩ in
+     let d₂' = (compile d₂) ⟨ cast A' A⊔A' ℓ {consis (proj₂ ub) Refl⊑} ⟩ in
+     if d' d₁' d₂'
+  compile (⊢cons d₁ d₂) =
+     let d₁' = compile d₁ in
+     let d₂' = compile d₂ in
+     cons d₁' d₂'
+  compile (⊢fst{Γ}{A}{A₁}{A₂}{M}{ℓ} d m) =
+     let d' = (compile d) ⟨ cast A (A₁ `× A₂) ℓ {consis (▹×⊑ m) Refl⊑} ⟩ in
+     fst d'
+  compile (⊢snd{Γ}{A}{A₁}{A₂}{M}{ℓ} d m) =
+     let d' = (compile d) ⟨ cast A (A₁ `× A₂) ℓ {consis (▹×⊑ m) Refl⊑} ⟩ in
+     snd d'
+  compile (⊢inl d) = inl (compile d)
+  compile (⊢inr d) = inr (compile d)
+  compile (⊢case{Γ}{A}{A₁}{A₂}{B}{B₁}{B₂}{C}{C₁}{C₂}{L}{M}{N}{ℓ}
+            da ma db mb dc mc ab ac bc)
+      with (B₂ `⊔ C₂) {bc}
+  ... | ⟨ B₂⊔C₂ , ⟨ ub , lb ⟩ ⟩ =
+        let da' = (compile da) ⟨ cast A (A₁ `⊎ A₂) ℓ {consis (▹⊎⊑ ma) Refl⊑} ⟩
+                  ⟨ cast (A₁ `⊎ A₂) (B₁ `⊎ C₁) ℓ {sum~ ab ac} ⟩ in
+        let db' = (compile db) ⟨ cast B (B₁ ⇒ B₂) ℓ {consis (▹⇒⊑ mb) Refl⊑} ⟩
+                  ⟨ cast (B₁ ⇒ B₂) (B₁ ⇒ B₂⊔C₂) ℓ {c1} ⟩ in
+        let dc' = (compile dc) ⟨ cast C (C₁ ⇒ C₂) ℓ {consis (▹⇒⊑ mc) Refl⊑} ⟩
+                  ⟨ cast (C₁ ⇒ C₂) (C₁ ⇒ B₂⊔C₂) ℓ {c2} ⟩ in
+        case da' db' dc'
+        where
+        c1 : (B₁ ⇒ B₂) ~ (B₁ ⇒ B₂⊔C₂)
+        c1 = fun~ Refl~ (consis (proj₁ ub) (lb ub))
+        c2 : (C₁ ⇒ C₂) ~ (C₁ ⇒ B₂⊔C₂)
+        c2 = fun~ Refl~ (consis (proj₂ ub) (lb ub))
 
-  match× : (A : Type) → Maybe (Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ~ (A₁ `× A₂))
-  match× ⋆ = just (⟨ ⋆ , (⟨ ⋆ , unk~L ⟩) ⟩)
-  match× Nat = nothing
-  match× 𝔹 = nothing
-  match× (A ⇒ A₁) = nothing
-  match× (A `× A₁) = just (⟨ A , (⟨ A₁ , Refl~ ⟩) ⟩)
-  match× (A `⊎ A₁) = nothing
 
-  match⊎ : (A : Type) → Maybe (Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ~ (A₁ `⊎ A₂))
-  match⊎ ⋆ = just (⟨ ⋆ , (⟨ ⋆ , unk~L ⟩) ⟩)
-  match⊎ Nat = nothing
-  match⊎ 𝔹 = nothing
-  match⊎ (A ⇒ A₁) = nothing
-  match⊎ (A `× A₁) = nothing
-  match⊎ (A `⊎ A₁) = just (⟨ A , (⟨ A₁ , Refl~ ⟩) ⟩)
-
-  match𝔹 : (A : Type) → Maybe (A ~ 𝔹)
-  match𝔹 ⋆ = just (consis unk⊑ bool⊑)
-  match𝔹 Nat = nothing
-  match𝔹 𝔹 = just (consis bool⊑ bool⊑)
-  match𝔹 (A ⇒ A₁) = nothing
-  match𝔹 (A `× A₁) = nothing
-  match𝔹 (A `⊎ A₁) = nothing
-
-  compile : {Γ : Context} → (M : Term) → Maybe (Σ[ A ∈ Type ] Γ ⊢ A)
-  compile {Γ} (`_ x) with lookup Γ x
-  ... | nothing = nothing
-  ... | just (⟨ A , k ⟩) = just (⟨ A , ` k ⟩)
-  compile {Γ} (ƛ_,_ A M) with compile {Γ , A} M
-  ... | nothing = nothing
-  ... | just (⟨ B , M' ⟩) = just (⟨ (A ⇒ B) , (ƛ M') ⟩)
-  compile {Γ} (M · N at ℓ) with compile {Γ} M | compile {Γ} N
-  ... | nothing | _ = nothing
-  ... | just _ | nothing = nothing
-  ... | just (⟨ A , M' ⟩) | just (⟨ B , N' ⟩) with match⇒ A
-  ...    | nothing = nothing
-  ...    | just (⟨ A₁ , (⟨ A₂ , c ⟩) ⟩) with B `~ A₁ 
-  ...       | inj₁ d = 
-              let M'' = (M' ⟨ (cast A (A₁ ⇒ A₂) (pos ℓ) {c}) ⟩) in
-              let N'' = (N' ⟨ (cast B A₁ (pos ℓ) {d}) ⟩) in
-              just (⟨ A₂ , M'' · N'' ⟩)
-  ...       | inj₂ d = nothing
-  compile {Γ} ($_ {A} x) with prim A
-  ... | inj₁ p = just (⟨ A , ($ x){p} ⟩)
-  ... | inj₂ p = nothing  
-  compile {Γ} (if L M N ℓ) with compile {Γ} L | compile {Γ} M | compile {Γ} N
-  ... | nothing | _ | _ = nothing
-  ... | just _ | nothing | _ = nothing
-  ... | just _ | just _ | nothing = nothing
-  ... | just (⟨ A , L' ⟩) | just (⟨ B , M' ⟩) | just (⟨ C , N' ⟩) with match𝔹 A
-  ...    | nothing = nothing
-  ...    | just c with B `~ C
-  ...        | inj₂ _ = nothing
-  ...        | inj₁ d with (B `⊔ C) {d}
-  ...           | ⟨ D , LUB ⟩ =
-                  let L'' = (L' ⟨ (cast A 𝔹 (pos ℓ) {c}) ⟩) in
-                  let M'' = (M' ⟨ (cast B D (pos ℓ) {consis {D} (proj₁ (proj₁ LUB)) (proj₂ LUB (proj₁ LUB))}) ⟩) in
-                  let N'' = (N' ⟨ (cast C D (pos ℓ) {consis {D} (proj₂ (proj₁ LUB)) (proj₂ LUB (proj₁ LUB))}) ⟩) in
-                  just (⟨ D , if L'' M'' N'' ⟩)
-
-  compile {Γ} (cons M N) with compile {Γ} M | compile {Γ} N
-  ... | nothing | _       = nothing
-  ... | just _  | nothing = nothing
-  ... | just (⟨ A , M' ⟩) | just (⟨ B , N' ⟩) = just (⟨ (A `× B) , (cons M' N') ⟩)
-  compile {Γ} (fst M ℓ) with compile {Γ} M
-  ... | nothing = nothing
-  ... | just (⟨ A , M' ⟩) with match× A
-  ...     | nothing = nothing
-  ...     | just (⟨ A₁ , (⟨ A₂ , c ⟩) ⟩) =
-            let M'' = (M' ⟨ cast A (A₁ `× A₂) (pos ℓ) {c} ⟩) in
-            just (⟨ A₁ , fst M'' ⟩)
-  compile {Γ} (snd M ℓ) with compile {Γ} M
-  ... | nothing = nothing
-  ... | just (⟨ A , M' ⟩) with match× A
-  ...     | nothing = nothing
-  ...     | just (⟨ A₁ , (⟨ A₂ , c ⟩) ⟩) =
-            let M'' = (M' ⟨ cast A (A₁ `× A₂) (pos ℓ) {c} ⟩) in
-            just (⟨ A₂ , snd M'' ⟩)
-  compile {Γ} (inl B M) with compile {Γ} M
-  ... | nothing = nothing
-  ... | just (⟨ A , M' ⟩) = just (⟨ A `⊎ B , inl M' ⟩)
-  compile {Γ} (inr A M) with compile {Γ} M
-  ... | nothing = nothing
-  ... | just (⟨ B , M' ⟩) = just (⟨ A `⊎ B , inr M' ⟩)
-  compile {Γ} (case L M N ℓ) with compile {Γ} L | compile {Γ} M | compile {Γ} N
-  ... | nothing | _ | _ = nothing
-  ... | just _ | nothing | _ = nothing
-  ... | just _ | just _ | nothing = nothing
-  ... | just (⟨ A , L' ⟩) | just (⟨ B , M₁ ⟩) | just (⟨ C , N₁ ⟩) with match⊎ A
-  ...     | nothing = nothing
-  ...     | just (⟨ A₁ , (⟨ A₂ , a ⟩) ⟩) with match⇒ B | match⇒ C
-  ...        | nothing | _ = nothing
-  ...        | just _ | nothing = nothing
-  ...        | just (⟨ B₁ , (⟨ B₂ , b ⟩) ⟩) | just (⟨ C₁ , (⟨ C₂ , c ⟩) ⟩) with B₁ `~ A₁ | C₁ `~ A₂
-  ...           | inj₂ _ | _ = nothing
-  ...           | inj₁ _ | inj₂ _ = nothing
-  ...           | inj₁ ba | inj₁ ca with B₂ `~ C₂
-  ...              | inj₂ _ = nothing
-  ...              | inj₁ bc with (B₂ `⊔ C₂) {bc}
-  ...                | ⟨ D , LUB ⟩ =
-                       let L'' = (L' ⟨ cast A (A₁ `⊎ A₂) (pos ℓ) {a} ⟩) in
-                       let M₂ = (M₁ ⟨ cast B (B₁ ⇒ B₂) (pos ℓ) {b} ⟩) in
-                       let N₂ = (N₁ ⟨ cast C (C₁ ⇒ C₂) (pos ℓ) {c} ⟩) in
-                       let f1 = fun~ ba (consis (proj₁ (proj₁ LUB)) (proj₂ LUB (proj₁ LUB))) in
-                       let M₃ = (M₂ ⟨ cast (B₁ ⇒ B₂) (A₁ ⇒ D) (pos ℓ) {f1} ⟩) in
-                       let f2 =  fun~ ca (consis (proj₂ (proj₁ LUB)) (proj₂ LUB (proj₁ LUB))) in
-                       let N₃ = (N₂ ⟨ cast (C₁ ⇒ C₂) (A₂ ⇒ D) (pos ℓ) {f2} ⟩) in
-                       just (⟨ D , case L'' M₃ N₃ ⟩)
-
+  compile-mat : ∀ {Γ M A} → (Γ ⊢m M ⦂ A) → Σ[ A' ∈ Type ] Γ ⊢ A' × A' ⊑ A
+  compile-mat d
+      with mat-impl-trad d
+  ... | ⟨ A' , ⟨ d' , lt ⟩ ⟩ =
+        ⟨ A' , ⟨ (compile d') , lt ⟩ ⟩
