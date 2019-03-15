@@ -31,14 +31,57 @@ module EfficientParamCasts
 
   {-
 
-  We import the definition of Value and the canonical⋆ lemma from
-  the ParamCastReduction module, as they do not require modification.
- 
+   The notion of Value changes to only allow a single cast in a value.
+   So a value is a simple value (no cast) with an optional cast around it.
+
   -}
 
-  import ParamCastReduction
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR using (Value; V-ƛ; V-const; V-pair; V-inl; V-inr; V-cast; canonical⋆)
+  data Value : ∀ {Γ A} → Γ ⊢ A → Set
+  
+  data SimpleValue : ∀ {Γ A} → Γ ⊢ A → Set where
+
+    V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
+        -----------------
+      → SimpleValue (ƛ N)
+
+    V-const : ∀ {Γ} {A : Type} {k : rep A} {f : Prim A}
+        ------------------------------
+      → SimpleValue {Γ} {A} (($ k){f})
+
+    V-pair : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      → Value V → Value W
+        ----------------------
+      → SimpleValue (cons V W)
+
+    V-inl : ∀ {Γ A B} {V : Γ ⊢ A}
+      → Value V
+        --------------------------------
+      → SimpleValue {Γ} {A `⊎ B} (inl V)
+
+    V-inr : ∀ {Γ A B} {V : Γ ⊢ B}
+      → Value V
+        --------------------------------
+      → SimpleValue {Γ} {A `⊎ B} (inr V)
+
+
+  data Value where
+    S-val : ∀ {Γ A}{V : Γ ⊢ A}
+      → SimpleValue V
+        -------------
+      → Value V
+
+    V-cast : ∀ {Γ : Context} {A B : Type} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+        {i : Inert c}
+      → Value V
+        ---------------
+      → Value (V ⟨ c ⟩)
+
+  canonical⋆ : ∀ {Γ} → (M : Γ ⊢ ⋆) → (Value M)
+             → Σ[ A ∈ Type ] Σ[ M' ∈ (Γ ⊢ A) ] Σ[ c ∈ (Cast (A ⇒ ⋆)) ]
+                 Inert c × (M ≡ (M' ⟨ c ⟩))
+  canonical⋆ .($ _) (S-val (V-const {f = ()}))
+  canonical⋆ .(_ ⟨ _ ⟩) (V-cast{A = A}{B = B}{V = V}{c = c}{i = i} v) =
+    ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
 
   {-
 
@@ -48,13 +91,19 @@ module EfficientParamCasts
    -}
 
   module Reduction
-    (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B)
-    (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
-    (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A')
-    (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B')
-    (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
+    (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
+               → ∀ {a : Active c} → Γ ⊢ B)
+    (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+               → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
+    (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+               → ∀ {i : Inert c} → Γ ⊢ A')
+    (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+               → ∀ {i : Inert c} → Γ ⊢ B')
+    (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+              → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
     (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c)
-    (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C))
+    (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
+             → Cast (A ⇒ C))
     where
 
     {-
@@ -230,7 +279,8 @@ module EfficientParamCasts
           --------------------------------------------
         → disallow / case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
 
-      compose-casts : ∀{Γ A B C} {M : Γ ⊢ A } {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
+      compose-casts : ∀{Γ A B C} {M : Γ ⊢ A }
+          {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
           ------------------------------------------
         → disallow / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
 
@@ -303,7 +353,7 @@ module EfficientParamCasts
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
-    progress (ƛ M) = done V-ƛ
+    progress (ƛ M) = done (S-val V-ƛ)
     progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
     ... | step-d R = step-d (ξ {F = F-·₁ M₂} (switch R))
     ... | step-a R = step-d (ξ {F = F-·₁ M₂} R)
@@ -313,25 +363,25 @@ module EfficientParamCasts
     ...     | step-a R' = step-d (ξ {F = (F-·₂ M₁){V₁}} R')
     ...     | error E-blame = step-d (ξ-blame {F = (F-·₂ M₁){V₁}})
     ...     | done V₂ with V₁
-    ...         | V-ƛ = step-d (β V₂)
+    ...         | S-val V-ƛ = step-d (β V₂)
     ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v =
                     step-d (fun-cast{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
-    ...         | V-const {k = k₁} {f = f₁} with V₂
-    ...             | V-const {k = k₂} {f = f₂} =
+    ...         | S-val (V-const {k = k₁} {f = f₁}) with V₂
+    ...             | S-val (V-const {k = k₂} {f = f₂}) =
                       step-d (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
-    ...             | V-ƛ = contradiction f₁ ¬P-Fun
-    ...             | V-pair v w = contradiction f₁ ¬P-Pair
+    ...             | S-val V-ƛ = contradiction f₁ ¬P-Fun
+    ...             | S-val (V-pair v w) = contradiction f₁ ¬P-Pair
     ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
                        contradiction i (baseNotInert c (P-Fun1 f₁))
-    ...             | V-inl v = contradiction f₁ ¬P-Sum
-    ...             | V-inr v = contradiction f₁ ¬P-Sum
-    progress ($ k) = done V-const
+    ...             | S-val (V-inl v) = contradiction f₁ ¬P-Sum
+    ...             | S-val (V-inr v) = contradiction f₁ ¬P-Sum
+    progress ($ k) = done (S-val V-const)
     progress (if L M N) with progress L
     ... | step-d R = step-d (ξ{F = F-if M N} (switch R))
     ... | step-a R = step-d (ξ{F = F-if M N} R)
     ... | error E-blame = step-d (ξ-blame{F = F-if M N})
-    ... | done (V-const {k = true}) = step-d β-if-true
-    ... | done (V-const {k = false}) = step-d β-if-false
+    ... | done (S-val (V-const {k = true})) = step-d β-if-true
+    ... | done (S-val (V-const {k = false})) = step-d β-if-false
     ... | done (V-cast {c = c} {i = i} v) =
             contradiction i (baseNotInert c B-Bool)
     progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
@@ -350,7 +400,7 @@ module EfficientParamCasts
     ... | done V with progress M₂
     ...    | step-d {N} R' = step-d (ξ {F = F-×₁ M₁} (switch R'))
     ...    | step-a R' = step-d (ξ {F = F-×₁ M₁} R')
-    ...    | done V' = done (V-pair V V')
+    ...    | done V' = done (S-val (V-pair V V'))
     ...    | error E-blame = step-d (ξ-blame{F = F-×₁ M₁})
     progress (fst {Γ}{A}{B} M) with progress M
     ... | step-d R = step-d (ξ {F = F-fst} (switch R))
@@ -358,8 +408,9 @@ module EfficientParamCasts
     ... | error E-blame = step-d (ξ-blame{F = F-fst})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v = step-d (fst-cast {c = c} v {i = i})
-    ...     | V-pair {V = V₁}{W = V₂} v w = step-d {N = V₁} (β-fst v w)
-    ...     | V-const {k = k} with k
+    ...     | S-val (V-pair {V = V₁}{W = V₂} v w) =
+              step-d {N = V₁} (β-fst v w)
+    ...     | S-val (V-const {k = k}) with k
     ...        | ()
     progress (snd {Γ}{A}{B} M) with progress M
     ... | step-d R = step-d (ξ {F = F-snd} (switch R))
@@ -367,20 +418,21 @@ module EfficientParamCasts
     ... | error E-blame = step-d (ξ-blame{F = F-snd})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v = step-d (snd-cast {c = c} v {i = i})
-    ...     | V-pair {V = V₁}{W = V₂} v w = step-d {N = V₂} (β-snd v w)
-    ...     | V-const {k = k} with k
+    ...     | S-val (V-pair {V = V₁}{W = V₂} v w) =
+              step-d {N = V₂} (β-snd v w)
+    ...     | S-val (V-const {k = k}) with k
     ...        | ()
     progress (inl M) with progress M
     ... | step-d R = step-d (ξ {F = F-inl} (switch R))
     ... | step-a R = step-d (ξ {F = F-inl} R)
     ... | error E-blame = step-d (ξ-blame {F = F-inl})
-    ... | done V = done (V-inl V)
+    ... | done V = done (S-val (V-inl V))
 
     progress (inr M) with progress M
     ... | step-d R = step-d (ξ {F = F-inr} (switch R))
     ... | step-a R = step-d (ξ {F = F-inr} R)
     ... | error E-blame = step-d (ξ-blame {F = F-inr})
-    ... | done V = done (V-inr V)
+    ... | done V = done (S-val (V-inr V))
 
     progress (case L M N) with progress L
     ... | step-d R = step-d (ξ {F = F-case M N} (switch R))
@@ -388,9 +440,10 @@ module EfficientParamCasts
     ... | error E-blame = step-d (ξ-blame {F = F-case M N})
     ... | done V with V
     ...    | V-cast {c = c} {i = i} v = step-d (case-cast {c = c} v {i = i})
-    ...    | V-const {k = k} = ⊥-elim k
-    ...    | V-inl v = step-d (β-caseL v)
-    ...    | V-inr v = step-d (β-caseR v)
+    ...    | S-val (V-const {k = k}) = ⊥-elim k
+    ...    | S-val (V-inl v) = step-d (β-caseL v)
+    ...    | S-val (V-inr v) = step-d (β-caseR v)
 
     progress (blame ℓ) = error E-blame
+
 

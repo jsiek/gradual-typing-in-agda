@@ -1,6 +1,7 @@
 module AGT where
 
   open import Types
+  open import Labels
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -493,11 +494,49 @@ module AGT where
 
   {- 
 
-   Evidence and Interiors:
-
-   In the GTLC, the evidence for consistency is the lub of the two
-   types.
+   In AGT with simple types, casts are a triple of types where the
+   middle type is an upper bound of the source and target, which
+   corresponds to the threesomes of Siek and Wadler (2010).
 
    -}
 
-   
+  data Cast : Type → Set where
+    _⇒_⟨_⟩⇒_ : (A : Type) → (B : Type) → Label → (C : Type)
+              → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
+
+  import ParamCastCalculus
+  module CastCalc = ParamCastCalculus Cast
+  open CastCalc
+  
+  {-
+
+   In AGT, all casts are inert and none are active.
+
+   -}
+
+  data Inert : ∀ {A} → Cast A → Set where
+    inert : ∀{A B} → (c : Cast (A ⇒ B)) → Inert c
+
+
+  data Active : ∀ {A} → Cast A → Set where
+
+  ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
+  ActiveOrInert (A ⇒ B ⟨ ℓ ⟩⇒ C) = inj₂ (inert (A ⇒ B ⟨ ℓ ⟩⇒ C))
+
+  import ParamCastReduction
+  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
+  open PCR
+
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+            → ∀ {a : Active c} → Γ ⊢ B
+  applyCast M v c {()}
+
+  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+            → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ ⇒ C₂)){ab} {cb}) {i} N
+      with ⊑R⇒ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ cb1 , cb2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 =
+
+    {!(M · (N ⟨ ? ⟩)) ⟨ ? ⟩!}
+  
+  

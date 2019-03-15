@@ -176,6 +176,20 @@ module Types where
   ⊑L⊎ {A `⊎ B} {B₁} {B₂} (sum⊑ d d₁) =
     inj₂ ⟨ A , ⟨ B , ⟨ refl , ⟨ d , d₁ ⟩ ⟩ ⟩ ⟩
 
+  ⊑R⇒ : ∀{A₁ A₂ B} → (A₁ ⇒ A₂) ⊑ B →
+      Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] B ≡ B₁ ⇒ B₂ × A₁ ⊑ B₁ × A₂ ⊑ B₂
+  ⊑R⇒ (fun⊑{A' = A'}{B' = B'} c₁ c₂) =
+    ⟨ A' , ⟨ B' , ⟨ refl , ⟨ c₁ , c₂ ⟩ ⟩ ⟩ ⟩
+
+  ⊑R× : ∀{A₁ A₂ B} → (A₁ `× A₂) ⊑ B →
+      Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] B ≡ B₁ `× B₂ × A₁ ⊑ B₁ × A₂ ⊑ B₂
+  ⊑R× (pair⊑{A' = A'}{B' = B'} c₁ c₂) =
+    ⟨ A' , ⟨ B' , ⟨ refl , ⟨ c₁ , c₂ ⟩ ⟩ ⟩ ⟩
+
+  ⊑R⊎ : ∀{A₁ A₂ B} → (A₁ `⊎ A₂) ⊑ B →
+      Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] B ≡ B₁ `⊎ B₂ × A₁ ⊑ B₁ × A₂ ⊑ B₂
+  ⊑R⊎ (sum⊑{A' = A'}{B' = B'} c₁ c₂) =
+    ⟨ A' , ⟨ B' , ⟨ refl , ⟨ c₁ , c₂ ⟩ ⟩ ⟩ ⟩
 
   data _~_ : Type → Type → Set where
     unk~L : ∀ {A} → ⋆ ~ A

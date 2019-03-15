@@ -663,23 +663,12 @@ module EfficientGroundCoercions where
   {- Dispatch to composition on intermediate coercion -}
   (` i ⨟ t) {suc n}{m} = ` (i ⨟' t) {n}{≤-pred m}
 
-  {-
-
-  We import the definition of Value and the canonical⋆ lemma from
-  the ParamCastReduction module, as they do not require modification.
- 
-  -}
-
-  import ParamCastReduction
-  module PC = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PC using (Value; V-ƛ; V-const; V-pair; V-inl; V-inr; V-cast; canonical⋆)
-
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id★ {a} = M
   applyCast M v (` (` idι)) {a} = M
   applyCast M v (` (cfail G H ℓ)) {a} = blame ℓ
-  applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with PCR.canonical⋆ M v
+  applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with EPCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =
      M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) {sz} {≤-reflexive refl} ⟩
      where sz = size-cast c + size-cast ((G ?? ℓ ⨟ i) {g})
