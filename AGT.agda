@@ -498,11 +498,15 @@ module AGT where
    middle type is an upper bound of the source and target, which
    corresponds to the threesomes of Siek and Wadler (2010).
 
+   to do: Fix the blame story here. It's currently wrong
+    because it doesn't have middle types.
+
    -}
 
   data Cast : Type → Set where
     _⇒_⟨_⟩⇒_ : (A : Type) → (B : Type) → Label → (C : Type)
               → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
+    error : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
@@ -510,33 +514,115 @@ module AGT where
   
   {-
 
-   In AGT, all casts are inert and none are active.
+   The identity casts (at base type) and error casts are active. All
+   the other casts are inert. This treatment of identity casts as
+   active is a bit different from the AGT paper, but I think it is
+   nicer.
 
    -}
 
-  data Inert : ∀ {A} → Cast A → Set where
-    inert : ∀{A B} → (c : Cast (A ⇒ B)) → Inert c
+  data Inert : ∀{A} → Cast A → Set where
+    inert : ∀{A B C ℓ} {ab : A ⊑ B} {cb : C ⊑ B}
+          → ¬ (Base A × Base C × A ≡ C)
+          → Inert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb})
 
-
-  data Active : ∀ {A} → Cast A → Set where
+  data Active : ∀{A} → Cast A → Set where
+    activeId : ∀ {A}{ℓ}{aa}{aa'} → Base A → Active ((A ⇒ A ⟨ ℓ ⟩⇒ A){aa}{aa'})
+    activeError : ∀ {A B ℓ} → Active (error A B ℓ)
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
-  ActiveOrInert (A ⇒ B ⟨ ℓ ⟩⇒ C) = inj₂ (inert (A ⇒ B ⟨ ℓ ⟩⇒ C))
-
-  import ParamCastReduction
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR
+  ActiveOrInert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb})
+      with base A | base C
+  ... | inj₁ bA | inj₂ bC = inj₂ (inert (λ z → bC (proj₁ (proj₂ z))))
+  ... | inj₂ bA | inj₁ bC = inj₂ (inert (λ z → bA (proj₁ z)))
+  ... | inj₂ bA | inj₂ bC = inj₂ (inert (λ z → bC (proj₁ (proj₂ z))))
+  ... | inj₁ bA | inj₁ bC
+      with base-eq? A C {bA} {bC}
+  ... | inj₂ neq = inj₂ (inert (λ z → neq (proj₂ (proj₂ z))))
+  ... | inj₁ eq rewrite eq
+      with ⊑RBase bC cb
+  ... | b=c rewrite b=c = inj₁ (activeId bA)
+  
+  ActiveOrInert (error A B x) = inj₁ activeError
+  
+  import EfficientParamCasts
+  module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
+  open EPCR
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v c {()}
+  applyCast M v .(_ ⇒ _ ⟨ _ ⟩⇒ _) {activeId x} = M
+  applyCast M v (error _ _ ℓ) {activeError} = blame ℓ
 
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-            → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ ⇒ C₂)){ab} {cb}) {i} N
+  funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ ⇒ C₂)){ab}{cb}) {inert _} N
       with ⊑R⇒ cb
-  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ cb1 , cb2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 =
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
+      with ⊑L⇒ ab
+  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
+  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⇒A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⇒A₂ =
+     (M · (N ⟨ (C₁ ⇒ B₁ ⟨ ℓ ⟩⇒ A₁){c1⊑b1}{A1⊑B1} ⟩))
+             ⟨ (A₂ ⇒ B₂ ⟨ ℓ ⟩⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
+             
+  fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+            → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
+      with ⊑L× ab
+  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
+  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
+        (fst M) ⟨ (A₁ ⇒ B₁ ⟨ ℓ ⟩⇒ C₁){A1⊑B1}{c1⊑b1} ⟩
 
-    {!(M · (N ⟨ ? ⟩)) ⟨ ? ⟩!}
-  
-  
+  sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+            → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
+      with ⊑L× ab
+  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
+  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
+        (snd M) ⟨ (A₂ ⇒ B₂ ⟨ ℓ ⟩⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
+
+  caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
+             → (c : Cast (A ⇒ (A' `⊎ B')))
+             → ∀ {i : Inert c} → (Γ ⊢ A' ⇒ C) → (Γ ⊢ B' ⇒ C) → Γ ⊢ C
+  caseCast{C = C} L v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `⊎ C₂)){ab}{cb}) {inert _} M N
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
+      with ⊑L⊎ ab
+  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ L v)
+  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⊎A₂ , ⟨ a1⊑b1 , a2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⊎A₂ =
+      case L (M ⟨ ((C₁ ⇒ C) ⇒ (B₁ ⇒ C) ⟨ ℓ ⟩⇒ (A₁ ⇒ C)){le1}{le2} ⟩)
+             (N ⟨ ((C₂ ⇒ C) ⇒ (B₂ ⇒ C) ⟨ ℓ ⟩⇒ (A₂ ⇒ C)){le3}{le4} ⟩)
+      where
+      le1 = fun⊑ c1⊑b1 Refl⊑
+      le2 = fun⊑ a1⊑b1 Refl⊑
+      le3 = fun⊑ c2⊑b2 Refl⊑
+      le4 = fun⊑ a2⊑b2 Refl⊑
+
+  compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
+  compose ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb}) ((C ⇒ B' ⟨ ℓ' ⟩⇒ C'){cb'}{c'b'})
+      with B `~ B'
+  ... | inj₂ nc = error A C' ℓ'
+  ... | inj₁ B~B'
+      with (B `⊔ B') {B~B'}
+  ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
+         (A ⇒ B⊔B' ⟨ ℓ' ⟩⇒ C'){Trans⊑ ab B⊑B⊔B'}{Trans⊑ c'b' B'⊑B⊔B'}
+  compose (A ⇒ B ⟨ ℓ ⟩⇒ C) (error C C' ℓ') = (error A C' ℓ'){- wrong wrt blame-}
+  compose (error A B ℓ) (error B C ℓ') = (error A C ℓ)
+  compose (error A B ℓ) (B ⇒ B' ⟨ ℓ₁ ⟩⇒ C) = (error A C ℓ)
+
+  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c
+  baseNotInert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb}) bC A≢⋆ (inert p)
+      with ⊑RBase bC cb
+  ... | b≡c rewrite b≡c
+      with ⊑LBase bC ab
+  ... | inj₁ eq rewrite eq = p ⟨ bC , ⟨ bC , refl ⟩ ⟩
+  ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
+  baseNotInert (error A B x) b A⋆ = λ ()
+
+  module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
+                  baseNotInert compose
+  open Red

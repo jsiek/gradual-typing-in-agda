@@ -192,6 +192,7 @@ module ParamCastReduction
                  → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
     (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c)
     where
+    {- to do : add condition A ≢ ⋆ to baseNotInert -}
 
     {-
 

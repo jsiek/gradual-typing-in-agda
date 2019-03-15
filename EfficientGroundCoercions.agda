@@ -669,7 +669,7 @@ module EfficientGroundCoercions where
   applyCast M v (` (` idι)) {a} = M
   applyCast M v (` (cfail G H ℓ)) {a} = blame ℓ
   applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with EPCR.canonical⋆ M v
-  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =
+  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
      M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) {sz} {≤-reflexive refl} ⟩
      where sz = size-cast c + size-cast ((G ?? ℓ ⨟ i) {g})
   applyCast M v (` ` c ×' d) {a} =
@@ -681,31 +681,32 @@ module EfficientGroundCoercions where
   applyCast M v (` ` c ↣ d) {A-intmd (A-gnd ())}
   applyCast M v (` (g ⨟!)) {A-intmd ()}
 
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-              → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M (` ` c ↣ d) {i} N = (M · N ⟨ c ⟩) ⟨ d ⟩
+  funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M v (` ` c ↣ d) {i} N = (M · N ⟨ c ⟩) ⟨ d ⟩
   {- Vacuous cases -}
-  funCast M (G ?? x ⨟ x₁) {()} N
-  funCast M (` ` idι) {I-intmd (I-gnd ())} N
-  funCast M (` cfail G H ℓ) {I-intmd ()} N
+  funCast M v (G ?? x ⨟ x₁) {()} N
+  funCast M v (` ` idι) {I-intmd (I-gnd ())} N
+  funCast M v (` cfail G H ℓ) {I-intmd ()} N
 
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-            → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M (G ?? x ⨟ x₁) {()}
-  fstCast M (` .(` _)) {I-intmd (I-gnd ())}
+  fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast M v (G ?? x ⨟ x₁) {()}
+  fstCast M v (` .(` _)) {I-intmd (I-gnd ())}
 
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-            → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M (G ?? x ⨟ x₁) {()}
-  sndCast M (` .(` _)) {I-intmd (I-gnd ())}
+  sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast M v (G ?? x ⨟ x₁) {()}
+  sndCast M v (` .(` _)) {I-intmd (I-gnd ())}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+  caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
+             → (c : Cast (A ⇒ (A' `⊎ B')))
              → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
-  caseCast L .(` ` _) {I-intmd (I-gnd ())} M N
+  caseCast L v .(` ` _) {I-intmd (I-gnd ())} M N
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert .(` (_⨟! _)) () (I-intmd I-inj)
-  baseNotInert .(` ` (_ ↣ _)) () (I-intmd (I-gnd I-cfun))
+  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c
+  baseNotInert .(` (_⨟! _)) () A⋆ (I-intmd I-inj) 
+  baseNotInert .(` ` (_ ↣ _)) () A⋆ (I-intmd (I-gnd I-cfun)) 
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}

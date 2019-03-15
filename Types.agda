@@ -191,6 +191,16 @@ module Types where
   ⊑R⊎ (sum⊑{A' = A'}{B' = B'} c₁ c₂) =
     ⟨ A' , ⟨ B' , ⟨ refl , ⟨ c₁ , c₂ ⟩ ⟩ ⟩ ⟩
 
+  ⊑RBase : ∀{A B} → Base A → A ⊑ B →  B ≡ A
+  ⊑RBase {.Nat} {.Nat} B-Nat nat⊑ = refl
+  ⊑RBase {.𝔹} {.𝔹} B-Bool bool⊑ = refl
+
+  ⊑LBase : ∀{A B} → Base B → A ⊑ B →  A ≡ B ⊎ A ≡ ⋆
+  ⊑LBase B-Nat unk⊑ = inj₂ refl
+  ⊑LBase B-Nat nat⊑ = inj₁ refl
+  ⊑LBase B-Bool unk⊑ = inj₂ refl
+  ⊑LBase B-Bool bool⊑ = inj₁ refl
+
   data _~_ : Type → Type → Set where
     unk~L : ∀ {A} → ⋆ ~ A
     unk~R : ∀ {A} → A ~ ⋆

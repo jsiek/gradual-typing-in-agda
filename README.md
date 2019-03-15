@@ -42,6 +42,8 @@ Inventory
    calculus (Siek, Garcia, and Taha 2009).
 * [LazyCoercions.agda](./LazyCoercions.agda): Type safety for the
    "lazy D" calculus, with casts represented as coercions.
-* [AGT.agda](./AGT.agda): A start at Abstracting Gradual Typing
-   (Garcia, Clark, and Tanter 2016).
+* [AGT.agda](./AGT.agda): A space-efficient version of the GTLC
+   inspired by Abstracting Gradual Typing (Garcia, Clark, and Tanter
+   2016).  This is also closely related to the threesomes of Siek and
+   Wadler (2011).
 
