@@ -4,6 +4,7 @@ module AGT where
   open import Labels
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
+  open import Data.Nat
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -498,15 +499,12 @@ module AGT where
    middle type is an upper bound of the source and target, which
    corresponds to the threesomes of Siek and Wadler (2010).
 
-   to do: Fix the blame story here. It's currently wrong
-    because it doesn't have middle types.
-
    -}
 
   data Cast : Type → Set where
-    _⇒_⟨_⟩⇒_ : (A : Type) → (B : Type) → Label → (C : Type)
-              → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
-    error : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
+    _⇒_⇒_ : (A : Type) → (B : Type) → (C : Type)
+          → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
+    error : (A : Type) → (B : Type) → Cast (A ⇒ B)
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
@@ -522,16 +520,16 @@ module AGT where
    -}
 
   data Inert : ∀{A} → Cast A → Set where
-    inert : ∀{A B C ℓ} {ab : A ⊑ B} {cb : C ⊑ B}
+    inert : ∀{A B C} {ab : A ⊑ B} {cb : C ⊑ B}
           → ¬ (Base A × Base C × A ≡ C)
-          → Inert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb})
+          → Inert ((A ⇒ B ⇒ C){ab}{cb})
 
   data Active : ∀{A} → Cast A → Set where
-    activeId : ∀ {A}{ℓ}{aa}{aa'} → Base A → Active ((A ⇒ A ⟨ ℓ ⟩⇒ A){aa}{aa'})
-    activeError : ∀ {A B ℓ} → Active (error A B ℓ)
+    activeId : ∀ {A}{aa}{aa'} → Base A → Active ((A ⇒ A ⇒ A){aa}{aa'})
+    activeError : ∀ {A B} → Active (error A B)
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
-  ActiveOrInert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb})
+  ActiveOrInert ((A ⇒ B ⇒ C){ab}{cb})
       with base A | base C
   ... | inj₁ bA | inj₂ bC = inj₂ (inert (λ z → bC (proj₁ (proj₂ z))))
   ... | inj₂ bA | inj₁ bC = inj₂ (inert (λ z → bA (proj₁ z)))
@@ -543,7 +541,7 @@ module AGT where
       with ⊑RBase bC cb
   ... | b=c rewrite b=c = inj₁ (activeId bA)
   
-  ActiveOrInert (error A B x) = inj₁ activeError
+  ActiveOrInert (error A B) = inj₁ activeError
   
   import EfficientParamCasts
   module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
@@ -551,51 +549,51 @@ module AGT where
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v .(_ ⇒ _ ⟨ _ ⟩⇒ _) {activeId x} = M
-  applyCast M v (error _ _ ℓ) {activeError} = blame ℓ
+  applyCast M v .(_ ⇒ _ ⇒ _) {activeId x} = M
+  applyCast M v (error _ _) {activeError} = blame (pos zero)
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ ⇒ C₂)){ab}{cb}) {inert _} N
+  funCast M v ((A ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) {inert _} N
       with ⊑R⇒ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
       with ⊑L⇒ ab
   ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⇒A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⇒A₂ =
-     (M · (N ⟨ (C₁ ⇒ B₁ ⟨ ℓ ⟩⇒ A₁){c1⊑b1}{A1⊑B1} ⟩))
-             ⟨ (A₂ ⇒ B₂ ⟨ ℓ ⟩⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
+     (M · (N ⟨ (C₁ ⇒ B₁ ⇒ A₁){c1⊑b1}{A1⊑B1} ⟩))
+             ⟨ (A₂ ⇒ B₂ ⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
              
   fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
             → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
+  fstCast M v ((A ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
       with ⊑R× cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
       with ⊑L× ab
   ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
-        (fst M) ⟨ (A₁ ⇒ B₁ ⟨ ℓ ⟩⇒ C₁){A1⊑B1}{c1⊑b1} ⟩
+        (fst M) ⟨ (A₁ ⇒ B₁ ⇒ C₁){A1⊑B1}{c1⊑b1} ⟩
 
   sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
             → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
+  sndCast M v ((A ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) {inert _}
       with ⊑R× cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
       with ⊑L× ab
   ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
-        (snd M) ⟨ (A₂ ⇒ B₂ ⟨ ℓ ⟩⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
+        (snd M) ⟨ (A₂ ⇒ B₂ ⇒ C₂){A2⊑B2}{c2⊑b2} ⟩
 
   caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
              → (c : Cast (A ⇒ (A' `⊎ B')))
              → ∀ {i : Inert c} → (Γ ⊢ A' ⇒ C) → (Γ ⊢ B' ⇒ C) → Γ ⊢ C
-  caseCast{C = C} L v ((A ⇒ B ⟨ ℓ ⟩⇒ (C₁ `⊎ C₂)){ab}{cb}) {inert _} M N
+  caseCast{C = C} L v ((A ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) {inert _} M N
       with ⊑R⊎ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
       with ⊑L⊎ ab
   ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ L v)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⊎A₂ , ⟨ a1⊑b1 , a2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⊎A₂ =
-      case L (M ⟨ ((C₁ ⇒ C) ⇒ (B₁ ⇒ C) ⟨ ℓ ⟩⇒ (A₁ ⇒ C)){le1}{le2} ⟩)
-             (N ⟨ ((C₂ ⇒ C) ⇒ (B₂ ⇒ C) ⟨ ℓ ⟩⇒ (A₂ ⇒ C)){le3}{le4} ⟩)
+      case L (M ⟨ ((C₁ ⇒ C) ⇒ (B₁ ⇒ C) ⇒ (A₁ ⇒ C)){le1}{le2} ⟩)
+             (N ⟨ ((C₂ ⇒ C) ⇒ (B₂ ⇒ C) ⇒ (A₂ ⇒ C)){le3}{le4} ⟩)
       where
       le1 = fun⊑ c1⊑b1 Refl⊑
       le2 = fun⊑ a1⊑b1 Refl⊑
@@ -603,25 +601,25 @@ module AGT where
       le4 = fun⊑ a2⊑b2 Refl⊑
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
-  compose ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb}) ((C ⇒ B' ⟨ ℓ' ⟩⇒ C'){cb'}{c'b'})
+  compose ((A ⇒ B ⇒ C){ab}{cb}) ((C ⇒ B' ⇒ C'){cb'}{c'b'})
       with B `~ B'
-  ... | inj₂ nc = error A C' ℓ'
+  ... | inj₂ nc = error A C' 
   ... | inj₁ B~B'
       with (B `⊔ B') {B~B'}
   ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
-         (A ⇒ B⊔B' ⟨ ℓ' ⟩⇒ C'){Trans⊑ ab B⊑B⊔B'}{Trans⊑ c'b' B'⊑B⊔B'}
-  compose (A ⇒ B ⟨ ℓ ⟩⇒ C) (error C C' ℓ') = (error A C' ℓ'){- wrong wrt blame-}
-  compose (error A B ℓ) (error B C ℓ') = (error A C ℓ)
-  compose (error A B ℓ) (B ⇒ B' ⟨ ℓ₁ ⟩⇒ C) = (error A C ℓ)
+         (A ⇒ B⊔B' ⇒ C'){Trans⊑ ab B⊑B⊔B'}{Trans⊑ c'b' B'⊑B⊔B'}
+  compose (A ⇒ B ⇒ C) (error C C') = (error A C')
+  compose (error A B) (error B C) = (error A C)
+  compose (error A B) (B ⇒ B' ⇒ C) = (error A C)
 
   baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c
-  baseNotInert ((A ⇒ B ⟨ ℓ ⟩⇒ C){ab}{cb}) bC A≢⋆ (inert p)
+  baseNotInert ((A ⇒ B ⇒ C){ab}{cb}) bC A≢⋆ (inert p)
       with ⊑RBase bC cb
   ... | b≡c rewrite b≡c
       with ⊑LBase bC ab
   ... | inj₁ eq rewrite eq = p ⟨ bC , ⟨ bC , refl ⟩ ⟩
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
-  baseNotInert (error A B x) b A⋆ = λ ()
+  baseNotInert (error A B) b A⋆ = λ ()
 
   module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
                   baseNotInert compose
