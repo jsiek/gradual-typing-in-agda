@@ -42,11 +42,11 @@ data _⊢m_⦂_ : Context → Term → Type → Set where
     → Γ ⊢m L · M at ℓ ⦂ B
 
   ⊢mconst : ∀ {Γ A} {k : rep A} {p : Prim A}
-      -----------
-    → Γ ⊢m $ k ⦂ A
+      -------------------
+    → Γ ⊢m ($_ {A} k) ⦂ A
 
   ⊢mif : ∀ {Γ L M N A ℓ}
-    → Γ ⊢m L ⦂ 𝔹
+    → Γ ⊢m L ⦂ ` 𝔹
     → Γ ⊢m M ⦂ A
     → Γ ⊢m N ⦂ A
       -------------------------------------
@@ -83,11 +83,6 @@ data _⊢m_⦂_ : Context → Term → Type → Set where
       -------------------------------
     → Γ ⊢m case L M N ℓ ⦂ C
 
-cons-ub : ∀{A B} → A ~ B → Σ[ C ∈ Type ] A ⊑ C × B ⊑ C
-cons-ub {A}{B} c with (A `⊔ B) {c}
-... | ⟨ C , ⟨ ⟨ ac , bc ⟩ , rest ⟩ ⟩ = 
-  ⟨ C , ⟨ ac , bc ⟩ ⟩
-
 ⊑→▹⇒ : ∀{A B₁ B₂} → A ⊑ B₁ ⇒ B₂ → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
    (A ▹ A₁ ⇒ A₂) × (A₁ ⊑ B₁) × (A₂ ⊑ B₂)
 ⊑→▹⇒ unk⊑ = ⟨ ⋆ , ⟨ ⋆ , ⟨ match⇒⋆ , ⟨ unk⊑ , unk⊑ ⟩ ⟩ ⟩ ⟩
@@ -114,8 +109,8 @@ trad-impl-mat (⊢app{Γ}{L}{M}{A}{A₁}{A₂}{B} d₁ ma d₂ a1~b)
    ⊢mapp d₁' d₂'
 trad-impl-mat (⊢const {k = k}{p = p}) = ⊢mconst {k = k} {p = p}
 trad-impl-mat (⊢if {A = A}{A' = A'} d d₁ d₂ bb aa)
-    with cons-ub bb | (A `⊔ A') {aa}
-... | ⟨ C₁ , ⟨ bc1 , boolc1 ⟩ ⟩ | ⟨ C₂ , lub ⟩  with ⊑R𝔹 boolc1
+    with consis-ub bb | (A `⊔ A') {aa}
+... | ⟨ C₁ , ⟨ bc1 , boolc1 ⟩ ⟩ | ⟨ C₂ , lub ⟩  with ⊑RBase boolc1
 ... | c1=𝔹 rewrite c1=𝔹 =
   let d' = ⊢mat (trad-impl-mat d) bc1 in
   let d₁' = ⊢mat (trad-impl-mat d₁) (proj₁ (proj₁ lub)) in
@@ -161,7 +156,7 @@ mat-impl-trad (⊢mconst{Γ}{A}{k}{p}) =
 mat-impl-trad (⊢mif{ℓ = ℓ} d d₁ d₂)
     with mat-impl-trad d | mat-impl-trad d₁ | mat-impl-trad d₂
 ... | ⟨ B' , ⟨ d' , lt1 ⟩ ⟩ | ⟨ C₁ , ⟨ d₁' , lt2 ⟩ ⟩ | ⟨ C₂ , ⟨ d₂' , lt3 ⟩ ⟩
-    with ⊢if{ℓ = ℓ} d' d₁' d₂' (⊑𝔹→~𝔹 lt1) (consis lt2 lt3)
+    with ⊢if{ℓ = ℓ} d' d₁' d₂' (⊑Base→~Base lt1) (consis lt2 lt3)
 ... | d-if     
     with (C₁ `⊔ C₂) {consis lt2 lt3} 
 ... | ⟨ C' , ⟨ ⟨ ub1 , ub2 ⟩ ,  lub ⟩ ⟩ =

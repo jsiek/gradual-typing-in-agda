@@ -6,6 +6,7 @@ open import Variables
 open import Labels
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Maybe
+open import Data.Unit
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -83,11 +84,11 @@ data _⊢_⦂_ : Context → Term → Type → Set where
     → Γ ⊢ L · M at ℓ ⦂ A₂
 
   ⊢const : ∀ {Γ A} {k : rep A} {p : Prim A}
-      -----------
-    → Γ ⊢ $ k ⦂ A
+      ------------------
+    → Γ ⊢ ($_ {A} k) ⦂ A
 
   ⊢if : ∀ {Γ L M N ℓ}{A A' B : Type}
-    → Γ ⊢ L ⦂ B  →   Γ ⊢ M ⦂ A  →  Γ ⊢ N ⦂ A'  →  B ~ 𝔹  →  (c : A ~ A')
+    → Γ ⊢ L ⦂ B  →   Γ ⊢ M ⦂ A  →  Γ ⊢ N ⦂ A'  →  B ~ ` 𝔹  →  (c : A ~ A')
       --------------------------------------
     → Γ ⊢ if L M N ℓ ⦂ (A ⊔ A') {c}
 
@@ -123,4 +124,11 @@ data _⊢_⦂_ : Context → Term → Type → Set where
     → A₁ ~ B₁ → A₂ ~ C₁ → (bc : B₂ ~ C₂)
       ----------------------------------
     → Γ ⊢ case L M N ℓ ⦂ (B₂ ⊔ C₂) {bc}
+
+{- Examples -}
+
+
+{- Agda's tt that inhabits the ⊤ type can serve as the constructor for Unit. -}
+_ : ∅ ⊢ $ tt ⦂ ` Unit
+_ = ⊢const {p = P-Base}
 

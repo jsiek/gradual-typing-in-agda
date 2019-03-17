@@ -1,8 +1,9 @@
 module Types where
 
   open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
+  open import Data.Integer using (ℤ)
   open import Data.Bool
-  open import Data.Unit
+  open import Data.Unit renaming (⊤ to Top)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Relation.Binary.PropositionalEquality
@@ -10,102 +11,95 @@ module Types where
   open import Relation.Nullary using (¬_)
   open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Empty using (⊥; ⊥-elim)
+  open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Relation.Nullary using (Dec; yes; no)
 
   infix  7 _⇒_
   infix  9 _`×_
   infix  8 _`⊎_
+  infix 10 `_
 
+  data Base : Set where
+    Nat : Base
+    Int : Base
+    𝔹 : Base
+    Unit : Base
+    ⊥ : Base
+    
   data Type : Set where
     ⋆ : Type
-    Nat : Type
-    𝔹 : Type
+    `_ : Base → Type
     _⇒_ : Type → Type → Type
     _`×_ : Type → Type → Type
     _`⊎_ : Type → Type → Type
 
+
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆
-    A-Nat : Atomic Nat
-    A-Bool : Atomic 𝔹
+    A-Base : ∀{ι} → Atomic (` ι)
 
+  rep-base : Base → Set
+  rep-base Nat = ℕ
+  rep-base Int = ℤ
+  rep-base 𝔹 = Bool
+  rep-base Unit = Top
+  rep-base ⊥ = Bot
+  
   rep : Type → Set
-  rep ⋆ = ⊥
-  rep Nat = ℕ
-  rep 𝔹 = Bool
+  rep ⋆ = Bot
+  rep (` ι) = rep-base ι
   rep (t₁ ⇒ t₂) = (rep t₁) → (rep t₂)
-  rep (t₁ `× t₂) = ⊥
-  rep (t `⊎ t₁) = ⊥
-
-  data Base : Type → Set where
-    B-Nat : Base Nat
-    B-Bool : Base 𝔹
-
-  base : (A : Type) → (Base A) ⊎ ¬ (Base A)
-  base ⋆ = inj₂ (λ ())
-  base Nat = inj₁ B-Nat
-  base 𝔹 = inj₁ B-Bool
-  base (A ⇒ A₁) = inj₂ (λ ())
-  base (A `× A₁) = inj₂ (λ ())
-  base (A `⊎ A₁) = inj₂ (λ ())
+  rep (t₁ `× t₂) = Bot
+  rep (t `⊎ t₁) = Bot
 
   data Prim : Type → Set where
-    P-Nat : Prim Nat
-    P-Bool : Prim 𝔹
-    P-Fun : ∀ {A B}
-      → Base A
+    P-Base : ∀{ι} → Prim (` ι)
+    P-Fun : ∀ {ι B}
       → Prim B
         ------------------
-      → Prim (A ⇒ B)
-
-  prim : (A : Type) → (Prim A) ⊎ ¬ (Prim A)
-  prim ⋆ = inj₂ λ ()
-  prim Nat = inj₁ P-Nat
-  prim 𝔹 = inj₁ P-Bool
-  prim (A ⇒ A₁) with base A | prim A₁
-  ... | inj₁ b | inj₁ p = inj₁ (P-Fun b p)
-  ... | inj₁ b | inj₂ p = inj₂ G
-        where
-        G : Prim (A ⇒ A₁) → ⊥
-        G (P-Fun x d) = p d
-  ... | inj₂ b | _ = inj₂ G
-        where
-        G : Prim (A ⇒ A₁) → ⊥
-        G (P-Fun x d) = b x
-  prim (A `× A₁) = inj₂ (λ ())
-  prim (A `⊎ A₁) = inj₂ (λ ())
+      → Prim ((` ι) ⇒ B)
 
   P-Fun1 : ∀ {A B}
     → Prim (A ⇒ B)
-    → Base A
-  P-Fun1 (P-Fun a b) = a
+    → Σ[ ι ∈ Base ] A ≡ ` ι
+  P-Fun1 (P-Fun{ι = ι} b) = ⟨ ι , refl ⟩
 
   P-Fun2 : ∀ {A B}
     → Prim (A ⇒ B)
     → Prim B
-  P-Fun2 (P-Fun a b) = b
+  P-Fun2 (P-Fun b) = b
+
+  prim? : (A : Type) → Dec (Prim A)
+  prim? ⋆ = no (λ ())
+  prim? (` x) = yes P-Base
+  prim? (A ⇒ B) with prim? B
+  ... | no pb = no λ x → contradiction (P-Fun2 x) pb
+  prim? (⋆ ⇒ B) | yes pb = no (λ ())
+  prim? (` x ⇒ B) | yes pb = yes (P-Fun pb)
+  prim? ((A ⇒ A₁) ⇒ B) | yes pb = no (λ ())
+  prim? (A `× A₁ ⇒ B) | yes pb = no (λ ())
+  prim? (A `⊎ A₁ ⇒ B) | yes pb = no (λ ())
+  prim? (A `× A₁) = no (λ ())
+  prim? (A `⊎ A₁) = no (λ ())
 
   ¬P-Fun : ∀{A B C} → ¬ Prim ((A ⇒ B) ⇒ C)
-  ¬P-Fun (P-Fun () x₁)
+  ¬P-Fun ()
 
   ¬P-Pair : ∀{A B C} → ¬ Prim ((A `× B) ⇒ C)
-  ¬P-Pair (P-Fun () x₁)
+  ¬P-Pair ()
 
   ¬P-Sum : ∀{A B C} → ¬ Prim ((A `⊎ B) ⇒ C)
-  ¬P-Sum (P-Fun () x₁)
+  ¬P-Sum ()
 
   ¬P-Unk : ∀{C} → ¬ Prim (⋆ ⇒ C)
-  ¬P-Unk (P-Fun () x₁)
-
+  ¬P-Unk ()
 
   infix 6 _⊑_
 
   data _⊑_ : Type → Type → Set where
     unk⊑ : ∀{A} → ⋆ ⊑ A
 
-    nat⊑ : Nat ⊑ Nat
-
-    bool⊑ : 𝔹 ⊑ 𝔹
+    base⊑ : ∀{ι} → ` ι ⊑ ` ι
 
     fun⊑ : ∀ {A B A' B'}
       → A ⊑ A' → B ⊑ B'
@@ -124,24 +118,21 @@ module Types where
 
   Refl⊑ : ∀{A} → A ⊑ A
   Refl⊑ {⋆} = unk⊑
-  Refl⊑ {Nat} = nat⊑
-  Refl⊑ {𝔹} = bool⊑
+  Refl⊑ {` ι} = base⊑
   Refl⊑ {A ⇒ A₁} = fun⊑ Refl⊑ Refl⊑
   Refl⊑ {A `× A₁} = pair⊑ Refl⊑ Refl⊑
   Refl⊑ {A `⊎ A₁} = sum⊑ Refl⊑ Refl⊑
 
   Trans⊑ : ∀ {A B C} → A ⊑ B → B ⊑ C → A ⊑ C
   Trans⊑ unk⊑ b = unk⊑
-  Trans⊑ nat⊑ b = b
-  Trans⊑ bool⊑ b = b
+  Trans⊑ base⊑ b = b
   Trans⊑ (fun⊑ a a₁) (fun⊑ b b₁) = fun⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (pair⊑ a a₁) (pair⊑ b b₁) = pair⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (sum⊑ a a₁) (sum⊑ b b₁) = sum⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
 
   AntiSym⊑ : ∀ {A B} → A ⊑ B → B ⊑ A → A ≡ B
   AntiSym⊑ unk⊑ unk⊑ = refl
-  AntiSym⊑ nat⊑ nat⊑ = refl
-  AntiSym⊑ bool⊑ bool⊑ = refl
+  AntiSym⊑ base⊑ base⊑ = refl
   AntiSym⊑ {A ⇒ B}{A' ⇒ B'} (fun⊑ a a₁) (fun⊑ b b₁) =
     cong₂ (_⇒_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
   AntiSym⊑ (pair⊑ a a₁) (pair⊑ b b₁) =
@@ -152,8 +143,12 @@ module Types where
   ⊑L⋆ : ∀{A} → A ⊑ ⋆ → A ≡ ⋆
   ⊑L⋆ {⋆} unk⊑ = refl
 
-  ⊑R𝔹 : ∀{C} → 𝔹 ⊑ C → C ≡ 𝔹
-  ⊑R𝔹 {𝔹} bool⊑ = refl
+  ⊑RBase : ∀{C ι} → ` ι ⊑ C → C ≡ ` ι
+  ⊑RBase {ι} base⊑ = refl
+
+  ⊑LBase : ∀{A ι} → A ⊑ ` ι →  A ≡ (` ι) ⊎ A ≡ ⋆
+  ⊑LBase {⋆} {ι} unk⊑ = inj₂ refl
+  ⊑LBase {` ι} {ι} base⊑ = inj₁ refl
 
   ⊑L⇒ : ∀{A B₁ B₂} → A ⊑ (B₁ ⇒ B₂)
         → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
@@ -191,21 +186,11 @@ module Types where
   ⊑R⊎ (sum⊑{A' = A'}{B' = B'} c₁ c₂) =
     ⟨ A' , ⟨ B' , ⟨ refl , ⟨ c₁ , c₂ ⟩ ⟩ ⟩ ⟩
 
-  ⊑RBase : ∀{A B} → Base A → A ⊑ B →  B ≡ A
-  ⊑RBase {.Nat} {.Nat} B-Nat nat⊑ = refl
-  ⊑RBase {.𝔹} {.𝔹} B-Bool bool⊑ = refl
-
-  ⊑LBase : ∀{A B} → Base B → A ⊑ B →  A ≡ B ⊎ A ≡ ⋆
-  ⊑LBase B-Nat unk⊑ = inj₂ refl
-  ⊑LBase B-Nat nat⊑ = inj₁ refl
-  ⊑LBase B-Bool unk⊑ = inj₂ refl
-  ⊑LBase B-Bool bool⊑ = inj₁ refl
-
+  infix  5  _~_
   data _~_ : Type → Type → Set where
     unk~L : ∀ {A} → ⋆ ~ A
     unk~R : ∀ {A} → A ~ ⋆
-    nat~ : Nat ~ Nat
-    bool~ : 𝔹 ~ 𝔹
+    base~ : ∀{ι} → ` ι ~ ` ι
     fun~ : ∀{A B A' B'}
       → A ~ A'  →  B ~ B'
         -------------------
@@ -219,16 +204,13 @@ module Types where
         -------------------
       → (A `⊎ B) ~ (A' `⊎ B')
 
-
   consis : ∀{C A B}
       → A ⊑ C → B ⊑ C
         -------------
       → A ~ B
   consis unk⊑ bc = unk~L
-  consis nat⊑ unk⊑ = unk~R
-  consis nat⊑ nat⊑ = nat~
-  consis bool⊑ unk⊑ = unk~R
-  consis bool⊑ bool⊑ = bool~
+  consis base⊑ unk⊑ = unk~R
+  consis base⊑ base⊑ = base~
   consis (fun⊑ ac ac₁) unk⊑ = unk~R
   consis (fun⊑ ac ac₁) (fun⊑ bc bc₁) = fun~ (consis ac bc) (consis ac₁ bc₁)
   consis (pair⊑ ac ac₁) unk⊑ = unk~R
@@ -239,8 +221,7 @@ module Types where
   consis-ub : ∀{A B} → A ~ B → Σ[ C ∈ Type ] A ⊑ C × B ⊑ C
   consis-ub{B = B} unk~L = ⟨ B , ⟨ unk⊑ , Refl⊑ ⟩ ⟩
   consis-ub{A = A} unk~R = ⟨ A , ⟨ Refl⊑ , unk⊑ ⟩ ⟩
-  consis-ub nat~ = ⟨ Nat , ⟨ nat⊑ , nat⊑ ⟩ ⟩
-  consis-ub bool~ = ⟨ 𝔹 , ⟨ bool⊑ , bool⊑ ⟩ ⟩
+  consis-ub (base~ {ι = ι}) = ⟨ ` ι , ⟨ base⊑ , base⊑ ⟩ ⟩
   consis-ub (fun~ ab₁ ab₂)
       with consis-ub ab₁ | consis-ub ab₂
   ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
@@ -260,8 +241,7 @@ module Types where
   Sym~ : ∀ {A B} → A ~ B → B ~ A
   Sym~ unk~L = unk~R
   Sym~ unk~R = unk~L
-  Sym~ nat~ = nat~
-  Sym~ bool~ = bool~
+  Sym~ base~ = base~
   Sym~ (fun~ c c₁) = fun~ (Sym~ c) (Sym~ c₁)
   Sym~ (pair~ c c₁) = pair~ (Sym~ c) (Sym~ c₁)
   Sym~ (sum~ c c₁) = sum~ (Sym~ c) (Sym~ c₁)
@@ -272,12 +252,11 @@ module Types where
   lub : (C : Type) → (A : Type) → (B : Type) → Set
   lub C A B = (ub C A B) × (∀{C'} → ub C' A B → C ⊑ C')
 
-
+  infix 6 _`⊔_
   _`⊔_ : (A : Type) → (B : Type) → ∀ { c : A ~ B } → Σ[ C ∈ Type ] (lub C A B)
   (.⋆ `⊔ B) {unk~L} = ⟨ B , ⟨ ⟨ unk⊑ , Refl⊑ ⟩ , (λ x → proj₂ x) ⟩ ⟩
   (A `⊔ .⋆) {unk~R} = ⟨ A , ⟨ ⟨ Refl⊑ , unk⊑ ⟩ , (λ {C'} → proj₁) ⟩ ⟩
-  (.Nat `⊔ .Nat) {nat~} = ⟨ Nat , ⟨ ⟨ nat⊑ , nat⊑ ⟩ , (λ {x} → proj₁) ⟩ ⟩
-  (.𝔹 `⊔ .𝔹) {bool~} = ⟨ 𝔹 , ⟨ ⟨ bool⊑ , bool⊑ ⟩ , (λ {x} → proj₁) ⟩ ⟩
+  (` ι `⊔ ` ι) {base~} = ⟨ ` ι , ⟨ ⟨ base⊑ , base⊑ ⟩ , (λ {x} → proj₁) ⟩ ⟩
   ((A ⇒ B) `⊔ (A' ⇒ B')) {fun~ c c₁} with (A `⊔ A') {c} | (B `⊔ B') {c₁}
   ... | ⟨ C , lub1 ⟩ | ⟨ D , lub2 ⟩ =
     let x = fun⊑ (proj₁ (proj₁ lub1)) (proj₁ (proj₁ lub2)) in
@@ -287,7 +266,8 @@ module Types where
     G : {C' : Type} →
         Σ (A ⇒ B ⊑ C') (λ x₁ → A' ⇒ B' ⊑ C') → C ⇒ D ⊑ C'
     G {.(_ ⇒ _)} ⟨ fun⊑ a-b-cp a-b-cp₁ , fun⊑ ap-bp-cp ap-bp-cp₁ ⟩ =
-      fun⊑ (proj₂ lub1 ⟨ a-b-cp , ap-bp-cp ⟩) (proj₂ lub2 ⟨ a-b-cp₁ , ap-bp-cp₁ ⟩)
+      fun⊑ (proj₂ lub1 ⟨ a-b-cp , ap-bp-cp ⟩)
+           (proj₂ lub2 ⟨ a-b-cp₁ , ap-bp-cp₁ ⟩)
 
   ((A `× B) `⊔ (A' `× B')) {pair~ c c₁} with (A `⊔ A') {c} | (B `⊔ B') {c₁}
   ... | ⟨ C , lub1 ⟩ | ⟨ D , lub2 ⟩ =
@@ -309,7 +289,6 @@ module Types where
         Σ (A `⊎ B ⊑ C') (λ x₁ → A' `⊎ B' ⊑ C') → C `⊎ D ⊑ C'
     G {.(_ `⊎ _)} ⟨ sum⊑ fst fst₁ , sum⊑ snd snd₁ ⟩ =
       sum⊑ (proj₂ lub1 ⟨ fst , snd ⟩) (proj₂ lub2 ⟨ fst₁ , snd₁ ⟩)
-
 
   _⊔_ : (A : Type) → (B : Type) → ∀ { c : A ~ B } → Type
   (A ⊔ B) {c} = proj₁ ((A `⊔ B) {c})
@@ -343,35 +322,35 @@ module Types where
   ~⊎R : ∀{A B A' B'} → (A `⊎ B) ~ (A' `⊎ B') → B ~ B'
   ~⊎R (sum~ c c₁) = c₁
 
-  ¬~nb : ¬ (Nat ~ 𝔹)
+  ¬~nb : ¬ (` Nat ~ ` 𝔹)
   ¬~nb ()
 
-  ¬~nf : ∀{A B} → ¬ (Nat ~ (A ⇒ B))
+  ¬~nf : ∀{A B} → ¬ (` Nat ~ (A ⇒ B))
   ¬~nf ()
 
-  ¬~np : ∀{A B} → ¬ (Nat ~ (A `× B))
+  ¬~np : ∀{A B} → ¬ (` Nat ~ (A `× B))
   ¬~np ()
 
-  ¬~ns : ∀{A B} → ¬ (Nat ~ (A `⊎ B))
+  ¬~ns : ∀{A B} → ¬ (` Nat ~ (A `⊎ B))
   ¬~ns ()
 
-  ¬~bn : ¬ (𝔹 ~ Nat)
+  ¬~bn : ¬ (` 𝔹 ~ ` Nat)
   ¬~bn ()
 
-  ¬~bf : ∀{A B} → ¬ (𝔹 ~ (A ⇒ B))
+  ¬~bf : ∀{A B} → ¬ (` 𝔹 ~ (A ⇒ B))
   ¬~bf ()
 
-  ¬~bp : ∀{A B} → ¬ (𝔹 ~ (A `× B))
+  ¬~bp : ∀{A B} → ¬ (` 𝔹 ~ (A `× B))
   ¬~bp ()
 
 
-  ¬~bs : ∀{A B} → ¬ (𝔹 ~ (A `⊎ B))
+  ¬~bs : ∀{A B} → ¬ (` 𝔹 ~ (A `⊎ B))
   ¬~bs ()
 
-  ¬~fn : ∀{A B} → ¬ ((A ⇒ B) ~ Nat)
+  ¬~fn : ∀{A B} → ¬ ((A ⇒ B) ~ ` Nat)
   ¬~fn ()
 
-  ¬~fb : ∀{A B} → ¬ ((A ⇒ B) ~ 𝔹)
+  ¬~fb : ∀{A B} → ¬ ((A ⇒ B) ~ ` 𝔹)
   ¬~fb ()
 
   ¬~fp : ∀{A B A' B'} → ¬ ((A ⇒ B) ~ (A' `× B'))
@@ -380,10 +359,10 @@ module Types where
   ¬~fs : ∀{A B A' B'} → ¬ ((A ⇒ B) ~ (A' `⊎ B'))
   ¬~fs ()
 
-  ¬~pn : ∀{A B} → ¬ ((A `× B) ~ Nat)
+  ¬~pn : ∀{A B} → ¬ ((A `× B) ~ ` Nat)
   ¬~pn ()
 
-  ¬~pb : ∀{A B} → ¬ ((A `× B) ~ 𝔹)
+  ¬~pb : ∀{A B} → ¬ ((A `× B) ~ ` 𝔹)
   ¬~pb ()
 
   ¬~pf : ∀{A B A' B'} → ¬ ((A `× B) ~ (A' ⇒ B'))
@@ -392,10 +371,10 @@ module Types where
   ¬~ps : ∀{A B A' B'} → ¬ ((A `× B) ~ (A' `⊎ B'))
   ¬~ps ()
 
-  ¬~sn : ∀{A B} → ¬ ((A `⊎ B) ~ Nat)
+  ¬~sn : ∀{A B} → ¬ ((A `⊎ B) ~ ` Nat)
   ¬~sn ()
 
-  ¬~sb : ∀{A B} → ¬ ((A `⊎ B) ~ 𝔹)
+  ¬~sb : ∀{A B} → ¬ ((A `⊎ B) ~ ` 𝔹)
   ¬~sb ()
 
   ¬~sf : ∀{A B A' B'} → ¬ ((A `⊎ B) ~ (A' ⇒ B'))
@@ -442,67 +421,91 @@ module Types where
     →  ¬ ((A `⊎ A') ~ (B `⊎ B'))
   ¬~sR {A} {B} {A'} {B'} d1 (sum~ c c₁) = d1 c₁
 
-  ⊑𝔹→~𝔹 : ∀{A} → A ⊑ 𝔹 → A ~ 𝔹
-  ⊑𝔹→~𝔹 unk⊑ = unk~L
-  ⊑𝔹→~𝔹 bool⊑ = bool~
+  ⊑Base→~Base : ∀{A ι} → A ⊑ ` ι → A ~ ` ι
+  ⊑Base→~Base unk⊑ = unk~L
+  ⊑Base→~Base base⊑ = base~
 
-  _`~_ : (A : Type) → (B : Type) → (A ~ B) ⊎ (¬ (A ~ B))
-  ⋆ `~ B = inj₁ unk~L
-  Nat `~ ⋆ = inj₁ unk~R
-  Nat `~ Nat = inj₁ nat~
-  Nat `~ 𝔹 = inj₂ (λ ())
-  Nat `~ (B ⇒ B₁) = inj₂ (λ ())
-  Nat `~ (B `× B₁) = inj₂ (λ ())
-  Nat `~ (B `⊎ B₁) = inj₂ (λ ())
-  𝔹 `~ ⋆ = inj₁ unk~R
-  𝔹 `~ Nat = inj₂ (λ ())
-  𝔹 `~ 𝔹 = inj₁ bool~
-  𝔹 `~ (B ⇒ B₁) = inj₂ (λ ())
-  𝔹 `~ (B `× B₁) = inj₂ (λ ())
-  𝔹 `~ (B `⊎ B₁) = inj₂ (λ ())
-  (A ⇒ A₁) `~ ⋆ = inj₁ unk~R
-  (A ⇒ A₁) `~ Nat = inj₂ (λ ())
-  (A ⇒ A₁) `~ 𝔹 = inj₂ (λ ())
-  (A ⇒ A₁) `~ (B ⇒ B₁) with A `~ B | A₁ `~ B₁
-  ... | inj₁ c | inj₁ d = inj₁ (fun~ c d)
-  ... | inj₁ c | inj₂ d = inj₂ ((¬~fR d))
-  ... | inj₂ c | _ = inj₂ ((¬~fL c))
-  (A ⇒ A₁) `~ (B `× B₁) = inj₂ (λ ())
-  (A ⇒ A₁) `~ (B `⊎ B₁) = inj₂ (λ ())
-  (A `× A₁) `~ ⋆ = inj₁ unk~R
-  (A `× A₁) `~ Nat = inj₂ (λ ())
-  (A `× A₁) `~ 𝔹 = inj₂ (λ ())
-  (A `× A₁) `~ (B ⇒ B₁) = inj₂ (λ ())
-  (A `× A₁) `~ (B `× B₁) with A `~ B | A₁ `~ B₁
-  ... | inj₁ c | inj₁ d = inj₁ (pair~ c d)
-  ... | inj₁ c | inj₂ d = inj₂ (¬~pR d)
-  ... | inj₂ c | _ = inj₂ (¬~pL c)
-  (A `× A₁) `~ (B `⊎ B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `~ ⋆ = inj₁ unk~R
-  (A `⊎ A₁) `~ Nat = inj₂ (λ ())
-  (A `⊎ A₁) `~ 𝔹 = inj₂ (λ ())
-  (A `⊎ A₁) `~ (B ⇒ B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `~ (B `× B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `~ (B `⊎ B₁) with A `~ B | A₁ `~ B₁
-  ... | inj₁ c | inj₁ d = inj₁ (sum~ c d)
-  ... | inj₁ c | inj₂ d = inj₂ (¬~sR d)
-  ... | inj₂ c | _ = inj₂ (¬~sL c)
+  base-eq? : (A : Base) → (B : Base) 
+          → Dec (A ≡ B)
+  base-eq? Nat Nat = yes refl
+  base-eq? Nat Int = no (λ ())
+  base-eq? Nat 𝔹 = no (λ ())
+  base-eq? Nat Unit = no (λ ())
+  base-eq? Nat ⊥ = no (λ ())
+  base-eq? Int Nat = no (λ ())
+  base-eq? Int Int = yes refl
+  base-eq? Int 𝔹 = no (λ ())
+  base-eq? Int Unit = no (λ ())
+  base-eq? Int ⊥ = no (λ ())
+  base-eq? 𝔹 Nat = no (λ ())
+  base-eq? 𝔹 Int = no (λ ())
+  base-eq? 𝔹 𝔹 = yes refl
+  base-eq? 𝔹 Unit = no (λ ())
+  base-eq? 𝔹 ⊥ = no (λ ())
+  base-eq? Unit Nat = no (λ ())
+  base-eq? Unit Int = no (λ ())
+  base-eq? Unit 𝔹 = no (λ ())
+  base-eq? Unit Unit = yes refl
+  base-eq? Unit ⊥ = no (λ ())
+  base-eq? ⊥ Nat = no (λ ())
+  base-eq? ⊥ Int = no (λ ())
+  base-eq? ⊥ 𝔹 = no (λ ())
+  base-eq? ⊥ Unit = no (λ ())
+  base-eq? ⊥ ⊥ = yes refl
 
-  eq-unk : (A : Type) → (A ≡ ⋆) ⊎ (A ≢ ⋆)
-  eq-unk ⋆ = inj₁ refl
-  eq-unk Nat = inj₂ (λ ())
-  eq-unk 𝔹 = inj₂ (λ ())
-  eq-unk (A ⇒ A₁) = inj₂ (λ ())
-  eq-unk (A `× A₁) = inj₂ (λ ())
-  eq-unk (A `⊎ A₁) = inj₂ (λ ())
+  _`~_ : (A : Type) → (B : Type) → Dec (A ~ B)
+  ⋆ `~ B = yes unk~L
+  (` ι) `~ ⋆ = yes unk~R
+  (` ι) `~ (` ι') with base-eq? ι ι'
+  ... | yes eq rewrite eq = yes base~
+  ... | no neq = no G
+     where G : ¬ ` ι ~ ` ι'
+           G base~ = neq refl
+  (` ι) `~ (B ⇒ B₁) = no (λ ())
+  (` ι) `~ (B `× B₁) = no (λ ())
+  (` ι) `~ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `~ ⋆ = yes unk~R
+  (A ⇒ A₁) `~ (` ι) = no (λ ())
+  (A ⇒ A₁) `~ (B ⇒ B₁)
+      with A `~ B | A₁ `~ B₁
+  ... | yes ab | yes a1b1 = yes (fun~ ab a1b1)
+  ... | yes ab | no a1b1 = no (¬~fR a1b1)
+  ... | no ab  | _ = no (¬~fL ab)
+  (A ⇒ A₁) `~ (B `× B₁) = no (λ ())
+  (A ⇒ A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `~ ⋆ = yes unk~R
+  (A `× A₁) `~ (` ι) = no (λ ())
+  (A `× A₁) `~ (B ⇒ B₁) = no (λ ())
+  (A `× A₁) `~ (B `× B₁)
+      with A `~ B | A₁ `~ B₁
+  ... | yes ab | yes a1b1 = yes (pair~ ab a1b1)
+  ... | yes ab | no a1b1 = no (¬~pR a1b1)
+  ... | no ab  | _ = no (¬~pL ab)
+  (A `× A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A `⊎ A₁) `~ ⋆ = yes unk~R
+  (A `⊎ A₁) `~ (` ι) = no (λ ())
+  (A `⊎ A₁) `~ (B ⇒ B₁) = no (λ ())
+  (A `⊎ A₁) `~ (B `× B₁) = no (λ ())
+  (A `⊎ A₁) `~ (B `⊎ B₁)
+      with A `~ B | A₁ `~ B₁
+  ... | yes ab | yes a1b1 = yes (sum~ ab a1b1)
+  ... | yes ab | no a1b1 = no (¬~sR a1b1)
+  ... | no ab  | _ = no (¬~sL ab)
+
+  eq-unk : (A : Type) → Dec (A ≡ ⋆)
+  eq-unk ⋆ = yes refl
+  eq-unk (` ι) = no (λ ())
+  eq-unk (A ⇒ A₁) = no (λ ())
+  eq-unk (A `× A₁) = no (λ ())
+  eq-unk (A `⊎ A₁) = no (λ ())
 
   {- Shallow Consistency, used in Lazy Casts -}
 
+  infix 6 _⌣_
   data _⌣_ : Type → Type → Set where
     unk⌣L : ∀ {A} → ⋆ ⌣ A
     unk⌣R : ∀ {A} → A ⌣ ⋆
-    nat⌣ : Nat ⌣ Nat
-    bool⌣ : 𝔹 ⌣ 𝔹
+    base⌣ : ∀{ι} → ` ι ⌣ ` ι
     fun⌣ : ∀{A B A' B'}
         -------------------
       → (A ⇒ B) ⌣ (A' ⇒ B')
@@ -512,127 +515,105 @@ module Types where
     sum⌣ : ∀{A B A' B'}
         -------------------
       → (A `⊎ B) ⌣ (A' `⊎ B')
-    
-  _`⌣_ : (A : Type) → (B : Type) → (A ⌣ B) ⊎ (¬ (A ⌣ B))
-  ⋆ `⌣ B = inj₁ unk⌣L
-  Nat `⌣ ⋆ = inj₁ unk⌣R
-  Nat `⌣ Nat = inj₁ nat⌣
-  Nat `⌣ 𝔹 = inj₂ (λ ())
-  Nat `⌣ (B ⇒ B₁) = inj₂ (λ ())
-  Nat `⌣ (B `× B₁) = inj₂ (λ ())
-  Nat `⌣ (B `⊎ B₁) = inj₂ (λ ())
-  𝔹 `⌣ ⋆ = inj₁ unk⌣R
-  𝔹 `⌣ Nat = inj₂ (λ ())
-  𝔹 `⌣ 𝔹 = inj₁ bool⌣
-  𝔹 `⌣ (B ⇒ B₁) = inj₂ (λ ())
-  𝔹 `⌣ (B `× B₁) = inj₂ (λ ())
-  𝔹 `⌣ (B `⊎ B₁) = inj₂ (λ ())
-  (A ⇒ A₁) `⌣ ⋆ = inj₁ unk⌣R
-  (A ⇒ A₁) `⌣ Nat = inj₂ (λ ())
-  (A ⇒ A₁) `⌣ 𝔹 = inj₂ (λ ())
-  (A ⇒ A₁) `⌣ (B ⇒ B₁) = inj₁ fun⌣
-  (A ⇒ A₁) `⌣ (B `× B₁) = inj₂ (λ ())
-  (A ⇒ A₁) `⌣ (B `⊎ B₁) = inj₂ (λ ())
-  (A `× A₁) `⌣ ⋆ = inj₁ unk⌣R
-  (A `× A₁) `⌣ Nat = inj₂ (λ ())
-  (A `× A₁) `⌣ 𝔹 = inj₂ (λ ())
-  (A `× A₁) `⌣ (B ⇒ B₁) = inj₂ (λ ())
-  (A `× A₁) `⌣ (B `× B₁) = inj₁ pair⌣
-  (A `× A₁) `⌣ (B `⊎ B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `⌣ ⋆ = inj₁ unk⌣R
-  (A `⊎ A₁) `⌣ Nat = inj₂ (λ ())
-  (A `⊎ A₁) `⌣ 𝔹 = inj₂ (λ ())
-  (A `⊎ A₁) `⌣ (B ⇒ B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `⌣ (B `× B₁) = inj₂ (λ ())
-  (A `⊎ A₁) `⌣ (B `⊎ B₁) = inj₁ sum⌣
 
+  _`⌣_ : (A : Type) → (B : Type) → Dec (A ⌣ B)
+  ⋆ `⌣ B = yes unk⌣L
+  (` x) `⌣ ⋆ = yes unk⌣R
+  (` ι) `⌣ (` ι')
+      with base-eq? ι ι'
+  ... | yes eq rewrite eq = yes base⌣
+  ... | no neq = no G
+        where G : ¬ ` ι ⌣ ` ι'
+              G base⌣ = neq refl
+  (` ι) `⌣ (B ⇒ B₁) = no (λ ())
+  (` ι) `⌣ (B `× B₁) = no (λ ())
+  (` ι) `⌣ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `⌣ ⋆ = yes unk⌣R
+  (A ⇒ A₁) `⌣ (` x) = no (λ ())
+  (A ⇒ A₁) `⌣ (B ⇒ B₁) = yes fun⌣
+  (A ⇒ A₁) `⌣ (B `× B₁) = no (λ ())
+  (A ⇒ A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `⌣ ⋆ = yes unk⌣R
+  (A `× A₁) `⌣ (` x) = no (λ ())
+  (A `× A₁) `⌣ (B ⇒ B₁) = no (λ ())
+  (A `× A₁) `⌣ (B `× B₁) = yes pair⌣
+  (A `× A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A `⊎ A₁) `⌣ ⋆ = yes unk⌣R
+  (A `⊎ A₁) `⌣ (` x) = no (λ ())
+  (A `⊎ A₁) `⌣ (B ⇒ B₁) = no (λ ())
+  (A `⊎ A₁) `⌣ (B `× B₁) = no (λ ())
+  (A `⊎ A₁) `⌣ (B `⊎ B₁) = yes sum⌣
+  
   data Ground : Type → Set where
-    G-Base : ∀{A} → Base A → Ground A
+    G-Base : ∀{ι} → Ground (` ι)
     G-Fun : Ground (⋆ ⇒ ⋆)
     G-Pair : Ground (⋆ `× ⋆)
     G-Sum : Ground (⋆ `⊎ ⋆)
 
   not-ground⋆ : ¬ Ground ⋆
-  not-ground⋆ (G-Base ())
+  not-ground⋆ ()
 
-  ground⇒1 : ∀{A}{B} → Ground (A ⇒ B) → A ≢ ⋆ → ⊥
-  ground⇒1 (G-Base ()) nd
+  ground⇒1 : ∀{A}{B} → Ground (A ⇒ B) → A ≢ ⋆ → Bot
   ground⇒1 G-Fun nd = nd refl
 
-  ground⇒2 : ∀{A}{B} → Ground (A ⇒ B) → B ≢ ⋆ → ⊥
-  ground⇒2 (G-Base ()) nd
+  ground⇒2 : ∀{A}{B} → Ground (A ⇒ B) → B ≢ ⋆ → Bot
   ground⇒2 G-Fun nd = nd refl
-
-  ground×1 : ∀{A}{B} → Ground (A `× B) → A ≢ ⋆ → ⊥
-  ground×1 (G-Base ()) nd
+  
+  ground×1 : ∀{A}{B} → Ground (A `× B) → A ≢ ⋆ → Bot
   ground×1 G-Pair nd = nd refl
 
-  ground×2 : ∀{A}{B} → Ground (A `× B) → B ≢ ⋆ → ⊥
-  ground×2 (G-Base ()) nd
+  ground×2 : ∀{A}{B} → Ground (A `× B) → B ≢ ⋆ → Bot
   ground×2 G-Pair nd = nd refl
 
-  ground⊎1 : ∀{A}{B} → Ground (A `⊎ B) → A ≢ ⋆ → ⊥
-  ground⊎1 (G-Base ()) nd
+  ground⊎1 : ∀{A}{B} → Ground (A `⊎ B) → A ≢ ⋆ → Bot
   ground⊎1 G-Sum nd = nd refl
-
-  ground⊎2 : ∀{A}{B} → Ground (A `⊎ B) → B ≢ ⋆ → ⊥
-  ground⊎2 (G-Base ()) nd
+  
+  ground⊎2 : ∀{A}{B} → Ground (A `⊎ B) → B ≢ ⋆ → Bot
   ground⊎2 G-Sum nd = nd refl
 
   ground : (A : Type) → {nd : A ≢ ⋆} → Σ[ B ∈ Type ] Ground B × (A ~ B)
   ground ⋆ {nd} = ⊥-elim (nd refl)
-  ground Nat {nd} = ⟨ Nat , ⟨ G-Base B-Nat , nat~ ⟩ ⟩
-  ground 𝔹 {nd} = ⟨ 𝔹 , ⟨ G-Base B-Bool , bool~ ⟩ ⟩
+  ground (` ι) {nd} = ⟨ ` ι , ⟨ G-Base , base~ ⟩ ⟩
   ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~R unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
   ground (A `⊎ A₁) {nd} = ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , sum~ unk~R unk~R ⟩ ⟩
 
-  ground? : (A : Type) → Ground A ⊎ (¬ Ground A)
-  ground? ⋆ = inj₂ λ x → contradiction x not-ground⋆
-  ground? Nat = inj₁ (G-Base B-Nat)
-  ground? 𝔹 = inj₁ (G-Base B-Bool)
+  ground? : (A : Type) → Dec (Ground A)
+  ground? ⋆ = no λ x → contradiction x not-ground⋆
+  ground? (` ι) = yes (G-Base)
   ground? (A₁ `× A₂) with eq-unk A₁ | eq-unk A₂
-  ... | inj₁ eq1 | inj₁ eq2 rewrite eq1 | eq2 = inj₁ G-Pair
-  ... | inj₁ eq1 | inj₂ eq2 rewrite eq1 = inj₂ λ x → ground×2 x eq2
-  ... | inj₂ eq1 | _ = inj₂ λ x → ground×1 x eq1
+  ... | yes eq1 | yes eq2 rewrite eq1 | eq2 = yes G-Pair
+  ... | yes eq1 | no eq2 rewrite eq1 = no λ x → ground×2 x eq2
+  ... | no eq1 | _ = no λ x → ground×1 x eq1
   ground? (A₁ `⊎ A₂) with eq-unk A₁ | eq-unk A₂
-  ... | inj₁ eq1 | inj₁ eq2 rewrite eq1 | eq2 = inj₁ G-Sum
-  ... | inj₁ eq1 | inj₂ eq2 rewrite eq1 = inj₂ λ x → ground⊎2 x eq2
-  ... | inj₂ eq1 | _ = inj₂ λ x → ground⊎1 x eq1
+  ... | yes eq1 | yes eq2 rewrite eq1 | eq2 = yes G-Sum
+  ... | yes eq1 | no eq2 rewrite eq1 = no λ x → ground⊎2 x eq2
+  ... | no eq1 | _ = no λ x → ground⊎1 x eq1
   ground? (A₁ ⇒ A₂) with eq-unk A₁ | eq-unk A₂
-  ... | inj₁ eq1 | inj₁ eq2 rewrite eq1 | eq2 = inj₁ G-Fun
-  ... | inj₁ eq1 | inj₂ eq2 rewrite eq1 = inj₂ λ x → ground⇒2 x eq2
-  ... | inj₂ eq1 | _ = inj₂ λ x → ground⇒1 x eq1
+  ... | yes eq1 | yes eq2 rewrite eq1 | eq2 = yes G-Fun
+  ... | yes eq1 | no eq2 rewrite eq1 = no λ x → ground⇒2 x eq2
+  ... | no eq1 | _ = no λ x → ground⇒1 x eq1
 
-  base-eq? : (A : Type) → (B : Type) → {a : Base A} → {b : Base B}
-          → A ≡ B ⊎ A ≢ B
-  base-eq? .Nat .Nat {B-Nat} {B-Nat} = inj₁ refl
-  base-eq? .Nat .𝔹 {B-Nat} {B-Bool} = inj₂ (λ ())
-  base-eq? .𝔹 .Nat {B-Bool} {B-Nat} = inj₂ (λ ())
-  base-eq? .𝔹 .𝔹 {B-Bool} {B-Bool} = inj₁ refl
-  
   gnd-eq? : (A : Type) → (B : Type) → {a : Ground A} → {b : Ground B}
-          → A ≡ B ⊎ A ≢ B
-  gnd-eq? A B {G-Base x} {G-Base x₁} = base-eq? A B {x} {x₁}
-  gnd-eq? .Nat .(⋆ ⇒ ⋆) {G-Base B-Nat} {G-Fun} = inj₂ λ ()
-  gnd-eq? .𝔹 .(⋆ ⇒ ⋆) {G-Base B-Bool} {G-Fun} = inj₂ λ ()
-  gnd-eq? .Nat .(⋆ `× ⋆) {G-Base B-Nat} {G-Pair} = inj₂ (λ ())
-  gnd-eq? .𝔹 .(⋆ `× ⋆) {G-Base B-Bool} {G-Pair} = inj₂ (λ ())
-  gnd-eq? .Nat .(⋆ `⊎ ⋆) {G-Base B-Nat} {G-Sum} = inj₂ (λ ())
-  gnd-eq? .𝔹 .(⋆ `⊎ ⋆) {G-Base B-Bool} {G-Sum} = inj₂ (λ ())
-  gnd-eq? .(⋆ ⇒ ⋆) .Nat {G-Fun} {G-Base B-Nat} = inj₂ λ ()
-  gnd-eq? .(⋆ ⇒ ⋆) .𝔹 {G-Fun} {G-Base B-Bool} = inj₂ λ ()
-  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ ⇒ ⋆) {G-Fun} {G-Fun} = inj₁ refl
-  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `× ⋆) {G-Fun} {G-Pair} = inj₂ (λ ())
-  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `⊎ ⋆) {G-Fun} {G-Sum} = inj₂ (λ ())
-  gnd-eq? .(⋆ `× ⋆) .Nat {G-Pair} {G-Base B-Nat} = inj₂ (λ ())
-  gnd-eq? .(⋆ `× ⋆) .𝔹 {G-Pair} {G-Base B-Bool} = inj₂ (λ ())
-  gnd-eq? .(⋆ `× ⋆) .(⋆ ⇒ ⋆) {G-Pair} {G-Fun} = inj₂ (λ ())
-  gnd-eq? .(⋆ `× ⋆) .(⋆ `× ⋆) {G-Pair} {G-Pair} = inj₁ refl
-  gnd-eq? .(⋆ `× ⋆) .(⋆ `⊎ ⋆) {G-Pair} {G-Sum} = inj₂ (λ ())
-  gnd-eq? .(⋆ `⊎ ⋆) .Nat {G-Sum} {G-Base B-Nat} = inj₂ (λ ())
-  gnd-eq? .(⋆ `⊎ ⋆) .𝔹 {G-Sum} {G-Base B-Bool} = inj₂ (λ ())
-  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ ⇒ ⋆) {G-Sum} {G-Fun} = inj₂ (λ ())
-  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `× ⋆) {G-Sum} {G-Pair} = inj₂ (λ ())
-  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `⊎ ⋆) {G-Sum} {G-Sum} = inj₁ refl
-
+          → Dec (A ≡ B)
+  gnd-eq? A B {G-Base {ι = ι}} {G-Base {ι = ι'}}
+      with base-eq? ι ι'
+  ... | yes eq rewrite eq = yes refl
+  ... | no neq = no G
+        where G : ¬ ` ι ≡ ` ι'
+              G refl = neq refl
+  gnd-eq? (` ι) .(⋆ ⇒ ⋆) {G-Base} {G-Fun} = no λ ()
+  gnd-eq? (` ι) .(⋆ `× ⋆) {G-Base} {G-Pair} = no (λ ())
+  gnd-eq? (` ι) .(⋆ `⊎ ⋆) {G-Base} {G-Sum} = no (λ ())
+  gnd-eq? .(⋆ ⇒ ⋆) (` ι) {G-Fun} {G-Base} = no λ ()
+  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ ⇒ ⋆) {G-Fun} {G-Fun} = yes refl
+  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `× ⋆) {G-Fun} {G-Pair} = no (λ ())
+  gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `⊎ ⋆) {G-Fun} {G-Sum} = no (λ ())
+  gnd-eq? .(⋆ `× ⋆) (` ι) {G-Pair} {G-Base} = no (λ ())
+  gnd-eq? .(⋆ `× ⋆) .(⋆ ⇒ ⋆) {G-Pair} {G-Fun} = no (λ ())
+  gnd-eq? .(⋆ `× ⋆) .(⋆ `× ⋆) {G-Pair} {G-Pair} = yes refl
+  gnd-eq? .(⋆ `× ⋆) .(⋆ `⊎ ⋆) {G-Pair} {G-Sum} = no (λ ())
+  gnd-eq? .(⋆ `⊎ ⋆) (` ι) {G-Sum} {G-Base} = no (λ ())
+  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ ⇒ ⋆) {G-Sum} {G-Fun} = no (λ ())
+  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `× ⋆) {G-Sum} {G-Pair} = no (λ ())
+  gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `⊎ ⋆) {G-Sum} {G-Sum} = yes refl

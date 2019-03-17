@@ -93,6 +93,8 @@ module GroundCast where
      inj₁ (A-id {Nat}{A-Nat} (cast Nat Nat ℓ))
   ActiveOrInert (cast .𝔹 .𝔹 ℓ {bool~}) =
      inj₁ (A-id {𝔹}{A-Bool} (cast 𝔹 𝔹 ℓ))
+  ActiveOrInert (cast .Unit .Unit ℓ {unit~}) =
+     inj₁ (A-id {Unit}{A-Unit} (cast Unit Unit ℓ))
   ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ {fun~ c c₁}) =
      inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ))
   ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) =

@@ -107,7 +107,7 @@ module ParamCastReduction
     F-if : ∀ {Γ A}
       → Γ ⊢ A
       → Γ ⊢ A    
-      → Frame {Γ} 𝔹 A
+      → Frame {Γ} (` 𝔹) A
 
     F-×₁ : ∀ {Γ A B}
       → Γ ⊢ A
@@ -190,7 +190,7 @@ module ParamCastReduction
                  → ∀ {i : Inert c} → Γ ⊢ B')
     (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
                  → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
-    (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c)
+    (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c)
     where
     {- to do : add condition A ≢ ⋆ to baseNotInert -}
 
@@ -229,10 +229,9 @@ module ParamCastReduction
           --------------------
         → (ƛ N) · W —→ N [ W ]
 
-      δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A}
-        {ab} {a} {b}
-          --------------------------------------------
-        → ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+      δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
+          ---------------------------------------------------
+        → ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
       β-if-true :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           -------------------------
@@ -378,10 +377,12 @@ module ParamCastReduction
                       step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
     ...             | V-ƛ = contradiction f₁ ¬P-Fun
     ...             | V-pair v w = contradiction f₁ ¬P-Pair
-    ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
-                       contradiction i (baseNotInert c (P-Fun1 f₁))
     ...             | V-inl v = contradiction f₁ ¬P-Sum
     ...             | V-inr v = contradiction f₁ ¬P-Sum
+    ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
+                       contradiction i (G f₁)
+                       where G : Prim (A ⇒ B) → ¬ Inert c
+                             G (P-Fun f₁) ic = baseNotInert c ic
     progress ($ k) = done V-const
     progress (if L M N) with progress L
     ... | step {L'} R = step (ξ{F = F-if M N} R)
@@ -389,7 +390,8 @@ module ParamCastReduction
     ... | done (V-const {k = true}) = step β-if-true
     ... | done (V-const {k = false}) = step β-if-false
     ... | done (V-cast {c = c} {i = i} v) =
-            contradiction i (baseNotInert c B-Bool)
+            contradiction i (baseNotInert c)
+
     progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
     ... | step {N} R = step (ξ{F = F-cast c} R)
     ... | error E-blame = step (ξ-blame{F = F-cast c})

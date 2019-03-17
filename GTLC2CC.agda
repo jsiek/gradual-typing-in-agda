@@ -32,7 +32,7 @@ module GTLC2CC
   compile (⊢if{Γ}{L}{M}{N}{ℓ}{A}{A'}{B} d d₁ d₂ bb c)
       with (A `⊔ A') {c}
   ... | ⟨ A⊔A' , ⟨ ub , _ ⟩ ⟩ =
-     let d' = (compile d) ⟨ cast B 𝔹 ℓ {bb} ⟩ in
+     let d' = (compile d) ⟨ cast B (` 𝔹) ℓ {bb} ⟩ in
      let d₁' = (compile d₁) ⟨ cast A A⊔A' ℓ {consis (proj₁ ub) Refl⊑} ⟩ in
      let d₂' = (compile d₂) ⟨ cast A' A⊔A' ℓ {consis (proj₂ ub) Refl⊑} ⟩ in
      if d' d₁' d₂'

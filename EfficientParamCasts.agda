@@ -78,9 +78,8 @@ module EfficientParamCasts
 
   simple⋆ : ∀ {Γ A} → (M : Γ ⊢ A) → (SimpleValue M) → A ≢ ⋆
   simple⋆ .(ƛ _) V-ƛ = λ ()
-  simple⋆ ((ParamCastCalculus.$ k) {P-Nat}) V-const = λ ()
-  simple⋆ ((ParamCastCalculus.$ k) {P-Bool}) V-const = λ ()
-  simple⋆ ((ParamCastCalculus.$ k) {P-Fun x f}) V-const = λ ()
+  simple⋆ ((ParamCastCalculus.$ k) {P-Base}) V-const = λ ()
+  simple⋆ ((ParamCastCalculus.$ k) {P-Fun f}) V-const = λ ()
   simple⋆ .(cons _ _) (V-pair x x₁) = λ ()
   simple⋆ .(inl _) (V-inl x) = λ ()
   simple⋆ .(inr _) (V-inr x) = λ ()
@@ -92,13 +91,9 @@ module EfficientParamCasts
   canonical⋆ (M ⟨ _ ⟩) (V-cast{A = A}{B = B}{V = V}{c = c}{i = i} v) =
     ⟨ A , ⟨ V , ⟨ c , ⟨ i , ⟨ refl , simple⋆ M v ⟩ ⟩ ⟩ ⟩ ⟩
 
-  simple-base : ∀ {Γ A} → (M : Γ ⊢ A) → SimpleValue M → Base A
-     → Σ[ k ∈ rep A ] Σ[ f ∈ Prim A ] M ≡ ($ k){f}
-  simple-base (ƛ _) V-ƛ ()
-  simple-base (($ k){f}) V-const b = ⟨ k , ⟨ f , refl ⟩ ⟩
-  simple-base .(cons _ _) (V-pair x x₁) ()
-  simple-base .(inl _) (V-inl x) ()
-  simple-base .(inr _) (V-inr x) ()
+  simple-base : ∀ {Γ ι} → (M : Γ ⊢ ` ι) → SimpleValue M 
+     → Σ[ k ∈ rep-base ι ] Σ[ f ∈ Prim (` ι) ] M ≡ ($ k){f}
+  simple-base (($ k){f}) V-const = ⟨ k , ⟨ f , refl ⟩ ⟩
   
   {-
 
@@ -124,7 +119,7 @@ module EfficientParamCasts
     (caseCast : ∀{Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
               → (c : Cast (A ⇒ (A' `⊎ B')))
               → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
-    (baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c)
+    (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c)
     (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
              → Cast (A ⇒ C))
     where
@@ -150,7 +145,7 @@ module EfficientParamCasts
       F-if : ∀ {Γ A}
         → Γ ⊢ A
         → Γ ⊢ A    
-        → Frame {Γ} 𝔹 A
+        → Frame {Γ} (` 𝔹) A
 
       F-×₁ : ∀ {Γ A B}
         → Γ ⊢ A
@@ -241,8 +236,8 @@ module EfficientParamCasts
         → disallow / (ƛ N) · W —→ N [ W ]
 
       δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
-          --------------------------------------------
-        → disallow / ($_ {Γ} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+          --------------------------------------------------------------
+        → disallow / ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
       β-if-true : ∀{Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           --------------------------------------
@@ -404,8 +399,9 @@ module EfficientParamCasts
     ...             | S-val (V-inl v) = contradiction f₁ ¬P-Sum
     ...             | S-val (V-inr v) = contradiction f₁ ¬P-Sum
     ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
-                         contradiction i (baseNotInert c (P-Fun1 f₁)
-                            (simple⋆ W w))
+                         contradiction i (G f₁)
+                         where G : Prim (A ⇒ B) → ¬ Inert c
+                               G (P-Fun f) ic = baseNotInert c (simple⋆ W w) ic
     progress ($ k) = done (S-val V-const)
     progress (if L M N) with progress L
     ... | step-d R = step-d (ξ{F = F-if M N} (switch R))
@@ -414,7 +410,7 @@ module EfficientParamCasts
     ... | done (S-val (V-const {k = true})) = step-d β-if-true
     ... | done (S-val (V-const {k = false})) = step-d β-if-false
     ... | done (V-cast {V = V} {c = c} {i = i} v) =
-            contradiction i (baseNotInert c B-Bool (simple⋆ V v))
+            contradiction i (baseNotInert c (simple⋆ V v))
     progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
     ... | step-d {N} R = step-a (ξ-cast R)
     ... | step-a (switch R) = step-a (ξ-cast R)

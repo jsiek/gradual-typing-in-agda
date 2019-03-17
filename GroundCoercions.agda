@@ -94,6 +94,8 @@ module GroundCoercions where
   coerce-to-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = id {Nat} {A-Nat}
   coerce-to-gnd .⋆ .𝔹 {G-Base B-Bool} {unk~L} ℓ = proj 𝔹 ℓ {G-Base B-Bool}
   coerce-to-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = id {𝔹}{A-Bool}
+  coerce-to-gnd .⋆ .Unit {G-Base B-Unit} {unk~L} ℓ = proj Unit ℓ {G-Base B-Unit}
+  coerce-to-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = id {Unit}{A-Unit}
   coerce-to-gnd .⋆ .(⋆ ⇒ ⋆) {G-Fun} {unk~L} ℓ = proj (⋆ ⇒ ⋆) ℓ {G-Fun}
   coerce-to-gnd (A₁ ⇒ A₂) .(⋆ ⇒ ⋆) {G-Fun} {fun~ c c₁} ℓ =
      cfun (coerce-from⋆ A₁ (flip ℓ)) (coerce-to⋆ A₂ ℓ)
@@ -108,6 +110,8 @@ module GroundCoercions where
   coerce-from-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = id {Nat}{A-Nat}
   coerce-from-gnd .𝔹 .⋆ {G-Base B-Bool} {unk~R} ℓ = inj 𝔹 {G-Base B-Bool}
   coerce-from-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = id {𝔹}{A-Bool}
+  coerce-from-gnd .Unit .⋆ {G-Base B-Unit} {unk~R} ℓ = inj Unit {G-Base B-Unit}
+  coerce-from-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = id {Unit}{A-Unit}
   coerce-from-gnd .(⋆ ⇒ ⋆) .⋆ {G-Fun} {unk~R} ℓ = inj (⋆ ⇒ ⋆) {G-Fun}
   coerce-from-gnd .(⋆ ⇒ ⋆) (B₁ ⇒ B₂) {G-Fun} {fun~ c c₁} ℓ =
      cfun (coerce-to⋆ B₁ (flip ℓ)) (coerce-from⋆ B₂ ℓ)
@@ -123,6 +127,7 @@ module GroundCoercions where
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
   coerce Nat Nat {nat~} ℓ = id {Nat} {A-Nat}
   coerce 𝔹 𝔹 {bool~} ℓ = id {𝔹} {A-Bool}
+  coerce Unit Unit {unit~} ℓ = id {Unit} {A-Unit}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
     cfun (coerce A' A {Sym~ c} (flip ℓ) ) (coerce B B' {c₁} ℓ)
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
@@ -273,6 +278,7 @@ module GroundCoercions where
   baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
   baseNotInert c B-Nat ()
   baseNotInert c B-Bool ()
+  baseNotInert c B-Unit ()
 
   {-
   We now instantiate the inner module of ParamCastReduction, thereby

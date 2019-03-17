@@ -121,6 +121,8 @@ module EfficientGroundCoercions where
       ` (idι{Nat}{B-Nat} ⨟!) {G-Base B-Nat}
   coerce-gnd-to⋆ .𝔹 {G-Base B-Bool} ℓ =
       ` (idι{𝔹}{B-Bool} ⨟!) {G-Base B-Bool}
+  coerce-gnd-to⋆ .Unit {G-Base B-Unit} ℓ =
+      ` (idι{Unit}{B-Unit} ⨟!) {G-Base B-Unit}
   coerce-gnd-to⋆ (⋆ ⇒ ⋆) {G-Fun} ℓ = ` (id★ ↣ id★ ⨟!) {G-Fun}
   coerce-gnd-to⋆ (⋆ `× ⋆) {G-Pair} ℓ = ` (id★ ×' id★ ⨟!) {G-Pair}
   coerce-gnd-to⋆ (⋆ `⊎ ⋆) {G-Sum} ℓ = ` (id★ +' id★ ⨟!) {G-Sum}
@@ -130,6 +132,8 @@ module EfficientGroundCoercions where
       (Nat ?? ℓ ⨟ ` idι{Nat}{B-Nat}) {G-Base B-Nat}
   coerce-gnd-from⋆ 𝔹 {G-Base B-Bool} ℓ =
       (𝔹 ?? ℓ ⨟ ` idι{𝔹}{B-Bool}) {G-Base B-Bool}
+  coerce-gnd-from⋆ Unit {G-Base B-Unit} ℓ =
+      (Unit ?? ℓ ⨟ ` idι{Unit}{B-Unit}) {G-Base B-Unit}
   coerce-gnd-from⋆ (⋆ ⇒ ⋆) {G-Fun} ℓ = (⋆ ⇒ ⋆ ?? ℓ ⨟ ` id★ ↣ id★) {G-Fun}
   coerce-gnd-from⋆ (⋆ `× ⋆) {G-Pair} ℓ = (⋆ `× ⋆ ?? ℓ ⨟ ` id★ ×' id★) {G-Pair}
   coerce-gnd-from⋆ (⋆ `⊎ ⋆) {G-Sum} ℓ = (⋆ `⊎ ⋆ ?? ℓ ⨟ ` id★ +' id★) {G-Sum}
@@ -156,6 +160,8 @@ module EfficientGroundCoercions where
   coerce-to-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = idι{Nat}{B-Nat}
   coerce-to-gnd .⋆ .𝔹 {G-Base B-Bool} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
   coerce-to-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = idι{𝔹}{B-Bool}
+  coerce-to-gnd .⋆ .Unit {G-Base B-Unit} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
+  coerce-to-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = idι{Unit}{B-Unit}
   coerce-to-gnd .⋆ .(⋆ ⇒ ⋆) {G-Fun} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
   coerce-to-gnd (A₁ ⇒ A₂) .(⋆ ⇒ ⋆) {G-Fun} {fun~ c c₁} ℓ =
      (coerce-from⋆ A₁ ℓ) ↣ (coerce-to⋆ A₂ ℓ)
@@ -170,6 +176,8 @@ module EfficientGroundCoercions where
   coerce-from-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = idι{Nat}{B-Nat}
   coerce-from-gnd .𝔹 .⋆ {G-Base B-Bool} {unk~R}{neq} ℓ =  ⊥-elim (neq refl)
   coerce-from-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = idι{𝔹}{B-Bool}
+  coerce-from-gnd .Unit .⋆ {G-Base B-Unit} {unk~R}{neq} ℓ =  ⊥-elim (neq refl)
+  coerce-from-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = idι{Unit}{B-Unit}
   coerce-from-gnd .(⋆ ⇒ ⋆) .⋆ {G-Fun} {unk~R}{neq} ℓ = ⊥-elim (neq refl)
   coerce-from-gnd .(⋆ ⇒ ⋆) (B₁ ⇒ B₂) {G-Fun} {fun~ c c₁} ℓ =
      (coerce-to⋆ B₁ ℓ) ↣ (coerce-from⋆ B₂ ℓ)
@@ -185,6 +193,7 @@ module EfficientGroundCoercions where
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
   coerce Nat Nat {nat~} ℓ = ` ` idι {Nat} {B-Nat}
   coerce 𝔹 𝔹 {bool~} ℓ = ` ` idι {𝔹} {B-Bool}
+  coerce Unit Unit {unit~} ℓ = ` ` idι {Unit} {B-Unit}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
     ` ` coerce A' A {Sym~ c} (flip ℓ) ↣ coerce B B' {c₁} ℓ
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
@@ -536,6 +545,7 @@ module EfficientGroundCoercions where
   gnd-src-nd : ∀{A B} → (g : gCast (A ⇒ B)) → A ≢ ⋆
   gnd-src-nd {.Nat} {.Nat} (idι {.Nat} {B-Nat}) ()
   gnd-src-nd {.𝔹} {.𝔹} (idι {.𝔹} {B-Bool}) ()
+  gnd-src-nd {.Unit} {.Unit} (idι {.Unit} {B-Unit}) ()
   gnd-src-nd {.(_ ⇒ _)} {.(_ ⇒ _)} (c ↣ d) ()
   gnd-src-nd {.(_ `× _)} {.(_ `× _)} (c ×' d) ()
   gnd-src-nd {.(_ `⊎ _)} {.(_ `⊎ _)} (c +' d) ()
