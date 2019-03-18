@@ -37,6 +37,21 @@ module Types where
     A-Unk : Atomic ⋆
     A-Base : ∀{ι} → Atomic (` ι)
 
+  base? : (A : Type) → Dec (Σ[ ι ∈ Base ] A ≡ ` ι)
+  base? ⋆ = no G
+    where G : ¬ Σ-syntax Base (λ ι → ⋆ ≡ ` ι)
+          G ⟨ _ , () ⟩
+  base? (` ι) = yes ⟨ ι , refl ⟩
+  base? (A ⇒ A₁) =  no G
+    where G : ¬ Σ-syntax Base (λ ι → A ⇒ A₁ ≡ ` ι)
+          G ⟨ _ , () ⟩
+  base? (A `× A₁) =  no G
+    where G : ¬ Σ-syntax Base (λ ι → A `× A₁ ≡ ` ι)
+          G ⟨ _ , () ⟩
+  base? (A `⊎ A₁) =  no G
+    where G : ¬ Σ-syntax Base (λ ι → A `⊎ A₁ ≡ ` ι)
+          G ⟨ _ , () ⟩
+
   rep-base : Base → Set
   rep-base Nat = ℕ
   rep-base Int = ℤ

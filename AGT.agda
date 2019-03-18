@@ -466,32 +466,41 @@ module AGT where
     activeId : ∀ {ι : Base}{ab}{cb} → Active (((` ι) ⇒ (` ι) ⇒ (` ι)){ab}{cb})
     activeError : ∀ {A B} → Active (error A B)
 
-  ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
-  ActiveOrInert ((A ⇒ B ⇒ C){ab}{cb})
-      with A | C
-  ... | (` ι) | (` ι')
-      with base-eq? ι ι'
-  ... | no neq = inj₂ (inert (λ z → neq (G z)))
-        where G : (Σ-syntax Base (λ ι₁ → ` ι ≡ ` ι₁ × ` ι' ≡ ` ι₁)) → ι ≡ ι'
-              G ⟨ ι , ⟨ refl , refl ⟩ ⟩ = refl
 
-  ActiveOrInert ((A ⇒ B ⇒ C){ab}{cb})| (` ι) | (` ι') | yes eq rewrite eq
+  baseAndEq? : (A : Type) → (B : Type) → Dec (Σ[ ι ∈ Base ] A ≡ ` ι × B ≡ ` ι)
+  baseAndEq? A B
+      with base? A | base? B
+  ... | yes ba | no bb = no G
+        where G : ¬ Σ Base (λ ι → Σ (A ≡ ` ι) (λ x → B ≡ ` ι))
+              G ⟨ fst₁ , ⟨ _ , snd₁ ⟩ ⟩ =
+                 contradiction ⟨ fst₁ , snd₁ ⟩ bb
+  ... | no ba | _ = no G
+        where G : ¬ Σ Base (λ ι → Σ (A ≡ ` ι) (λ x → B ≡ ` ι))
+              G ⟨ fst₁ , ⟨ fst₂ , _ ⟩ ⟩ =
+                 contradiction ⟨ fst₁ , fst₂ ⟩ ba
+  ... | yes ⟨ ι₁ , refl ⟩ | yes ⟨ ι₂ , refl ⟩
+      with base-eq? ι₁ ι₂
+  ... | yes eq rewrite eq = yes ⟨ ι₂ , ⟨ refl , refl ⟩ ⟩
+  ... | no neq = no G
+      where G : ¬ Σ Base (λ ι → Σ (A ≡ ` ι) (λ x → B ≡ ` ι))
+            G ⟨ fst₁ , ⟨ refl , refl ⟩ ⟩ = neq refl
+
+  ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
+  ActiveOrInert {.(A ⇒ C)} ((A ⇒ B ⇒ C){ab}{cb})
+      with baseAndEq? A C
+  ... | no nbe = inj₂ (inert nbe)
+  ... | yes ⟨ ι , ⟨ A≡ι , C≡ι ⟩ ⟩ rewrite A≡ι | C≡ι
       with ⊑RBase cb
   ... | b=c rewrite b=c = inj₁ activeId
-  ActiveOrInert (A ⇒ B ⇒ C) | ` ι | _ = inj₂ (inert (λ z → {!!}))
-  ActiveOrInert (A ⇒ B ⇒ C) | _ | ` ι' =
-      inj₂ (inert (λ z → {!!}))
-  ActiveOrInert (A ⇒ B ⇒ C) | _ | _ =
-      inj₂ (inert (λ z → {!!}))
-  ActiveOrInert (error A B) = inj₁ activeError
-{-  
+  ActiveOrInert {.(A ⇒ B)} (error A B) = inj₁ activeError
+
   import EfficientParamCasts
   module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
   open EPCR
-
+  
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v .(_ ⇒ _ ⇒ _) {activeId x} = M
+  applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
   applyCast M v (error _ _) {activeError} = blame (pos zero)
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
@@ -545,8 +554,8 @@ module AGT where
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose ((A ⇒ B ⇒ C){ab}{cb}) ((C ⇒ B' ⇒ C'){cb'}{c'b'})
       with B `~ B'
-  ... | inj₂ nc = error A C' 
-  ... | inj₁ B~B'
+  ... | no nc = error A C' 
+  ... | yes B~B'
       with (B `⊔ B') {B~B'}
   ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
          (A ⇒ B⊔B' ⇒ C'){Trans⊑ ab B⊑B⊔B'}{Trans⊑ c'b' B'⊑B⊔B'}
@@ -554,16 +563,16 @@ module AGT where
   compose (error A B) (error B C) = (error A C)
   compose (error A B) (B ⇒ B' ⇒ C) = (error A C)
 
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c
-  baseNotInert ((A ⇒ B ⇒ C){ab}{cb}) bC A≢⋆ (inert p)
-      with ⊑RBase bC cb
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
+  baseNotInert ((A ⇒ B ⇒ (` ι)){ab}{cb}) A≢⋆ (inert p)
+      with ⊑RBase cb
   ... | b≡c rewrite b≡c
-      with ⊑LBase bC ab
-  ... | inj₁ eq rewrite eq = p ⟨ bC , ⟨ bC , refl ⟩ ⟩
+      with ⊑LBase ab
+  ... | inj₁ eq rewrite eq = p ⟨ ι , ⟨ refl , refl ⟩ ⟩
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
-  baseNotInert (error A B) b A⋆ = λ ()
+  baseNotInert (error A B) A⋆ = λ ()
 
   module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
                   baseNotInert compose
   open Red
--}
+
