@@ -1,10 +1,11 @@
 module AGT where
 
+  open import Agda.Primitive renaming (_⊔_ to _⊍_)
   open import Types
   open import Labels
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
-  open import Data.Nat
+  open import Data.Nat using (ℕ; zero; suc)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -431,6 +432,235 @@ module AGT where
   ... | inj₂ x = 
         contradiction x a
 
+
+  all-funs-conc : ∀{A} → AllFuns (Conc A)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  all-funs-conc {⋆} (funs f)
+      with f {` Nat} c-unk
+  ... | ⟨ T₁ , ⟨ T₂ , () ⟩ ⟩ 
+  all-funs-conc {` ι} (funs f)
+      with f {` ι} c-base
+  ... | ⟨ T₁ , ⟨ T₂ , () ⟩ ⟩ 
+  all-funs-conc {A₁ ⇒ A₂} af = ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+  all-funs-conc {A₁ `× A₂} (funs f)
+      with conc A₁ | conc A₂
+  ... | ⟨ T₁ , cat1 ⟩ | ⟨ T₂ , cat2 ⟩ 
+      with f {T₁ `× T₂} (c-pair cat1 cat2)
+  ... | ⟨ T₁' , ⟨ T₂' , () ⟩ ⟩
+  all-funs-conc {A₁ `⊎ A₂} (funs f)
+      with conc A₁ | conc A₂
+  ... | ⟨ T₁ , cat1 ⟩ | ⟨ T₂ , cat2 ⟩ 
+      with f {T₁ `⊎ T₂} (c-sum cat1 cat2)
+  ... | ⟨ T₁' , ⟨ T₂' , () ⟩ ⟩
+  
+
+  conc-abs-id : ∀{A B : Type}{P : SType → Set}
+    → Abs (Conc A) B
+      -------------------
+    → A ≡ B
+  conc-abs-id {A}{B}{P} abs-conc-ab =
+    let A⊑B = (abs-optimal {Conc A}{A}{B} (conc A) (λ {T} z → z)) abs-conc-ab in
+    let B⊑A = prec-implies-le (prec (conc-abs-sound abs-conc-ab)) in
+    AntiSym⊑ A⊑B B⊑A
+
+  {-
+   Def. of interior based on Prop 15 and a little subsequent reasoning.
+   -}
+
+  data L (P : SType → SType → Set) (G₁ : Type) (G₂ : Type) : SType → Set where
+    leftp : ∀{T₁ T₂ : SType}
+           → Conc G₁ T₁  →  Conc G₂ T₂  →  P T₁ T₂
+             -------------------------------------
+           → L P G₁ G₂ T₁
+
+  data R (P : SType → SType → Set) (G₁ : Type) (G₂ : Type) : SType → Set where
+    rightp : ∀{T₁ T₂ : SType}
+           → Conc G₁ T₁  →  Conc G₂ T₂  →  P T₁ T₂
+             -------------------------------------
+           → R P G₁ G₂ T₂
+
+  data Interior {n : Level} (P : SType → SType → Set)
+               : Type → Type → Type → Type → Set₁ where
+    inter : ∀{G₁ G₂ G₃ G₄}
+          → Abs (L P G₁ G₂) G₃
+          → Abs (R P G₁ G₂) G₄
+            ----------------------
+          → Interior P G₁ G₂ G₃ G₄
+
+  data STypeEq (A : SType) (B : SType) : Set where
+    stype-eq : A ≡ B → STypeEq A B
+
+  L=→cc : ∀{G₁ G₂ T} → L STypeEq G₁ G₂ T → Conc G₁ T × Conc G₂ T
+  L=→cc (leftp x x₁ (stype-eq refl)) = ⟨ x , x₁ ⟩
+
+  cc→L= : ∀{G₁ G₂ T} → Conc G₁ T → Conc G₂ T → L STypeEq G₁ G₂ T
+  cc→L= g1t g2t = leftp g1t g2t (stype-eq refl)
+
+  R=→cc : ∀{G₁ G₂ T} → R STypeEq G₁ G₂ T → Conc G₁ T × Conc G₂ T
+  R=→cc (rightp x x₁ (stype-eq refl)) = ⟨ x , x₁ ⟩
+
+  cc→R= : ∀{G₁ G₂ T} → Conc G₁ T → Conc G₂ T → R STypeEq G₁ G₂ T
+  cc→R= g1t g2t = rightp g1t g2t (stype-eq refl)
+
+
+  cct-consis : ∀{G1 G2 T} → Conc G1 T → Conc G2 T → G1 ~ G2
+  cct-consis c-base c-base = base~
+  cct-consis c-base c-unk = unk~R
+  cct-consis (c-fun c1t c1t₁) (c-fun c2t c2t₁) =
+      fun~ (cct-consis c1t c2t) (cct-consis c1t₁ c2t₁)
+  cct-consis (c-fun c1t c1t₁) c-unk = unk~R
+  cct-consis (c-pair c1t c1t₁) (c-pair c2t c2t₁) =
+      pair~ (cct-consis c1t c2t) (cct-consis c1t₁ c2t₁)
+  cct-consis (c-pair c1t c1t₁) c-unk = unk~R
+  cct-consis (c-sum c1t c1t₁) (c-sum c2t c2t₁) =
+      sum~ (cct-consis c1t c2t) (cct-consis c1t₁ c2t₁)
+  cct-consis (c-sum c1t c1t₁) c-unk = unk~R
+  cct-consis c-unk c2t = unk~L
+
+  cct-c⊔ : ∀{G1 G2 T} → (c1 : Conc G1 T) → (c2 : Conc G2 T)
+           → Conc ((G1 ⊔ G2){cct-consis c1 c2}) T
+  cct-c⊔ c-base c-base = c-base
+  cct-c⊔ c-base c-unk = c-base
+  cct-c⊔ (c-fun c1t c1t₁) (c-fun c2t c2t₁) =
+      c-fun (cct-c⊔ c1t c2t) (cct-c⊔ c1t₁ c2t₁)
+  cct-c⊔ (c-fun c1t c1t₁) c-unk = c-fun c1t c1t₁
+  cct-c⊔ (c-pair c1t c1t₁) (c-pair c2t c2t₁) =
+      c-pair (cct-c⊔ c1t c2t) (cct-c⊔ c1t₁ c2t₁)
+  cct-c⊔ (c-pair c1t c1t₁) c-unk = c-pair c1t c1t₁
+  cct-c⊔ (c-sum c1t c1t₁) (c-sum c2t c2t₁) =
+      c-sum (cct-c⊔ c1t c2t) (cct-c⊔ c1t₁ c2t₁)
+  cct-c⊔ (c-sum c1t c1t₁) c-unk = c-sum c1t c1t₁
+  cct-c⊔ c-unk c2t = c2t
+
+  c⊔-cct : ∀{G1 G2 T c} → Conc ((G1 ⊔ G2){c}) T
+         → (Conc G1 T × Conc G2 T)
+  c⊔-cct {.⋆} {G2} {T} {unk~L} ct = ⟨ c-unk , ct ⟩
+  c⊔-cct {G1} {.⋆} {T} {unk~R} ct = ⟨ ct , c-unk ⟩
+  c⊔-cct {.(` _)} {.(` _)} {T} {base~} ct = ⟨ ct , ct ⟩
+  c⊔-cct {A₁ ⇒ A₂} {B₁ ⇒ B₂} {T₁ ⇒ T₂} {fun~ c c₁} (c-fun ct ct₁) =
+    ⟨ (c-fun (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
+      (c-fun (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
+  c⊔-cct {A₁ `× A₂} {B₁ `× B₂} {T₁ `× T₂} {pair~ c c₁} (c-pair ct ct₁) = 
+    ⟨ (c-pair (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
+      (c-pair (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
+  c⊔-cct {A₁ `⊎ A₂} {B₁ `⊎ B₂} {T₁ `⊎ T₂} {sum~ c c₁} (c-sum ct ct₁) =
+    ⟨ (c-sum (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
+      (c-sum (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
+             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
+
+  _iff_ : Set → Set → Set
+  P iff Q = (P → Q) × (Q → P)
+
+  prop-17 : ∀{G1 G2 T} →
+     (Σ[ c ∈ G1 ~ G2 ] Conc ((G1 ⊔ G2){c}) T) iff (Conc G1 T × Conc G2 T)
+  prop-17 {G1}{G2}{T} = ⟨ G , H ⟩
+    where G : Σ-syntax (G1 ~ G2) (λ c → Conc ((G1 ⊔ G2){c}) T) →
+               Conc G1 T × Conc G2 T
+          G ⟨ fst , snd ⟩ = c⊔-cct {G1}{G2}{T}{fst} snd
+
+          H : Conc G1 T × Conc G2 T →
+                 Σ-syntax (G1 ~ G2) (λ c → Conc ((G1 ⊔ G2){c}) T)
+          H ⟨ fst , snd ⟩ = ⟨ (cct-consis fst snd) , (cct-c⊔ fst snd) ⟩
+
+
+{-
+
+    Coordinate Concretization and Abstraction
+
+   -}
+{-
+  data Conc2 : Type → Type → SType → SType → Set where
+    conc2 : ∀{G₁ G₂ : Type} { T₁ T₂ : SType}
+          → Conc G₁ T₁ → Conc G₂ T₂
+            -----------------------
+          → Conc2 G₁ G₂ T₁ T₂
+
+  data Proj₁ {n m : Level} (P : SType → SType → Set n)
+             (P₁ : SType → Set m) : Set (Agda.Primitive._⊔_ n m) where
+    proj-1 : 
+        (∀{T₁} → P₁ T₁ → Σ[ T₂ ∈ SType ] P T₁ T₂)
+      → (∀{T₁ T₂} → P T₁ T₂ → P₁ T₁)
+        -----------------------------------------
+      → Proj₁ P P₁
+
+  data Proj₂ {n m : Level} (P : SType → SType → Set n)
+             (P₂ : SType → Set m) : Set (Agda.Primitive._⊔_ n m) where
+    proj-2 : 
+        (∀{T₂} → P₂ T₂ → Σ[ T₁ ∈ SType ] P T₁ T₂)
+      → (∀{T₁ T₂} → P T₁ T₂ → P₂ T₂)
+        -----------------------------------------
+      → Proj₂ P P₂
+
+  data Abs2 {n : Level} (P : SType → SType → Set n)
+            : Type → Type → Set (lsuc n) where
+    abs2 : ∀ {P₁ P₂} {G₁ G₂}
+         → Proj₁ P P₁  →  Abs P₁ G₁
+         → Proj₂ P P₂  →  Abs P₂ G₂
+           ------------------------
+         → Abs2 P G₁ G₂
+
+  data And {n m : Level } (P : Set n) (Q : Set m)
+           : Set (Agda.Primitive._⊔_ n m) where
+    mkAnd : P → Q → And P Q
+
+  conc2p : {n : Level} → (SType → SType → Set n) → Type → Type
+         → SType → SType → Set n
+  conc2p P G₁ G₂ S₁ S₂ = And (Conc2 G₁ G₂ S₁ S₂) (P S₁ S₂)
+
+  data Interior' {n : Level} (P : SType → SType → Set n)
+               : Type → Type → Type → Type → Set (lsuc n) where
+    inter : ∀{G₁ G₂ G₃ G₄}
+          → Abs2 (conc2p P G₁ G₂) G₃ G₄
+            ---------------------------
+          → Interior' P G₁ G₂ G₃ G₄
+
+
+  I= : Type → Type → Type → Type → Set₁ 
+  I= = Interior' STypeEq
+
+  conc2= : Type → Type → SType → SType → Set
+  conc2= G₁ G₂ S₁ S₂ = And (Conc2 G₁ G₂ S₁ S₂) (STypeEq S₁ S₂)
+
+{-
+  p1-conc2= : Type → SType → Set
+  p1-conc2= G₁ S₁ = And (Conc G₁ S₁) (STypeEq S₁ S₂)
+-}
+
+  conc2ii : ∀{ι} → Conc2 (` ι) (` ι) (` ι) (` ι)
+  conc2ii {ι} = conc2 c-base c-base
+
+  stypeii : ∀{ι} → STypeEq (` ι) (` ι)
+  stypeii {ι} = stype-eq refl
+
+  conc2=ii : ∀{ι} → conc2= (` ι) (` ι) (` ι) (` ι)
+  conc2=ii {ι} = mkAnd conc2ii stypeii
+
+{-
+  data IsBase (ι : Base) : SType → Set where
+    eq-base : ∀{A : SType} → A ≡ ` ι → IsBase ι A 
+
+  I=ii : ∀ {ι} → I= (` ι) (` ι) (` ι) (` ι)
+  I=ii {ι} = inter (abs2 (proj-1 {!!} {!!})
+                         (abs-base {!!})
+                         (proj-2 {!!} {!!})
+                         (abs-base {!!}))
+
+  prop-16 : ∀ {G₁ G₂} → (c : G₁ ~ G₂) → I= G₁ G₂ ((G₁ ⊔ G₂){c}) ((G₁ ⊔ G₂){c})
+  prop-16 unk~L = {!!}
+  prop-16 unk~R = {!!}
+  prop-16 (base~ {ι}) = inter (abs2 (proj-1 {!!} {!!}) (abs-base {!!})
+                                    (proj-2 {!!} {!!}) (abs-base {!!}))
+  prop-16 (fun~ c c₁) = {!!}
+  prop-16 (pair~ c c₁) = {!!}
+  prop-16 (sum~ c c₁) = {!!}
+-}
+-}
+
   {- 
 
    In AGT with simple types, casts are a triple of types where the
@@ -575,4 +805,5 @@ module AGT where
   module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
                   baseNotInert compose
   open Red
+
 
