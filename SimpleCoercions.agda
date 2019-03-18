@@ -4,10 +4,12 @@ module SimpleCoercions where
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to ⟨_,_⟩)
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
   data Cast : Type → Set where
     id : ∀ {A : Type} {a : Atomic A} → Cast (A ⇒ A)
@@ -32,13 +34,12 @@ module SimpleCoercions where
 
   coerce : (A : Type) → (B : Type) → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce .⋆ B {unk~L} ℓ with eq-unk B
-  ... | inj₁ eq rewrite eq = id {⋆} {A-Unk}
-  ... | inj₂ neq = proj B ℓ {neq}
+  ... | yes eq rewrite eq = id {⋆} {A-Unk}
+  ... | no neq = proj B ℓ {neq}
   coerce A .⋆ {unk~R} ℓ with eq-unk A
-  ... | inj₁ eq rewrite eq = id {⋆} {A-Unk}
-  ... | inj₂ neq = inj A {neq}
-  coerce Nat Nat {nat~} ℓ = id {Nat} {A-Nat}
-  coerce 𝔹 𝔹 {bool~} ℓ = id {𝔹} {A-Bool}
+  ... | yes eq rewrite eq = id {⋆} {A-Unk}
+  ... | no neq = inj A {neq}
+  coerce (` ι) (` ι) {base~} ℓ = id {` ι} {A-Base}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
     cfun (coerce A' A {Sym~ c} (flip ℓ) ) (coerce B B' {c₁} ℓ)
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
@@ -68,13 +69,14 @@ module SimpleCoercions where
   module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
   open PCR
   
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+            → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id {a} = M
   applyCast M v (inj A) {()}
   applyCast M v (proj B ℓ) {a} with PCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
-  ...    | inj₁ cns = M' ⟨ coerce A' B {cns} ℓ ⟩
-  ...    | inj₂ incns = blame ℓ
+  ...    | yes cns = M' ⟨ coerce A' B {cns} ℓ ⟩
+  ...    | no incns = blame ℓ
   applyCast{Γ} M v (cfun{A₁}{B₁}{A₂}{B₂} c d) {a} =
      ƛ (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
   applyCast M v (cpair c d) {a} =
@@ -84,22 +86,27 @@ module SimpleCoercions where
     let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ l) (ƛ r)
 
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
+          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M c {()} N
 
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M c {()}
 
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
+          → ∀ {i : Inert c} → Γ ⊢ B'
   sndCast M c {()}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B'))) → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
+  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
+           → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert (inj _) () I-inj
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast baseNotInert
+  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+                 baseNotInert
   open Red
 
   import GTLC2CC

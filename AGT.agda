@@ -9,19 +9,17 @@ module AGT where
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
 
   data SType : Set where
-    SNat : SType
-    SBool : SType
+    `_ : Base → SType
     _⇒_ : SType → SType → SType
     _`×_ : SType → SType → SType
     _`⊎_ : SType → SType → SType
 
   data _⌢_ : SType → SType → Set where
-    nat⌢ : SNat ⌢ SNat
-    bool⌢ : SBool ⌢ SBool
+    base⌢ : ∀{ι : Base} → (` ι) ⌢ (` ι)
     fun⌢ : ∀{A B A' B'}
         -------------------
       → (A ⇒ B) ⌢ (A' ⇒ B')
@@ -35,8 +33,7 @@ module AGT where
   {- Concretization -}
 
   data Conc : Type → SType → Set where
-    c-nat : Conc Nat SNat
-    c-bool : Conc 𝔹 SBool
+    c-base : ∀{ι} → Conc (` ι) (` ι)
     c-fun : ∀{T₁ T₂ : Type} {S₁ S₂ : SType}
        → Conc T₁ S₁  →  Conc T₂ S₂
          -------------------------
@@ -59,9 +56,8 @@ module AGT where
           → A `⊑ B
 
   conc : (A : Type) → Σ[ S ∈ SType ] Conc A S
-  conc ⋆ = ⟨ SBool , c-unk ⟩
-  conc Nat = ⟨ SNat , c-nat ⟩
-  conc 𝔹 = ⟨ SBool , c-bool ⟩
+  conc ⋆ = ⟨ ` 𝔹 , c-unk ⟩
+  conc (` ι) = ⟨ ` ι , c-base ⟩
   conc (A ⇒ B) with conc A | conc B
   ... | ⟨ A' , ca ⟩ | ⟨ B' , cb ⟩ =
       ⟨ A' ⇒ B' , c-fun ca cb ⟩
@@ -77,45 +73,27 @@ module AGT where
       ------
     → A ≡ ⋆
   prec-unk-inv {⋆} (prec f) = refl
-  prec-unk-inv {Nat} (prec f) with f {SBool} c-unk
+  prec-unk-inv {` ι} (prec f) with f {` ι ⇒ ` ι} c-unk
   ... | ()
-  prec-unk-inv {𝔹} (prec f) with f {SNat} c-unk
+  prec-unk-inv {A ⇒ A₁} (prec f) with f {` Nat} c-unk
   ... | ()
-  prec-unk-inv {A ⇒ A₁} (prec f) with f {SNat} c-unk
+  prec-unk-inv {A `× A₁} (prec f) with f {` Nat} c-unk
   ... | ()
-  prec-unk-inv {A `× A₁} (prec f) with f {SNat} c-unk
-  ... | ()
-  prec-unk-inv {A `⊎ A₁} (prec f) with f {SNat} c-unk
+  prec-unk-inv {A `⊎ A₁} (prec f) with f {` Nat} c-unk
   ... | ()
 
-  prec-nat-inv : ∀{A}
-    → Nat `⊑ A
+  prec-base-inv : ∀{A ι}
+    → ` ι `⊑ A
       ---------------
-    → A ≡ Nat ⊎ A ≡ ⋆
-  prec-nat-inv {⋆} (prec f) = inj₂ refl
-  prec-nat-inv {Nat} (prec f) = inj₁ refl
-  prec-nat-inv {𝔹} (prec f) with f {SNat} c-nat
+    → A ≡ ` ι ⊎ A ≡ ⋆
+  prec-base-inv {⋆} (prec f) = inj₂ refl
+  prec-base-inv {` ι} {ι'} (prec f) with f {` ι'} c-base
+  ... | c-base = inj₁ refl
+  prec-base-inv {A ⇒ A₁} {ι} (prec f) with f {` ι} c-base
   ... | ()
-  prec-nat-inv {A ⇒ A₁} (prec f) with f {SNat} c-nat
+  prec-base-inv {A `× A₁} {ι} (prec f) with f {` ι} c-base
   ... | ()
-  prec-nat-inv {A `× A₁} (prec f) with f {SNat} c-nat
-  ... | ()
-  prec-nat-inv {A `⊎ A₁} (prec f) with f {SNat} c-nat
-  ... | ()
-
-  prec-bool-inv : ∀{A}
-    → 𝔹 `⊑ A
-      ---------------
-    → A ≡ 𝔹 ⊎ A ≡ ⋆
-  prec-bool-inv {⋆} (prec f) = inj₂ refl
-  prec-bool-inv {Nat} (prec f) with f {SBool} c-bool
-  ... | ()
-  prec-bool-inv {𝔹} (prec f) = inj₁ refl
-  prec-bool-inv {A ⇒ A₁} (prec f) with f {SBool} c-bool
-  ... | ()
-  prec-bool-inv {A `× A₁} (prec f) with f {SBool} c-bool
-  ... | ()
-  prec-bool-inv {A `⊎ A₁} (prec f) with f {SBool} c-bool
+  prec-base-inv {A `⊎ A₁} {ι} (prec f) with f {` ι} c-base
   ... | ()
 
   prec-fun-inv : ∀{A₁ A₂ B₁ B₂}
@@ -141,12 +119,7 @@ module AGT where
      → (Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] (B ≡ B₁ ⇒ B₂) × (A₁ `⊑ B₁) × (A₂ `⊑ B₂))
        ⊎ B ≡ ⋆
   prec-left-fun-inv {A₁} {A₂} {⋆} (prec f) = inj₂ refl
-  prec-left-fun-inv {A₁} {A₂} {Nat} (prec f)
-      with conc A₁ | conc A₂
-  ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
-      with f (c-fun ca1 ca2)
-  ... | ()
-  prec-left-fun-inv {A₁} {A₂} {𝔹} (prec f)
+  prec-left-fun-inv {A₁} {A₂} {` ι} (prec f)
       with conc A₁ | conc A₂
   ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
       with f (c-fun ca1 ca2)
@@ -188,12 +161,7 @@ module AGT where
      → (Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] (B ≡ B₁ `× B₂) × (A₁ `⊑ B₁) × (A₂ `⊑ B₂))
        ⊎ B ≡ ⋆
   prec-left-pair-inv {A₁} {A₂} {⋆} (prec f) = inj₂ refl
-  prec-left-pair-inv {A₁} {A₂} {Nat} (prec f)
-      with conc A₁ | conc A₂
-  ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
-      with f (c-pair ca1 ca2)
-  ... | ()
-  prec-left-pair-inv {A₁} {A₂} {𝔹} (prec f)
+  prec-left-pair-inv {A₁} {A₂} {` ι} (prec f)
       with conc A₁ | conc A₂
   ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
       with f (c-pair ca1 ca2)
@@ -235,12 +203,7 @@ module AGT where
      → (Σ[ B₁ ∈ Type ] Σ[ B₂ ∈ Type ] (B ≡ B₁ `⊎ B₂) × (A₁ `⊑ B₁) × (A₂ `⊑ B₂))
        ⊎ B ≡ ⋆
   prec-left-sum-inv {A₁} {A₂} {⋆} (prec f) = inj₂ refl
-  prec-left-sum-inv {A₁} {A₂} {Nat} (prec f)
-      with conc A₁ | conc A₂
-  ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
-      with f (c-sum ca1 ca2)
-  ... | ()
-  prec-left-sum-inv {A₁} {A₂} {𝔹} (prec f)
+  prec-left-sum-inv {A₁} {A₂} {` ι} (prec f)
       with conc A₁ | conc A₂
   ... | ⟨ A₁' , ca1 ⟩ | ⟨ A₂' , ca2 ⟩
       with f (c-sum ca1 ca2)
@@ -262,8 +225,7 @@ module AGT where
   le-implies-prec : ∀ {A B} → A ⊑ B → B `⊑ A
   
   le-implies-prec unk⊑ = prec (λ {S} _ → c-unk)
-  le-implies-prec nat⊑ = prec (λ {S} z → z)
-  le-implies-prec bool⊑ = prec (λ {S} z → z)
+  le-implies-prec base⊑ = prec (λ {S} z → z)
   le-implies-prec (fun⊑ le₁ le₂)
      with le-implies-prec le₁ | le-implies-prec le₂
   ... | prec imp1 | prec imp2 =
@@ -280,11 +242,8 @@ module AGT where
   prec-implies-le : ∀{A B} → A `⊑ B → B ⊑ A
   prec-implies-le {⋆} {B} (prec f) with prec-unk-inv (prec f)
   ... | eq rewrite eq = unk⊑
-  prec-implies-le {Nat} {B} (prec f) with prec-nat-inv (prec f)
-  ... | inj₁ eq rewrite eq = nat⊑
-  ... | inj₂ eq rewrite eq = unk⊑
-  prec-implies-le {𝔹} {B} (prec f) with prec-bool-inv (prec f)
-  ... | inj₁ eq rewrite eq = bool⊑
+  prec-implies-le {` ι} {B} (prec f) with prec-base-inv (prec f)
+  ... | inj₁ eq rewrite eq = base⊑
   ... | inj₂ eq rewrite eq = unk⊑
   prec-implies-le {A₁ ⇒ A₂} {B} (prec f) with prec-left-fun-inv (prec f)
   ... | inj₁ ⟨ B₁ , ⟨ B₂ , ⟨ eq , ⟨ a1b1 , a2b2 ⟩ ⟩ ⟩ ⟩ rewrite eq =
@@ -310,8 +269,7 @@ module AGT where
   ... | ⟨ B' , cb ⟩ = cons c-unk cb
   cons-implies-ceq {A}{⋆} unk~R with conc A
   ... | ⟨ A' , ca ⟩ = cons ca c-unk
-  cons-implies-ceq nat~ = cons c-nat c-nat
-  cons-implies-ceq bool~ = cons c-bool c-bool
+  cons-implies-ceq base~ = cons c-base c-base
   cons-implies-ceq {A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun~ cns₁ cns₂)
       with cons-implies-ceq cns₁ | cons-implies-ceq cns₂
   ... | cons{S = S₁} c1 c2 | cons{S = S₂} c3 c4 =
@@ -351,14 +309,10 @@ module AGT where
       → Cod P P₂
 
   data Abs : (SType → Set) → Type → Set₁ where
-    abs-nat : ∀{P : SType → Set}
-      → (∀{T : SType} → P T → T ≡ SNat)
+    abs-base : ∀{P : SType → Set} {ι : Base}
+      → (∀{T : SType} → P T → T ≡ ` ι)
         -------------------------------
-      → Abs P Nat
-    abs-bool : ∀{P : SType → Set}
-      → (∀{T : SType} → P T → T ≡ SBool)
-        --------------------------------
-      → Abs P 𝔹
+      → Abs P (` ι)
     abs-fun : ∀{P P₁ P₂ : SType → Set}{A B : Type}
       → AllFuns P
       → Dom P P₁  →   Abs P₁ A
@@ -392,10 +346,8 @@ module AGT where
      → Abs P A  
        ----------
      → P ⊆ Conc A
-  conc-abs-sound (abs-nat p-nat) {T} pt
-    rewrite p-nat {T} pt = c-nat
-  conc-abs-sound (abs-bool p-bool) {T} pt
-    rewrite p-bool {T} pt = c-bool
+  conc-abs-sound (abs-base p-base) {T} pt
+    rewrite p-base {T} pt = c-base
   conc-abs-sound (abs-fun allfun dom-p abs-a cod-p abs-b) pt
       with allfun
   ... | funs af
@@ -406,17 +358,11 @@ module AGT where
         c-fun (ih1 (dom-dom dom-p pt)) (ih2 (cod-cod cod-p pt))
   conc-abs-sound (abs-any a b c) pt = c-unk
 
-  c-any-nat  : ∀{A}
-     → Conc A SNat
-     → A ≡ Nat ⊎ A ≡ ⋆
-  c-any-nat c-nat = inj₁ refl
-  c-any-nat c-unk = inj₂ refl
-
-  c-any-bool  : ∀{A}
-     → Conc A SBool
-     → A ≡ 𝔹 ⊎ A ≡ ⋆
-  c-any-bool c-bool = inj₁ refl
-  c-any-bool c-unk = inj₂ refl
+  c-any-base  : ∀{A ι}
+     → Conc A (` ι)
+     → A ≡ (` ι) ⊎ A ≡ ⋆
+  c-any-base c-base = inj₁ refl
+  c-any-base c-unk = inj₂ refl
 
   c-any-fun  : ∀{A T₁ T₂}
      → Conc A (T₁ ⇒ T₂)
@@ -430,8 +376,7 @@ module AGT where
      → Conc A T₁  →  Conc A T₂
        -----------------------
      → A ≡ ⋆ ⊎ (T₁ ⌢ T₂)
-  conc-sh-cons c-nat c-nat = inj₂ nat⌢
-  conc-sh-cons c-bool c-bool = inj₂ bool⌢
+  conc-sh-cons c-base c-base = inj₂ base⌢
   conc-sh-cons (c-fun a-t1 a-t3) (c-fun a-t2 a-t4) = inj₂ fun⌢
   conc-sh-cons (c-pair a-t1 a-t3) (c-pair a-t2 a-t4) = inj₂ pair⌢
   conc-sh-cons (c-sum a-t1 a-t3) (c-sum a-t2 a-t4) = inj₂ sum⌢
@@ -442,18 +387,11 @@ module AGT where
     → P ⊆ Conc A  →  Abs P A'
       -------------------------
     → A ⊑ A'
-  abs-optimal ⟨ T , pt ⟩ p-ca (abs-nat all-nat)
+  abs-optimal ⟨ T , pt ⟩ p-ca (abs-base all-base)
       with pt
   ... | pt'
-      rewrite all-nat pt
-      with c-any-nat (p-ca pt') 
-  ... | inj₁ eq rewrite eq = Refl⊑
-  ... | inj₂ eq rewrite eq = unk⊑
-  abs-optimal ⟨ T , pt ⟩ p-ca (abs-bool all-bool)
-      with pt
-  ... | pt'
-      rewrite all-bool pt
-      with c-any-bool (p-ca pt') 
+      rewrite all-base pt
+      with c-any-base (p-ca pt') 
   ... | inj₁ eq rewrite eq = Refl⊑
   ... | inj₂ eq rewrite eq = unk⊑
   abs-optimal ⟨ T , pt ⟩ p-ca
@@ -521,28 +459,32 @@ module AGT where
 
   data Inert : ∀{A} → Cast A → Set where
     inert : ∀{A B C} {ab : A ⊑ B} {cb : C ⊑ B}
-          → ¬ (Base A × Base C × A ≡ C)
+          → ¬ (Σ[ ι ∈ Base ] A ≡ ` ι × C ≡ ` ι)
           → Inert ((A ⇒ B ⇒ C){ab}{cb})
 
   data Active : ∀{A} → Cast A → Set where
-    activeId : ∀ {A}{aa}{aa'} → Base A → Active ((A ⇒ A ⇒ A){aa}{aa'})
+    activeId : ∀ {ι : Base}{ab}{cb} → Active (((` ι) ⇒ (` ι) ⇒ (` ι)){ab}{cb})
     activeError : ∀ {A B} → Active (error A B)
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert ((A ⇒ B ⇒ C){ab}{cb})
-      with base A | base C
-  ... | inj₁ bA | inj₂ bC = inj₂ (inert (λ z → bC (proj₁ (proj₂ z))))
-  ... | inj₂ bA | inj₁ bC = inj₂ (inert (λ z → bA (proj₁ z)))
-  ... | inj₂ bA | inj₂ bC = inj₂ (inert (λ z → bC (proj₁ (proj₂ z))))
-  ... | inj₁ bA | inj₁ bC
-      with base-eq? A C {bA} {bC}
-  ... | inj₂ neq = inj₂ (inert (λ z → neq (proj₂ (proj₂ z))))
-  ... | inj₁ eq rewrite eq
-      with ⊑RBase bC cb
-  ... | b=c rewrite b=c = inj₁ (activeId bA)
-  
+      with A | C
+  ... | (` ι) | (` ι')
+      with base-eq? ι ι'
+  ... | no neq = inj₂ (inert (λ z → neq (G z)))
+        where G : (Σ-syntax Base (λ ι₁ → ` ι ≡ ` ι₁ × ` ι' ≡ ` ι₁)) → ι ≡ ι'
+              G ⟨ ι , ⟨ refl , refl ⟩ ⟩ = refl
+
+  ActiveOrInert ((A ⇒ B ⇒ C){ab}{cb})| (` ι) | (` ι') | yes eq rewrite eq
+      with ⊑RBase cb
+  ... | b=c rewrite b=c = inj₁ activeId
+  ActiveOrInert (A ⇒ B ⇒ C) | ` ι | _ = inj₂ (inert (λ z → {!!}))
+  ActiveOrInert (A ⇒ B ⇒ C) | _ | ` ι' =
+      inj₂ (inert (λ z → {!!}))
+  ActiveOrInert (A ⇒ B ⇒ C) | _ | _ =
+      inj₂ (inert (λ z → {!!}))
   ActiveOrInert (error A B) = inj₁ activeError
-  
+{-  
   import EfficientParamCasts
   module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
   open EPCR
@@ -624,3 +566,4 @@ module AGT where
   module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
                   baseNotInert compose
   open Red
+-}

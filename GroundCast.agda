@@ -17,7 +17,7 @@ module GroundCast where
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
@@ -82,19 +82,15 @@ module GroundCast where
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert (cast .⋆ B ℓ {unk~L}) with eq-unk B
-  ... | inj₁ eqb rewrite eqb = inj₁ (A-id {⋆} {A-Unk} (cast ⋆ ⋆ ℓ))
-  ... | inj₂ neqb = inj₁ (A-proj (cast ⋆ B ℓ) neqb)
+  ... | yes eqb rewrite eqb = inj₁ (A-id {⋆} {A-Unk} (cast ⋆ ⋆ ℓ))
+  ... | no neqb = inj₁ (A-proj (cast ⋆ B ℓ) neqb)
   ActiveOrInert (cast A .⋆ ℓ {unk~R}) with eq-unk A
-  ... | inj₁ eqa rewrite eqa = inj₁ (A-id {⋆}{A-Unk} (cast ⋆ ⋆ ℓ))
-  ... | inj₂ neqa with ground? A
-  ...    | inj₁ g = inj₂ (I-inj g (cast A ⋆ ℓ))
-  ...    | inj₂ ng = inj₁ (A-inj (cast A ⋆ ℓ) ng neqa)
-  ActiveOrInert (cast .Nat .Nat ℓ {nat~}) =
-     inj₁ (A-id {Nat}{A-Nat} (cast Nat Nat ℓ))
-  ActiveOrInert (cast .𝔹 .𝔹 ℓ {bool~}) =
-     inj₁ (A-id {𝔹}{A-Bool} (cast 𝔹 𝔹 ℓ))
-  ActiveOrInert (cast .Unit .Unit ℓ {unit~}) =
-     inj₁ (A-id {Unit}{A-Unit} (cast Unit Unit ℓ))
+  ... | yes eqa rewrite eqa = inj₁ (A-id {⋆}{A-Unk} (cast ⋆ ⋆ ℓ))
+  ... | no neqa with ground? A
+  ...    | yes g = inj₂ (I-inj g (cast A ⋆ ℓ))
+  ...    | no ng = inj₁ (A-inj (cast A ⋆ ℓ) ng neqa)
+  ActiveOrInert (cast (` ι) (` ι) ℓ {base~}) =
+     inj₁ (A-id {` ι}{A-Base} (cast (` ι) (` ι) ℓ))
   ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ {fun~ c c₁}) =
      inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ))
   ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) =
@@ -142,15 +138,15 @@ module GroundCast where
     V : G ⇒p ⋆ ⇒q H  —→   blame q
    -}
   applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} with ground? B
-  ... | inj₁ b-g with PCR.canonical⋆ M v
+  ... | yes b-g with PCR.canonical⋆ M v
   ...      | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
                  with gnd-eq? G B {inert-ground c' i} {b-g}
-  ...          | inj₁ ap-b rewrite ap-b = V
-  ...          | inj₂ ap-b = blame ℓ
+  ...          | yes ap-b rewrite ap-b = V
+  ...          | no ap-b = blame ℓ
   {-
     V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
    -}
-  applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} | inj₂ b-ng with ground B {b-nd}
+  applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ {unk~L} ⟩) ⟨ cast H B ℓ {Sym~ cns} ⟩
   
@@ -201,9 +197,8 @@ module GroundCast where
   Finally, we show that casts to base type are not inert.
   -}
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert c () (I-inj x .c)
-  baseNotInert c () (I-fun .c)
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
 
 
   {-

@@ -19,10 +19,12 @@ module GroundCoercions where
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+      renaming (_,_ to ⟨_,_⟩)
+  open import Relation.Binary.PropositionalEquality
+      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
   {-
  
@@ -76,58 +78,44 @@ module GroundCoercions where
   
   coerce-to⋆ : (A : Type) → Label → Cast (A ⇒ ⋆)
   coerce-to⋆ A ℓ with eq-unk A
-  ... | inj₁ eq rewrite eq = id {⋆} {A-Unk}
-  ... | inj₂ neq with ground? A
-  ...     | inj₁ g = inj A {g}
-  ...     | inj₂ ng with ground A {neq}
+  ... | yes eq rewrite eq = id {⋆} {A-Unk}
+  ... | no neq with ground? A
+  ...     | yes g = inj A {g}
+  ...     | no ng with ground A {neq}
   ...        | ⟨ G , ⟨ g , c ⟩ ⟩ = cseq (coerce-to-gnd A G {g} {c} ℓ) (inj G {g})
 
   coerce-from⋆ : (B : Type) → Label → Cast (⋆ ⇒ B)
   coerce-from⋆ B ℓ with eq-unk B
-  ... | inj₁ eq rewrite eq = id {⋆} {A-Unk}
-  ... | inj₂ neq with ground? B
-  ...     | inj₁ g = proj B ℓ {g}
-  ...     | inj₂ ng with ground B {neq}
+  ... | yes eq rewrite eq = id {⋆} {A-Unk}
+  ... | no neq with ground? B
+  ...     | yes g = proj B ℓ {g}
+  ...     | no ng with ground B {neq}
   ...        | ⟨ G , ⟨ g , c ⟩ ⟩ = cseq (proj G ℓ {g}) (coerce-from-gnd G B {g} {Sym~ c} ℓ) 
 
-  coerce-to-gnd .⋆ .Nat {G-Base B-Nat} {unk~L} ℓ = proj Nat ℓ {G-Base B-Nat}
-  coerce-to-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = id {Nat} {A-Nat}
-  coerce-to-gnd .⋆ .𝔹 {G-Base B-Bool} {unk~L} ℓ = proj 𝔹 ℓ {G-Base B-Bool}
-  coerce-to-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = id {𝔹}{A-Bool}
-  coerce-to-gnd .⋆ .Unit {G-Base B-Unit} {unk~L} ℓ = proj Unit ℓ {G-Base B-Unit}
-  coerce-to-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = id {Unit}{A-Unit}
-  coerce-to-gnd .⋆ .(⋆ ⇒ ⋆) {G-Fun} {unk~L} ℓ = proj (⋆ ⇒ ⋆) ℓ {G-Fun}
+  coerce-to-gnd .⋆ B {gb} {unk~L} ℓ = proj B ℓ {gb}
+  coerce-to-gnd A .⋆ {()} {unk~R} ℓ
+  coerce-to-gnd (` ι) (` ι) {gb} {base~} ℓ = id {` ι} {A-Base}
   coerce-to-gnd (A₁ ⇒ A₂) .(⋆ ⇒ ⋆) {G-Fun} {fun~ c c₁} ℓ =
      cfun (coerce-from⋆ A₁ (flip ℓ)) (coerce-to⋆ A₂ ℓ)
-  coerce-to-gnd .⋆ .(⋆ `× ⋆) {G-Pair} {unk~L} ℓ = proj (⋆ `× ⋆) ℓ {G-Pair}
   coerce-to-gnd (A₁ `× A₂) .(⋆ `× ⋆) {G-Pair} {pair~ c c₁} ℓ =
      cpair (coerce-to⋆ A₁ ℓ) (coerce-to⋆ A₂ ℓ)
-  coerce-to-gnd .⋆ .(⋆ `⊎ ⋆) {G-Sum} {unk~L} ℓ = proj (⋆ `⊎ ⋆) ℓ {G-Sum}
   coerce-to-gnd (A₁ `⊎ A₂) .(⋆ `⊎ ⋆) {G-Sum} {sum~ c c₁} ℓ =
      csum (coerce-to⋆ A₁ ℓ) (coerce-to⋆ A₂ ℓ)
-  
-  coerce-from-gnd .Nat .⋆ {G-Base B-Nat} {unk~R} ℓ = inj Nat {G-Base B-Nat}
-  coerce-from-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = id {Nat}{A-Nat}
-  coerce-from-gnd .𝔹 .⋆ {G-Base B-Bool} {unk~R} ℓ = inj 𝔹 {G-Base B-Bool}
-  coerce-from-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = id {𝔹}{A-Bool}
-  coerce-from-gnd .Unit .⋆ {G-Base B-Unit} {unk~R} ℓ = inj Unit {G-Base B-Unit}
-  coerce-from-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = id {Unit}{A-Unit}
-  coerce-from-gnd .(⋆ ⇒ ⋆) .⋆ {G-Fun} {unk~R} ℓ = inj (⋆ ⇒ ⋆) {G-Fun}
-  coerce-from-gnd .(⋆ ⇒ ⋆) (B₁ ⇒ B₂) {G-Fun} {fun~ c c₁} ℓ =
+
+  coerce-from-gnd .⋆ B {()} {unk~L} ℓ
+  coerce-from-gnd A .⋆ {ga} {unk~R} ℓ = inj A {ga}
+  coerce-from-gnd (` ι) (` ι) {ga} {base~} ℓ = id {` ι}  {A-Base}
+  coerce-from-gnd (⋆ ⇒ ⋆) (B₁ ⇒ B₂) {G-Fun} {fun~ c c₁} ℓ =
      cfun (coerce-to⋆ B₁ (flip ℓ)) (coerce-from⋆ B₂ ℓ)
-  coerce-from-gnd .(⋆ `× ⋆) .⋆ {G-Pair} {unk~R} ℓ = inj (⋆ `× ⋆) {G-Pair}
-  coerce-from-gnd .(⋆ `× ⋆) (B₁ `× B₂) {G-Pair} {pair~ c c₁} ℓ =
+  coerce-from-gnd (⋆ `× ⋆) (B₁ `× B₂) {G-Pair} {pair~ c c₁} ℓ =
      cpair (coerce-from⋆ B₁ ℓ) (coerce-from⋆ B₂ ℓ)
-  coerce-from-gnd .(⋆ `⊎ ⋆) .⋆ {G-Sum} {unk~R} ℓ = inj (⋆ `⊎ ⋆) {G-Sum}
-  coerce-from-gnd .(⋆ `⊎ ⋆) (B₁ `⊎ B₂) {G-Sum} {sum~ c c₁} ℓ =
+  coerce-from-gnd (⋆ `⊎ ⋆) (B₁ `⊎ B₂) {G-Sum} {sum~ c c₁} ℓ =
      csum (coerce-from⋆ B₁ ℓ) (coerce-from⋆ B₂ ℓ)
 
   coerce : (A : Type) → (B : Type) → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce .⋆ B {unk~L} ℓ = coerce-from⋆ B ℓ
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
-  coerce Nat Nat {nat~} ℓ = id {Nat} {A-Nat}
-  coerce 𝔹 𝔹 {bool~} ℓ = id {𝔹} {A-Bool}
-  coerce Unit Unit {unit~} ℓ = id {Unit} {A-Unit}
+  coerce (` ι) (` ι) {base~} ℓ = id {` ι} {A-Base}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
     cfun (coerce A' A {Sym~ c} (flip ℓ) ) (coerce B B' {c₁} ℓ)
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
@@ -205,7 +193,8 @@ module GroundCoercions where
 
   -}
 
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) → ∀ {a : Active c} → Γ ⊢ B
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) 
+            → ∀ {a : Active c} → Γ ⊢ B
   {-
     V⟨id⟩    —→    V
    -}
@@ -216,8 +205,8 @@ module GroundCoercions where
    -}
   applyCast{Γ} M v (proj B ℓ {gb}) {a} with PCR.canonical⋆ M v
   ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {ga} {gb}
-  ...    | inj₂ neq = blame ℓ
-  ...    | inj₁ eq = g  {- odd work-around -}
+  ...    | no neq = blame ℓ
+  ...    | yes eq = g  {- odd work-around -}
            where g : Γ ⊢ B
                  g rewrite eq = V
   {-
@@ -275,10 +264,8 @@ module GroundCoercions where
   Finally, we show that casts to base type are not inert.
   -}
 
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert c B-Nat ()
-  baseNotInert c B-Bool ()
-  baseNotInert c B-Unit ()
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
 
   {-
   We now instantiate the inner module of ParamCastReduction, thereby
@@ -288,4 +275,5 @@ module GroundCoercions where
   module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
                      baseNotInert
   open Red
+
 

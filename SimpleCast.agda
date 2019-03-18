@@ -5,7 +5,7 @@ module SimpleCast where
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
@@ -33,15 +33,13 @@ module SimpleCast where
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert ((.⋆ ⇒⟨ ℓ ⟩ B) {unk~L}) with eq-unk B
-  ... | inj₁ eq rewrite eq = inj₁ (activeId{⋆}{A-Unk} (⋆ ⇒⟨ ℓ ⟩ ⋆))
-  ... | inj₂ neq = inj₁ (activeProj (⋆ ⇒⟨ ℓ ⟩ B) neq)
+  ... | yes eq rewrite eq = inj₁ (activeId{⋆}{A-Unk} (⋆ ⇒⟨ ℓ ⟩ ⋆))
+  ... | no neq = inj₁ (activeProj (⋆ ⇒⟨ ℓ ⟩ B) neq)
   ActiveOrInert ((A ⇒⟨ ℓ ⟩ .⋆) {unk~R}) with eq-unk A
-  ... | inj₁ eq rewrite eq = inj₁ (activeId{⋆}{A-Unk} (⋆ ⇒⟨ ℓ ⟩ ⋆))
-  ... | inj₂ neq = inj₂ (inert neq (A ⇒⟨ ℓ ⟩ ⋆))
-  ActiveOrInert ((.Nat  ⇒⟨ ℓ ⟩ .Nat) {nat~}) =
-      inj₁ (activeId{Nat}{A-Nat} (Nat ⇒⟨ ℓ ⟩ Nat))
-  ActiveOrInert ((.𝔹 ⇒⟨ ℓ ⟩ .𝔹) {bool~}) =
-      inj₁ (activeId{𝔹}{A-Bool} (𝔹 ⇒⟨ ℓ ⟩ 𝔹))
+  ... | yes eq rewrite eq = inj₁ (activeId{⋆}{A-Unk} (⋆ ⇒⟨ ℓ ⟩ ⋆))
+  ... | no neq = inj₂ (inert neq (A ⇒⟨ ℓ ⟩ ⋆))
+  ActiveOrInert (((` ι)  ⇒⟨ ℓ ⟩ (` ι)) {base~}) =
+      inj₁ (activeId{` ι}{A-Base} ((` ι) ⇒⟨ ℓ ⟩ (` ι)))
   ActiveOrInert (((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)) {fun~ c d}) =
       inj₁ (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)))
   ActiveOrInert (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {pair~ c d}) =
@@ -61,8 +59,8 @@ module SimpleCast where
   applyCast {Γ} {.⋆} {B} M v ((.⋆ ⇒⟨ ℓ ⟩ B) {c}) {activeProj .(⋆ ⇒⟨ ℓ ⟩ B) x}
          with PCR.canonical⋆ M v
   ...  | ⟨ A' , ⟨ M' , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
-  ...    | inj₁ ap-b = M' ⟨ (A' ⇒⟨ ℓ ⟩ B) {ap-b} ⟩
-  ...    | inj₂ ap-b = blame ℓ  
+  ...    | yes ap-b = M' ⟨ (A' ⇒⟨ ℓ ⟩ B) {ap-b} ⟩
+  ...    | no ap-b = blame ℓ  
   {- Wrap -}
   applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c})
       {activeFun .((_ ⇒ _) ⇒⟨ ℓ ⟩ (_ ⇒ _))} =
@@ -93,8 +91,8 @@ module SimpleCast where
             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert c () (inert x .c)
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
 
   module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
                  baseNotInert

@@ -17,16 +17,19 @@ module EfficientGroundCoercions where
   open import Agda.Primitive
   open import Data.Nat
   open import Data.Nat.Properties
-  open ≤-Reasoning {- renaming (begin_ to start_; _∎ to _□; _≡⟨_⟩_ to _≡⟨_⟩'_) -}
+  open ≤-Reasoning
+     {- renaming (begin_ to start_; _∎ to _□; _≡⟨_⟩_ to _≡⟨_⟩'_) -}
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
-  open import Data.Empty using (⊥; ⊥-elim)
+  open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
-  open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+      renaming (_,_ to ⟨_,_⟩)
+  open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   
   data iCast : Type → Set
   data gCast : Type → Set
@@ -42,7 +45,7 @@ module EfficientGroundCoercions where
   -}
 
   infix 7 _↣_
-  infix  6 `_
+  infix  10 `_
   infix 5 _⨟!
   infix 5 _??_⨟_
   infix 5 _`⨟_
@@ -72,7 +75,7 @@ module EfficientGroundCoercions where
        → iCast (A ⇒ B)
 
   data gCast where
-    idι : ∀ {A : Type} {a : Base A} → gCast (A ⇒ A)
+    idι : ∀ {ι : Base} → gCast ((` ι) ⇒ (` ι))
     _↣_ : ∀ {A B A' B'}
       → (c : Cast (B ⇒ A)) → (d : Cast (A' ⇒ B'))
         -----------------------------------------
@@ -117,51 +120,38 @@ module EfficientGroundCoercions where
      → ∀ {c : A ~ B}{b : B ≢ ⋆} → Label → gCast (A ⇒ B)
 
   coerce-gnd-to⋆ : (A : Type) → {g : Ground A} → Label → Cast (A ⇒ ⋆)
-  coerce-gnd-to⋆ .Nat {G-Base B-Nat} ℓ =
-      ` (idι{Nat}{B-Nat} ⨟!) {G-Base B-Nat}
-  coerce-gnd-to⋆ .𝔹 {G-Base B-Bool} ℓ =
-      ` (idι{𝔹}{B-Bool} ⨟!) {G-Base B-Bool}
-  coerce-gnd-to⋆ .Unit {G-Base B-Unit} ℓ =
-      ` (idι{Unit}{B-Unit} ⨟!) {G-Base B-Unit}
+  coerce-gnd-to⋆ (` ι) {G-Base} ℓ =
+      ` (idι{ι} ⨟!) {G-Base}
   coerce-gnd-to⋆ (⋆ ⇒ ⋆) {G-Fun} ℓ = ` (id★ ↣ id★ ⨟!) {G-Fun}
   coerce-gnd-to⋆ (⋆ `× ⋆) {G-Pair} ℓ = ` (id★ ×' id★ ⨟!) {G-Pair}
   coerce-gnd-to⋆ (⋆ `⊎ ⋆) {G-Sum} ℓ = ` (id★ +' id★ ⨟!) {G-Sum}
 
   coerce-gnd-from⋆ : (B : Type) → {g : Ground B} → Label → Cast (⋆ ⇒ B)
-  coerce-gnd-from⋆ Nat {G-Base B-Nat} ℓ =
-      (Nat ?? ℓ ⨟ ` idι{Nat}{B-Nat}) {G-Base B-Nat}
-  coerce-gnd-from⋆ 𝔹 {G-Base B-Bool} ℓ =
-      (𝔹 ?? ℓ ⨟ ` idι{𝔹}{B-Bool}) {G-Base B-Bool}
-  coerce-gnd-from⋆ Unit {G-Base B-Unit} ℓ =
-      (Unit ?? ℓ ⨟ ` idι{Unit}{B-Unit}) {G-Base B-Unit}
-  coerce-gnd-from⋆ (⋆ ⇒ ⋆) {G-Fun} ℓ = (⋆ ⇒ ⋆ ?? ℓ ⨟ ` id★ ↣ id★) {G-Fun}
+  coerce-gnd-from⋆ (` ι) {G-Base} ℓ = (` ι ?? ℓ ⨟ ` idι{ι}) {G-Base}
+  coerce-gnd-from⋆ (⋆ ⇒ ⋆) {G-Fun} ℓ = (⋆ ⇒ ⋆ ?? ℓ ⨟ ` (id★ ↣ id★)) {G-Fun}
   coerce-gnd-from⋆ (⋆ `× ⋆) {G-Pair} ℓ = (⋆ `× ⋆ ?? ℓ ⨟ ` id★ ×' id★) {G-Pair}
   coerce-gnd-from⋆ (⋆ `⊎ ⋆) {G-Sum} ℓ = (⋆ `⊎ ⋆ ?? ℓ ⨟ ` id★ +' id★) {G-Sum}
   
   coerce-to⋆ : (A : Type) → Label → Cast (A ⇒ ⋆)
   coerce-to⋆ A ℓ with eq-unk A
-  ... | inj₁ eq rewrite eq = id★ 
-  ... | inj₂ neq with ground? A
-  ...     | inj₁ g = coerce-gnd-to⋆ A {g} ℓ
-  ...     | inj₂ ng with ground A {neq}
+  ... | yes eq rewrite eq = id★ 
+  ... | no neq with ground? A
+  ...     | yes g = coerce-gnd-to⋆ A {g} ℓ
+  ...     | no ng with ground A {neq}
   ...        | ⟨ G , ⟨ g , c ⟩ ⟩ =
      ` (coerce-to-gnd A G {g}{c}{neq} ℓ ⨟!) {g}
 
   coerce-from⋆ : (B : Type) → Label → Cast (⋆ ⇒ B)
   coerce-from⋆ B ℓ with eq-unk B
-  ... | inj₁ eq rewrite eq = id★
-  ... | inj₂ neq with ground? B
-  ...     | inj₁ g = coerce-gnd-from⋆ B {g} ℓ
-  ...     | inj₂ ng with ground B {neq}
+  ... | yes eq rewrite eq = id★
+  ... | no neq with ground? B
+  ...     | yes g = coerce-gnd-from⋆ B {g} ℓ
+  ...     | no ng with ground B {neq}
   ...        | ⟨ G , ⟨ g , c ⟩ ⟩ =
                (G ?? ℓ ⨟ ` coerce-from-gnd G B {g}{Sym~ c}{neq} ℓ) {g} 
 
-  coerce-to-gnd .⋆ .Nat {G-Base B-Nat} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
-  coerce-to-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = idι{Nat}{B-Nat}
-  coerce-to-gnd .⋆ .𝔹 {G-Base B-Bool} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
-  coerce-to-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = idι{𝔹}{B-Bool}
-  coerce-to-gnd .⋆ .Unit {G-Base B-Unit} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
-  coerce-to-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = idι{Unit}{B-Unit}
+  coerce-to-gnd .⋆ (` ι) {G-Base} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
+  coerce-to-gnd (` ι) (` ι) {G-Base} {base~} ℓ = idι{ι}
   coerce-to-gnd .⋆ .(⋆ ⇒ ⋆) {G-Fun} {unk~L}{neq} ℓ = ⊥-elim (neq refl)
   coerce-to-gnd (A₁ ⇒ A₂) .(⋆ ⇒ ⋆) {G-Fun} {fun~ c c₁} ℓ =
      (coerce-from⋆ A₁ ℓ) ↣ (coerce-to⋆ A₂ ℓ)
@@ -172,12 +162,8 @@ module EfficientGroundCoercions where
   coerce-to-gnd (A₁ `⊎ A₂) .(⋆ `⊎ ⋆) {G-Sum} {sum~ c c₁} ℓ =
      (coerce-to⋆ A₁ ℓ) +' (coerce-to⋆ A₂ ℓ)
 
-  coerce-from-gnd .Nat .⋆ {G-Base B-Nat} {unk~R}{neq} ℓ = ⊥-elim (neq refl)
-  coerce-from-gnd .Nat .Nat {G-Base B-Nat} {nat~} ℓ = idι{Nat}{B-Nat}
-  coerce-from-gnd .𝔹 .⋆ {G-Base B-Bool} {unk~R}{neq} ℓ =  ⊥-elim (neq refl)
-  coerce-from-gnd .𝔹 .𝔹 {G-Base B-Bool} {bool~} ℓ = idι{𝔹}{B-Bool}
-  coerce-from-gnd .Unit .⋆ {G-Base B-Unit} {unk~R}{neq} ℓ =  ⊥-elim (neq refl)
-  coerce-from-gnd .Unit .Unit {G-Base B-Unit} {unit~} ℓ = idι{Unit}{B-Unit}
+  coerce-from-gnd (` ι) .⋆ {G-Base} {unk~R}{neq} ℓ = ⊥-elim (neq refl)
+  coerce-from-gnd (` ι) (` ι) {G-Base} {base~} ℓ = idι{ι}
   coerce-from-gnd .(⋆ ⇒ ⋆) .⋆ {G-Fun} {unk~R}{neq} ℓ = ⊥-elim (neq refl)
   coerce-from-gnd .(⋆ ⇒ ⋆) (B₁ ⇒ B₂) {G-Fun} {fun~ c c₁} ℓ =
      (coerce-to⋆ B₁ ℓ) ↣ (coerce-from⋆ B₂ ℓ)
@@ -191,11 +177,9 @@ module EfficientGroundCoercions where
   coerce : (A : Type) → (B : Type) → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce .⋆ B {unk~L} ℓ = coerce-from⋆ B ℓ
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
-  coerce Nat Nat {nat~} ℓ = ` ` idι {Nat} {B-Nat}
-  coerce 𝔹 𝔹 {bool~} ℓ = ` ` idι {𝔹} {B-Bool}
-  coerce Unit Unit {unit~} ℓ = ` ` idι {Unit} {B-Unit}
+  coerce (` ι) (` ι) {base~} ℓ = ` ` idι {ι}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
-    ` ` coerce A' A {Sym~ c} (flip ℓ) ↣ coerce B B' {c₁} ℓ
+    ` ` (coerce A' A {Sym~ c} (flip ℓ) ↣ coerce B B' {c₁} ℓ)
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
     ` ` coerce A A' {c} ℓ ×' coerce B B' {c₁} ℓ
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =
@@ -234,8 +218,8 @@ module EfficientGroundCoercions where
           → ActivegCast (s ×' t)
     A-csum : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
           → ActivegCast (s +' t)
-    A-idι : ∀{B b}
-          → ActivegCast (idι {B}{b})
+    A-idι : ∀{B}
+          → ActivegCast (idι {B})
 
   {-
 
@@ -372,13 +356,13 @@ module EfficientGroundCoercions where
   plus-zero1 {zero} {b} p = refl
   plus-zero1 {suc a} {b} ()
 
-  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ zero → ⊥
+  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ zero → Bot
   plus-gnd-pos {A}{B}{c}{d} p =
      let cd-z = n≤0⇒n≡0 p in
      let c-z = plus-zero1 {size-gnd c}{size-gnd d} cd-z in
      contradiction c-z (size-gnd-pos{A}{c})
 
-  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ zero → ⊥
+  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ zero → Bot
   plus-cast-pos {A}{B}{c}{d} p =
      let cd-z = n≤0⇒n≡0 p in
      let c-z = plus-zero1 {size-cast c}{size-cast d} cd-z in
@@ -513,7 +497,7 @@ module EfficientGroundCoercions where
   _`⨟_{A}{B}{C} c d {zero}{m} = ⊥-elim (plus-gnd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
   
   {- Rule #1 id ⨟ id = id -}
-  (idι{A}{a} `⨟ idι) {suc n} = idι{A}{a}
+  (idι{A} `⨟ idι) {suc n} = idι{A}
   
   {- Rule #2   (s → t) ⨟ (s' → t') = (s' ⨟ s) → (t ⨟ t') -}
   (s ↣ t `⨟ s' ↣ t') {suc n} {s≤s m} =
@@ -532,26 +516,16 @@ module EfficientGroundCoercions where
       (s ⨟ s') {n}{m1} +' (t ⨟ t') {n}{m2}
     where m1 = inequality-3{size-cast s} m
           m2 = inequality-2{size-cast s} m
-          
-  {- Vacuous cases -}
-  (idι {.(_ ⇒ _)} {()} `⨟ (c ↣ d)) {suc n}
-  (idι {.(_ `× _)} {()} `⨟ (c ×' d)) {suc n}
-  (idι {.(_ `⊎ _)} {()} `⨟ (c +' d)) {suc n}
-  ((c ↣ d) `⨟ idι {.(_ ⇒ _)} {()}) {suc n}
-  ((c ×' d) `⨟ idι {.(_ `× _)} {()}) {suc n}
-  ((c +' d) `⨟ idι {.(_ `⊎ _)} {()}) {suc n}
 
 
   gnd-src-nd : ∀{A B} → (g : gCast (A ⇒ B)) → A ≢ ⋆
-  gnd-src-nd {.Nat} {.Nat} (idι {.Nat} {B-Nat}) ()
-  gnd-src-nd {.𝔹} {.𝔹} (idι {.𝔹} {B-Bool}) ()
-  gnd-src-nd {.Unit} {.Unit} (idι {.Unit} {B-Unit}) ()
+  gnd-src-nd {` ι} {` ι} (idι {ι} ) ()
   gnd-src-nd {.(_ ⇒ _)} {.(_ ⇒ _)} (c ↣ d) ()
   gnd-src-nd {.(_ `× _)} {.(_ `× _)} (c ×' d) ()
   gnd-src-nd {.(_ `⊎ _)} {.(_ `⊎ _)} (c +' d) ()
 
   gnd-tgt-nd : ∀{A B} → (g : gCast (A ⇒ B)) → B ≢ ⋆
-  gnd-tgt-nd {.⋆} {.⋆} (idι {.⋆} {()}) refl
+  gnd-tgt-nd {` ι} {` ι} idι ()
   gnd-tgt-nd (c ↣ d) ()
   gnd-tgt-nd (c ×' d) ()
   gnd-tgt-nd (c +' d) ()
@@ -595,11 +569,11 @@ module EfficientGroundCoercions where
                 n
               ∎  
   {- Rule #7   (g ; G!) ⨟ (G?p ; i) = g ⨟ i
-     Rule #8   (g ; G!) ⨟ (H?p ; i) = ⊥GpH    if G ≠ H  -}
+     Rule #8   (g ; G!) ⨟ (H?p ; i) = BotGpH    if G ≠ H  -}
   (_⨟! {G = G} g {gg} ⨟' (H ?? p ⨟ i) {hg}) {suc n} {s≤s m}
         with gnd-eq? G H {gg}{hg}
-  ... | inj₂ neq = cfail G H p {gnd-src-nd g}
-  ... | inj₁ eq rewrite eq = (` g ⨟' ` i) {n} {m'}
+  ... | no neq = cfail G H p {gnd-src-nd g}
+  ... | yes eq rewrite eq = (` g ⨟' ` i) {n} {m'}
        where m' = let g' = size-gnd g in let i' = size-intmd i in 
               begin
                 suc (g' + suc i')
@@ -632,10 +606,10 @@ module EfficientGroundCoercions where
                    ≤⟨ m ⟩
                 n
               ∎  
-  {- Rule #9    ⊥GpH ⨟ s = ⊥GpH    -}
+  {- Rule #9    BotGpH ⨟ s = BotGpH    -}
   (cfail G H p {A≢⋆} ⨟' s) {suc n} {m} = cfail G H p {A≢⋆}
   
-  {- Rule #10    g ⨟ ⊥GpH = ⊥GpH -}
+  {- Rule #10    g ⨟ BotGpH = BotGpH -}
   (` g ⨟' ` cfail G H p {neq}) {suc n} {m} = cfail G H p {gnd-src-nd g}
     
   {- Vacuous cases -}
@@ -688,16 +662,15 @@ module EfficientGroundCoercions where
     let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ l) (ƛ r)
   {- Vacuous cases -}
-  applyCast M v (` ` c ↣ d) {A-intmd (A-gnd ())}
+  applyCast M v (` ` (c ↣ d)) {A-intmd (A-gnd ())}
   applyCast M v (` (g ⨟!)) {A-intmd ()}
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M v (` ` c ↣ d) {i} N = (M · N ⟨ c ⟩) ⟨ d ⟩
+  funCast M v (` ` (c ↣ d)) {i} N = (M · N ⟨ c ⟩) ⟨ d ⟩
   {- Vacuous cases -}
   funCast M v (G ?? x ⨟ x₁) {()} N
-  funCast M v (` ` idι) {I-intmd (I-gnd ())} N
-  funCast M v (` cfail G H ℓ) {I-intmd ()} N
+  funCast M v (` (cfail G H ℓ)) {I-intmd ()} N
 
   fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
@@ -714,9 +687,8 @@ module EfficientGroundCoercions where
              → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L v .(` ` _) {I-intmd (I-gnd ())} M N
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → A ≢ ⋆ → ¬ Inert c
-  baseNotInert .(` (_⨟! _)) () A⋆ (I-intmd I-inj) 
-  baseNotInert .(` ` (_ ↣ _)) () A⋆ (I-intmd (I-gnd I-cfun)) 
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
+  baseNotInert (` .(` _)) A≢⋆ (I-intmd (I-gnd ()))
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}

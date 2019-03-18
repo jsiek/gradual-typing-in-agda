@@ -4,7 +4,7 @@ module LazyCoercions where
   open import Types
   open import Variables
   open import Labels
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
@@ -42,18 +42,17 @@ module LazyCoercions where
 
   coerce : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
   coerce A B ℓ with (A `⌣ B)
-  coerce A B ℓ | inj₁ nat⌣ = id {a = A-Nat}
-  ... | inj₁ bool⌣ = id {a = A-Bool}
-  ... | inj₁ (fun⌣{A₁}{A₂}{B₁}{B₂}) = (coerce B₁ A₁ (flip ℓ)) ↣ (coerce A₂ B₂ ℓ)
-  ... | inj₁ (pair⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `× (coerce A₂ B₂ ℓ)
-  ... | inj₁ (sum⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `+ (coerce A₂ B₂ ℓ)
-  ... | inj₂ nsc = ⊥ A ⟨ ℓ ⟩ B
-  coerce A B ℓ | inj₁ unk⌣L with eq-unk B
-  ... | inj₁ eq rewrite eq = id {a = A-Unk}
-  ... | inj₂ neq = (B ?? ℓ) {j = neq}
-  coerce A B ℓ | inj₁ unk⌣R with eq-unk A
-  ... | inj₁ eq rewrite eq = id {a = A-Unk}
-  ... | inj₂ neq = (A !!) {i = neq}
+  coerce A B ℓ | yes base⌣ = id {a = A-Base}
+  ... | yes (fun⌣{A₁}{A₂}{B₁}{B₂}) = (coerce B₁ A₁ (flip ℓ)) ↣ (coerce A₂ B₂ ℓ)
+  ... | yes (pair⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `× (coerce A₂ B₂ ℓ)
+  ... | yes (sum⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `+ (coerce A₂ B₂ ℓ)
+  ... | no nsc = ⊥ A ⟨ ℓ ⟩ B
+  coerce A B ℓ | yes unk⌣L with eq-unk B
+  ... | yes eq rewrite eq = id {a = A-Unk}
+  ... | no neq = (B ?? ℓ) {j = neq}
+  coerce A B ℓ | yes unk⌣R with eq-unk A
+  ... | yes eq rewrite eq = id {a = A-Unk}
+  ... | no neq = (A !!) {i = neq}
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A i} → Inert ((A !!) {i})
@@ -85,8 +84,8 @@ module LazyCoercions where
   applyCast M v (A !!) {()}
   applyCast M v (B ?? ℓ) {a} with PCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
-  ...    | inj₁ cns = M' ⟨ coerce A' B ℓ ⟩
-  ...    | inj₂ incns = blame ℓ
+  ...    | yes cns = M' ⟨ coerce A' B ℓ ⟩
+  ...    | no incns = blame ℓ
   applyCast{Γ} M v (c ↣ d) {a} =
      ƛ (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
   applyCast M v (c `× d) {a} =
@@ -113,8 +112,8 @@ module LazyCoercions where
             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
   caseCast L c {()} M N
   
-  baseNotInert : ∀ {A B} → (c : Cast (A ⇒ B)) → Base B → ¬ Inert c
-  baseNotInert (_ !!) () I-inj
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
 
   module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
                    baseNotInert

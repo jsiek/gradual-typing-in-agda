@@ -8,11 +8,10 @@ module Types where
      renaming (_,_ to ⟨_,_⟩)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Relation.Nullary using (¬_)
+  open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
-  open import Relation.Nullary using (Dec; yes; no)
 
   infix  7 _⇒_
   infix  9 _`×_
