@@ -310,6 +310,9 @@ module Types where
   ⋆⊔B=B : ∀{B} → (⋆ ⊔ B) {unk~L} ≡ B
   ⋆⊔B=B {B} = refl
 
+  A⊔⋆=A : ∀{A} → (A ⊔ ⋆) {unk~R} ≡ A
+  A⊔⋆=A {A} = refl
+
   ⊔L : ∀ {A A'} {c : A ~ A'} → A ~ ((A ⊔ A') {c})
   ⊔L {A}{A'}{c} with (A `⊔ A') {c}
   ...    | ⟨ B , ⟨ q1 , q2 ⟩ ⟩ = consis {B} (proj₁ q1) (q2 q1)
