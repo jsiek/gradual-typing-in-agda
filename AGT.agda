@@ -321,6 +321,13 @@ module AGT where
         -----------------------------------------------------
       → AllPairs P
 
+  data AllSums : (SType → Set) → Set where
+    sums : ∀{P}
+      → (∀{T : SType} → P T → Σ[ T₁ ∈ SType ] Σ[ T₂ ∈ SType ]
+            T ≡ T₁ `⊎ T₂)
+        -----------------------------------------------------
+      → AllSums P
+
   data Dom : (SType → Set) → SType → Set where
     in-dom : ∀{P : (SType → Set)} {T₁ T₂}
       → P (T₁ ⇒ T₂)
@@ -345,6 +352,18 @@ module AGT where
         ---------------------------------------------
       → Proj₂ P T₂
 
+  data In₁ : (SType → Set) → SType → Set where
+    in-in₁ : ∀{P : (SType → Set)} {T₁ T₂}
+      → P (T₁ `⊎ T₂)
+        ---------------------------------------------
+      → In₁ P T₁
+
+  data In₂ : (SType → Set) → SType → Set where
+    in-in₂ : ∀{P : (SType → Set)} {T₁ T₂}
+      → P (T₁ `⊎ T₂)
+        ---------------------------------------------
+      → In₂ P T₂
+
   data Abs : (SType → Set) → Type → Set₁ where
     abs-base : ∀{P : SType → Set} {ι : Base}
       → P (` ι)
@@ -363,35 +382,17 @@ module AGT where
       → Abs (Proj₂ P) B
         ----------------------
       → Abs P (A `× B)
+    abs-sum : ∀{P : SType → Set}{A B : Type}
+      → AllSums P
+      → Abs (In₁ P) A
+      → Abs (In₂ P) B
+        ----------------------
+      → Abs P (A `⊎ B)
     abs-any : ∀{P : SType → Set} {S T : SType}
       → ¬ (S ⌢ T)
       → P S → P T
         ---------------
       → Abs P ⋆
-
-{-
-  dom-dom : ∀ {P P' : SType → Set} {T T' : SType}
-    → Dom P P'  →  P (T ⇒ T')
-      -----------------------
-    → P' T
-  dom-dom (dom f g) p-tt' = g p-tt'
-
-  cod-cod : ∀ {P P' : SType → Set} {T T' : SType}
-    → Cod P P'  →  P (T ⇒ T')
-      -----------------------
-    → P' T'
-  cod-cod (cod f g) p-tt' = g p-tt'
-
-  dom-fun : ∀{P P' : SType → Set} {T : SType}
-          → Dom P P'   →   P' T
-          → Σ[ T' ∈ SType ] P (T ⇒ T')
-  dom-fun (dom x x₁) p't = x p't
-
-  cod-fun : ∀{P P' : SType → Set} {T : SType}
-          → Cod P P'   →   P' T
-          → Σ[ T' ∈ SType ] P (T' ⇒ T)
-  cod-fun (cod x x₁) p't = x p't
--}
 
   abs-non-empty : ∀{P : SType → Set}{A : Type} → Abs P A → Σ[ T ∈ SType ] P T
   abs-non-empty {P} {` ι} (abs-base x x₁) = ⟨ ` ι , x ⟩
@@ -404,6 +405,10 @@ module AGT where
       with abs-non-empty abs₁
   ... | ⟨ T₁ , in-proj₁ {T₂ = T₂'} PT₁T₂' ⟩ =
         ⟨ (T₁ `× T₂') , PT₁T₂' ⟩
+  abs-non-empty {P} {_} (abs-sum x abs₁ abs₂)
+      with abs-non-empty abs₁
+  ... | ⟨ T₁ , in-in₁ {T₂ = T₂'} PT₁T₂' ⟩ =
+        ⟨ (T₁ `⊎ T₂') , PT₁T₂' ⟩
 
   _⊆_ : (SType → Set) → (SType → Set) → Set
   P ⊆ P' = ∀{T : SType} → P T → P' T
@@ -423,6 +428,12 @@ module AGT where
           → Proj₁ P ⊆ Proj₁ Q
   proj₁-subset pq (in-proj₁ x) = in-proj₁ (pq x)
 
+  in₁-subset : ∀{P Q : SType → Set}
+          →  P ⊆ Q
+            -------------
+          → In₁ P ⊆ In₁ Q
+  in₁-subset pq (in-in₁ x) = in-in₁ (pq x)
+
   cod-subset : ∀{P Q : SType → Set}
           →  P ⊆ Q
             -------------
@@ -434,6 +445,12 @@ module AGT where
             -------------
           → Proj₂ P ⊆ Proj₂ Q
   proj₂-subset pq (in-proj₂ x) = in-proj₂ (pq x)
+
+  in₂-subset : ∀{P Q : SType → Set}
+          →  P ⊆ Q
+            -------------
+          → In₂ P ⊆ In₂ Q
+  in₂-subset pq (in-in₂ x) = in-in₂ (pq x)
 
   dom-equiv : ∀{P Q : SType → Set}
           →  P ⇔ Q
@@ -459,6 +476,18 @@ module AGT where
           → Proj₂ P ⇔ Proj₂ Q
   proj₂-equiv pq = ⟨ (proj₂-subset (proj₁ pq)) , (proj₂-subset (proj₂ pq)) ⟩
 
+  in₁-equiv : ∀{P Q : SType → Set}
+          →  P ⇔ Q
+            -----------------
+          → In₁ P ⇔ In₁ Q
+  in₁-equiv pq = ⟨ (in₁-subset (proj₁ pq)) , (in₁-subset (proj₂ pq)) ⟩
+
+  in₂-equiv : ∀{P Q : SType → Set}
+          →  P ⇔ Q
+            -------------
+          → In₂ P ⇔ In₂ Q
+  in₂-equiv pq = ⟨ (in₂-subset (proj₁ pq)) , (in₂-subset (proj₂ pq)) ⟩
+
   allfuns-equiv : ∀{P Q : SType → Set}
           → AllFuns P   →  P ⇔ Q
             --------------------
@@ -483,6 +512,18 @@ module AGT where
     ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq =
           ⟨ T₁ , ⟨ T₂ , refl ⟩ ⟩
 
+  allsums-equiv : ∀{P Q : SType → Set}
+          → AllSums P   →  P ⇔ Q
+            --------------------
+          → AllSums Q
+  allsums-equiv{P}{Q} (sums f) p-q = (sums G)
+    where
+    G : {T : SType} →
+           Q T → Σ-syntax SType (λ T₁ → Σ-syntax SType (λ T₂ → T ≡ (T₁ `⊎ T₂)))
+    G {T} qt with f {T} ((proj₂ p-q) qt)
+    ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq =
+          ⟨ T₁ , ⟨ T₂ , refl ⟩ ⟩
+
   abs-equiv : ∀{P Q : SType → Set}{A : Type}
           → Abs P A  →  P ⇔ Q
             -----------------
@@ -499,6 +540,11 @@ module AGT where
     let cp⇔cq = proj₂-equiv p-q in
     abs-pair (allpairs-equiv allf p-q) (abs-equiv abs-dom-p (proj₁-equiv p-q))
                  (abs-equiv abs-cod-p (proj₂-equiv p-q) )
+  abs-equiv{P}{Q} (abs-sum{A = A}{B = B} allf abs-dom-p abs-cod-p) p-q =
+    let dp⇔dq = in₁-equiv p-q in
+    let cp⇔cq = in₂-equiv p-q in
+    abs-sum (allsums-equiv allf p-q) (abs-equiv abs-dom-p (in₁-equiv p-q))
+                 (abs-equiv abs-cod-p (in₂-equiv p-q) )
   abs-equiv (abs-any x x₁ x₂) p-q =
      abs-any x (proj₁ p-q x₁) (proj₁ p-q x₂)
 
@@ -524,6 +570,14 @@ module AGT where
         let ih1 = conc-abs-sound abs-a in
         let ih2 = conc-abs-sound abs-b in
         c-pair (ih1 (in-proj₁ pt)) (ih2 (in-proj₂ pt))
+  conc-abs-sound (abs-sum all abs-a abs-b) pt
+      with all
+  ... | sums af
+      with af pt
+  ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq =
+        let ih1 = conc-abs-sound abs-a in
+        let ih2 = conc-abs-sound abs-b in
+        c-sum (ih1 (in-in₁ pt)) (ih2 (in-in₂ pt))
   conc-abs-sound (abs-any x x₁ x₂) pt = c-unk
 
   c-any-base  : ∀{A ι}
@@ -547,6 +601,14 @@ module AGT where
   c-any-pair (c-pair{T₁}{T₂} c c₁) =
       inj₁ ⟨ T₁ , ⟨ T₂ , ⟨ refl , ⟨ c , c₁ ⟩ ⟩ ⟩ ⟩
   c-any-pair c-unk = inj₂ refl
+
+  c-any-sum  : ∀{A T₁ T₂}
+     → Conc A (T₁ `⊎ T₂)
+     → (Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂ × Conc A₁ T₁ × Conc A₂ T₂)
+       ⊎ A ≡ ⋆
+  c-any-sum (c-sum{T₁}{T₂} c c₁) =
+      inj₁ ⟨ T₁ , ⟨ T₂ , ⟨ refl , ⟨ c , c₁ ⟩ ⟩ ⟩ ⟩
+  c-any-sum c-unk = inj₂ refl
 
   conc-sh-cons : ∀{A T₁ T₂}
      → Conc A T₁  →  Conc A T₂
@@ -612,6 +674,27 @@ module AGT where
             ... | c-pair c1 c2 = c2
   ... | inj₂ a=unk rewrite a=unk =
         unk⊑
+  abs-optimal{P = P} ⟨ T , pt ⟩ p-ca (abs-sum{A = A}{B = B} all abs-p1-b1 abs-p2-b2)
+      with all
+  ... | sums ap
+      with ap pt
+  ... | ⟨ T₁ , ⟨ T₂ , eq ⟩ ⟩ rewrite eq 
+      with c-any-sum (p-ca pt)
+  ... | inj₁ ⟨ A₁ , ⟨ A₂ , ⟨ a=a12 , ⟨ c1 , c2 ⟩ ⟩ ⟩ ⟩ rewrite a=a12 =
+      let ih1 = abs-optimal ⟨ T₁ , in-in₁ pt ⟩ domP⊆ca1 abs-p1-b1 in
+      let ih2 = abs-optimal ⟨ T₂ , in-in₂ pt ⟩ codP⊆ca2 abs-p2-b2 in
+      sum⊑ ih1 ih2
+      where domP⊆ca1 : In₁ P ⊆ Conc A₁
+            domP⊆ca1 {T'} (in-in₁ {T₂ = T₂} PT'⇒T2)
+                with p-ca PT'⇒T2 
+            ... | c-sum c-a1t' c-a2t2 = c-a1t'
+
+            codP⊆ca2 : In₂ P ⊆ Conc A₂
+            codP⊆ca2 {T'} (in-in₂ {T₁ = T₁} PT₁⇒T')
+                with p-ca PT₁⇒T'
+            ... | c-sum c1 c2 = c2
+  ... | inj₂ a=unk rewrite a=unk =
+        unk⊑
   abs-optimal ⟨ T , pt ⟩ p-ca (abs-any a b c )
       with conc-sh-cons (p-ca b) (p-ca c) 
   ... | inj₁ A≡⋆ rewrite A≡⋆ = 
@@ -631,17 +714,29 @@ module AGT where
               Σ-syntax SType (λ T₁ → Σ-syntax SType (λ T₂ → T ≡ (T₁ `× T₂)))
           f {.(_ `× _)} (c-pair{S₁ = S₁}{S₂ = S₂} c c₁) = ⟨ S₁ , ⟨ S₂ , refl ⟩ ⟩
 
+  all-sums-conc⊎ : ∀{A B} → AllSums (Conc (A `⊎ B))
+  all-sums-conc⊎{A}{B} = sums f
+    where f : {T : SType} → Conc (A `⊎ B) T →
+              Σ-syntax SType (λ T₁ → Σ-syntax SType (λ T₂ → T ≡ (T₁ `⊎ T₂)))
+          f {.(_ `⊎ _)} (c-sum{S₁ = S₁}{S₂ = S₂} c c₁) = ⟨ S₁ , ⟨ S₂ , refl ⟩ ⟩
+
   dom-conc⇒⊆ : ∀{A B} → Dom (Conc (A ⇒ B)) ⊆ Conc A
   dom-conc⇒⊆ (in-dom (c-fun x x₁)) = x
 
   proj₁-conc×⊆ : ∀{A B} → Proj₁ (Conc (A `× B)) ⊆ Conc A
   proj₁-conc×⊆ (in-proj₁ (c-pair x x₁)) = x
 
+  in₁-conc⊎⊆ : ∀{A B} → In₁ (Conc (A `⊎ B)) ⊆ Conc A
+  in₁-conc⊎⊆ (in-in₁ (c-sum x x₁)) = x
+
   cod-conc⇒⊆ : ∀{A B} → Cod (Conc (A ⇒ B)) ⊆ Conc B
   cod-conc⇒⊆ (in-cod (c-fun x x₁)) = x₁
 
   proj₂-conc×⊆ : ∀{A B} → Proj₂ (Conc (A `× B)) ⊆ Conc B
   proj₂-conc×⊆ (in-proj₂ (c-pair x x₁)) = x₁
+
+  in₂-conc⊎⊆ : ∀{A B} → In₂ (Conc (A `⊎ B)) ⊆ Conc B
+  in₂-conc⊎⊆ (in-in₂ (c-sum x x₁)) = x₁
 
   conc-dom⇒⊆ : ∀{A B} → Conc A ⊆ Dom (Conc (A ⇒ B))
   conc-dom⇒⊆ {ι}{B} c-base with conc B
@@ -667,6 +762,18 @@ module AGT where
   conc-proj₁×⊆ {B = B} c-unk with conc B
   ... | ⟨ B' , x ⟩ = in-proj₁ (c-pair c-unk x)
 
+  conc-in₁⊎⊆ : ∀{A B} → Conc A ⊆ In₁ (Conc (A `⊎ B))
+  conc-in₁⊎⊆ {ι}{B} c-base with conc B
+  ... | ⟨ B' , x ⟩ = in-in₁ (c-sum c-base x)
+  conc-in₁⊎⊆ {B = B} (c-fun c c₁) with conc B
+  ... | ⟨ B' , x ⟩ = in-in₁ (c-sum (c-fun c c₁) x)
+  conc-in₁⊎⊆ {B = B} (c-pair c c₁) with conc B
+  ... | ⟨ B' , x ⟩ = in-in₁ (c-sum (c-pair c c₁) x)
+  conc-in₁⊎⊆ {B = B} (c-sum c c₁) with conc B
+  ... | ⟨ B' , x ⟩ = in-in₁ (c-sum (c-sum c c₁) x)
+  conc-in₁⊎⊆ {B = B} c-unk with conc B
+  ... | ⟨ B' , x ⟩ = in-in₁ (c-sum c-unk x)
+
   conc-cod⇒⊆ : ∀{A B} → Conc B ⊆ Cod (Conc (A ⇒ B))
   conc-cod⇒⊆ {A} {.(` _)} c-base with conc A
   ... | ⟨ A' , x ⟩ = in-cod (c-fun x c-base)
@@ -691,17 +798,35 @@ module AGT where
   conc-proj₂×⊆ {A} {.⋆} c-unk with conc A
   ... | ⟨ A' , x ⟩ = in-proj₂ (c-pair x c-unk)
 
+  conc-in₂⊎⊆ : ∀{A B} → Conc B ⊆ In₂ (Conc (A `⊎ B))
+  conc-in₂⊎⊆ {A} {.(` _)} c-base with conc A
+  ... | ⟨ A' , x ⟩ = in-in₂ (c-sum x c-base)
+  conc-in₂⊎⊆ {A} {.(_ ⇒ _)} (c-fun cb cb₁) with conc A
+  ... | ⟨ A' , x ⟩ = in-in₂ (c-sum x (c-fun cb cb₁))
+  conc-in₂⊎⊆ {A} {.(_ `× _)} (c-pair cb cb₁) with conc A
+  ... | ⟨ A' , x ⟩ = in-in₂ (c-sum x (c-pair cb cb₁))
+  conc-in₂⊎⊆ {A} {.(_ `⊎ _)} (c-sum cb cb₁) with conc A
+  ... | ⟨ A' , x ⟩ = in-in₂ (c-sum x (c-sum cb cb₁))
+  conc-in₂⊎⊆ {A} {.⋆} c-unk with conc A
+  ... | ⟨ A' , x ⟩ = in-in₂ (c-sum x c-unk)
+
   dom-conc⇒⇔ : ∀{A B} → Dom (Conc (A ⇒ B)) ⇔ Conc A
   dom-conc⇒⇔ = ⟨ dom-conc⇒⊆ , conc-dom⇒⊆ ⟩
 
   proj₁-conc×⇔ : ∀{A B} → Proj₁ (Conc (A `× B)) ⇔ Conc A
   proj₁-conc×⇔ = ⟨ proj₁-conc×⊆ , conc-proj₁×⊆ ⟩
 
+  in₁-conc⊎⇔ : ∀{A B} → In₁ (Conc (A `⊎ B)) ⇔ Conc A
+  in₁-conc⊎⇔ = ⟨ in₁-conc⊎⊆ , conc-in₁⊎⊆ ⟩
+
   cod-conc⇒⇔ : ∀{A B} → Cod (Conc (A ⇒ B)) ⇔ Conc B
   cod-conc⇒⇔ = ⟨ cod-conc⇒⊆ , conc-cod⇒⊆ ⟩
 
   proj₂-conc×⇔ : ∀{A B} → Proj₂ (Conc (A `× B)) ⇔ Conc B
   proj₂-conc×⇔ = ⟨ proj₂-conc×⊆ , conc-proj₂×⊆ ⟩
+
+  in₂-conc⊎⇔ : ∀{A B} → In₂ (Conc (A `⊎ B)) ⇔ Conc B
+  in₂-conc⊎⇔ = ⟨ in₂-conc⊎⊆ , conc-in₂⊎⊆ ⟩
 
   Sym⇔ : ∀{P Q} → P ⇔ Q → Q ⇔ P
   Sym⇔ pq = ⟨ (proj₂ pq) , (proj₁ pq) ⟩
@@ -744,7 +869,14 @@ module AGT where
      let ih2 = conc-abs-id2 {B} {P} in 
      let y2 = abs-equiv ih2 x2 in
      abs-pair all-pairs-conc× y1 y2
-  conc-abs-id2 {A `⊎ A₁} {P} = {!!}
+  conc-abs-id2 {A `⊎ B} {P} =
+     let x1 = Sym⇔ (in₁-conc⊎⇔ {A} {B}) in
+     let ih1 = conc-abs-id2 {A} {P} in 
+     let y1 = abs-equiv ih1 x1 in
+     let x2 = Sym⇔ (in₂-conc⊎⇔ {A} {B}) in
+     let ih2 = conc-abs-id2 {B} {P} in 
+     let y2 = abs-equiv ih2 x2 in
+     abs-sum all-sums-conc⊎ y1 y2
   
 
 
