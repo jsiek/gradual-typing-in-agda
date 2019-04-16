@@ -83,9 +83,11 @@ module ParamCastReduction
 
   -}
   canonical⋆ : ∀ {Γ} → (M : Γ ⊢ ⋆) → (Value M)
-             → Σ[ A ∈ Type ] Σ[ M' ∈ (Γ ⊢ A) ] Σ[ c ∈ (Cast (A ⇒ ⋆)) ] Inert c × (M ≡ (M' ⟨ c ⟩))
+             → Σ[ A ∈ Type ] Σ[ M' ∈ (Γ ⊢ A) ] Σ[ c ∈ (Cast (A ⇒ ⋆)) ]
+               Inert c × (M ≡ (M' ⟨ c ⟩))
   canonical⋆ .($ _) (V-const {k = ()})  
-  canonical⋆ .(_ ⟨ _ ⟩) (V-cast{Γ}{A}{B}{V}{c}{i} v) = ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ .(_ ⟨ _ ⟩) (V-cast{Γ}{A}{B}{V}{c}{i} v) =
+      ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
 
   {-
 

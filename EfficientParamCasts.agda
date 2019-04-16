@@ -107,11 +107,6 @@ module EfficientParamCasts
                → ∀ {a : Active c} → Γ ⊢ B)
     (funCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
              → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
-{-
-    (argCast : ∀{Γ A B A'} → (M : Γ ⊢ A ⇒ B) → SimpleValue M
-             → (N : Γ ⊢ A') → SimpleValue N
-             → (c : Cast (A' ⇒ A)) → ∀ {i : Inert c} → Γ ⊢ B)
--}
     (fstCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
              → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A')
     (sndCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
@@ -277,14 +272,7 @@ module EfficientParamCasts
         → (v : SimpleValue V) → Value W → {i : Inert c}
           -----------------------------------------------
         → disallow / (V ⟨ c ⟩) · W —→ funCast V v c {i} W 
-{-    I don't see a good way to make the following work. -Jeremy
-      arg-cast : ∀ {Γ A B A'} {V : Γ ⊢ A ⇒ B} {W : Γ ⊢ A'}
-          {c : Cast (A' ⇒ A)}
-        → (v : SimpleValue V)
-        → (w : SimpleValue W) → Value W → {i : Inert c}
-          -------------------------------------------------
-        → disallow / V · (W ⟨ c ⟩) —→ argCast V v W w c {i}
--}
+
       fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → (v : SimpleValue V) → {i : Inert c}

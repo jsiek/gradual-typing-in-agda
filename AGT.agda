@@ -1309,3 +1309,33 @@ module AGT where
   open Red
 
 
+  {-
+
+   Alternative idea about evidence.  Use consistency judgements!
+   Here's the definition consitentent transitivity.
+
+  -}
+
+  _∘_ : ∀{A B C} → (c : A ~ B) → (d : B ~ C) → Dec (A ~ C)
+  unk~L ∘ d = yes unk~L
+  _∘_ {A}{⋆}{C} unk~R unk~L = A `~ C
+  unk~R ∘ unk~R = yes unk~R
+  base~ ∘ d = yes d
+  fun~ c₁ d₁ ∘ unk~R = yes unk~R
+  fun~ c₁ d₁ ∘ fun~ c₂ d₂
+      with c₁ ∘ c₂ | d₁ ∘ d₂
+  ... | yes c | yes d = yes (fun~ c d)
+  ... | yes c | no d = no (¬~fR d)
+  ... | no c | _ = no (¬~fL c)
+  pair~ c₁ d₁ ∘ unk~R = yes unk~R
+  pair~ c₁ d₁ ∘ pair~ c₂ d₂
+      with c₁ ∘ c₂ | d₁ ∘ d₂
+  ... | yes c | yes d = yes (pair~ c d)
+  ... | yes c | no d = no (¬~pR d)
+  ... | no c | _ = no (¬~pL c)
+  sum~ c₁ d₁ ∘ unk~R = yes unk~R
+  sum~ c₁ d₁ ∘ sum~ c₂ d₂
+      with c₁ ∘ c₂ | d₁ ∘ d₂
+  ... | yes c | yes d = yes (sum~ c d)
+  ... | yes c | no d = no (¬~sR d)
+  ... | no c | _ = no (¬~sL c)
