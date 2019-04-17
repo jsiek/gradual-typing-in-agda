@@ -46,4 +46,6 @@ Inventory
    inspired by Abstracting Gradual Typing (Garcia, Clark, and Tanter
    2016).  This is also closely related to the threesomes of Siek and
    Wadler (2011).
-
+* [AbstractMachine.agda](./AbstractMachine.agda): A space-efficient
+   abstract machine. It's a variant of the SECD machine with optimized
+   tail calls. It's parameterized with respect to casts.
