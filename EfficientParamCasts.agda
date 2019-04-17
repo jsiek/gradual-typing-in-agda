@@ -105,8 +105,18 @@ module EfficientParamCasts
   module Reduction
     (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                → ∀ {a : Active c} → Γ ⊢ B)
+{-
     (funCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
              → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
+-}
+    (funSrc : ∀{A A' B' Γ}
+            → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂)
+    (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁))
+    (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B'))
     (fstCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
              → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A')
     (sndCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
@@ -267,11 +277,18 @@ module EfficientParamCasts
           ----------------------------
         → disallow / V ⟨ c ⟩ —→ applyCast V v c {a}
 
+{-
       fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
           {c : Cast (A ⇒ (A' ⇒ B'))}
         → (v : SimpleValue V) → Value W → {i : Inert c}
           -----------------------------------------------
         → disallow / (V ⟨ c ⟩) · W —→ funCast V v c {i} W 
+-}
+      fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
+          {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
+        → (v : SimpleValue V) → Value W → {i : Inert c}
+          -------------------------------------------------------------
+        → disallow / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
       fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
@@ -377,9 +394,15 @@ module EfficientParamCasts
     ...     | error E-blame = step-d (ξ-blame {F = (F-·₂ M₁){V₁}})
     ...     | done V₂ with V₁
     ...         | S-val V-ƛ = step-d (β V₂)
-    ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v =
+    ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
+{-    
                     step-d (fun-cast{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
-    ...         | S-val (V-const {k = k₁} {f = f₁}) with V₂
+-}
+                with funSrc c i V v
+    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
+                  step-d (fun-cast v V₂ {i})
+    progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂ 
+                | S-val (V-const {k = k₁} {f = f₁}) with V₂
     ...             | S-val (V-const {k = k₂} {f = f₂}) =
                       step-d (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
     ...             | S-val V-ƛ = contradiction f₁ ¬P-Fun

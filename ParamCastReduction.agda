@@ -184,8 +184,17 @@ module ParamCastReduction
   module Reduction
     (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B)
+{-
     (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
                  → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
+-}
+    (funSrc : ∀{A A' B'}
+            → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂)
+    (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁))
+    (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B'))
     (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
                  → ∀ {i : Inert c} → Γ ⊢ A')
     (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
@@ -268,11 +277,18 @@ module ParamCastReduction
           ------------------------------
         → V ⟨ c ⟩ —→ applyCast V v c {a}
 
+{-
       fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
           {c : Cast (A ⇒ (A' ⇒ B'))}
         → Value V → Value W → {i : Inert c}
           ----------------------------------
         → (V ⟨ c ⟩) · W —→ funCast V c {i} W 
+-}
+      fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
+          {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
+        → (v : Value V) → Value W → {i : Inert c}
+          --------------------------------------------------
+        → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
       fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
@@ -372,9 +388,15 @@ module ParamCastReduction
     ...     | error E-blame = step (ξ-blame {F = (F-·₂ M₁){V₁}})
     ...     | done V₂ with V₁
     ...         | V-ƛ = step (β V₂)
-    ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v =
+    ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
+                with funSrc c i
+    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
+                    step (fun-cast v V₂ {i})
+{-
                     step (fun-cast {∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
-    ...         | V-const {k = k₁} {f = f₁} with V₂
+-}
+    progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂
+                | V-const {k = k₁} {f = f₁} with V₂
     ...             | V-const {k = k₂} {f = f₂} =
                       step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
     ...             | V-ƛ = contradiction f₁ ¬P-Fun

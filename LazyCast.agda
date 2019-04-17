@@ -87,9 +87,24 @@ module LazyCast where
   applyCast {Γ} {A} {B} M v (cast A B ℓ) {activeErr .(cast A B ℓ) x} =
      blame ℓ
 
+{-
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
           → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M c {()} N
+-}
+
+  funSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc c ()
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom c ()
+
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod c ()
 
   fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
           → ∀ {i : Inert c} → Γ ⊢ A'
@@ -106,7 +121,7 @@ module LazyCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
       baseNotInert
   open Red
 

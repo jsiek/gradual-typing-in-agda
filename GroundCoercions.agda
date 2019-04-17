@@ -235,10 +235,24 @@ module GroundCoercions where
   {-
    V⟨c→d⟩ W    —→     (V  W⟨c⟩)⟨d⟩
   -}
+  {-
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
           → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M (cfun c d) {I-fun} N = (M · (N ⟨ c ⟩)) ⟨ d ⟩
+  -}
 
+  funSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc .(cfun _ _) (I-fun{A = A₁}{A' = A'}) = ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom (cfun c d) I-fun = c
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod (cfun c d) I-fun = d
 
   {-
 
@@ -272,7 +286,7 @@ module GroundCoercions where
   proving type safety for λC. 
   -}
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
                      baseNotInert
   open Red
 

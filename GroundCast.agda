@@ -168,12 +168,29 @@ module GroundCast where
   {-
    (V : A→B  ⇒p  A'→B') W   —→   (V (W : A' ⇒-p A)) : B ⇒p B'
    -}
+  {-
   funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
           → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {cns})
             {I-fun {A₁} {A₂} (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ)} N =
    (M · (N ⟨ cast A' A₁ (flip ℓ) {Sym~ (~⇒L cns)} ⟩)) ⟨ cast A₂ B' ℓ {~⇒R cns} ⟩
+  -}
 
+  funSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
+      cast A' A₁ ℓ {c = Sym~ (~⇒L c)}
+
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
+      cast A₂ B' ℓ {~⇒R c}
+  
   {-
 
   The functions for pairs and sums are vacuous because we categorized
@@ -206,7 +223,7 @@ module GroundCast where
   proving type safety for λB. 
   -}
 
-  module Red = PCR.Reduction applyCast funCast fstCast sndCast caseCast
+  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
                    baseNotInert
   open Red
 

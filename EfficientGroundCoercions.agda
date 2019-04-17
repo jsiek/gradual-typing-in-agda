@@ -199,7 +199,7 @@ module EfficientGroundCoercions where
 
    To prepare for instantiating the ParamCastReduction module, we
    categorize the coercions as either inert or active.  We do this for
-   each of the three kinds of coercions: for the ground, intermeidate,
+   each of the three kinds of coercions: for the ground, intermediate,
    and top-level coercions. For the ground coercions, only the
    function coercion is inert.
 
@@ -672,6 +672,24 @@ module EfficientGroundCoercions where
   funCast M v (G ?? x ⨟ x₁) {()} N
   funCast M v (` (cfail G H ℓ)) {I-intmd ()} N
 
+  funSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc (G ?? x ⨟ x₁) () M v
+  funSrc (` .(` (_ ↣ _)))
+      (I-intmd (I-gnd (I-cfun{A = A₁}{B = B₁}{A' = A'}{B' = B'}))) M v =
+        ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom (` (` (c ↣ d))) i = c
+  dom (` cfail G H ℓ) (I-intmd ())
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod (` (` (s ↣ t))) (I-intmd (I-gnd I-cfun)) = t
+
   fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
   fstCast M v (G ?? x ⨟ x₁) {()}
@@ -693,7 +711,7 @@ module EfficientGroundCoercions where
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
 
-  module Red = EPCR.Reduction applyCast funCast fstCast sndCast caseCast
+  module Red = EPCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
                   baseNotInert compose
   open Red
 
