@@ -190,200 +190,188 @@ module AbstractMachine
     push-cast c (dump d) = pushCast c d
     push-cast c₁ (pushCast c₂ d) = pushCast (compose c₁ c₂) d
 
-    push-frame : ∀{Γ A B C} → EvalContext Γ A B → Env Γ → Dump B C
-         → Dump A C
-    push-frame E ρ d = dump (push E ρ d)
+    TermConfig : Type → Set
+    TermConfig C = (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ] 
+                    Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
 
-    ret : ∀{Γ A B C} → Value A → Env Γ → EvalContext Γ A B → (d : Dump B C)
-        → (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ] 
-            Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
-          ⊎ Label
-          ⊎ Value C
+    ValueConfig : Type → Set
+    ValueConfig C = (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ] 
+                     Value A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
 
-    fun-ret : ∀{A B} → Value A → (d : PDump A B)
-        → (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ]
-            Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' B)
-          ⊎ Label
-          ⊎ Value B
+    data Result : (C : Type) → Set where
+       tc : ∀{C} → TermConfig C → Result C
+       vc : ∀{C} → ValueConfig C → Result C
+       err : ∀{C} → Label → Result C
+       done : ∀{C} → Value C → Result C 
 
-    step : ∀{Γ A B C} → Γ ⊢ A → Env Γ → EvalContext Γ A B → Dump B C
-        → (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ]
-            Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
-          ⊎ Label
-          ⊎ Value C
-    step (` x) ρ E κ = ret (ρ x) ρ E κ
-    step (ƛ M) ρ E κ = ret (S-val (V-ƛ M ρ)) ρ E κ
+    ret-val : ∀{Γ A B C}
+            → Value A → Env Γ → EvalContext Γ A B → Dump B C → Result C
+    ret-val {Γ}{A}{B}{C} V ρ E κ =
+      vc (⟨ Γ , ⟨ A , ⟨ B , ⟨ V , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+
+    next : ∀{Γ A B C} → Γ ⊢ A → Env Γ → EvalContext Γ A B → Dump B C → Result C
+    next {Γ}{A}{B}{C} M ρ E κ =
+        tc (⟨ Γ , ⟨ A , ⟨ B , 
+              ⟨ M , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+
+    step : ∀{Γ A B C} → Γ ⊢ A → Env Γ → EvalContext Γ A B → Dump B C → Result C
+    step (` x) ρ E κ = ret-val (ρ x) ρ E κ
+    step (ƛ M) ρ E κ = ret-val (S-val (V-ƛ M ρ)) ρ E κ
     step {Γ}{A}{B}{C} (_·_ {A = A'} L M) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A' ⇒ A , ⟨ B , 
-              ⟨ L , ⟨ ρ , ⟨ extCtx (F-·₁ M) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    step ($_ k {f}) ρ E κ = ret (S-val (V-const k {f})) ρ E κ
+        next L ρ (extCtx (F-·₁ M) E) κ
+    step ($_ k {f}) ρ E κ = ret-val (S-val (V-const k {f})) ρ E κ
     step {Γ}{A}{B}{C} (if L M N) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ ` 𝔹 , ⟨ B , 
-              ⟨ L , ⟨ ρ , ⟨ extCtx (F-if M N) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next L ρ (extCtx (F-if M N) E) κ
     step {Γ}{A₁ `× A₂}{B}{C} (cons M N) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A₁ , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx (F-×₂ N) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx (F-×₂ N) E) κ
     step {Γ}{A₁}{B}{C} (fst{B = A₂} M) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A₁ `× A₂ , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx F-fst E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx F-fst E) κ
     step {Γ}{A₂}{B}{C} (snd{A = A₁} M) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A₁ `× A₂ , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx F-snd E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx F-snd E) κ
     step {Γ}{A}{B}{C} (inl{A = A'} M) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx F-inl E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx F-inl E) κ
     step {Γ}{A}{B}{C} (inr{B = B'} M) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ B' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx F-inr E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx F-inr E) κ
     step {Γ}{A}{B}{C} (case{A = A'}{B = B'} L M N) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ A' `⊎ B' , ⟨ B , 
-              ⟨ L , ⟨ ρ , ⟨ extCtx (F-case M N) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next L ρ (extCtx (F-case M N) E) κ
     step {Γ}{A}{B}{C} (_⟨_⟩ {A = A'} M c) ρ E κ
         with E
-    ... | empty = {- Tail Cast -}
-        inj₁ (⟨ Γ , ⟨ A' , ⟨ A' , 
-              ⟨ M , ⟨ ρ , ⟨ empty , push-cast c κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    ... | extCtx F E' =
-        inj₁ (⟨ Γ , ⟨ A' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx (F-cast c) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    step (blame ℓ) ρ E κ = inj₂ (inj₁ ℓ)
+    ... | empty =       {- Tail Cast -}
+        next M ρ empty (push-cast c κ)
+    ... | extCtx F E' = {- Regular Cast -}
+        next M ρ (extCtx (F-cast c) E) κ
+    step (blame ℓ) ρ E κ = err ℓ
 
-    apply-sfun : ∀{Γ A A' B C} → SimpleValue (A ⇒ A') → Value A → Env Γ
-        → EvalContext Γ A' B → Dump B C
-        → (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ]
-            Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
-          ⊎ Label
-    apply-sfun {Γ} {A} {A'} {B} {C} (V-ƛ {Γ = Γ'} L ρ') V₂ ρ E κ
-         with E
-    ... | empty = {- Tail Call -}
-        inj₁ (⟨ (Γ' , A) , ⟨ A' , ⟨ A' , 
-              ⟨ L , ⟨ (ρ' `, V₂) , ⟨ empty , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    ... | extCtx F E' = 
-        inj₁ (⟨ (Γ' , A) , ⟨ A' , ⟨ A' , 
-              ⟨ L , ⟨ (ρ' `, V₂) , ⟨ empty , push-frame E ρ κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    apply-sfun {Γ} {.(` ι)} {B} {C} {C'} (V-const f {P-Fun {ι} p})
-                                         (S-val (V-const k)) ρ E κ =
-        inj₁ (⟨ Γ , ⟨ B , ⟨ C , 
-              ⟨ $_ (f k) {p} , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    apply-sfun {Γ} {.(` ι)} {B} {C} (V-const f {P-Fun {ι} p})
-                                    (V-cast x c {i}) ρ E κ =
+    ret : ∀{Γ A B C} → Value A → Env Γ → EvalContext Γ A B → Dump B C → Result C
+
+    {- End of program and returning from a procedure -}
+    ret V ρ empty (dump empty) = done V
+    ret V ρ empty (dump (push E ρ' κ)) =
+        ret-val V ρ' E κ
+    ret V ρ empty (pushCast c κ) =
+        ret-val V ρ (extCtx (F-cast c) empty) (dump κ)
+
+    {- Switch from evaluating operator to operand of application. -}
+    ret {Γ}{A}{B}{C} V ρ (extCtx (F-·₁ {A = A'} M) E) κ =
+        next M ρ (extCtx (F-·₂v V) E) κ
+    ret {Γ}{A}{B}{C} V₁ ρ (extCtx (F-·₁v V₂) E) κ =
+        ret-val V₂ ρ (extCtx (F-·₂v V₁) E) κ
+
+    {- Switch from evaluating operand to operator of application.
+       (Needed to handle case expressions.) -}
+    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂{B = B'} L) E) κ =
+        next L ρ (extCtx (F-·₁v V₂) E) κ
+
+    {- Procedure call in tail position -}
+    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v (S-val (V-ƛ {Γ = Γ'} L ρ'))) empty) κ =
+        next L (ρ' `, V₂) empty κ
+    {- Procedure call -}
+    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v (S-val (V-ƛ {Γ = Γ'}{B = B'} L ρ')))
+                          (extCtx F E')) κ =
+        next L (ρ' `, V₂) empty (dump (push (extCtx F E') ρ κ))
+
+    {- Primitive operator application -}
+    ret {Γ} {` ι} {B} {C} (S-val (V-const k)) ρ
+                       (extCtx (F-·₂v (S-val (V-const f {P-Fun {ι} p}))) E) κ =
+        ret-val (S-val (V-const (f k) {p})) ρ E κ
+    ret {Γ} {` ι} {B} {C} (V-cast x c {i}) ρ
+                       (extCtx (F-·₂v (S-val (V-const f {P-Fun {ι} p}))) E) κ =
         ⊥-elim (contradiction i (baseNotInert c))
 
-    apply-fun : ∀{Γ A A' B C} → Value (A ⇒ A') → Value A → Env Γ
-        → EvalContext Γ A' B → Dump B C
-        → (Σ[ Γ' ∈ Context ] Σ[ A' ∈ Type ] Σ[ B' ∈ Type ]
-            Γ' ⊢ A' × Env Γ' × EvalContext Γ' A' B' × Dump B' C)
-          ⊎ Label
-    apply-fun {Γ} {A} {A'} {B} {C} (S-val V₁) V₂ ρ E κ =
-        apply-sfun V₁ V₂ ρ E κ
-    apply-fun {Γ} {A} {B} {C} (V-cast V₁ c {i}) V₂ ρ E κ
+    {- Apply a wrapped procedure in tail position -} 
+    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v (V-cast V₁ c {i})) empty) κ
         with funSrc c i V₁
-    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
-        with apply-cast V₂ (dom c i)
-    ... | inj₂ ℓ = inj₂ ℓ
-    ... | inj₁ V₂'
-        with E
-    ... | empty =
-          apply-sfun V₁ V₂' ρ empty (push-cast (cod c i) κ)
-    ... | extCtx F E' = 
-          apply-sfun V₁ V₂' ρ (extCtx (F-cast (cod c i)) E) κ 
+    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ =
+        ret-val V₂ ρ (extCtx (F-cast (dom c i))
+                     (extCtx (F-·₂v (S-val V₁)) empty))
+                     (push-cast (cod c i) κ)
+    {- Apply a wrapped procedure -} 
+    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v (V-cast V₁ c {i})) (extCtx F E)) κ
+        with funSrc c i V₁
+    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ =
+        ret-val V₂ ρ (extCtx (F-cast (dom c i))
+                     (extCtx (F-·₂v (S-val V₁))
+                     (extCtx (F-cast (cod c i)) (extCtx F E)))) κ
 
-    fun-ret V empty = inj₂ (inj₂ V)
-    fun-ret V (push E ρ' κ) = ret V ρ' E κ
-
-    ret V ρ empty (dump κ) = fun-ret V κ
-    ret V ρ empty (pushCast c κ)
-        with apply-cast V c
-    ... | inj₁ V' = fun-ret V' κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
-    ret {Γ}{A}{B}{C} V ρ (extCtx (F-·₁ {A = A'} M) E) κ =
-        inj₁ (⟨ Γ , ⟨ A' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx (F-·₂v V) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    ret {Γ}{A}{B}{C} V₁ ρ (extCtx (F-·₁v {A = A'} V₂) E) κ
-        with apply-fun V₁ V₂ ρ E κ
-    ... | inj₁ s = inj₁ s
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
-    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂{B = B'} L) E) κ =
-        inj₁ (⟨ Γ , ⟨ A ⇒ B' , ⟨ B , 
-              ⟨ L , ⟨ ρ , ⟨ extCtx (F-·₁v V₂) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
-    ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v V₁) E) κ 
-        with apply-fun V₁ V₂ ρ E κ
-    ... | inj₁ s = inj₁ s
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
+    {- Dispatch to false branch of if expression. -}
     ret {Γ}{A}{B}{C} (S-val (V-const false)) ρ
         (extCtx {B = B'} (F-if M N) E) κ =
-        inj₁ (⟨ Γ , ⟨ B' , ⟨ B , 
-              ⟨ N , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next N ρ E κ
+    {- Dispatch to true branch of if expression. -}
     ret {Γ}{A}{B}{C} (S-val (V-const true)) ρ
         (extCtx {B = B'} (F-if M N) E) κ =
-        inj₁ (⟨ Γ , ⟨ B' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ E κ
     ret (V-cast V c {i}) ρ (extCtx (F-if M N) E) κ =
         ⊥-elim (contradiction i (baseNotInert c))
-    ret V₂ ρ (extCtx (F-×₁ V₁) E) κ = ret (S-val (V-pair V₁ V₂)) ρ E κ
+
+    {- Create a pair. -}
+    ret V₂ ρ (extCtx (F-×₁ V₁) E) κ =
+        ret-val (S-val (V-pair V₁ V₂)) ρ E κ
     ret {Γ}{A}{B}{C} V₁ ρ (extCtx (F-×₂ {B = B'} N) E) κ =
-        inj₁ (⟨ Γ , ⟨ B' , ⟨ B , 
-              ⟨ N , ⟨ ρ , ⟨ (extCtx (F-×₁ V₁) E) , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next N ρ (extCtx (F-×₁ V₁) E) κ
+
+    {- Take first element from pair. -}
     ret (S-val (V-const ())) ρ (extCtx F-fst E) κ
-    ret (S-val (V-pair V₁ V₂)) ρ (extCtx F-fst E) κ = ret V₁ ρ E κ
+    ret (S-val (V-pair V₁ V₂)) ρ (extCtx F-fst E) κ =
+        ret-val V₁ ρ E κ
     ret (V-cast V c {i}) ρ (extCtx F-fst E) κ
         with prodSrc c i V
-    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
-        with V
-    ... | V-const ()
-    ... | V-pair V₁ V₂
-        with apply-cast V₁ (cfst c i)
-    ... | inj₁ V₁' = ret V₁' ρ E κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
+    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ =
+        ret-val (S-val V) ρ (extCtx F-fst (extCtx (F-cast (cfst c i)) E)) κ
+
+    {- Take second element from pair. -}
     ret (S-val (V-const ())) ρ (extCtx F-snd E) κ
-    ret (S-val (V-pair V₁ V₂)) ρ (extCtx F-snd E) κ = ret V₂ ρ E κ
+    ret (S-val (V-pair V₁ V₂)) ρ (extCtx F-snd E) κ =
+        ret-val V₂ ρ E κ
     ret (V-cast V c {i}) ρ (extCtx F-snd E) κ
         with prodSrc c i V
-    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
-        with V
-    ... | V-const ()
-    ... | V-pair V₁ V₂
-        with apply-cast V₂ (csnd c i)
-    ... | inj₁ V₂' = ret V₂' ρ E κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
-    ret V ρ (extCtx F-inl E) κ = ret (S-val (V-inl V)) ρ E κ
-    ret V ρ (extCtx F-inr E) κ = ret (S-val (V-inr V)) ρ E κ
+    ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ =
+        ret-val (S-val V) ρ (extCtx F-snd (extCtx (F-cast (csnd c i)) E)) κ
+
+    {- Inject left. -}
+    ret V ρ (extCtx F-inl E) κ = ret-val (S-val (V-inl V)) ρ E κ
+    {- Inject right. -}
+    ret V ρ (extCtx F-inr E) κ = ret-val (S-val (V-inr V)) ρ E κ
+
     ret (S-val (V-const ())) ρ (extCtx (F-case M N) E) κ
+    {- Dispatch to left branch of case expression. -}
     ret {Γ}{A}{B}{C} (S-val (V-inl V)) ρ
         (extCtx (F-case {A = A'} {C = C'} M N) E) κ =
-        inj₁ (⟨ Γ , ⟨ A' ⇒ C' , ⟨ B , 
-              ⟨ M , ⟨ ρ , ⟨ extCtx (F-·₁v V) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next M ρ (extCtx (F-·₁v V) E) κ
+    {- Dispatch to right branch of case expression. -}
     ret {Γ}{A}{B}{C} (S-val (V-inr V)) ρ
         (extCtx (F-case {B = B'} {C = C'} M N) E) κ =
-        inj₁ (⟨ Γ , ⟨ B' ⇒ C' , ⟨ B ,
-              ⟨ N , ⟨ ρ , ⟨ extCtx (F-·₁v V) E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)
+        next N ρ (extCtx (F-·₁v V) E) κ
+    {- Dispatch on a wrapped value. -}
     ret (V-cast V c {i}) ρ (extCtx (F-case M N) E) κ
         with sumSrc c i V
     ... | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
         with V
     ... | V-const ()
-    ... | V-inl V₁
-        with apply-cast V₁ (cinl c i)
-    ... | inj₁ V₁' = ret V₁' ρ (extCtx (F-·₂ M) E) κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
+    {- Cast and dispatch to left branch -}    
+    ... | V-inl V₁ =
+        ret-val V₁ ρ (extCtx (F-cast (cinl c i)) (extCtx (F-·₂ M) E)) κ 
+    {- Cast and dispatch to right branch -}
     ret (V-cast V c {i}) ρ (extCtx (F-case M N) E) κ | ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
-        | V-inr V₂
-        with apply-cast V₂ (cinr c i)
-    ... | inj₁ V₂' = ret V₂' ρ (extCtx (F-·₂ N) E) κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
+        | V-inr V₂ =
+        ret-val V₂ ρ (extCtx (F-cast (cinr c i)) (extCtx (F-·₂ N) E)) κ
+
     ret V ρ (extCtx (F-cast c) E) κ
         with apply-cast V c
-    ... | inj₁ V' = ret V' ρ E κ
-    ... | inj₂ ℓ = inj₂ (inj₁ ℓ)
+    ... | inj₁ V' = ret-val V' ρ E κ
+    ... | inj₂ ℓ = err ℓ
 
-    run : ∀{Γ A B C} → ℕ → Γ ⊢ A → Env Γ → EvalContext Γ A B → Dump B C
-        → Value C ⊎ Label
-    run 0 M ρ E κ = inj₂ (pos 0)
-    run {C = C} (suc n) M ρ E κ
-        with step M ρ E κ
-    ... | inj₁ (⟨ Γ , ⟨ A , ⟨ B , 
-                ⟨ M' , ⟨ ρ' , ⟨ E' , κ' ⟩ ⟩ ⟩ ⟩ ⟩ ⟩) =
-          run {Γ}{A}{B}{C} n M' ρ' E' κ'
-    ... | inj₂ (inj₁ ℓ) = inj₂ ℓ
-    ... | inj₂ (inj₂ V) = inj₁ V
-    
+    load : ∀{A} → ∅ ⊢ A → Result A
+    load {A} M = next M `∅ empty (dump empty)
+
+    exec : ∀{A} → ℕ → Result A → Value A ⊎ Label
+    exec 0 R = inj₂ (pos 0)
+    exec {A} (suc n) (tc (⟨ Γ , ⟨ A' , ⟨ B , ⟨ M , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)) =
+        exec n (step M ρ E κ)
+    exec {A} (suc n) (vc (⟨ Γ , ⟨ A' , ⟨ B , ⟨ V , ⟨ ρ , ⟨ E , κ ⟩ ⟩ ⟩ ⟩ ⟩ ⟩)) =
+        exec n (ret V ρ E κ)
+    exec {A} (suc n) (err ℓ) = inj₂ ℓ
+    exec {A} (suc n) (done V) = inj₁ V
+
+    run : ∀{A} → ℕ → ∅ ⊢ A → Value A ⊎ Label
+    run n M = exec n (load M)
