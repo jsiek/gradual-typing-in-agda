@@ -1,4 +1,4 @@
-module SimpleMachine where
+module GroundMachine where
 
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
@@ -8,7 +8,7 @@ module SimpleMachine where
 
   open import Labels
   open import Types
-  open import SimpleCoercions
+  open import EfficientGroundCoercions
 
   import AbstractMachine
   module AbsMach = AbstractMachine Cast Inert Active ActiveOrInert
