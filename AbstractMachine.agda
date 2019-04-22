@@ -53,6 +53,13 @@ module AbstractMachine
         --------------------
       → SimpleValue (A `⊎ B)
 
+  simple⋆ : ∀ {A} → SimpleValue A → A ≢ ⋆
+  simple⋆ (V-ƛ N ρ) = λ ()
+  simple⋆ (V-const k {P-Base}) = λ ()
+  simple⋆ (V-const k {P-Fun p}) = λ ()
+  simple⋆ (V-pair x x₁) = λ ()
+  simple⋆ (V-inl x) = λ ()
+  simple⋆ (V-inr x) = λ ()
 
   data Value where
     S-val : ∀ {A}
@@ -145,8 +152,7 @@ module AbstractMachine
     pushCast : ∀{A B C} → Cast (A ⇒ B) → PDump B C → Dump A C
 
   module Machine
-    (applyCast : ∀{A B} → Value A → (c : Cast (A ⇒ B)) → Active c
-               → Value B ⊎ Label)
+    (applyCast : ∀{A B} → Value A → (c : Cast (A ⇒ B)) → Value B ⊎ Label)
     (funSrc : ∀{A A' B'}
             → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
             → SimpleValue A
@@ -173,9 +179,10 @@ module AbstractMachine
          →  Cast (A₂ ⇒ B'))
     (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
              → Cast (A ⇒ C))
-    (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c)
+    (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c)
     where
 
+{-
     apply-cast : ∀{A B : Type} → (V : Value A) → Cast (A ⇒ B) → Value B ⊎ Label
     apply-cast (S-val V) c
         with ActiveOrInert c
@@ -185,6 +192,7 @@ module AbstractMachine
         with ActiveOrInert (compose c₁ c₂)
     ... | inj₂ i = inj₁ (V-cast V (compose c₁ c₂) {i})
     ... | inj₁ a = applyCast (S-val V) (compose c₁ c₂) a
+-}
 
     push-cast : ∀{A B C} → Cast (A ⇒ B) → Dump B C → Dump A C
     push-cast c (dump d) = pushCast c d
@@ -274,9 +282,9 @@ module AbstractMachine
     ret {Γ} {` ι} {B} {C} (S-val (V-const k)) ρ
                        (extCtx (F-·₂v (S-val (V-const f {P-Fun {ι} p}))) E) κ =
         ret-val (S-val (V-const (f k) {p})) ρ E κ
-    ret {Γ} {` ι} {B} {C} (V-cast x c {i}) ρ
+    ret {Γ} {` ι} {B} {C} (V-cast V c {i}) ρ
                        (extCtx (F-·₂v (S-val (V-const f {P-Fun {ι} p}))) E) κ =
-        ⊥-elim (contradiction i (baseNotInert c))
+        ⊥-elim (contradiction i (baseNotInert c (simple⋆ V)))
 
     {- Apply a wrapped procedure in tail position -} 
     ret {Γ}{A}{B}{C} V₂ ρ (extCtx (F-·₂v (V-cast V₁ c {i})) empty) κ
@@ -302,7 +310,7 @@ module AbstractMachine
         (extCtx {B = B'} (F-if M N) E) κ =
         next M ρ E κ
     ret (V-cast V c {i}) ρ (extCtx (F-if M N) E) κ =
-        ⊥-elim (contradiction i (baseNotInert c))
+        ⊥-elim (contradiction i (baseNotInert c (simple⋆ V)))
 
     {- Create a pair. -}
     ret V₂ ρ (extCtx (F-×₁ V₁) E) κ =
@@ -357,7 +365,7 @@ module AbstractMachine
         ret-val V₂ ρ (extCtx (F-cast (cinr c i)) (extCtx (F-·₂ N) E)) κ
 
     ret V ρ (extCtx (F-cast c) E) κ
-        with apply-cast V c
+        with applyCast V c
     ... | inj₁ V' = ret-val V' ρ E κ
     ... | inj₂ ℓ = err ℓ
 

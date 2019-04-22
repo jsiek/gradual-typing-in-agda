@@ -61,11 +61,6 @@ module LazyCast where
   ...    | sum⌣{A' = A'}{B' = B'} =
              inj₁ (activeSum (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ))
   
-  injNotActive : ∀{A ℓ} → A ≢ ⋆ → ¬ Active (cast A ⋆ ℓ)
-  injNotActive neq (activeId .(cast ⋆ ⋆ _)) = neq refl
-  injNotActive neq (activeProj .(cast ⋆ ⋆ _) x) = x refl
-  injNotActive neq (activeErr .(cast _ ⋆ _) x) = x unk⌣R
-
   module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
   open PCR
 
@@ -86,12 +81,6 @@ module LazyCast where
      case M (ƛ l) (ƛ r)
   applyCast {Γ} {A} {B} M v (cast A B ℓ) {activeErr .(cast A B ℓ) x} =
      blame ℓ
-
-{-
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M c {()} N
--}
 
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)

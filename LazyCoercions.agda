@@ -96,12 +96,6 @@ module LazyCoercions where
     case M (ƛ l) (ƛ r)
   applyCast M v (⊥ A ⟨ ℓ ⟩ B) = blame ℓ
 
-{-
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-            → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M c {()} N
--}
-
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
