@@ -394,7 +394,9 @@ module AGT where
         ---------------
       → Abs P ⋆
 
-  abs-non-empty : ∀{P : SType → Set}{A : Type} → Abs P A → Σ[ T ∈ SType ] P T
+  abs-non-empty : ∀{P : SType → Set}{A : Type}
+                → Abs P A
+                → Σ[ T ∈ SType ] P T
   abs-non-empty {P} {` ι} (abs-base x x₁) = ⟨ ` ι , x ⟩
   abs-non-empty {P} {⋆} (abs-any{T = T} x x₁ x₂) = ⟨ T , x₂ ⟩
   abs-non-empty {P} {_} (abs-fun x abs₁ abs₂)

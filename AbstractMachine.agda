@@ -29,7 +29,8 @@ module AbstractMachine
   data SimpleValue : Type → Set where
 
     V-ƛ : ∀ {Γ A B}
-      → (N : Γ , A ⊢ B) → (ρ : Env Γ)
+      → (N : Γ , A ⊢ B)
+      → (ρ : Env Γ)
         -----------------------------
       → SimpleValue (A ⇒ B)
 
