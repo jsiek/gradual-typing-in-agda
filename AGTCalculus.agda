@@ -290,6 +290,21 @@ inl-conv-dom : ∀{A₁ A₂ B C} → convert (inl-ty (A₁ `⊎ A₂)) B
 inl-conv-dom {A₁}{A₂}{B}{C} c
    rewrite dom-fun {B}{C} | inl-⊎ {A₁}{A₂} = c
 
+inr-conv-dom : ∀{A₁ A₂ B C} → convert (inr-ty (A₁ `⊎ A₂)) B
+            → convert A₂ (dom (B ⇒ C))
+inr-conv-dom {A₁}{A₂}{B}{C} c
+   rewrite dom-fun {B}{C} | inr-⊎ {A₁}{A₂} = c
+
+conv-cod-join-L : ∀{B C E} → convert (cod (B ⇒ C)) (join C E)
+conv-cod-join-L {B}{C}{E}
+  rewrite cod-fun {B}{C} = conv-join-L {C}{E}
+
+conv-cod-join-R : ∀{C D E} → convert (cod (D ⇒ E)) (join C E)
+conv-cod-join-R {C}{D}{E}
+  rewrite cod-fun {D}{E} = conv-join-R {C}{E}
+
+
+
 
 
 infix 2 _—→_
@@ -309,9 +324,11 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ----------------------------------------------
     → ((ƛ N) · W) c —→ cod⇒ (N [ W ⟨ dom-conv c ⟩ ])
 
-  δ : ∀ {Γ : Context} {A₁ A₂ B} {f : rep A₁ → rep A₂} {k : rep B} {ab} {a} {b} {c : convert B (dom (A₁ ⇒ A₂))}
+  δ : ∀ {Γ : Context} {A₁ A₂ B} {f : rep A₁ → rep A₂} {k : rep B}
+        {ab} {a} {b} {c : convert B (dom (A₁ ⇒ A₂))}
       ---------------------------------------------------------
-    → (($_ {Γ}{A₁ ⇒ A₂} f {ab}) · (($ k){a})) c —→ ($ (cod-rep (f (dom-prim c k)))){b}
+    → (($_ {Γ}{A₁ ⇒ A₂} f {ab}) · (($ k){a})) c
+       —→ ($ (cod-rep (f (dom-prim c k)))){b}
 
   β-if-true :  ∀ {Γ B C} {M : Γ ⊢ B} {N : Γ ⊢ C}{f}{c}
       -------------------------------------------
@@ -335,13 +352,12 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       {cl : convert (inl-ty (A₁ `⊎ A₂)) B} {cr : convert (inr-ty (A₁ `⊎ A₂)) D}
     → Value V
       ---------------------------------------------------------------
-    → case (inl {Γ}{A₁}{A₂} V) L M cl cr —→ ((L · V) (inl-conv-dom cl)) ⟨ {!!} ⟩
+    → case (inl {Γ}{A₁}{A₂} V) L M cl cr
+      —→ ((L · V) (inl-conv-dom cl)) ⟨ conv-cod-join-L ⟩
 
-{-
-
-  β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+  β-caseR : ∀ {Γ A₁ A₂ B C D E} {V : Γ ⊢ A₂} {L : Γ ⊢ B ⇒ C} {M : Γ ⊢ D ⇒ E}
+      {cl : convert (inl-ty (A₁ `⊎ A₂)) B} {cr : convert (inr-ty (A₁ `⊎ A₂)) D}
     → Value V
-      --------------------------
-    → case (inr V) L M —→ M · V
-
--}
+      ------------------------------------------------------------------
+    → case (inr {Γ}{A₁}{A₂} V) L M cl cr
+      —→ ((M · V) (inr-conv-dom cr)) ⟨ conv-cod-join-R ⟩ 
