@@ -46,9 +46,14 @@ Inventory
    inspired by Abstracting Gradual Typing (Garcia, Clark, and Tanter
    2016).  This is also closely related to the threesomes of Siek and
    Wadler (2011).
-* [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
-   forgetful contracts. 
-  
 * [AbstractMachine.agda](./AbstractMachine.agda): A space-efficient
    abstract machine. It's a variant of the SECD machine with optimized
    tail calls. It's parameterized with respect to casts.
+* [GroundMachine.agda](./GroundMachine.agda): The abstract machine
+   instantiated with the coercions from λS.
+* [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
+   forgetful contracts. (UNDER CONSTRUCTION)
+* [HyperCoercions](./HyperCoercions.agda): A alternative to
+   λS that optimizes the coercion representation by removing
+   indirections. (UNDER CONSTRUCTION)
+

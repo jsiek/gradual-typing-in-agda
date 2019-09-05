@@ -336,40 +336,40 @@ module EfficientGroundCoercions where
   size-cast (G ?? ℓ ⨟ i) = 2 + size-intmd i
   size-cast (` i) = 1 + size-intmd i
 
-  size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ zero
+  size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ 0
   size-gnd-pos {.(_ ⇒ _)} {idι} = λ ()
   size-gnd-pos {.((_ ⇒ _) ⇒ (_ ⇒ _))} {c ↣ d} = λ ()
   size-gnd-pos {.(_ `× _ ⇒ _ `× _)} {c ×' d} = λ ()
   size-gnd-pos {.(_ `⊎ _ ⇒ _ `⊎ _)} {c +' d} = λ ()
 
-  size-intmd-pos : ∀{A c} → size-intmd {A} c ≢ zero
+  size-intmd-pos : ∀{A c} → size-intmd {A} c ≢ 0
   size-intmd-pos {.(_ ⇒ ⋆)} {g ⨟!} = λ ()
   size-intmd-pos {.(_ ⇒ _)} {` g} = λ ()
   size-intmd-pos {.(_ ⇒ _)} {cfail G H x} = λ ()
 
-  size-cast-pos : ∀{A c} → size-cast {A} c ≢ zero
+  size-cast-pos : ∀{A c} → size-cast {A} c ≢ 0
   size-cast-pos {.(⋆ ⇒ ⋆)} {id★} = λ ()
   size-cast-pos {.(⋆ ⇒ _)} {G ?? x ⨟ x₁} = λ ()
   size-cast-pos {.(_ ⇒ _)} {` x} = λ ()
 
-  plus-zero1 : ∀{a}{b} → a + b ≡ zero → a ≡ zero
-  plus-zero1 {zero} {b} p = refl
-  plus-zero1 {suc a} {b} ()
+  plus-01 : ∀{a}{b} → a + b ≡ 0 → a ≡ 0
+  plus-01 {0} {b} p = refl
+  plus-01 {suc a} {b} ()
 
-  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ zero → Bot
+  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ 0 → Bot
   plus-gnd-pos {A}{B}{c}{d} p =
      let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-zero1 {size-gnd c}{size-gnd d} cd-z in
+     let c-z = plus-01 {size-gnd c}{size-gnd d} cd-z in
      contradiction c-z (size-gnd-pos{A}{c})
 
-  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ zero → Bot
+  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ 0 → Bot
   plus-cast-pos {A}{B}{c}{d} p =
      let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-zero1 {size-cast c}{size-cast d} cd-z in
+     let c-z = plus-01 {size-cast c}{size-cast d} cd-z in
      contradiction c-z (size-cast-pos{A}{c})
 
   plus1-suc : ∀{n} → n + 1 ≡ suc n
-  plus1-suc {zero} = refl
+  plus1-suc {0} = refl
   plus1-suc {suc n} = cong suc plus1-suc
 
   inequality-3 : ∀{sc sd sc1 sd1 n}
@@ -446,10 +446,6 @@ module EfficientGroundCoercions where
       n
     ∎  
 
-  m+n≡0⇒n≡0 : ∀{m n : ℕ} → m + n ≡ zero → n ≡ zero
-  m+n≡0⇒n≡0 {zero} {n} p = p
-  m+n≡0⇒n≡0 {suc m} {n} ()
-
   {- 
 
     Next we define the composition operation from Figure 5 of Siek,
@@ -494,7 +490,7 @@ module EfficientGroundCoercions where
   _`⨟_ : ∀{A B C} → (c : gCast (A ⇒ B)) → (d : gCast (B ⇒ C))
           → {n : ℕ} → {m : size-gnd c + size-gnd d ≤ n }
           → gCast (A ⇒ C)
-  _`⨟_{A}{B}{C} c d {zero}{m} = ⊥-elim (plus-gnd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
+  _`⨟_{A}{B}{C} c d {0}{m} = ⊥-elim (plus-gnd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
   
   {- Rule #1 id ⨟ id = id -}
   (idι{A} `⨟ idι) {suc n} = idι{A}
@@ -547,8 +543,9 @@ module EfficientGroundCoercions where
           → (t : Cast (B ⇒ C))
           → {n : ℕ} → {m : size-intmd i + size-cast t ≤ n }
           → iCast (A ⇒ C)
-  _⨟'_{A}{B}{C} i t {zero} {m} =
-    contradiction (m+n≡0⇒n≡0 (n≤0⇒n≡0 m)) (size-cast-pos{B ⇒ C}{t})
+  _⨟'_{A}{B}{C} i t {0} {m} =
+    contradiction (m+n≡0⇒n≡0 (size-intmd i) (n≤0⇒n≡0 m))
+                  (size-cast-pos{B ⇒ C}{t})
     
   {- Rule #4   (g ; G!) ⨟ id★ = (g ; G!)  -}
   ((g ⨟!) {gg} ⨟' id★) {suc n} {m} = (g ⨟!) {gg}
@@ -620,7 +617,7 @@ module EfficientGroundCoercions where
   {-
 
    The definition of compose first does case analysis on the fuel
-   parameter n. The case for zero is vacuous thanks to the metric m.
+   parameter n. The case for 0 is vacuous thanks to the metric m.
 
    We then perform case analysis on parameter s, so we have three
    cases. The first case is equation #3 in the paper and the second is
@@ -629,7 +626,7 @@ module EfficientGroundCoercions where
 
    -}
 
-  _⨟_{A}{B}{C} s t {zero}{m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{s}{t} m)
+  _⨟_{A}{B}{C} s t {0}{m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{s}{t} m)
 
   {- Rule #3 id★ ⨟ t = t -}
   (id★ ⨟ t) {suc n}  = t

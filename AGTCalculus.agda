@@ -1,10 +1,16 @@
+{-
 open import Types
+-}
 
+open import Data.Bool using (true; false)
 open import Relation.Binary.PropositionalEquality
    using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
 module AGTCalculus
+  (Type : Set)
   (convert : Type → Type → Set)
+  (rep : Type → Set)
+  (Prim : Type → Set)
   (prim-convert : ∀{A B} → convert A B → rep A → rep B)
   (dom : Type → Type)
   (cod : Type → Type)
@@ -14,6 +20,10 @@ module AGTCalculus
   (inr-ty : Type → Type)
   (join : Type → Type → Type)
   (Label : Set)
+  (_⇒_ : Type → Type → Type)
+  (_`×_ : Type → Type → Type)
+  (_`⊎_ : Type → Type → Type)
+  (𝔹 : Type)
   (dom-fun : ∀{A B} → dom (A ⇒ B) ≡ A)
   (cod-fun : ∀{A B} → cod (A ⇒ B) ≡ B)
   (fst-× : ∀{A B} → fst-ty (A `× B) ≡ A)
@@ -22,11 +32,31 @@ module AGTCalculus
   (inr-⊎ : ∀{A B} → inr-ty (A `⊎ B) ≡ B)
   (conv-join-L : ∀{A B} → convert A (join A B))
   (conv-join-R : ∀{A B} → convert B (join A B))
+  (rep⇒ : ∀{A B} → rep (A ⇒ B) → rep A → rep B)
   where
 
-open import Variables
+infixl 5 _,_
 
-open import Data.Bool using (true; false)
+data Context : Set where
+  ∅   : Context
+  _,_ : Context → Type → Context
+
+
+infix  4 _∋_
+infix  9 S_
+
+data _∋_ : Context → Type → Set where
+
+  Z : ∀ {Γ A}
+      ----------
+    → Γ , A ∋ A
+
+  S_ : ∀ {Γ A B}
+    → Γ ∋ A
+      ---------
+    → Γ , B ∋ A
+
+
 
 infix  4 _⊢_
 infix 7 _·_
@@ -57,7 +87,7 @@ data _⊢_ : Context → Type → Set where
 
   if : ∀ {Γ A B C}
     → Γ ⊢ A → Γ ⊢ B → Γ ⊢ C
-    → convert A (` 𝔹)
+    → convert A 𝔹
       ---------------------
     → Γ ⊢ join B C
 
@@ -214,7 +244,7 @@ data Frame : {Γ : Context} → Type → Type → Set where
   F-if : ∀ {Γ A B C}
     → Γ ⊢ B
     → Γ ⊢ C
-    → convert A (` 𝔹)
+    → convert A 𝔹
     → Frame {Γ} A (join B C)
 
   F-×₁ : ∀ {Γ A B}
@@ -324,19 +354,19 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ----------------------------------------------
     → ((ƛ N) · W) c —→ cod⇒ (N [ W ⟨ dom-conv c ⟩ ])
 
-  δ : ∀ {Γ : Context} {A₁ A₂ B} {f : rep A₁ → rep A₂} {k : rep B}
+  δ : ∀ {Γ : Context} {A₁ A₂ B} {f : rep (A₁ ⇒ A₂)} {k : rep B}
         {ab} {a} {b} {c : convert B (dom (A₁ ⇒ A₂))}
       ---------------------------------------------------------
     → (($_ {Γ}{A₁ ⇒ A₂} f {ab}) · (($ k){a})) c
-       —→ ($ (cod-rep (f (dom-prim c k)))){b}
+       —→ ($ (cod-rep ((rep⇒ f) (dom-prim c k)))){b}
 
-  β-if-true :  ∀ {Γ B C} {M : Γ ⊢ B} {N : Γ ⊢ C}{f}{c}
+  β-if-true :  ∀ {Γ A B C} {M : Γ ⊢ B} {N : Γ ⊢ C}{p : Prim A}{c : convert A 𝔹}
       -------------------------------------------
-    → if (($ true){f}) M N c —→ M ⟨ conv-join-L ⟩
+    → if (($ {!!}){p}) M N c —→ M ⟨ conv-join-L ⟩
 
   β-if-false :  ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}{c}
       ---------------------------------------------
-    → if (($ false){f}) M N c —→ N  ⟨ conv-join-R ⟩
+    → if (($ {!!}){f}) M N c —→ N  ⟨ conv-join-R ⟩
 
   β-fst :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
     → Value V → Value W
@@ -361,3 +391,37 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ------------------------------------------------------------------
     → case (inr {Γ}{A₁}{A₂} V) L M cl cr
       —→ ((M · V) (inr-conv-dom cr)) ⟨ conv-cod-join-R ⟩ 
+
+data Progress {A} (M : ∅ ⊢ A) : Set where
+
+  step : ∀ {N : ∅ ⊢ A}
+    → M —→ N
+      -------------
+    → Progress M
+
+  done :
+      Value M
+      ----------
+    → Progress M
+
+
+progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
+progress (` ())
+progress (ƛ M) = done V-ƛ
+progress ((M · M₁) c) = {!!}
+progress ($ x) = done V-const
+progress {D} (if {∅}{A}{B}{C} L M N c) = {!!}
+{-
+    with progress L
+... | step {L'} R = step (ξ{F = F-if M N c} R)
+... | done (V-const {k = k}) = {!!}
+... | done (V-cast {c = c'} v) = {!!}
+-}
+progress (cons M M₁) = {!!}
+progress (fst M) = {!!}
+progress (snd M) = {!!}
+progress (inl M) = {!!}
+progress (inr M) = {!!}
+progress (case M M₁ M₂ x x₁) = {!!}
+progress (M ⟨ x ⟩) = {!!}
+progress (blame x) = {!!}
