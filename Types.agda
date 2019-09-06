@@ -656,13 +656,13 @@ module Types where
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `× ⋆) {G-Sum} {G-Pair} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `⊎ ⋆) {G-Sum} {G-Sum} = yes refl
 
-  consis-ground-eq : (A : Type) → (B : Type) → {c : A ⌣ B}
-      {gA : Ground A} {gB : Ground B}
-      → Dec (A ≡ B)
-  consis-ground-eq .(` _) .(` _) {base⌣} {gA} {gB} = yes refl
-  consis-ground-eq .(⋆ ⇒ ⋆) .(_ ⇒ _) {fun⌣} {G-Fun} {G-Fun} = yes refl
-  consis-ground-eq .(_ `× _) .(_ `× _) {pair⌣} {G-Pair} {G-Pair} = yes refl
-  consis-ground-eq .(_ `⊎ _) .(_ `⊎ _) {sum⌣} {G-Sum} {G-Sum} = yes refl
+  consis-ground-eq : ∀{A B : Type} → (c : A ⌣ B) →
+      (gA : Ground A) → (gB : Ground B)
+      → A ≡ B
+  consis-ground-eq {(` _)} {(` _)} base⌣ gA gB = refl
+  consis-ground-eq {(⋆ ⇒ ⋆)} {(_ ⇒ _)} fun⌣ G-Fun G-Fun = refl
+  consis-ground-eq {(_ `× _)} {(_ `× _)} pair⌣ G-Pair G-Pair = refl
+  consis-ground-eq {(_ `⊎ _)} {(_ `⊎ _)} sum⌣ G-Sum G-Sum = refl
 
   ¬⌣if : ∀{ι A B} → ¬ (` ι ⌣ (A ⇒ B))
   ¬⌣if ()

@@ -182,10 +182,8 @@ module HyperCoercions where
 
   {-
 
-   The following compares two middle coercions for shallow
-   consistency.  More specifically, the target B and the source C are
-   ground types, and the following determines whether B ≡ C by looking
-   at the two coercions.
+   The following compares two middle coercions to determine whether
+   the target and source types are shallowly consistent.
 
   -}
 
@@ -211,31 +209,15 @@ module HyperCoercions where
   (c +' d₁) ⌣' (c₁ ×' d) = no (λ ())
   (c +' d₁) ⌣' (c₁ +' d) = yes sum⌣
 
-  compose-lemma-≡ : ∀{A B C D E} → Middle (A ⇒ B) → Inj (B ⇒ C)
-    → Proj (C ⇒ D) → Middle (D ⇒ E) → (B ⌣ D)
-    → B ≡ D
-  compose-lemma-≡ m₁ 𝜖 𝜖 m₂ sc = refl
-  compose-lemma-≡ m₁ (cfail x) 𝜖 m₂ sc = {!!}
-  compose-lemma-≡ m₁ i₁ (?? ℓ) m₂ sc = {!!}
-
-
-
   c ⨟ id★ = c
   id★ ⨟ (p₂ ↷ m₂ , i₂) = (p₂ ↷ m₂ , i₂)
-  (p₁ ↷ m₁ , i₁) ⨟ (p₂ ↷ m₂ , i₂) 
-      with (m₁ ⌣' m₂)
-  ... | no C⌣̸D = {!!}
-  ... | yes C⌣D = {!!}
-
-
-{-
   (p₁ ↷ m₁ , 𝜖) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ (m₁ `⨟ m₂) , i₂
-  (p₁ ↷ m₁ , (!! {g = gC})) ⨟ ((?? ℓ) {g = gD} ↷ m₂ , i₂)
-      with (m₁ ⌣' m₂) {gC} {gD}
-  ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
-  ... | no C≢D = p₁ ↷ m₁ , cfail ℓ
+  (p₁ ↷ m₁ , (!! {C}{gC})) ⨟ ((?? ℓ) {D}{gD} ↷ m₂ , i₂)
+      with m₁ ⌣' m₂
+  ... | no C⌣̸D = p₁ ↷ m₁ , cfail ℓ
+  ... | yes C⌣D rewrite (consis-ground-eq C⌣D gC gD) =
+        p₁ ↷ (m₁ `⨟ m₂) , i₂
   (p₁ ↷ m₁ , cfail ℓ) ⨟ (p₂ ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
--}
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
