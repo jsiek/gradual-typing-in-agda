@@ -38,10 +38,10 @@ module HyperCoercions where
 
   data Proj where
     𝜖 : ∀{A} → Proj (A ⇒ A)
-    ??_ : ∀{H : Type} {g : Ground H} → Label → Proj (⋆ ⇒ H)
+    ?? : Label → {H : Type} {g : Ground H} → Proj (⋆ ⇒ H)
 
   data Middle where
-    idι : ∀ {ι : Base} → Middle ((` ι) ⇒ (` ι))
+    id : (ι : Base) → Middle ((` ι) ⇒ (` ι))
     _↣_ : ∀ {A B A' B'}
         → (c : Cast (B ⇒ A)) → (d : Cast (A' ⇒ B'))
           -----------------------------------------
@@ -85,13 +85,13 @@ module HyperCoercions where
   coerce-from⋆ B ℓ with eq-unk B
   ... | yes eq rewrite eq = id★
   ... | no neq with ground? B
-  ...     | yes g = (??_ {B}{g} ℓ) ↷ (coerce-from-gnd B B {g}{Refl~}{neq} ℓ) , 𝜖
+  ...     | yes g = (?? ℓ) {B}{g} ↷ (coerce-from-gnd B B {g}{Refl~}{neq} ℓ) , 𝜖
   ...     | no ng with ground B {neq}
   ...        | ⟨ G , ⟨ g , c ⟩ ⟩ =
-               (??_ {G}{g} ℓ) ↷ (coerce-from-gnd G B {g}{Sym~ c}{neq} ℓ) , 𝜖
+               (?? ℓ) {G}{g} ↷ (coerce-from-gnd G B {g}{Sym~ c}{neq} ℓ) , 𝜖
 
   coerce-to-gnd .⋆ B {g} {unk~L} {neq} ℓ = ⊥-elim (neq refl)
-  coerce-to-gnd .(` _) .(` _) {g} {base~} {neq} ℓ = idι
+  coerce-to-gnd (` ι) (` ι) {g} {base~} {neq} ℓ = id ι
   coerce-to-gnd (A ⇒ B) (⋆ ⇒ ⋆) {G-Fun} {fun~ c d} {neq} ℓ =
      (coerce-from⋆ A ℓ) ↣ (coerce-to⋆ B ℓ)
   coerce-to-gnd (A `× B) (⋆ `× ⋆) {G-Pair} {pair~ c d} {neq} ℓ =
@@ -100,7 +100,7 @@ module HyperCoercions where
      (coerce-to⋆ A ℓ) +' (coerce-to⋆ B ℓ)
 
   coerce-from-gnd A .⋆ {g} {unk~R} {neq} ℓ = ⊥-elim (neq refl)
-  coerce-from-gnd .(` _) .(` _) {g} {base~} {neq} ℓ = idι
+  coerce-from-gnd (` ι) (` ι) {g} {base~} {neq} ℓ = id ι
   coerce-from-gnd (⋆ ⇒ ⋆) (A ⇒ B) {G-Fun} {fun~ c d} {neq} ℓ =
      (coerce-to⋆ A ℓ) ↣ (coerce-from⋆ B ℓ)
   coerce-from-gnd (⋆ `× ⋆) (A `× B) {G-Pair} {pair~ c d} {neq} ℓ =
@@ -110,7 +110,7 @@ module HyperCoercions where
 
   coerce .⋆ B {unk~L} ℓ = coerce-from⋆ B ℓ
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
-  coerce (` ι) (` ι) {base~} ℓ = 𝜖 ↷ idι , 𝜖
+  coerce (` ι) (` ι) {base~} ℓ = 𝜖 ↷ id ι , 𝜖
   coerce (A ⇒ B) (C ⇒ D) {fun~ c d} ℓ =
      𝜖 ↷ (coerce C A {Sym~ c} ℓ ↣ coerce B D {d} ℓ) , 𝜖
   coerce (A `× B) (C `× D) {pair~ c d} ℓ =
@@ -130,13 +130,13 @@ module HyperCoercions where
           → ActiveMiddle (s ×' t)
     A-csum : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
           → ActiveMiddle (s +' t)
-    A-idι : ∀{B}
-          → ActiveMiddle (idι {B})
+    A-idι : ∀{ι}
+          → ActiveMiddle (id ι)
 
   data Active : ∀ {A} → Cast A → Set where
     A-id★ : Active id★
     A-proj : ∀{A B C}{ℓ}{g : Ground A}{m : Middle (A ⇒ B)}{i : Inj (B ⇒ C)}
-           → Active ((??_ {A}{g} ℓ) ↷ m , i)  
+           → Active ((?? ℓ) {A}{g} ↷ m , i)  
     A-fail : ∀{A B C D}{ℓ}{p : Proj (A ⇒ B)}{m : Middle (B ⇒ C)}
            → Active (p ↷ m , cfail {C} {D} ℓ)  
     A-mid : ∀{A B}{m : Middle (A ⇒ B)}
@@ -151,7 +151,7 @@ module HyperCoercions where
           → Inert (𝜖 ↷ m , 𝜖)  
 
   ActiveOrInertMiddle : ∀{A} → (c : Middle A) → ActiveMiddle c ⊎ InertMiddle c
-  ActiveOrInertMiddle {.(` _ ⇒ ` _)} idι = inj₁ A-idι
+  ActiveOrInertMiddle {.(` _ ⇒ ` _)} (id ι) = inj₁ A-idι
   ActiveOrInertMiddle {.((_ ⇒ _) ⇒ (_ ⇒ _))} (c ↣ d) = inj₂ I-cfun
   ActiveOrInertMiddle {.(_ `× _ ⇒ _ `× _)} (c ×' d) = inj₁ A-cpair
   ActiveOrInertMiddle {.(_ `⊎ _ ⇒ _ `⊎ _)} (c +' d) = inj₁ A-csum
@@ -175,18 +175,74 @@ module HyperCoercions where
 
   _`⨟_ : ∀{A B C} → (c : Middle (A ⇒ B)) → (d : Middle (B ⇒ C))
        → Middle (A ⇒ C)
-  (idι `⨟ idι) = idι
+  (id ι `⨟ id ι) = id ι
   ((c ↣ d) `⨟ (c' ↣ d')) = (c' ⨟ c) ↣ (d ⨟ d')
   ((c ×' d) `⨟ (c' ×' d')) = (c ⨟ c') ×' (d ⨟ d')
   ((c +' d) `⨟ (c' +' d')) = (c ⨟ c') +' (d ⨟ d')
+
+  {-
+
+   The following compares two middle coercions for consistency.
+   More specifically, the target B and the source C are ground
+   types, and the following determines whether B ≡ C by looking
+   at the two coercions.
+
+  -}
+
+  _~'_ : ∀{A B C D} → Middle (A ⇒ B) → Middle (C ⇒ D)
+       → {gB : Ground B} → {gC : Ground C} → Dec (B ≡ C)
+  (id ι ~' id ι') {gB} {gC}
+      with base-eq? ι ι'
+  ... | yes refl = yes refl
+  ... | no neq = no G
+      where G : ¬ (` ι ≡ ` ι')
+            G refl = neq refl
+  (_~'_ {B = ` ι}{C = A ⇒ A' } (id ι) (c ↣ d)) {gB} {gC} = no G
+     where G : ¬ ` ι ≡ A ⇒ A'
+           G ()
+  (_~'_ {B = ` ι}{C = A `× A'} (id ι) (c ×' d)) {gB} {gC} =  no G
+     where G : ¬ ` ι ≡ A `× A'
+           G ()
+  (_~'_ {B = ` ι}{C = A `⊎ A'} (id ι) (c +' d)) {gB} {gC} =  no G
+     where G : ¬ ` ι ≡ A `⊎ A'
+           G ()
+  (_~'_ {B = B ⇒ B'}{C = ` ι} (c ↣ d₁) (id ι)) {gB} {gC} = no G
+     where G : ¬ (B ⇒ B' ≡ ` ι)
+           G ()
+  ((c ↣ d₁) ~' (c₁ ↣ d)) {G-Fun} {G-Fun} = yes refl
+  (_~'_ {B = B ⇒ B'} {C = C `× C'} (c ↣ d₁)  (c₁ ×' d)) {gB} {gC} = no G
+     where G : ¬ (B ⇒ B' ≡ C `× C')
+           G ()
+  (_~'_ {B = B ⇒ B'} {C = C `⊎ C'} (c ↣ d₁) (c₁ +' d)) {gB} {gC} = no G
+     where G : ¬ (B ⇒ B' ≡ C `⊎ C')
+           G ()
+  (_~'_ {B = B `× B'}{C = ` ι} (c ×' d) (id ι)) {gB} {gC} = no G
+     where G : ¬ (B `× B' ≡ ` ι)
+           G ()
+  (_~'_ {B = B `× B'}{C = C ⇒ C'} (c ×' d) (c' ↣ d')) {gB} {gC} = no G
+     where G : ¬ (B `× B' ≡ C ⇒ C')
+           G ()
+  ((c ×' d₁) ~' (c₁ ×' d)) {G-Pair} {G-Pair} = yes refl
+  (_~'_ {B = B `× B'}{C = C `⊎ C'} (c ×' d₁) (c₁ +' d)) {gB} {gC} = no G
+     where G : ¬ (B `× B' ≡ C `⊎ C')
+           G ()
+  (_~'_ {B = B `⊎ B'}{C = ` ι} (c +' d₁) (id ι)) {gB} {gC} = no G
+     where G : ¬ (B `⊎ B' ≡ ` ι)
+           G ()
+  (_~'_ {B = B `⊎ B'}{C = C ⇒ C'} (c +' d₁) (c₁ ↣ d)) {gB} {gC} = no G
+     where G : ¬ (B `⊎ B' ≡ C ⇒ C')
+           G ()
+  (_~'_ {B = B `⊎ B'}{C = C `× C'} (c +' d₁) (c₁ ×' d)) {gB} {gC} = no G
+     where G : ¬ (B `⊎ B' ≡ C `× C')
+           G ()
+  ((c +' d₁) ~' (c₁ +' d)) {G-Sum} {G-Sum} = yes refl
 
   c ⨟ id★ = c
   id★ ⨟ (p₂ ↷ m₂ , i₂) = (p₂ ↷ m₂ , i₂)
   (p₁ ↷ m₁ , 𝜖) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ (m₁ `⨟ m₂) , i₂
   (p₁ ↷ m₁ , cfail ℓ) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
-  (_↷_,_ {A}{B}{C}{⋆} p₁ m₁ (!! {C}{gC}))
-    ⨟ (_↷_,_ {⋆}{D}{E}{F} (??_ {D}{gD} ℓ) m₂ i₂)
-      with gnd-eq? C D {gC}{gD}
+  (p₁ ↷ m₁ , (!! {g = gC})) ⨟ ((?? ℓ) {g = gD} ↷ m₂ , i₂)
+      with (m₁ ~' m₂) {gC} {gD}
   ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
   ... | no C≢D = p₁ ↷ m₁ , cfail ℓ
   (p₁ ↷ m₁ , cfail ℓ) ⨟ ((?? ℓ₂) ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
@@ -202,11 +258,11 @@ module HyperCoercions where
   applyCast M v (𝜖 ↷ (c +' d) , 𝜖) {A-mid A-csum} =
     let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
     case M (ƛ l) (ƛ r)
-  applyCast M v (𝜖 ↷ idι , 𝜖) {A-mid A-idι} = M
-  applyCast M v ((??_ {g = g} ℓ) ↷ m , i) {a}
+  applyCast M v (𝜖 ↷ id ι , 𝜖) {A-mid A-idι} = M
+  applyCast M v ((?? ℓ) {g = g} ↷ m , i) {a}
       with EPCR.canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
-        M' ⟨ c ⨟ ((??_ {g = g} ℓ) ↷ m , i) ⟩
+        M' ⟨ c ⨟ ((?? ℓ) {g = g} ↷ m , i) ⟩
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
