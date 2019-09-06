@@ -1,6 +1,13 @@
-{-
+{- 
 
-  
+   The notion of hyper-coercions is an unpublished idea from Jeremy
+   Siek and Andre Kuhlenschmidt, inspired by the super-coercions of
+   Ronald Garcia (ICFP 2013).  The goal is to reduce the amount of
+   space and the number of indirections (pointers) needed in the
+   representation of coercions. We conjecture that a hyper-coercion
+   can fit into a 64-bit word. The hyper-coercions in this file are
+   for the lazy UD semantics, so they can be seen as an alternative to
+   the coercion of λS.
 
 -}
 
@@ -183,4 +190,60 @@ module HyperCoercions where
   ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
   ... | no C≢D = p₁ ↷ m₁ , cfail ℓ
   (p₁ ↷ m₁ , cfail ℓ) ⨟ ((?? ℓ₂) ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
+
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+            → ∀ {a : Active c} → Γ ⊢ B
+  applyCast M v id★ {a} =
+      M
+  applyCast M v (𝜖 ↷ m , cfail ℓ) {A-fail} =
+      blame ℓ
+  applyCast M v (𝜖 ↷ (c ×' d) , 𝜖) {A-mid A-cpair} =
+      cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
+  applyCast M v (𝜖 ↷ (c +' d) , 𝜖) {A-mid A-csum} =
+    let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
+    case M (ƛ l) (ƛ r)
+  applyCast M v (𝜖 ↷ idι , 𝜖) {A-mid A-idι} = M
+  applyCast M v ((??_ {g = g} ℓ) ↷ m , i) {a}
+      with EPCR.canonical⋆ M v
+  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
+        M' ⟨ c ⨟ ((??_ {g = g} ℓ) ↷ m , i) ⟩
+
+  funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
+  funCast M v (𝜖 ↷ (c ↣ d) , 𝜖) {I-mid I-cfun} N = (M · N ⟨ c ⟩) ⟨ d ⟩
+  
+  funSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc (𝜖 ↷ (_↣_ {A}{B}{A'}{B'} c d) , 𝜖) (I-mid I-cfun) M v =
+      ⟨ A , ⟨ A' , refl ⟩ ⟩
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = c
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = d
+  
+  fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
+  fstCast M vM (𝜖 ↷ _ , 𝜖) {I-mid ()}
+  
+  sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
+          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
+  sndCast M vM (𝜖 ↷ _ , 𝜖) {I-mid ()}
+
+  caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
+             → (c : Cast (A ⇒ (A' `⊎ B')))
+             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
+  caseCast L vL (𝜖 ↷ _ , 𝜖) {I-mid ()} M N
+  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
+  baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) nd (I-mid ())
+
+  module Red = EPCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
+                  baseNotInert (_⨟_)
+  open Red
 

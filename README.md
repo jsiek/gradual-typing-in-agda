@@ -51,9 +51,9 @@ Inventory
    tail calls. It's parameterized with respect to casts.
 * [GroundMachine.agda](./GroundMachine.agda): The abstract machine
    instantiated with the coercions from λS.
-* [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
-   forgetful contracts. (UNDER CONSTRUCTION)
 * [HyperCoercions](./HyperCoercions.agda): A alternative to
    λS that optimizes the coercion representation by removing
-   indirections. (UNDER CONSTRUCTION)
+   indirections.
+* [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
+   forgetful contracts. (UNDER CONSTRUCTION)
 
