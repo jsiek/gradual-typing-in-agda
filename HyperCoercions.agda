@@ -182,70 +182,60 @@ module HyperCoercions where
 
   {-
 
-   The following compares two middle coercions for consistency.
-   More specifically, the target B and the source C are ground
-   types, and the following determines whether B ≡ C by looking
+   The following compares two middle coercions for shallow
+   consistency.  More specifically, the target B and the source C are
+   ground types, and the following determines whether B ≡ C by looking
    at the two coercions.
 
   -}
 
-  _~'_ : ∀{A B C D} → Middle (A ⇒ B) → Middle (C ⇒ D)
-       → {gB : Ground B} → {gC : Ground C} → Dec (B ≡ C)
-  (id ι ~' id ι') {gB} {gC}
+  _⌣'_ : ∀{A B C D} → Middle (A ⇒ B) → Middle (C ⇒ D)
+       → Dec (B ⌣ C)
+  id ι ⌣' id ι'
       with base-eq? ι ι'
-  ... | yes refl = yes refl
-  ... | no neq = no G
-      where G : ¬ (` ι ≡ ` ι')
-            G refl = neq refl
-  (_~'_ {B = ` ι}{C = A ⇒ A' } (id ι) (c ↣ d)) {gB} {gC} = no G
-     where G : ¬ ` ι ≡ A ⇒ A'
-           G ()
-  (_~'_ {B = ` ι}{C = A `× A'} (id ι) (c ×' d)) {gB} {gC} =  no G
-     where G : ¬ ` ι ≡ A `× A'
-           G ()
-  (_~'_ {B = ` ι}{C = A `⊎ A'} (id ι) (c +' d)) {gB} {gC} =  no G
-     where G : ¬ ` ι ≡ A `⊎ A'
-           G ()
-  (_~'_ {B = B ⇒ B'}{C = ` ι} (c ↣ d₁) (id ι)) {gB} {gC} = no G
-     where G : ¬ (B ⇒ B' ≡ ` ι)
-           G ()
-  ((c ↣ d₁) ~' (c₁ ↣ d)) {G-Fun} {G-Fun} = yes refl
-  (_~'_ {B = B ⇒ B'} {C = C `× C'} (c ↣ d₁)  (c₁ ×' d)) {gB} {gC} = no G
-     where G : ¬ (B ⇒ B' ≡ C `× C')
-           G ()
-  (_~'_ {B = B ⇒ B'} {C = C `⊎ C'} (c ↣ d₁) (c₁ +' d)) {gB} {gC} = no G
-     where G : ¬ (B ⇒ B' ≡ C `⊎ C')
-           G ()
-  (_~'_ {B = B `× B'}{C = ` ι} (c ×' d) (id ι)) {gB} {gC} = no G
-     where G : ¬ (B `× B' ≡ ` ι)
-           G ()
-  (_~'_ {B = B `× B'}{C = C ⇒ C'} (c ×' d) (c' ↣ d')) {gB} {gC} = no G
-     where G : ¬ (B `× B' ≡ C ⇒ C')
-           G ()
-  ((c ×' d₁) ~' (c₁ ×' d)) {G-Pair} {G-Pair} = yes refl
-  (_~'_ {B = B `× B'}{C = C `⊎ C'} (c ×' d₁) (c₁ +' d)) {gB} {gC} = no G
-     where G : ¬ (B `× B' ≡ C `⊎ C')
-           G ()
-  (_~'_ {B = B `⊎ B'}{C = ` ι} (c +' d₁) (id ι)) {gB} {gC} = no G
-     where G : ¬ (B `⊎ B' ≡ ` ι)
-           G ()
-  (_~'_ {B = B `⊎ B'}{C = C ⇒ C'} (c +' d₁) (c₁ ↣ d)) {gB} {gC} = no G
-     where G : ¬ (B `⊎ B' ≡ C ⇒ C')
-           G ()
-  (_~'_ {B = B `⊎ B'}{C = C `× C'} (c +' d₁) (c₁ ×' d)) {gB} {gC} = no G
-     where G : ¬ (B `⊎ B' ≡ C `× C')
-           G ()
-  ((c +' d₁) ~' (c₁ +' d)) {G-Sum} {G-Sum} = yes refl
+  ... | yes refl = yes base⌣
+  ... | no neq = no (¬⌣ii neq)
+  id ι ⌣' (c ↣ d) = no ¬⌣if
+  id ι ⌣' (c ×' d) = no ¬⌣ip
+  id ι ⌣' (c +' d) = no ¬⌣is
+  (c ↣ d₁) ⌣' id ι = no ¬⌣fi
+  (c ↣ d₁) ⌣' (c₁ ↣ d) = yes fun⌣
+  (c ↣ d₁) ⌣' (c₁ ×' d) = no λ ()
+  (c ↣ d₁) ⌣' (c₁ +' d) = no λ ()
+  (c ×' d₁) ⌣' id ι = no λ ()
+  (c ×' d₁) ⌣' (c₁ ↣ d) = no (λ ())
+  (c ×' d₁) ⌣' (c₁ ×' d) = yes pair⌣
+  (c ×' d₁) ⌣' (c₁ +' d) = no (λ ())
+  (c +' d₁) ⌣' id ι = no (λ ())
+  (c +' d₁) ⌣' (c₁ ↣ d) = no (λ ())
+  (c +' d₁) ⌣' (c₁ ×' d) = no (λ ())
+  (c +' d₁) ⌣' (c₁ +' d) = yes sum⌣
+
+  compose-lemma-≡ : ∀{A B C D E} → Middle (A ⇒ B) → Inj (B ⇒ C)
+    → Proj (C ⇒ D) → Middle (D ⇒ E) → (B ⌣ D)
+    → B ≡ D
+  compose-lemma-≡ m₁ 𝜖 𝜖 m₂ sc = refl
+  compose-lemma-≡ m₁ (cfail x) 𝜖 m₂ sc = {!!}
+  compose-lemma-≡ m₁ i₁ (?? ℓ) m₂ sc = {!!}
+
+
 
   c ⨟ id★ = c
   id★ ⨟ (p₂ ↷ m₂ , i₂) = (p₂ ↷ m₂ , i₂)
+  (p₁ ↷ m₁ , i₁) ⨟ (p₂ ↷ m₂ , i₂) 
+      with (m₁ ⌣' m₂)
+  ... | no C⌣̸D = {!!}
+  ... | yes C⌣D = {!!}
+
+
+{-
   (p₁ ↷ m₁ , 𝜖) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ (m₁ `⨟ m₂) , i₂
-  (p₁ ↷ m₁ , cfail ℓ) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
   (p₁ ↷ m₁ , (!! {g = gC})) ⨟ ((?? ℓ) {g = gD} ↷ m₂ , i₂)
-      with (m₁ ~' m₂) {gC} {gD}
+      with (m₁ ⌣' m₂) {gC} {gD}
   ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
   ... | no C≢D = p₁ ↷ m₁ , cfail ℓ
-  (p₁ ↷ m₁ , cfail ℓ) ⨟ ((?? ℓ₂) ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
+  (p₁ ↷ m₁ , cfail ℓ) ⨟ (p₂ ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
+-}
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B

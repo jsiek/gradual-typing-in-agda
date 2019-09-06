@@ -400,6 +400,27 @@ module Types where
   ¬~sp : ∀{A B A' B'} → ¬ ((A `⊎ B) ~ (A' `× B'))
   ¬~sp ()
 
+  ¬~if : ∀{ι A B} → ¬ (` ι ~ (A ⇒ B))
+  ¬~if ()
+
+  ¬~ip : ∀{ι A B} → ¬ (` ι ~ (A `× B))
+  ¬~ip ()
+
+  ¬~is : ∀{ι A B} → ¬ (` ι ~ (A `⊎ B))
+  ¬~is ()
+
+  ¬~fi : ∀{ι A B} → ¬ ((A ⇒ B) ~ ` ι)
+  ¬~fi ()
+
+  ¬~pi : ∀{ι A B} → ¬ ((A `× B) ~ ` ι)
+  ¬~pi ()
+
+  ¬~si : ∀{ι A B} → ¬ ((A `⊎ B) ~ ` ι)
+  ¬~si ()
+
+  ¬~ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ~ ` ι')
+  ¬~ii neq base~ = neq refl
+
   ¬~fL : ∀ {A B A' B'}
     → ¬ (A ~ B)
       ------------------------
@@ -634,3 +655,32 @@ module Types where
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ ⇒ ⋆) {G-Sum} {G-Fun} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `× ⋆) {G-Sum} {G-Pair} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `⊎ ⋆) {G-Sum} {G-Sum} = yes refl
+
+  consis-ground-eq : (A : Type) → (B : Type) → {c : A ⌣ B}
+      {gA : Ground A} {gB : Ground B}
+      → Dec (A ≡ B)
+  consis-ground-eq .(` _) .(` _) {base⌣} {gA} {gB} = yes refl
+  consis-ground-eq .(⋆ ⇒ ⋆) .(_ ⇒ _) {fun⌣} {G-Fun} {G-Fun} = yes refl
+  consis-ground-eq .(_ `× _) .(_ `× _) {pair⌣} {G-Pair} {G-Pair} = yes refl
+  consis-ground-eq .(_ `⊎ _) .(_ `⊎ _) {sum⌣} {G-Sum} {G-Sum} = yes refl
+
+  ¬⌣if : ∀{ι A B} → ¬ (` ι ⌣ (A ⇒ B))
+  ¬⌣if ()
+
+  ¬⌣ip : ∀{ι A B} → ¬ (` ι ⌣ (A `× B))
+  ¬⌣ip ()
+
+  ¬⌣is : ∀{ι A B} → ¬ (` ι ⌣ (A `⊎ B))
+  ¬⌣is ()
+
+  ¬⌣fi : ∀{ι A B} → ¬ ((A ⇒ B) ⌣ ` ι)
+  ¬⌣fi ()
+
+  ¬⌣pi : ∀{ι A B} → ¬ ((A `× B) ⌣ ` ι)
+  ¬⌣pi ()
+
+  ¬⌣si : ∀{ι A B} → ¬ ((A `⊎ B) ⌣ ` ι)
+  ¬⌣si ()
+
+  ¬⌣ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ⌣ ` ι')
+  ¬⌣ii neq base⌣ = neq refl
