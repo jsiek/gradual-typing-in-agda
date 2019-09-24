@@ -291,3 +291,20 @@ module GroundCoercions where
   open Red
 
 
+  open import CastStructure
+
+  struct : CastStruct
+  struct = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; applyCast = applyCast
+             ; funSrc = funSrc
+             ; dom = dom
+             ; cod = cod
+             ; fstCast = fstCast
+             ; sndCast = sndCast
+             ; caseCast = caseCast
+             ; baseNotInert = baseNotInert
+             }

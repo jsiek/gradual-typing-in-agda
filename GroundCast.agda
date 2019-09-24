@@ -223,8 +223,24 @@ module GroundCast where
   proving type safety for λB. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
-                   baseNotInert
+  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast
+                   caseCast baseNotInert
   open Red
 
+  open import CastStructure
 
+  struct : CastStruct
+  struct = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; applyCast = applyCast
+             ; funSrc = funSrc
+             ; dom = dom
+             ; cod = cod
+             ; fstCast = fstCast
+             ; sndCast = sndCast
+             ; caseCast = caseCast
+             ; baseNotInert = baseNotInert
+             }
