@@ -75,15 +75,30 @@ module EquivCast
             → (_⟨_⟩₁ M₁ c₁) ≈ (_⟨_⟩₂ M₂ c₂)
       ≈-blame : ∀ {Γ}{A}{ℓ} → (blame₁{Γ}{A} ℓ) ≈ (blame₂{Γ}{A} ℓ)
 
+    postulate inert-equiv : ∀{A B : Type}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)} → CastStruct.Inert CastCalc₁ c₁ → EqCast c₁ c₂ → CastStruct.Inert CastCalc₂ c₂
+
+    value-equiv : ∀{A : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
+      → M₁ ≈ M₂ → CC₁.Value M₁
+      → CC₂.Value M₂
+    value-equiv (≈-lam M₁≈M₂) CC₁.V-ƛ = CC₂.V-ƛ
+    value-equiv ≈-lit CC₁.V-const = CC₂.V-const
+    value-equiv (≈-cons M₁≈M₂ M₁≈M₃) (CC₁.V-pair VM₁ VM₂) =
+       CC₂.V-pair (value-equiv M₁≈M₂ VM₁) (value-equiv M₁≈M₃ VM₂)
+    value-equiv (≈-inl M₁≈M₂) (CC₁.V-inl VM₁) = CC₂.V-inl (value-equiv M₁≈M₂ VM₁)
+    value-equiv (≈-inr M₁≈M₂) (CC₁.V-inr VM₁) = CC₂.V-inr (value-equiv M₁≈M₂ VM₁)
+    value-equiv (≈-cast M₁≈M₂ ec) (CC₁.V-cast {i = i} VM₁) =
+       CC₂.V-cast {i = inert-equiv i ec} (value-equiv M₁≈M₂ VM₁)
+
     plug-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{F₁ : CC₁.Frame {∅} A B}{N₂ : ∅ ⊢₂ B}
        → CC₁.plug M₁ F₁ ≈ N₂
        → Σ[ F₂ ∈ CC₂.Frame {∅} A B ] Σ[ M₂ ∈ ∅ ⊢₂ A ]
           (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂)
     plug-equiv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
         ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
-    plug-equiv {F₁ = CC₁.F-·₂ M} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ CC₂.F-·₂ M₂ , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
-    plug-equiv {F₁ = CC₁.F-if x x₁} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-·₂ M {v}} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ CC₂.F-·₂ M₂ {{!!}} , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
+    plug-equiv {F₁ = CC₁.F-if x x₁} (≈-if F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
+       ⟨ {!!} , {!!} ⟩
     plug-equiv {F₁ = CC₁.F-×₁ x} F₁[M₁]≈N₂ = {!!}
     plug-equiv {F₁ = CC₁.F-×₂ x} F₁[M₁]≈N₂ = {!!}
     plug-equiv {F₁ = CC₁.F-fst} F₁[M₁]≈N₂ = {!!}
