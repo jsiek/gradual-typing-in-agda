@@ -23,13 +23,15 @@ module EquivCast
   open CC₁ using (`_; _·_; $_) renaming (
        _⊢_ to _⊢₁_; ƛ_ to ƛ₁_; _⟨_⟩ to _⟨_⟩₁;
        if to if₁; cons to cons₁; fst to fst₁; snd to snd₁;
-       inl to inl₁; inr to inr₁; case to case₁; blame to blame₁)
+       inl to inl₁; inr to inr₁; case to case₁; blame to blame₁;
+       _—→_ to _—→₁_)
   open CC₂ using ()
      renaming (
        _⊢_ to _⊢₂_; `_ to ``_; ƛ_ to ƛ₂_; _·_ to _●_; $_ to #_;
        if to if₂; cons to cons₂; fst to fst₂; snd to snd₂;
        inl to inl₂; inr to inr₂; case to case₂; _⟨_⟩ to _⟨_⟩₂;
-       blame to blame₂)
+       blame to blame₂;
+       _—→_ to _—→₂_)
 
   module Equiv 
     (EqCast : ∀{A B} → Cast₁ (A ⇒ B) → Cast₂ (A ⇒ B) → Set)
@@ -72,3 +74,41 @@ module EquivCast
             → M₁ ≈ M₂ → EqCast c₁ c₂
             → (_⟨_⟩₁ M₁ c₁) ≈ (_⟨_⟩₂ M₂ c₂)
       ≈-blame : ∀ {Γ}{A}{ℓ} → (blame₁{Γ}{A} ℓ) ≈ (blame₂{Γ}{A} ℓ)
+
+    plug-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{F₁ : CC₁.Frame {∅} A B}{N₂ : ∅ ⊢₂ B}
+       → CC₁.plug M₁ F₁ ≈ N₂
+       → Σ[ F₂ ∈ CC₂.Frame {∅} A B ] Σ[ M₂ ∈ ∅ ⊢₂ A ]
+          (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂)
+    plug-equiv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+        ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv {F₁ = CC₁.F-·₂ M} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-if x x₁} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-×₁ x} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-×₂ x} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-fst} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-snd} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-inl} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-inr} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-case x x₁} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-cast x} F₁[M₁]≈N₂ = {!!}
+
+
+    simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
+             → M₁ ≈ M₂
+             → M₁ —→₁ N₁
+             → Σ[ N₂ ∈ (∅ ⊢₂ A) ] ((M₂ —→₂ N₂) × (N₁ ≈ N₂))
+    simulate M₁≈M₂ (CC₁.ξ M₁—→N₁) = {!!}
+    simulate M₁≈M₂ CC₁.ξ-blame = {!!}
+    simulate M₁≈M₂ (CC₁.β x) = {!!}
+    simulate M₁≈M₂ CC₁.δ = {!!}
+    simulate M₁≈M₂ CC₁.β-if-true = {!!}
+    simulate M₁≈M₂ CC₁.β-if-false = {!!}
+    simulate M₁≈M₂ (CC₁.β-fst x x₁) = {!!}
+    simulate M₁≈M₂ (CC₁.β-snd x x₁) = {!!}
+    simulate M₁≈M₂ (CC₁.β-caseL x) = {!!}
+    simulate M₁≈M₂ (CC₁.β-caseR x) = {!!}
+    simulate M₁≈M₂ (CC₁.cast v) = {!!}
+    simulate M₁≈M₂ (CC₁.fun-cast v x) = {!!}
+    simulate M₁≈M₂ (CC₁.fst-cast x) = {!!}
+    simulate M₁≈M₂ (CC₁.snd-cast x) = {!!}
+    simulate M₁≈M₂ (CC₁.case-cast x) = {!!}

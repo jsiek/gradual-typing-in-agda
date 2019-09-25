@@ -212,7 +212,7 @@ module HyperCoercions where
   c ⨟ id★ = c
   id★ ⨟ (p₂ ↷ m₂ , i₂) = (p₂ ↷ m₂ , i₂)
   (p₁ ↷ m₁ , 𝜖) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ (m₁ `⨟ m₂) , i₂
-  (p₁ ↷ m₁ , (!! {C}{gC})) ⨟ ((?? ℓ) {D}{gD} ↷ m₂ , i₂)
+  (p₁ ↷ m₁ , (!! {g = gC})) ⨟ ((?? ℓ) {g = gD} ↷ m₂ , i₂)
       with m₁ ⌣' m₂
   ... | no C⌣̸D = p₁ ↷ m₁ , cfail ℓ
   ... | yes C⌣D rewrite (consis-ground-eq C⌣D gC gD) =
