@@ -81,7 +81,8 @@ module EquivCast
           (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂)
     plug-equiv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
         ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
-    plug-equiv {F₁ = CC₁.F-·₂ M} F₁[M₁]≈N₂ = {!!}
+    plug-equiv {F₁ = CC₁.F-·₂ M} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ CC₂.F-·₂ M₂ , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
     plug-equiv {F₁ = CC₁.F-if x x₁} F₁[M₁]≈N₂ = {!!}
     plug-equiv {F₁ = CC₁.F-×₁ x} F₁[M₁]≈N₂ = {!!}
     plug-equiv {F₁ = CC₁.F-×₂ x} F₁[M₁]≈N₂ = {!!}
