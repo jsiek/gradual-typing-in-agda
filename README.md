@@ -25,11 +25,12 @@ Inventory
 * [GTLC2CC.agda](./GTLC2CC.agda): Compilation of the GTLC to the
    Parameterized Cast Calculus.  The compilation is type preserving.
 * [GroundCast.agda](./GroundCast.agda): Type safety of λB (Siek,
-   Thiemann, Wadler 2015).
+   Thiemann, Wadler 2015). ("lazy UD" of Siek, Garcia, and Taha 2009)
 * [GroundCoercion.agda](./GroundCast.agda): Type safety of λC (Siek,
-   Thiemann, Wadler 2015).
+   Thiemann, Wadler 2015). ("lazy UD" of Siek, Garcia, and Taha 2009)
 * [EfficientGroundCoercions.agda](./EfficientGroundCoercions.agda):
    Type safety of λS (Siek, Thiemann, Wadler 2015).
+   ("lazy UD" of Siek, Garcia, and Taha 2009)
 * [SimpleCast.agda](./SimpleCast.agda): Type safety of the cast
    calculus of Siek and Taha (2006). (Called "partially-eager D" by
    Siek, Garcia, and Taha 2009).
@@ -50,10 +51,10 @@ Inventory
    abstract machine. It's a variant of the SECD machine with optimized
    tail calls. It's parameterized with respect to casts.
 * [GroundMachine.agda](./GroundMachine.agda): The abstract machine
-   instantiated with the coercions from λS.
+   instantiated with the coercions from λS. ("lazy UD")
 * [HyperCoercions](./HyperCoercions.agda): A alternative to
    λS that optimizes the coercion representation by removing
-   indirections.
+   indirections. ("lazy UD")
 * [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
    forgetful contracts. (UNDER CONSTRUCTION)
 
