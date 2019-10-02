@@ -35,6 +35,8 @@ module EquivCast
 
   module Equiv 
     (EqCast : ∀{A B} → Cast₁ (A ⇒ B) → Cast₂ (A ⇒ B) → Set)
+    (inert-equiv : ∀{A B : Type}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)}
+            → CastStruct.Inert CastCalc₁ c₁ → EqCast c₁ c₂ → CastStruct.Inert CastCalc₂ c₂)
     where
 
     data _≈_ : ∀{Γ A} → Γ ⊢₁ A → Γ ⊢₂ A → Set where
@@ -75,7 +77,6 @@ module EquivCast
             → (_⟨_⟩₁ M₁ c₁) ≈ (_⟨_⟩₂ M₂ c₂)
       ≈-blame : ∀ {Γ}{A}{ℓ} → (blame₁{Γ}{A} ℓ) ≈ (blame₂{Γ}{A} ℓ)
 
-    postulate inert-equiv : ∀{A B : Type}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)} → CastStruct.Inert CastCalc₁ c₁ → EqCast c₁ c₂ → CastStruct.Inert CastCalc₂ c₂
 
     value-equiv : ∀{A : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
       → M₁ ≈ M₂ → CC₁.Value M₁
@@ -89,31 +90,49 @@ module EquivCast
     value-equiv (≈-cast M₁≈M₂ ec) (CC₁.V-cast {i = i} VM₁) =
        CC₂.V-cast {i = inert-equiv i ec} (value-equiv M₁≈M₂ VM₁)
 
-    plug-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{F₁ : CC₁.Frame {∅} A B}{N₂ : ∅ ⊢₂ B}
+    plug-equiv-inv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{F₁ : CC₁.Frame {∅} A B}{N₂ : ∅ ⊢₂ B}
        → CC₁.plug M₁ F₁ ≈ N₂
        → Σ[ F₂ ∈ CC₂.Frame {∅} A B ] Σ[ M₂ ∈ ∅ ⊢₂ A ]
           (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂)
-    plug-equiv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-        ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
-    plug-equiv {F₁ = CC₁.F-·₂ M {v}} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ CC₂.F-·₂ M₂ {{!!}} , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
-    plug-equiv {F₁ = CC₁.F-if x x₁} (≈-if F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
-       ⟨ {!!} , {!!} ⟩
-    plug-equiv {F₁ = CC₁.F-×₁ x} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-×₂ x} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-fst} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-snd} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-inl} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-inr} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-case x x₁} F₁[M₁]≈N₂ = {!!}
-    plug-equiv {F₁ = CC₁.F-cast x} F₁[M₁]≈N₂ = {!!}
+    plug-equiv-inv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-·₂ M {v}} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ CC₂.F-·₂ M₂ {value-equiv F₁[M₁]≈N₂ v} , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-if x x₁} (≈-if{N₂ = N₂}{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
+       ⟨ CC₂.F-if L₂ M₂ , ⟨ N₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-×₁ x} (≈-cons{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ (CC₂.F-×₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-×₂ x} (≈-cons{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
+       ⟨ (CC₂.F-×₂ M₂) , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-fst} (≈-fst{M₂ = M₂} F₁[M₁]≈N₂) =
+       ⟨ CC₂.F-fst , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-snd} (≈-snd{M₂ = M₂} F₁[M₁]≈N₂) =
+       ⟨ CC₂.F-snd , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-inl} (≈-inl{M₂ = M₂} F₁[M₁]≈N₂) =
+       ⟨ CC₂.F-inl , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-inr} (≈-inr{M₂ = M₂} F₁[M₁]≈N₂) =
+       ⟨ CC₂.F-inr , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-case x x₁} (≈-case{N₂ = N₂}{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
+       ⟨ CC₂.F-case L₂ M₂ , ⟨ N₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+    plug-equiv-inv {F₁ = CC₁.F-cast x} (≈-cast{M₂ = M₂}{c₂ = c₂} F₁[M₁]≈N₂ x₁) =
+       ⟨ (CC₂.F-cast c₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
 
+    plug-equiv : ∀{A A₁ : Type}{F : CC₁.Frame A A₁}{F₂ : CC₂.Frame A A₁}{M M′ : ∅ ⊢₁ A}{M₂ N₂ : ∅ ⊢₂ A}
+       → CC₁.plug M F ≈ CC₂.plug M₂ F₂
+       → M′ ≈ N₂
+       → CC₁.plug M′ F ≈ CC₂.plug N₂ F₂
+    plug-equiv{A}{A₁}{F}{F₂} MF≈M₂F M′≈N₂ = {!!}
 
     simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
              → M₁ ≈ M₂
              → M₁ —→₁ N₁
              → Σ[ N₂ ∈ (∅ ⊢₂ A) ] ((M₂ —→₂ N₂) × (N₁ ≈ N₂))
-    simulate M₁≈M₂ (CC₁.ξ M₁—→N₁) = {!!}
+    simulate M₁≈M₂ (CC₁.ξ M—→₁M′)
+        with plug-equiv-inv M₁≈M₂
+    ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , eqv ⟩ ⟩ ⟩ rewrite eq
+        with simulate eqv M—→₁M′
+    ... | ⟨ N₂ , ⟨ M₂—→₂N₂ , N₁≈N₂ ⟩ ⟩ =
+        ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , {!!} ⟩ ⟩
     simulate M₁≈M₂ CC₁.ξ-blame = {!!}
     simulate M₁≈M₂ (CC₁.β x) = {!!}
     simulate M₁≈M₂ CC₁.δ = {!!}
