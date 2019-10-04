@@ -142,188 +142,178 @@ module EfficientParamCastsEF
     
     data ECtx where
 
-      E-F : ∀{Γ}{A B} FCtx {Γ} A B → ECtx {Γ} A B
-      E-Cast : ∀{Γ}{A B C} → FCtx {Γ} A B → Cast (B ⇒ C) → ECtx {Γ} A C
+      E-F : ∀{Γ}{A B} → FCtx {Γ} A B → ECtx {Γ} A B
+      {- todo: restrict cast to be identity free -}
+      E-Cast : ∀{Γ}{A B C}
+        → Cast (A ⇒ B)
+        → FCtx {Γ} B C
+        → ECtx {Γ} A C
 
 
     data FCtx where
 
-      F-·₁ : ∀ {Γ A B}
+      F-·₁ : ∀ {Γ A B C}
         → Γ ⊢ A
-        → FCtx {Γ} (A ⇒ B) B
+        → ECtx {Γ} B C
+        → FCtx {Γ} (A ⇒ B) C
 
-      F-·₂ : ∀ {Γ A B}
+      F-·₂ : ∀ {Γ A B C}
         → (M : Γ ⊢ A ⇒ B) → ∀{v : Value {Γ} M}
-        → FCtx {Γ} A B
+        → ECtx {Γ} B C
+        → FCtx {Γ} A C
 
-      F-if : ∀ {Γ A}
+      F-if : ∀ {Γ A B}
         → Γ ⊢ A
-        → Γ ⊢ A    
-        → FCtx {Γ} (` 𝔹) A
-
-      F-×₁ : ∀ {Γ A B}
         → Γ ⊢ A
-        → FCtx {Γ} B (A `× B)
+        → ECtx {Γ} A B
+        → FCtx {Γ} (` 𝔹) B
 
-      F-×₂ : ∀ {Γ A B}
+      F-×₁ : ∀ {Γ A B C}
+        → Γ ⊢ A
+        → ECtx {Γ} (A `× B) C
+        → FCtx {Γ} B C
+
+      F-×₂ : ∀ {Γ A B C}
         → Γ ⊢ B
-        → FCtx {Γ} A (A `× B)
+        → ECtx {Γ} (A `× B) C
+        → FCtx {Γ} A C
 
-      F-fst : ∀ {Γ A B}
-        → FCtx {Γ} (A `× B) A
+      F-fst : ∀ {Γ A B C}
+        → ECtx {Γ} A C
+        → FCtx {Γ} (A `× B) C
 
-      F-snd : ∀ {Γ A B}
-        → FCtx {Γ} (A `× B) B
+      F-snd : ∀ {Γ A B C}
+        → ECtx {Γ} B C
+        → FCtx {Γ} (A `× B) C
 
-      F-inl : ∀ {Γ A B}
-        → FCtx {Γ} A (A `⊎ B)
+      F-inl : ∀ {Γ A B C}
+        → ECtx {Γ} (A `⊎ B) C
+        → FCtx {Γ} A C
 
-      F-inr : ∀ {Γ A B}
-        → FCtx {Γ} B (A `⊎ B)
+      F-inr : ∀ {Γ A B C}
+        → ECtx {Γ} (A `⊎ B) C
+        → FCtx {Γ} B C
 
-      F-case : ∀ {Γ A B C}
+      F-case : ∀ {Γ A B C D}
         → Γ ⊢ A ⇒ C
         → Γ ⊢ B ⇒ C
-        → FCtx {Γ} (A `⊎ B) C
+        → ECtx {Γ} C D
+        → FCtx {Γ} (A `⊎ B) D
 
-      
+
+    plug-f : ∀{Γ A B} → Γ ⊢ A → FCtx {Γ} A B → Γ ⊢ B
     
-    plug : ∀{Γ A B} → Γ ⊢ A → Frame {Γ} A B → Γ ⊢ B
-    plug L (F-·₁ M)      = L · M
-    plug M (F-·₂ L)      = L · M
-    plug L (F-if M N)    = if L M N
-    plug L (F-×₁ M)      = cons M L
-    plug M (F-×₂ L)      = cons M L
-    plug M (F-fst)      = fst M
-    plug M (F-snd)      = snd M
-    plug M (F-inl)      = inl M
-    plug M (F-inr)      = inr M
-    plug L (F-case M N) = case L M N
+    plug-e : ∀{Γ A B} → Γ ⊢ A → ECtx {Γ} A B → Γ ⊢ B
+    plug-e M (E-F F) = plug-f M F
+    plug-e M (E-Cast c F) = plug-f (M ⟨ c ⟩) F
 
-    {-
+    plug-f L (F-·₁ M E)      = plug-e (L · M) E
+    plug-f M (F-·₂ L E)      = plug-e (L · M) E
+    plug-f L (F-if M N E)    = plug-e (if L M N) E
+    plug-f L (F-×₁ M E)      = plug-e (cons M L) E
+    plug-f M (F-×₂ L E)      = plug-e (cons M L) E
+    plug-f M (F-fst E)      = plug-e (fst M) E
+    plug-f M (F-snd E)      = plug-e (snd M) E
+    plug-f M (F-inl E)      = plug-e (inl M) E
+    plug-f M (F-inr E)      = plug-e (inr M) E
+    plug-f L (F-case M N E) = plug-e (case L M N) E
 
-     We parameterize the reduction relation according to whether the
-     congruence rule for casts, ξ-cast, may be used in the current
-     context or not. In particular, we want to disallow reduction
-     under a sequence of two or more casts. So the ξ-cast rule
-     requires the parameter to be 'allow', and it changes the
-     parameter 'disallow' for reducing the subexpression. We include a
-     kind of subsumption rule, named switch, that implicitly changes
-     from 'allow' to 'disallow'. (The other direction would ruin space
-     efficiency.) The rest of the reduction rules are given the
-     'disallow' parameter, which means that they can fire in both
-     allow and disallow contexts thanks to the switch rule.
-
-     -}
-
-    data BypassCast : Set where
-      allow : BypassCast
-      disallow : BypassCast
-
-    infix 2 _/_—→_
-    data _/_—→_ : ∀ {Γ A} → BypassCast → (Γ ⊢ A) → (Γ ⊢ A) → Set where
-
-      switch : ∀ {Γ A} {M M′ : Γ ⊢ A} 
-        → disallow / M —→ M′
-          ------------------
-        → allow / M —→ M′       
-
-      ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
-        → allow / M —→ M′
-          ---------------------
-        → disallow / plug M F —→ plug M′ F
-
-      ξ-cast : ∀ {Γ A B} {c : Cast (A ⇒ B)} {M M′ : Γ ⊢ A}
-        → disallow / M —→ M′
-          -----------------------------
-        → allow / (M ⟨ c ⟩) —→ M′ ⟨ c ⟩
-
-      ξ-blame : ∀ {Γ A B} {F : Frame {Γ} A B} {ℓ}
-          ---------------------------
-        → disallow / plug (blame ℓ) F —→ blame ℓ
-
-      ξ-cast-blame : ∀ {Γ A B} {c : Cast (A ⇒ B)} {ℓ}
-          ----------------------------------------------
-        → allow / ((blame {Γ}{A} ℓ) ⟨ c ⟩) —→ blame ℓ
+    infix 2 _—→E_
+    data _—→E_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
       β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
         → Value W
           -------------------------------
-        → disallow / (ƛ N) · W —→ N [ W ]
+        → (ƛ N) · W —→E N [ W ]
 
       δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
           --------------------------------------------------------------
-        → disallow / ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+        → ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→E ($ (f k)){b}
 
       β-if-true : ∀{Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           --------------------------------------
-        → disallow / if (($ true){f}) M N —→ M
+        → if (($ true){f}) M N —→E M
 
       β-if-false : ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
           ---------------------
-        → disallow / if (($ false){f}) M N —→ N
+        → if (($ false){f}) M N —→E N
 
       β-fst : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → disallow / fst (cons V W) —→ V
+        → fst (cons V W) —→E V
 
       β-snd :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
         → Value V → Value W
           --------------------
-        → disallow / snd (cons V W) —→ W
+        → snd (cons V W) —→E W
 
       β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → disallow / case (inl V) L M —→ L · V
+        → case (inl V) L M —→E L · V
 
       β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
         → Value V
           --------------------------
-        → disallow / case (inr V) L M —→ M · V
+        → case (inr V) L M —→E M · V
 
-      cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
-        → (v : Value V) → {a : Active c}
-          ----------------------------
-        → disallow / V ⟨ c ⟩ —→ applyCast V v c {a}
-
-{-
-      fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
-          {c : Cast (A ⇒ (A' ⇒ B'))}
-        → (v : SimpleValue V) → Value W → {i : Inert c}
-          -----------------------------------------------
-        → disallow / (V ⟨ c ⟩) · W —→ funCast V v c {i} W 
--}
       fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
           {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
         → (v : SimpleValue V) → Value W → {i : Inert c}
           -------------------------------------------------------------
-        → disallow / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
+        → (V ⟨ c ⟩) · W —→E (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
       fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → (v : SimpleValue V) → {i : Inert c}
           --------------------------------------------
-        → disallow / fst (V ⟨ c ⟩) —→ fstCast V v c {i}
+        → fst (V ⟨ c ⟩) —→E fstCast V v c {i}
 
       snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
           {c : Cast (A ⇒ (A' `× B'))}
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------
-        → disallow / snd (V ⟨ c ⟩) —→ sndCast V v c {i}
+        → snd (V ⟨ c ⟩) —→E sndCast V v c {i}
 
       case-cast : ∀ { Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
           {c : Cast (A ⇒ (A' `⊎ B'))}
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------------------
-        → disallow / case (V ⟨ c ⟩) W W' —→ caseCast V v c {i} W W'
+        → case (V ⟨ c ⟩) W W' —→E caseCast V v c {i} W W'
+
+      ξ-blame : ∀ {Γ A B} {E : ECtx {Γ} A B} {ℓ}
+          ---------------------------
+        → plug-e (blame ℓ) E —→E blame ℓ
+
+
+    infix 2 _—→F_
+    data _—→F_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+    
+      cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+        → (v : Value V) → {a : Active c}
+          ----------------------------
+        → V ⟨ c ⟩ —→F applyCast V v c {a}
 
       compose-casts : ∀{Γ A B C} {M : Γ ⊢ A }
           {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
           ------------------------------------------
-        → disallow / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
+        → (M ⟨ c ⟩) ⟨ d ⟩ —→F M ⟨ compose c d ⟩
+
+
+    infix 2 _—→_
+    data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+
+      ξ-F : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : FCtx A B}
+        → M —→F M′
+          --------------------------
+        → plug-f M F —→ plug-f M′ F
+
+      ξ-E : ∀ {Γ A B} {M M′ : Γ ⊢ A} {E : ECtx A B}
+        → M —→E M′
+          --------------------------
+        → plug-e M E —→ plug-e M′ E
 
 
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
@@ -332,23 +322,10 @@ module EfficientParamCastsEF
           ---------------------
         → Error{Γ}{A} (blame ℓ)
 
-    {-
-
-     For the proof of progress, we split 'step' into two cases, one
-     for an 'disallow' reduction, 'step-d' and one for an 'allow'
-     reduction, 'step-a'.
-
-    -}
-
     data Progress {A} (M : ∅ ⊢ A) : Set where
 
-      step-d : ∀ {N : ∅ ⊢ A}
-        → disallow / M —→ N
-          -------------
-        → Progress M
-
-      step-a : ∀ {N : ∅ ⊢ A}
-        → allow / M —→ N
+      step : ∀ {N : ∅ ⊢ A}
+        → M —→ N
           -------------
         → Progress M
 
@@ -364,33 +341,6 @@ module EfficientParamCastsEF
 
     {-
 
-    For the proof of progress, each recursive call may now result
-    in a step-d or a step-a (in addition to error and done).
-    However, the proofs for the two cases are the same except
-    for a use of 'switch' in the step-d case.
-
-    The most important changes occur in the case for casts.  We
-    consider the possible results from progress applied to the
-    subexpression. 
-
-    * If it does a step-d, that is, performs a step that did not go
-      under a cast, then the current expression can reduce via step-a
-      and ξ-cast.
-
-    * If it does a step-a, we have three cases two consider.
-
-       - The reduction was via 'switch', so the underlying reduction
-         was in a disallow context. We can again reduce via step-a and
-         ξ-cast.
-
-       - The reduction was via ξ-cast. This is the most important
-         case, as we have two adjacent casts. We ignore the underlying
-         reduction and instead take a step-d via compose-casts.
-
-       - The reduction was via ξ-cast-blame. Again we have two
-         adjacent casts so we compose-casts.
-
-    -}
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
@@ -406,9 +356,6 @@ module EfficientParamCastsEF
     ...     | done V₂ with V₁
     ...         | S-val V-ƛ = step-d (β V₂)
     ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
-{-    
-                    step-d (fun-cast{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
--}
                 with funSrc c i V v
     ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
                   step-d (fun-cast v V₂ {i})
@@ -502,3 +449,4 @@ module EfficientParamCastsEF
     progress (blame ℓ) = error E-blame
 
 
+    -}
