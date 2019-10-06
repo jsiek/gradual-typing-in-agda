@@ -431,13 +431,22 @@ module EfficientParamCastsEF
           let eq = extend-plug-f {M = L}{F}{F′} in
           let F′′ = extend-ctx-f F F′ in
           inj₁ (inj₂ (⟨ A , (⟨ F′′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
-    decompose {B} (fst M) | inj₂ (inj₁ _) = {!!}
+    decompose {B} (fst {∅}{B}{B₁} M)
+        | inj₂ (inj₁ (⟨ A , (⟨ E , (⟨ ℓ , eq ⟩) ⟩) ⟩))
+          rewrite eq =
+          let F′ = F-fst {∅}{B}{B₁} (E-F F-hole) in
+          let eq = extend-plug-e {M = blame ℓ}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₂ (inj₁ (⟨ A , (⟨ E′ , ⟨ ℓ , sym eq ⟩ ⟩) ⟩))
     decompose {B} (fst M) | inj₂ (inj₂ vM)
         with vM 
     ... | S-val (V-pair {V = L} vL vN) =
           inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ fst M ,
                                   (⟨ refl , (⟨ L , β-fst vL vN ⟩) ⟩) ⟩) ⟩) ⟩))
-    ... | V-cast {c = c}{i = i} sv = {!!}
+    ... | V-cast {V = V}{c = c}{i = i} sv =
+          let red = fst-cast {c = c} sv {i} in
+          inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ fst M ,
+             (⟨ refl , (⟨ fstCast V sv c , red ⟩) ⟩) ⟩) ⟩) ⟩))
     decompose (snd M) = {!!}
     decompose (inl M) = {!!}
     decompose (inr M) = {!!}
