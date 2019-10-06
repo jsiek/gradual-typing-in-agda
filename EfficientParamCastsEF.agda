@@ -1,4 +1,5 @@
 open import Types
+open import Labels
 open import Data.Nat
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -152,6 +153,8 @@ module EfficientParamCastsEF
 
     data FCtx where
 
+      F-hole : ∀{Γ}{A} → FCtx {Γ} A A
+
       F-·₁ : ∀ {Γ A B C}
         → Γ ⊢ A
         → ECtx {Γ} B C
@@ -203,20 +206,21 @@ module EfficientParamCastsEF
 
     plug-f : ∀{Γ A B} → Γ ⊢ A → FCtx {Γ} A B → Γ ⊢ B
     
-    plug-e : ∀{Γ A B} → Γ ⊢ A → ECtx {Γ} A B → Γ ⊢ B
-    plug-e M (E-F F) = plug-f M F
-    plug-e M (E-Cast c F) = plug-f (M ⟨ c ⟩) F
+    plug : ∀{Γ A B} → Γ ⊢ A → ECtx {Γ} A B → Γ ⊢ B
+    plug M (E-F F) = plug-f M F
+    plug M (E-Cast c F) = plug-f (M ⟨ c ⟩) F
 
-    plug-f L (F-·₁ M E)      = plug-e (L · M) E
-    plug-f M (F-·₂ L E)      = plug-e (L · M) E
-    plug-f L (F-if M N E)    = plug-e (if L M N) E
-    plug-f L (F-×₁ M E)      = plug-e (cons M L) E
-    plug-f M (F-×₂ L E)      = plug-e (cons M L) E
-    plug-f M (F-fst E)      = plug-e (fst M) E
-    plug-f M (F-snd E)      = plug-e (snd M) E
-    plug-f M (F-inl E)      = plug-e (inl M) E
-    plug-f M (F-inr E)      = plug-e (inr M) E
-    plug-f L (F-case M N E) = plug-e (case L M N) E
+    plug-f L (F-hole)        = L
+    plug-f L (F-·₁ M E)      = plug (L · M) E
+    plug-f M (F-·₂ L E)      = plug (L · M) E
+    plug-f L (F-if M N E)    = plug (if L M N) E
+    plug-f L (F-×₁ M E)      = plug (cons M L) E
+    plug-f M (F-×₂ L E)      = plug (cons M L) E
+    plug-f M (F-fst E)      = plug (fst M) E
+    plug-f M (F-snd E)      = plug (snd M) E
+    plug-f M (F-inl E)      = plug (inl M) E
+    plug-f M (F-inr E)      = plug (inr M) E
+    plug-f L (F-case M N E) = plug (case L M N) E
 
     infix 2 _—→E_
     data _—→E_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
@@ -283,10 +287,6 @@ module EfficientParamCastsEF
           ---------------------------------------------------------
         → case (V ⟨ c ⟩) W W' —→E caseCast V v c {i} W W'
 
-      ξ-blame : ∀ {Γ A B} {E : ECtx {Γ} A B} {ℓ}
-          ---------------------------
-        → plug-e (blame ℓ) E —→E blame ℓ
-
 
     infix 2 _—→F_
     data _—→F_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
@@ -313,8 +313,11 @@ module EfficientParamCastsEF
       ξ-E : ∀ {Γ A B} {M M′ : Γ ⊢ A} {E : ECtx A B}
         → M —→E M′
           --------------------------
-        → plug-e M E —→ plug-e M′ E
+        → plug M E —→ plug M′ E
 
+      ξ-blame : ∀ {Γ A B} {E : ECtx {Γ} A B} {ℓ}
+          ---------------------------
+        → plug (blame ℓ) E —→ blame ℓ
 
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
 
@@ -338,6 +341,57 @@ module EfficientParamCastsEF
           Error M
           ----------
         → Progress M
+
+    extend-ctx-e : ∀{Γ}{A B C} → ECtx {Γ} A B → FCtx {Γ} B C → ECtx {Γ} A C
+    extend-ctx-f : ∀{Γ}{A B C} → FCtx {Γ} A B → FCtx {Γ} B C → FCtx {Γ} A C
+
+    extend-ctx-e E F = {!!}
+    
+    extend-ctx-f F-hole F′ = F′
+    extend-ctx-f (F-·₁ M E) F′ =
+      let E′ = extend-ctx-e E F′ in F-·₁ M E′
+    extend-ctx-f (F-·₂ L E) F′ =
+      let E′ = extend-ctx-e E F′ in F-·₂ L E′
+    extend-ctx-f (F-if M N E) F′ =
+      let E′ = extend-ctx-e E F′ in F-if M N E′
+    extend-ctx-f (F-×₁ x x₁) F′ = {!!}
+    extend-ctx-f (F-×₂ x x₁) F′ = {!!}
+    extend-ctx-f (F-fst E) F′ =
+       let E′ = extend-ctx-e E F′ in F-fst E′
+    extend-ctx-f (F-snd E) F′ =
+       let E′ = extend-ctx-e E F′ in F-snd E′
+    extend-ctx-f (F-inl E) F′ =
+       let E′ = extend-ctx-e E F′ in F-inl E′
+    extend-ctx-f (F-inr E) F′ =
+       let E′ = extend-ctx-e E F′ in F-inr E′
+    extend-ctx-f (F-case x x₁ x₂) F′ = {!!}
+
+    decompose : ∀{B} → (M : ∅ ⊢ B)
+       → (Σ[ A ∈ Type ] Σ[ E ∈ ECtx A B ] Σ[ L ∈ (∅ ⊢ A) ]
+            ((plug L E ≡ M) × (Σ[ N ∈ (∅ ⊢ A) ] ((L —→E N) ⊎ (L —→F N)))))
+         ⊎ (Σ[ A ∈ Type ] Σ[ E ∈ ECtx A B ] Σ[ ℓ ∈ Label ]
+             (plug (blame ℓ) E ≡ M))
+         ⊎ Value M
+    decompose (ƛ M) = inj₂ (inj₂ (S-val V-ƛ))
+    decompose (M₁ · M₂) = {!!}
+    decompose ($ k) = inj₂ (inj₂ (S-val V-const))
+    decompose (if M₀ M₁ M₂) = {!!}
+    decompose (cons M₀ M₁) = {!!}
+    decompose {B₀} (fst {∅}{B₀}{B₁} M)
+        with decompose M
+    ... | inj₁ (⟨ A , (⟨ E , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩)
+          rewrite eq =
+          let F = F-fst {∅} (E-F F-hole) in
+          inj₁ (⟨ {!!} , (⟨ {!!} , (⟨ {!!} , {!!} ⟩) ⟩) ⟩)
+    decompose {B} (fst M) | inj₂ _ = {!!}
+    decompose (snd M) = {!!}
+    decompose (inl M) = {!!}
+    decompose (inr M) = {!!}
+    decompose (case M₀ M₁ M₂) = {!!}
+    decompose (M ⟨ c ⟩) = {!!}
+    decompose {A} (blame ℓ) =
+       inj₂ (inj₁ (⟨ A , (⟨ (E-F F-hole) , (⟨ ℓ , refl ⟩) ⟩) ⟩))
+    
 
     {-
 
