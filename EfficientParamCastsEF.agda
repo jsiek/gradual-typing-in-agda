@@ -447,9 +447,78 @@ module EfficientParamCastsEF
           let red = fst-cast {c = c} sv {i} in
           inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ fst M ,
              (⟨ refl , (⟨ fstCast V sv c , red ⟩) ⟩) ⟩) ⟩) ⟩))
-    decompose (snd M) = {!!}
-    decompose (inl M) = {!!}
-    decompose (inr M) = {!!}
+    decompose {B₁} (snd {∅}{B₀}{B₁} M₀)
+        with decompose M₀
+    ... | inj₁ (inj₁ (⟨ A , (⟨ E , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+          rewrite eq =
+          let F′ = F-snd {∅}{B₀}{B₁} (E-F F-hole) in
+          let eq = extend-plug-e {M = L}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₁ (inj₁ (⟨ A , (⟨ E′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    ... | inj₁ (inj₂ (⟨ A , (⟨ F , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+          rewrite eq =
+          let F′ = F-snd {∅}{B₀}{B₁} (E-F F-hole) in
+          let eq = extend-plug-f {M = L}{F}{F′} in
+          let F′′ = extend-ctx-f F F′ in
+          inj₁ (inj₂ (⟨ A , (⟨ F′′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    decompose {B₁} (snd {∅}{B}{B₁} M)
+        | inj₂ (inj₁ (⟨ A , (⟨ E , (⟨ ℓ , eq ⟩) ⟩) ⟩))
+          rewrite eq =
+          let F′ = F-snd {∅}{B}{B₁} (E-F F-hole) in
+          let eq = extend-plug-e {M = blame ℓ}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₂ (inj₁ (⟨ A , (⟨ E′ , ⟨ ℓ , sym eq ⟩ ⟩) ⟩))
+    decompose {B} (snd M) | inj₂ (inj₂ vM)
+        with vM 
+    ... | S-val (V-pair {W = L} vL vN) =
+          inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ snd M ,
+                                  (⟨ refl , (⟨ L , β-snd vL vN ⟩) ⟩) ⟩) ⟩) ⟩))
+    ... | V-cast {V = V}{c = c}{i = i} sv =
+          let red = snd-cast {c = c} sv {i} in
+          inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ snd M ,
+             (⟨ refl , (⟨ sndCast V sv c , red ⟩) ⟩) ⟩) ⟩) ⟩))
+    decompose (inl M₀)
+        with decompose M₀
+    ... | inj₁ (inj₁ (⟨ A , (⟨ E , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inl (E-F F-hole) in
+          let eq = extend-plug-e {M = L}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₁ (inj₁ (⟨ A , (⟨ E′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    ... | inj₁ (inj₂ (⟨ A , (⟨ F , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inl (E-F F-hole) in
+          let eq = extend-plug-f {M = L}{F}{F′} in
+          let F′′ = extend-ctx-f F F′ in
+          inj₁ (inj₂ (⟨ A , (⟨ F′′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    ... | inj₂ (inj₁ (⟨ A , (⟨ E , (⟨ ℓ , eq ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inl (E-F F-hole) in
+          let eq = extend-plug-e {M = blame ℓ}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₂ (inj₁ (⟨ A , (⟨ E′ , ⟨ ℓ , sym eq ⟩ ⟩) ⟩))
+    ... | inj₂ (inj₂ vM) = inj₂ (inj₂ (S-val (V-inl vM)))
+    decompose (inr M₀)
+        with decompose M₀
+    ... | inj₁ (inj₁ (⟨ A , (⟨ E , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inr (E-F F-hole) in
+          let eq = extend-plug-e {M = L}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₁ (inj₁ (⟨ A , (⟨ E′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    ... | inj₁ (inj₂ (⟨ A , (⟨ F , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inr (E-F F-hole) in
+          let eq = extend-plug-f {M = L}{F}{F′} in
+          let F′′ = extend-ctx-f F F′ in
+          inj₁ (inj₂ (⟨ A , (⟨ F′′ , (⟨ L , ⟨ sym eq , ⟨ N , M—→N ⟩ ⟩ ⟩) ⟩) ⟩))
+    ... | inj₂ (inj₁ (⟨ A , (⟨ E , (⟨ ℓ , eq ⟩) ⟩) ⟩))
+        rewrite eq =
+          let F′ = F-inr (E-F F-hole) in
+          let eq = extend-plug-e {M = blame ℓ}{E}{F′} in
+          let E′ = extend-ctx-e E F′ in
+          inj₂ (inj₁ (⟨ A , (⟨ E′ , ⟨ ℓ , sym eq ⟩ ⟩) ⟩))
+    ... | inj₂ (inj₂ vM) = inj₂ (inj₂ (S-val (V-inr vM)))
     decompose (case M₀ M₁ M₂) = {!!}
     decompose (M ⟨ c ⟩) = {!!}
     decompose {A} (blame ℓ) =
