@@ -465,13 +465,13 @@ module EfficientParamCastsEF
                (⟨ (V · M₂ ⟨ dom c i ⟩) ⟨ cod c i ⟩ ,
                   fun-cast v vM₂ {i} ⟩) ⟩) ⟩) ⟩) ⟩))
     decompose {B} (M₁ · M₂) | inj₂ (inj₂ vM₁) | inj₂ (inj₂ vM₂)
-        | S-val (V-const {k = k₁}{f = f₁})
+        | S-val (V-const {A = A₁ ⇒ B}{k = k₁}{f = f₁})
         with vM₂
     ... | S-val (V-const {k = k₂} {f = f₂}) =
           inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ M₁ · M₂ , (⟨ refl ,
                (⟨ $ k₁ k₂ , δ {ab = f₁}{a = f₂}{b = P-Fun2 f₁} ⟩) ⟩) ⟩) ⟩) ⟩))
     ... | V-cast {V = W}{c}{i} v = contradiction i (G f₁)
-        where G : Prim ({!!} ⇒ B) → ¬ Inert c
+        where G : Prim (A₁ ⇒ B) → ¬ Inert c
               G (P-Fun f) ic = baseNotInert c (simple⋆ W v) ic
 
 
@@ -581,7 +581,20 @@ module EfficientParamCastsEF
           inj₂ (inj₁ (⟨ A , (⟨ E′ , ⟨ ℓ , sym eq ⟩ ⟩) ⟩))
     ... | inj₂ (inj₂ vM) = inj₂ (inj₂ (S-val (V-inr vM)))
     decompose (case M₀ M₁ M₂) = {!!}
-    decompose (M ⟨ c ⟩) = {!!}
+    decompose (M ⟨ c ⟩)
+        with decompose M
+    ... | inj₁ (inj₁ (⟨ B , (⟨ E , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+          rewrite eq =
+          ?
+    ... | inj₁ (inj₂ (⟨ B , (⟨ F , (⟨ L , (⟨ eq , (⟨ N , M—→N ⟩) ⟩) ⟩) ⟩) ⟩))
+          rewrite eq =
+          {!!}
+    ... | inj₂ (inj₁ (⟨ B , (⟨ E , (⟨ ℓ , eq ⟩) ⟩) ⟩))
+          rewrite eq =
+          {!!}
+    ... | inj₂ (inj₂ vM) = {!!}
+
+
     decompose {A} (blame ℓ) =
        inj₂ (inj₁ (⟨ A , (⟨ (E-F F-hole) , (⟨ ℓ , refl ⟩) ⟩) ⟩))
     
