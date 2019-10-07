@@ -465,7 +465,14 @@ module EfficientParamCastsEF
                (⟨ (V · M₂ ⟨ dom c i ⟩) ⟨ cod c i ⟩ ,
                   fun-cast v vM₂ {i} ⟩) ⟩) ⟩) ⟩) ⟩))
     decompose {B} (M₁ · M₂) | inj₂ (inj₂ vM₁) | inj₂ (inj₂ vM₂)
-        | S-val (V-const {k = k₁} {f = f₁}) = {!!}
+        | S-val (V-const {k = k₁}{f = f₁})
+        with vM₂
+    ... | S-val (V-const {k = k₂} {f = f₂}) =
+          inj₁ (inj₁ (⟨ B , (⟨ E-F F-hole , (⟨ M₁ · M₂ , (⟨ refl ,
+               (⟨ $ k₁ k₂ , δ {ab = f₁}{a = f₂}{b = P-Fun2 f₁} ⟩) ⟩) ⟩) ⟩) ⟩))
+    ... | V-cast {V = W}{c}{i} v = contradiction i (G f₁)
+        where G : Prim ({!!} ⇒ B) → ¬ Inert c
+              G (P-Fun f) ic = baseNotInert c (simple⋆ W v) ic
 
 
     decompose ($ k) = inj₂ (inj₂ (S-val V-const))
