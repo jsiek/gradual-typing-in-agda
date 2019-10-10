@@ -444,13 +444,22 @@ module EfficientParamCastsEF
     top-cast? E = ?
 -}
 
+    plug-cc : ∀{Γ}{A B C} → CCtx {Γ} A B → CCtx {Γ} B C → CCtx {Γ} A C
+    plug-cc C₁ C₂ = {!!}
+
+    plug-cd : ∀{Γ}{A B C} → CCtx {Γ} A B → DCtx {Γ} B C → CCtx {Γ} A C
+    plug-cd C D-hole = C
+    plug-cd C (D-·₁ M C′) = C-D (D-·₁ M (plug-cc C C′))
+    plug-cd C (D-·₂ L {v} C′) = {!!}
+
     e2c : ∀{Γ}{A B} → ECtx {Γ} A B → CCtx {Γ} A B
     f2d : ∀{Γ}{A B} → FCtx {Γ} A B → DCtx {Γ} A B
 
     e2c (E-F F) = C-D (f2d F)
-    e2c (E-Cast c F) =
-      let F′ = f2d F in
-      ?
+    e2c (E-Cast c F) = {-  c : Cast (A ⇒ B₁), F : FCtx B₁ B -}
+      let D = f2d F in           {- DCtx B₁ B -}
+      let C = C-Cast c D-hole in {- CCtx A B₁ -} 
+      plug-cd C D {- CCtx A B -}
     
     f2d F = {!!}
 
