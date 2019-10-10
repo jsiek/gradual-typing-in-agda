@@ -205,114 +205,108 @@ module EfficientParamCasts
 
      -}
 
-    data BypassCast : Set where
-      allow : BypassCast
-      disallow : BypassCast
+    data CastContext : Set where
+      under_cast : CastContext
+      not_under_cast : CastContext
 
     infix 2 _/_—→_
-    data _/_—→_ : ∀ {Γ A} → BypassCast → (Γ ⊢ A) → (Γ ⊢ A) → Set where
+    data _/_—→_ : ∀ {Γ A} → CastContext → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
+{-
       switch : ∀ {Γ A} {M M′ : Γ ⊢ A} 
         → disallow / M —→ M′
           ------------------
         → allow / M —→ M′       
-
-      ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
-        → allow / M —→ M′
-          ---------------------
-        → disallow / plug M F —→ plug M′ F
+-}
+      ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ctx : CastContext}
+        → not_under_cast / M —→ M′
+          ---------------------------
+        → ctx / plug M F —→ plug M′ F
 
       ξ-cast : ∀ {Γ A B} {c : Cast (A ⇒ B)} {M M′ : Γ ⊢ A}
-        → disallow / M —→ M′
-          -----------------------------
-        → allow / (M ⟨ c ⟩) —→ M′ ⟨ c ⟩
+        → under_cast / M —→ M′
+          --------------------------------------
+        → not_under_cast / (M ⟨ c ⟩) —→ M′ ⟨ c ⟩
 
-      ξ-blame : ∀ {Γ A B} {F : Frame {Γ} A B} {ℓ}
-          ---------------------------
-        → disallow / plug (blame ℓ) F —→ blame ℓ
+      ξ-blame : ∀ {Γ A B} {F : Frame {Γ} A B} {ℓ} {ctx : CastContext}
+          ---------------------------------
+        → ctx / plug (blame ℓ) F —→ blame ℓ
 
       ξ-cast-blame : ∀ {Γ A B} {c : Cast (A ⇒ B)} {ℓ}
-          ----------------------------------------------
-        → allow / ((blame {Γ}{A} ℓ) ⟨ c ⟩) —→ blame ℓ
+          ----------------------------------------------------
+        → not_under_cast / ((blame {Γ}{A} ℓ) ⟨ c ⟩) —→ blame ℓ
 
-      β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A}
+      β : ∀ {Γ A B} {N : Γ , A ⊢ B} {W : Γ ⊢ A} {ctx : CastContext}
         → Value W
           -------------------------------
-        → disallow / (ƛ N) · W —→ N [ W ]
+        → ctx / (ƛ N) · W —→ N [ W ]
 
-      δ : ∀ {Γ : Context} {A B} {f : rep A → rep B} {k : rep A} {ab} {a} {b}
-          --------------------------------------------------------------
-        → disallow / ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
+      δ : ∀ {Γ}{A B}{f : rep A → rep B}{k : rep A}{ab}{a}{b}{ctx : CastContext}
+          ---------------------------------------------------------
+        → ctx / ($_ {Γ}{A ⇒ B} f {ab}) · (($ k){a}) —→ ($ (f k)){b}
 
-      β-if-true : ∀{Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
-          --------------------------------------
-        → disallow / if (($ true){f}) M N —→ M
+      β-if-true : ∀{Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}{ctx : CastContext}
+          -------------------------------
+        → ctx / if (($ true){f}) M N —→ M
 
-      β-if-false : ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}
+      β-if-false : ∀ {Γ A} {M : Γ ⊢ A} {N : Γ ⊢ A}{f}{ctx : CastContext}
           ---------------------
-        → disallow / if (($ false){f}) M N —→ N
+        → ctx / if (($ false){f}) M N —→ N
 
-      β-fst : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-fst : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}{ctx : CastContext}
         → Value V → Value W
           --------------------
-        → disallow / fst (cons V W) —→ V
+        → ctx / fst (cons V W) —→ V
 
-      β-snd :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B}
+      β-snd :  ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B} {ctx : CastContext}
         → Value V → Value W
           --------------------
-        → disallow / snd (cons V W) —→ W
+        → ctx / snd (cons V W) —→ W
 
-      β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}{ctx : CastContext}
         → Value V
           --------------------------
-        → disallow / case (inl V) L M —→ L · V
+        → ctx / case (inl V) L M —→ L · V
 
-      β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+      β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}{ctx : CastContext}
         → Value V
           --------------------------
-        → disallow / case (inr V) L M —→ M · V
+        → ctx / case (inr V) L M —→ M · V
 
       cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
         → (v : Value V) → {a : Active c}
           ----------------------------
-        → disallow / V ⟨ c ⟩ —→ applyCast V v c {a}
+        → not_under_cast / V ⟨ c ⟩ —→ applyCast V v c {a}
 
-{-
-      fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
-          {c : Cast (A ⇒ (A' ⇒ B'))}
-        → (v : SimpleValue V) → Value W → {i : Inert c}
-          -----------------------------------------------
-        → disallow / (V ⟨ c ⟩) · W —→ funCast V v c {i} W 
--}
       fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
-          {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
+          {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))} {ctx : CastContext}
         → (v : SimpleValue V) → Value W → {i : Inert c}
           -------------------------------------------------------------
-        → disallow / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
+        → ctx / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
-      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
-          {c : Cast (A ⇒ (A' `× B'))}
+      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} 
+          {c : Cast (A ⇒ (A' `× B'))} {ctx : CastContext}
         → (v : SimpleValue V) → {i : Inert c}
           --------------------------------------------
-        → disallow / fst (V ⟨ c ⟩) —→ fstCast V v c {i}
+        → ctx / fst (V ⟨ c ⟩) —→ fstCast V v c {i}
 
       snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
-          {c : Cast (A ⇒ (A' `× B'))}
+          {c : Cast (A ⇒ (A' `× B'))} {ctx : CastContext}
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------
-        → disallow / snd (V ⟨ c ⟩) —→ sndCast V v c {i}
+        → ctx / snd (V ⟨ c ⟩) —→ sndCast V v c {i}
 
       case-cast : ∀ { Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
-          {c : Cast (A ⇒ (A' `⊎ B'))}
+          {c : Cast (A ⇒ (A' `⊎ B'))} {ctx : CastContext}
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------------------
-        → disallow / case (V ⟨ c ⟩) W W' —→ caseCast V v c {i} W W'
+        → ctx / case (V ⟨ c ⟩) W W' —→ caseCast V v c {i} W W'
 
       compose-casts : ∀{Γ A B C} {M : Γ ⊢ A }
-          {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)}
+          {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)} 
           ------------------------------------------
-        → disallow / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
+        → not_under_cast / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
 
 
     data Error : ∀ {Γ A} → Γ ⊢ A → Set where
@@ -331,14 +325,9 @@ module EfficientParamCasts
 
     data Progress {A} (M : ∅ ⊢ A) : Set where
 
-      step-d : ∀ {N : ∅ ⊢ A}
-        → disallow / M —→ N
-          -------------
-        → Progress M
-
-      step-a : ∀ {N : ∅ ⊢ A}
-        → allow / M —→ N
-          -------------
+      step : ∀ {N : ∅ ⊢ A} {ctx : CastContext}
+        → ctx / M —→ N
+          -------------------
         → Progress M
 
       done :
@@ -351,6 +340,13 @@ module EfficientParamCasts
           ----------
         → Progress M
 
+
+    switch : ∀ {Γ A} {M M′ : Γ ⊢ A} 
+        → under_cast / M —→ M′
+          ------------------
+        → not_under_cast / M —→ M′       
+    switch R = ?
+    
     {-
 
     For the proof of progress, each recursive call may now result
@@ -382,6 +378,24 @@ module EfficientParamCasts
     -}
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
+    progress (ƛ M) = done (S-val V-ƛ)
+    progress (M₁ · M₂) with progress M₁
+    ... | step R = step (ξ {!!})
+    ... | error E-blame = {!!}
+    ... | done V₁ = {!!}
+    progress ($ x) = {!!}
+    progress (if M M₁ M₂) = {!!}
+    progress (cons M M₁) = {!!}
+    progress (fst M) = {!!}
+    progress (snd M) = {!!}
+    progress (inl M) = {!!}
+    progress (inr M) = {!!}
+    progress (case M M₁ M₂) = {!!}
+    progress (M ⟨ x ⟩) = {!!}
+    progress (blame x) = {!!}
+
+{-
+    progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (` ())
     progress (ƛ M) = done (S-val V-ƛ)
     progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
@@ -395,9 +409,6 @@ module EfficientParamCasts
     ...     | done V₂ with V₁
     ...         | S-val V-ƛ = step-d (β V₂)
     ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
-{-    
-                    step-d (fun-cast{∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
--}
                 with funSrc c i V v
     ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
                   step-d (fun-cast v V₂ {i})
@@ -491,3 +502,4 @@ module EfficientParamCasts
     progress (blame ℓ) = error E-blame
 
 
+-}
