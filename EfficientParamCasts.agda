@@ -345,7 +345,20 @@ module EfficientParamCasts
         → under_cast / M —→ M′
           ------------------
         → not_under_cast / M —→ M′       
-    switch R = ?
+    switch (ξ R) = ξ R
+    switch ξ-blame = ξ-blame
+    switch (β vW) = β vW
+    switch δ = δ
+    switch β-if-true = β-if-true
+    switch β-if-false = β-if-false
+    switch (β-fst x x₁) = β-fst x x₁
+    switch (β-snd x x₁) = β-snd x x₁
+    switch (β-caseL x) = β-caseL x
+    switch (β-caseR x) = β-caseR x
+    switch (fun-cast v x) = fun-cast v x
+    switch (fst-cast v) = fst-cast v
+    switch (snd-cast v) = snd-cast v
+    switch (case-cast v) = case-cast v
     
     {-
 
@@ -379,9 +392,13 @@ module EfficientParamCasts
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (ƛ M) = done (S-val V-ƛ)
-    progress (M₁ · M₂) with progress M₁
-    ... | step R = step (ξ {!!})
-    ... | error E-blame = {!!}
+    progress {A} (_·_ {Γ}{A₁}{A} M₁ M₂) with progress M₁
+    ... | step {ctx = under_cast} R =
+           step {ctx = under_cast} (ξ {F = F-·₁ M₂} (switch R))
+    ... | step {ctx = not_under_cast} R =
+           step {ctx = not_under_cast} (ξ {F = F-·₁ M₂} R)
+    ... | error E-blame =
+           step {ctx = not_under_cast} (ξ-blame {A = A₁ ⇒ A}{F = F-·₁ M₂})
     ... | done V₁ = {!!}
     progress ($ x) = {!!}
     progress (if M M₁ M₂) = {!!}
