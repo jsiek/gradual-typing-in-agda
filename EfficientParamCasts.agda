@@ -4,7 +4,7 @@ open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming 
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Variables
-open import Relation.Nullary using (¬_)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Data.Empty using (⊥; ⊥-elim)
@@ -105,10 +105,6 @@ module EfficientParamCasts
   module Reduction
     (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                → ∀ {a : Active c} → Γ ⊢ B)
-{-
-    (funCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-             → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
--}
     (funSrc : ∀{A A' B' Γ}
             → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
             → (M : Γ ⊢ A) → SimpleValue M
@@ -359,7 +355,51 @@ module EfficientParamCasts
     switch (fst-cast v) = fst-cast v
     switch (snd-cast v) = snd-cast v
     switch (case-cast v) = case-cast v
+
+
+    data IsCast : ∀{Γ}{A} → Γ ⊢ A → Set where
+      isCast : ∀{Γ}{A B}{M : Γ ⊢ A} {c : Cast (A ⇒ B)} → IsCast (M ⟨ c ⟩)
+
+    is-cast? : ∀{Γ}{A} → (M : Γ ⊢ A) → Dec (IsCast M)
+    is-cast? (` x) = no λ ()
+    is-cast? (ƛ M) = no λ ()
+    is-cast? (M · M₁) = no λ ()
+    is-cast? ($ x) = no λ ()
+    is-cast? (if M M₁ M₂) = no λ ()
+    is-cast? (cons M M₁) = no λ ()
+    is-cast? (fst M) = no λ ()
+    is-cast? (snd M) = no λ ()
+    is-cast? (inl M) = no λ ()
+    is-cast? (inr M) = no λ ()
+    is-cast? (case M M₁ M₂) = no λ ()
+    is-cast? (M ⟨ x ⟩) = yes isCast
+    is-cast? (blame x) = no λ ()
+
+    switch-back : ∀ {Γ A} {M M′ : Γ ⊢ A}
+        → ¬ IsCast M
+        → not_under_cast / M —→ M′
+          ------------------
+        → under_cast / M —→ M′
+    switch-back nc (ξ R) = ξ R
+    switch-back nc (ξ-cast R) = contradiction isCast nc
+    switch-back nc ξ-blame = ξ-blame
+    switch-back nc ξ-cast-blame = contradiction isCast nc
+    switch-back nc (β x) = β x
+    switch-back nc δ = δ
+    switch-back nc β-if-true = β-if-true
+    switch-back nc β-if-false = β-if-false
+    switch-back nc (β-fst x x₁) = β-fst x x₁
+    switch-back nc (β-snd x x₁) = β-snd x x₁
+    switch-back nc (β-caseL x) = β-caseL x
+    switch-back nc (β-caseR x) = β-caseR x
+    switch-back nc (cast v) = contradiction isCast nc
+    switch-back nc (fun-cast v x) = fun-cast v x
+    switch-back nc (fst-cast v) = fst-cast v
+    switch-back nc (snd-cast v) = snd-cast v
+    switch-back nc (case-cast v) = case-cast v
+    switch-back nc compose-casts = contradiction isCast nc
     
+        
     {-
 
     For the proof of progress, each recursive call may now result
@@ -392,131 +432,145 @@ module EfficientParamCasts
 
     progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
     progress (ƛ M) = done (S-val V-ƛ)
-    progress {A} (_·_ {Γ}{A₁}{A} M₁ M₂) with progress M₁
+    progress {A} (_·_ {Γ}{A₁}{A} M₁ M₂)
+        with progress M₁
     ... | step {ctx = under_cast} R =
-           step {ctx = under_cast} (ξ {F = F-·₁ M₂} (switch R))
+           step {ctx = not_under_cast} (ξ {F = F-·₁ M₂} (switch R))
     ... | step {ctx = not_under_cast} R =
            step {ctx = not_under_cast} (ξ {F = F-·₁ M₂} R)
     ... | error E-blame =
            step {ctx = not_under_cast} (ξ-blame {A = A₁ ⇒ A}{F = F-·₁ M₂})
-    ... | done V₁ = {!!}
-    progress ($ x) = {!!}
-    progress (if M M₁ M₂) = {!!}
-    progress (cons M M₁) = {!!}
-    progress (fst M) = {!!}
-    progress (snd M) = {!!}
-    progress (inl M) = {!!}
-    progress (inr M) = {!!}
-    progress (case M M₁ M₂) = {!!}
-    progress (M ⟨ x ⟩) = {!!}
-    progress (blame x) = {!!}
-
-{-
-    progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
-    progress (` ())
-    progress (ƛ M) = done (S-val V-ƛ)
-    progress (_·_ {∅}{A}{B} M₁ M₂) with progress M₁
-    ... | step-d R = step-d (ξ {F = F-·₁ M₂} (switch R))
-    ... | step-a R = step-d (ξ {F = F-·₁ M₂} R)
-    ... | error E-blame = step-d (ξ-blame {F = F-·₁ M₂})
-    ... | done V₁ with progress M₂
-    ...     | step-d R' = step-d (ξ {F = (F-·₂ M₁){V₁}} (switch R'))
-    ...     | step-a R' = step-d (ξ {F = (F-·₂ M₁){V₁}} R')
-    ...     | error E-blame = step-d (ξ-blame {F = (F-·₂ M₁){V₁}})
-    ...     | done V₂ with V₁
-    ...         | S-val V-ƛ = step-d (β V₂)
-    ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
-                with funSrc c i V v
-    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
-                  step-d (fun-cast v V₂ {i})
-    progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂ 
-                | S-val (V-const {k = k₁} {f = f₁}) with V₂
-    ...             | S-val (V-const {k = k₂} {f = f₂}) =
-                      step-d (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
-    ...             | S-val V-ƛ = contradiction f₁ ¬P-Fun
-    ...             | S-val (V-pair v w) = contradiction f₁ ¬P-Pair
-    ...             | S-val (V-inl v) = contradiction f₁ ¬P-Sum
-    ...             | S-val (V-inr v) = contradiction f₁ ¬P-Sum
-    ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
-                         contradiction i (G f₁)
-                         where G : Prim (A ⇒ B) → ¬ Inert c
-                               G (P-Fun f) ic = baseNotInert c (simple⋆ W w) ic
+    progress {A} (M₁ · M₂) | done V₁
+          with progress M₂
+    ...   | step {ctx = under_cast} R =
+            step {ctx = not_under_cast} (ξ {F = F-·₂ M₁ {V₁}} (switch R))
+    ...   | step {ctx = not_under_cast} R =
+            step {ctx = not_under_cast} (ξ {F = F-·₂ M₁ {V₁}} R)
+    ...   | error E-blame =
+            step {ctx = not_under_cast} (ξ-blame {F = F-·₂ M₁ {V₁}})
+    progress {A} (_·_ {A = A₁} M₁ M₂) | done V₁ | done V₂
+            with V₁
+    ...     | S-val V-ƛ  = step {ctx = not_under_cast} (β V₂)
+    ...     | S-val (V-const {k = k₁}{f = f₁})
+              with V₂
+    ...       | S-val (V-const {k = k₂}{f = f₂}) =
+                step {ctx = not_under_cast} (δ {ab = f₁}{a = f₂}{b = P-Fun2 f₁})
+    ...       | V-cast {V = W}{c}{i} sW =
+                contradiction i (G f₁)
+                where G : Prim (A₁ ⇒ A) → ¬ Inert c
+                      G (P-Fun f) ic = baseNotInert c (simple⋆ W sW) ic
+    progress {A} (M₁ · M₂) | done V₁ | done V₂
+            | V-cast {V = V}{c}{i} v
+              with funSrc c i V v
+    ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ =
+                step {ctx = not_under_cast} (fun-cast v V₂ {i})
     progress ($ k) = done (S-val V-const)
-    progress (if L M N) with progress L
-    ... | step-d R = step-d (ξ{F = F-if M N} (switch R))
-    ... | step-a R = step-d (ξ{F = F-if M N} R)
-    ... | error E-blame = step-d (ξ-blame{F = F-if M N})
-    ... | done (S-val (V-const {k = true})) = step-d β-if-true
-    ... | done (S-val (V-const {k = false})) = step-d β-if-false
-    ... | done (V-cast {V = V} {c = c} {i = i} v) =
-            contradiction i (baseNotInert c (simple⋆ V v))
-    progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
-    ... | step-d {N} R = step-a (ξ-cast R)
-    ... | step-a (switch R) = step-a (ξ-cast R)
-    ... | step-a (ξ-cast R) = step-d compose-casts
-    ... | step-a (ξ-cast-blame) = step-d compose-casts
-    ... | error E-blame = step-a ξ-cast-blame
-    ... | done v with ActiveOrInert c
-    ...    | inj₁ a = step-d (cast v {a})
-    ...    | inj₂ i
-           with v
-    ...    | S-val v' = done (V-cast {c = c} {i = i} v')
-    ...    | V-cast{A = A'}{B = A} {c = c'} v' = step-d compose-casts
-    progress {C₁ `× C₂} (cons M₁ M₂) with progress M₁
-    ... | step-d R = step-d (ξ {F = F-×₂ M₂} (switch R))
-    ... | step-a R = step-d (ξ {F = F-×₂ M₂} R)
-    ... | error E-blame = step-d (ξ-blame {F = F-×₂ M₂})
+    progress (if L M N)
+        with progress L
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-if M N} (switch R)) 
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-if M N} R) 
+    ... | error E-blame =
+          step {ctx = not_under_cast} (ξ-blame {F = F-if M N})
+    ... | done (S-val (V-const {k = true})) =
+          step {ctx = not_under_cast} β-if-true
+    ... | done (S-val (V-const {k = false})) =
+          step {ctx = not_under_cast} β-if-false
+    ... | done (V-cast {V = V}{c}{i} v) =
+          contradiction i (baseNotInert c (simple⋆ V v))
+    progress (cons M₁ M₂)
+        with progress M₁
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-×₂ M₂} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-×₂ M₂} R)
+    ... | error E-blame = step {ctx = not_under_cast} (ξ-blame {F = F-×₂ M₂})
     ... | done V with progress M₂
-    ...    | step-d {N} R' = step-d (ξ {F = F-×₁ M₁} (switch R'))
-    ...    | step-a R' = step-d (ξ {F = F-×₁ M₁} R')
+    ...    | step {ctx = under_cast} R =
+             step {ctx = not_under_cast} (ξ {F = F-×₁ M₁} (switch R))
+    ...    | step {ctx = not_under_cast} R =
+             step {ctx = not_under_cast} (ξ {F = F-×₁ M₁} R)
     ...    | done V' = done (S-val (V-pair V V'))
-    ...    | error E-blame = step-d (ξ-blame{F = F-×₁ M₁})
-    progress (fst {Γ}{A}{B} M) with progress M
-    ... | step-d R = step-d (ξ {F = F-fst} (switch R))
-    ... | step-a R = step-d (ξ {F = F-fst} R)
-    ... | error E-blame = step-d (ξ-blame{F = F-fst})
+    ...    | error E-blame = step {ctx = not_under_cast} (ξ-blame{F = F-×₁ M₁})
+    progress (fst M)
+        with progress M
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-fst} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-fst} R)
+    ... | error E-blame = step {ctx = not_under_cast} (ξ-blame{F = F-fst})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v =
-              step-d (fst-cast {c = c} v {i = i})
+              step {ctx = not_under_cast} (fst-cast {c = c} v {i = i})
     ...     | S-val (V-pair {V = V₁}{W = V₂} v w) =
-              step-d {N = V₁} (β-fst v w)
+              step {ctx = not_under_cast} (β-fst v w)
     ...     | S-val (V-const {k = k}) with k
     ...        | ()
-    progress (snd {Γ}{A}{B} M) with progress M
-    ... | step-d R = step-d (ξ {F = F-snd} (switch R))
-    ... | step-a R = step-d (ξ {F = F-snd} R)
-    ... | error E-blame = step-d (ξ-blame{F = F-snd})
+    progress (snd M)
+        with progress M
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-snd} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-snd} R)
+    ... | error E-blame = step {ctx = not_under_cast} (ξ-blame{F = F-snd})
     ... | done V with V
     ...     | V-cast {c = c} {i = i} v =
-              step-d (snd-cast {c = c} v {i = i})
+              step {ctx = not_under_cast} (snd-cast {c = c} v {i = i})
     ...     | S-val (V-pair {V = V₁}{W = V₂} v w) =
-              step-d {N = V₂} (β-snd v w)
+              step {ctx = not_under_cast} (β-snd v w)
     ...     | S-val (V-const {k = k}) with k
     ...        | ()
-    progress (inl M) with progress M
-    ... | step-d R = step-d (ξ {F = F-inl} (switch R))
-    ... | step-a R = step-d (ξ {F = F-inl} R)
-    ... | error E-blame = step-d (ξ-blame {F = F-inl})
+    progress (inl M)
+        with progress M
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-inl} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-inl} R)
+    ... | error E-blame =
+          step {ctx = under_cast} (ξ-blame {F = F-inl})
     ... | done V = done (S-val (V-inl V))
-
-    progress (inr M) with progress M
-    ... | step-d R = step-d (ξ {F = F-inr} (switch R))
-    ... | step-a R = step-d (ξ {F = F-inr} R)
-    ... | error E-blame = step-d (ξ-blame {F = F-inr})
+    progress (inr M)
+        with progress M
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-inr} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-inr} R)
+    ... | error E-blame =
+          step {ctx = under_cast} (ξ-blame {F = F-inr})
     ... | done V = done (S-val (V-inr V))
-
-    progress (case L M N) with progress L
-    ... | step-d R = step-d (ξ {F = F-case M N} (switch R))
-    ... | step-a R = step-d (ξ {F = F-case M N} R)
-    ... | error E-blame = step-d (ξ-blame {F = F-case M N})
+    progress (case L M N)
+        with progress L
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-case M N} (switch R))
+    ... | step {ctx = not_under_cast} R =
+          step {ctx = not_under_cast} (ξ {F = F-case M N} R)
+    ... | error E-blame =
+          step {ctx = not_under_cast} (ξ-blame {F = F-case M N})
     ... | done V with V
     ...    | V-cast {c = c} {i = i} v =
-             step-d (case-cast {c = c} v {i = i})
-    ...    | S-val (V-const {k = k}) = ⊥-elim k
-    ...    | S-val (V-inl v) = step-d (β-caseL v)
-    ...    | S-val (V-inr v) = step-d (β-caseR v)
-
+             step  {ctx = not_under_cast} (case-cast {c = c} v {i = i})
+    ...    | S-val (V-inl v) = step {ctx = not_under_cast} (β-caseL v)
+    ...    | S-val (V-inr v) = step {ctx = not_under_cast} (β-caseR v)
     progress (blame ℓ) = error E-blame
+    progress (M ⟨ c ⟩)
+        with progress M
+    ... | step {ctx = under_cast} R =
+          step {ctx = not_under_cast} (ξ-cast R)
+    ... | step {ctx = not_under_cast} R
+          with is-cast? M
+    ...   | yes (isCast {M = M′}{c = d}) =
+            step compose-casts
+    ...   | no ncM = 
+            step (ξ-cast (switch-back ncM R))
+    progress (M ⟨ c ⟩)
+        | error E-blame = step ξ-cast-blame
+    progress (M ⟨ c ⟩)
+        | done V
+          with ActiveOrInert c
+    ...   | inj₁ a = step (cast V {a})
+    ...   | inj₂ i
+            with V
+    ...     | S-val sV = done (V-cast {i = i} sV)
+    ...     | V-cast {c = c'} V' = step compose-casts
 
-
--}
