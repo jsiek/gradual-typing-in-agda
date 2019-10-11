@@ -208,12 +208,6 @@ module EfficientParamCasts
     infix 2 _/_—→_
     data _/_—→_ : ∀ {Γ A} → CastContext → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
-{-
-      switch : ∀ {Γ A} {M M′ : Γ ⊢ A} 
-        → disallow / M —→ M′
-          ------------------
-        → allow / M —→ M′       
--}
       ξ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ctx : CastContext}
         → not_under_cast / M —→ M′
           ---------------------------
@@ -574,3 +568,28 @@ module EfficientParamCasts
     ...     | S-val sV = done (V-cast {i = i} sV)
     ...     | V-cast {c = c'} V' = step compose-casts
 
+{-
+    determinism : ∀{A} {M N N′ : ∅ ⊢ A} {ctx : CastContext}
+                → ctx / M —→ N
+                → ctx / M —→ N′
+                → N ≡ N′
+    determinism (ξ R) R′ = {!!}
+    determinism (ξ-cast R) R′ = {!!}
+    determinism ξ-blame R′ = {!!}
+    determinism ξ-cast-blame R′ = {!!}
+    determinism (β x) R′ = {!!}
+    determinism δ R′ = {!!}
+    determinism β-if-true R′ = {!!}
+    determinism β-if-false R′ = {!!}
+    determinism (β-fst x x₁) R′ = {!!}
+    determinism (β-snd x x₁) R′ = {!!}
+    determinism (β-caseL x) R′ = {!!}
+    determinism (β-caseR x) R′ = {!!}
+    determinism (cast v) R′ = {!!}
+    determinism (fun-cast v x) R′ = {!!}
+    determinism (fst-cast v) R′ = {!!}
+    determinism (snd-cast v) R′ = {!!}
+    determinism (case-cast v) R′ = {!!}
+    determinism compose-casts R′ = {!!}
+            
+-}
