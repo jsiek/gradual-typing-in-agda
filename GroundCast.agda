@@ -134,7 +134,7 @@ module GroundCast where
   applyCast M v (cast A ⋆ ℓ) {A-inj c a-ng a-nd} with ground A {a-nd}
   ... | [ G , cns ] = (M ⟨ cast A G ℓ {proj₂ cns} ⟩) ⟨ cast G ⋆ ℓ {unk~R} ⟩
   {-
-    V : G ⇒p ⋆ ⇒q G  —→   V : A ⇒ G
+    V : G ⇒p ⋆ ⇒q G  —→   V
     V : G ⇒p ⋆ ⇒q H  —→   blame q
    -}
   applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} with ground? B

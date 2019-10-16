@@ -275,3 +275,118 @@ module HyperCoercions where
                   baseNotInert (_⨟_)
   open Red
 
+  data PreType : Type → Set where
+    P-Base : ∀{ι} → PreType (` ι)
+    P-Fun : ∀{A B} → PreType (A ⇒ B)
+    P-Pair : ∀{A B} → PreType (A `× B)
+    P-Sum : ∀{A B} → PreType (A `⊎ B)
+
+  pre? : (A : Type) → Dec (PreType A)
+  pre? ⋆ = no (λ ())
+  pre? (` ι) = yes P-Base
+  pre? (A ⇒ B) = yes P-Fun
+  pre? (A `× B) = yes P-Pair
+  pre? (A `⊎ B) = yes P-Sum
+
+  not-pre-unk : ∀{A} {np : ¬ PreType A} → A ≡ ⋆
+  not-pre-unk {⋆} {np} = refl
+  not-pre-unk {` ι} {np} = ⊥-elim (contradiction P-Base np)
+  not-pre-unk {A ⇒ B} {np} = ⊥-elim (contradiction P-Fun np)
+  not-pre-unk {A `× B} {np} = ⊥-elim (contradiction P-Pair np)
+  not-pre-unk {A `⊎ B} {np} = ⊥-elim (contradiction P-Sum np)
+  
+  make-id : (A : Type) → Cast (A ⇒ A)
+  
+  make-id-p : (A : Type) → {p : PreType A} → Middle (A ⇒ A)
+  make-id-p (` ι) {P-Base} = id ι
+  make-id-p (A ⇒ B) {P-Fun} = make-id A ↣ make-id B
+  make-id-p (A `× B) {P-Pair} = make-id A ×' make-id B
+  make-id-p (A `⊎ B) {P-Sum} = make-id A +' make-id B
+
+  make-id A
+      with pre? A
+  ... | yes p = 𝜖 ↷ make-id-p A {p} , 𝜖
+  ... | no np rewrite not-pre-unk {A}{np} = id★
+
+  right-id : ∀{A B : Type}{c : Cast (A ⇒ B)} 
+           → c ⨟ make-id B ≡ c
+  left-id : ∀{A B : Type}{c : Cast (A ⇒ B)} 
+           → make-id A ⨟ c ≡ c
+           
+  right-id-m-p : ∀{A B : Type}{m : Middle (A ⇒ B)} {p : PreType B}
+           → m `⨟ make-id-p B {p} ≡ m
+  right-id-m-p {.(` ι)} {` ι} {id .ι} {P-Base} = refl
+  right-id-m-p {A ⇒ A'} {B ⇒ C} {c ↣ d} {P-Fun}
+      rewrite left-id {B}{A} {c} | right-id {A'}{C}{d} = refl
+  right-id-m-p {A `× A'} {B `× C} {c ×' d} {P-Pair}
+      rewrite right-id {A}{B} {c} | right-id {A'}{C}{d} = refl
+  right-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum} 
+      rewrite right-id {A}{B} {c} | right-id {A'}{C}{d} = refl
+      
+  right-id-p : ∀{A B : Type}{c : Cast (A ⇒ B)} {p : PreType B}
+           → c ⨟ (𝜖 ↷ make-id-p B {p} , 𝜖) ≡ c
+  right-id-p {A} {` ι} {_↷_,_ {B = B} p₁ m₁ 𝜖} {P-Base}
+      rewrite right-id-m-p {B}{` ι}{m₁}{P-Base} = refl
+  right-id-p {A} {` ι} {p₁ ↷ m₁ , cfail ℓ} {P-Base} = refl
+  right-id-p {A} {B ⇒ C} {_↷_,_ {B = B₁ ⇒ B₂} p₁ (c ↣ d) 𝜖} {P-Fun}
+      rewrite left-id {B}{B₁}{c} | right-id {B₂}{C}{d} = refl
+  right-id-p {A} {B ⇒ C} {p₁ ↷ m , cfail ℓ} {P-Fun} = refl
+  right-id-p {A} {B `× C} {_↷_,_ {B = B₁ `× B₂} p₁ (c ×' d) 𝜖} {P-Pair}
+      rewrite right-id {B₁}{B}{c} | right-id {B₂}{C}{d} = refl
+  right-id-p {A} {B `× C} {p₁ ↷ m₁ , cfail ℓ} {P-Pair} = refl
+  right-id-p {A} {B `⊎ C} {_↷_,_ {B = B₁ `⊎ B₂} p₁ (c +' d) 𝜖} {P-Sum} 
+      rewrite right-id {B₁}{B}{c} | right-id {B₂}{C}{d} = refl
+  right-id-p {A} {B `⊎ C} {p₁ ↷ m₁ , cfail ℓ} {P-Sum} = refl
+
+  right-id {A} {⋆} {c} = refl
+  right-id {A} {` ι} {c} = right-id-p
+  right-id {A} {B ⇒ C} {c} = right-id-p
+  right-id {A} {B `× C} {c} = right-id-p
+  right-id {A} {B `⊎ C} {c} = right-id-p
+{-
+      with pre? B
+  ... | yes p = right-id-p {A}{B}{c}{p}
+  ... | no np =
+        let x = not-pre-unk {B}{np}  in
+        {!!}
+-}
+
+  left-id-m-p : ∀{A B : Type}{m : Middle (A ⇒ B)} {p : PreType A}
+           → make-id-p A {p} `⨟ m ≡ m
+  left-id-m-p {.(` ι)} {` ι} {id .ι} {P-Base} = refl
+  left-id-m-p {A ⇒ A'} {B ⇒ C} {c ↣ d} {P-Fun}
+      rewrite right-id {B}{A} {c} | left-id {A'}{C}{d} = refl
+  left-id-m-p {A `× A'} {B `× C} {c ×' d} {P-Pair}
+      rewrite left-id {A}{B} {c} | left-id {A'}{C}{d} = refl
+  left-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum} 
+      rewrite left-id {A}{B} {c} | left-id {A'}{C}{d} = refl
+
+  left-id-p : ∀{A B : Type}{c : Cast (A ⇒ B)} {p : PreType A}
+           → (𝜖 ↷ make-id-p A {p} , 𝜖) ⨟ c ≡ c
+  left-id-p {` ι} {B} {_↷_,_ {C = C} 𝜖 m₁ i₁} {P-Base}
+     rewrite left-id-m-p {` ι}{C}{m₁}{P-Base} = refl
+  left-id-p {A ⇒ C} {B} {_↷_,_ {C = D ⇒ E} 𝜖 (c ↣ d) i₁} {P-Fun}
+     rewrite right-id {D}{A}{c} | left-id {C}{E}{d} = refl
+  left-id-p {A `× C} {B} {_↷_,_ {C = D `× E} 𝜖 (c ×' d) i₁} {P-Pair} 
+     rewrite left-id {A}{D}{c} | left-id {C}{E}{d} = refl
+  left-id-p {A `⊎ C} {B} {_↷_,_ {C = D `⊎ E} 𝜖 (c +' d) i₁} {P-Sum}
+     rewrite left-id {A}{D}{c} | left-id {C}{E}{d} = refl
+
+
+  left-id {⋆} {.⋆} {id★}
+      with pre? ⋆
+  ... | yes p = refl
+  ... | no np = refl
+  left-id {⋆} {B} {x ↷ x₁ , x₂} = refl
+  left-id {` ι} {B} {c} = left-id-p
+  left-id {A ⇒ C} {B} {c} = left-id-p
+  left-id {A `× C} {B} {c} = left-id-p
+  left-id {A `⊎ C} {B} {c} = left-id-p
+
+  assoc : ∀{A B C D}{c₁ : Cast (A ⇒ B)}{c₂ : Cast (B ⇒ C)}{c₃ : Cast (C ⇒ D)}
+        → (c₁ ⨟ c₂) ⨟ c₃ ≡ c₁ ⨟ (c₂ ⨟ c₃)
+  assoc {A} {.⋆} {.⋆} {D} {c₁} {id★} {c₃}
+     with pre? ⋆
+  ... | yes p rewrite left-id {⋆}{⋆}{id★} = {!!}
+  ... | no np = {!!}
+  assoc {A} {B} {C} {D} {c₁} {x ↷ x₁ , x₂} {c₃} = {!!}
