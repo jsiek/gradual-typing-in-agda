@@ -372,7 +372,6 @@ module HyperCoercions where
   left-id-p {A `⊎ C} {B} {_↷_,_ {C = D `⊎ E} 𝜖 (c +' d) i₁} {P-Sum}
      rewrite left-id {A}{D}{c} | left-id {C}{E}{d} = refl
 
-
   left-id {⋆} {.⋆} {id★}
       with pre? ⋆
   ... | yes p = refl
@@ -383,10 +382,155 @@ module HyperCoercions where
   left-id {A `× C} {B} {c} = left-id-p
   left-id {A `⊎ C} {B} {c} = left-id-p
 
-  assoc : ∀{A B C D}{c₁ : Cast (A ⇒ B)}{c₂ : Cast (B ⇒ C)}{c₃ : Cast (C ⇒ D)}
+  left-id★ : ∀{B} (c : Cast (⋆ ⇒ B))
+           → id★ ⨟ c ≡ c
+  left-id★ {B} c = left-id {⋆}{B}{c}
+
+  assoc : ∀{A B C D} (c₁ : Cast (A ⇒ B)) → (c₂ : Cast (B ⇒ C))
+        → (c₃ : Cast (C ⇒ D))
         → (c₁ ⨟ c₂) ⨟ c₃ ≡ c₁ ⨟ (c₂ ⨟ c₃)
-  assoc {A} {.⋆} {.⋆} {D} {c₁} {id★} {c₃}
-     with pre? ⋆
-  ... | yes p rewrite left-id {⋆}{⋆}{id★} = {!!}
-  ... | no np = {!!}
-  assoc {A} {B} {C} {D} {c₁} {x ↷ x₁ , x₂} {c₃} = {!!}
+
+
+  `assoc : ∀{A B C D} (m₁ : Middle (A ⇒ B)) → (m₂ : Middle (B ⇒ C))
+         → (m₃ : Middle (C ⇒ D))
+         → (m₁ `⨟ m₂) `⨟ m₃ ≡ m₁ `⨟ (m₂ `⨟ m₃)
+  `assoc (id .ι) (id ι) (id .ι) = refl
+  `assoc (c₁ ↣ d₁) (c ↣ d) (c₂ ↣ d₂)
+      rewrite assoc c₂ c c₁ | assoc d₁ d d₂ = refl
+  `assoc (c₁ ×' d₁) (c ×' d) (c₂ ×' d₂)
+      rewrite assoc c₁ c c₂ | assoc d₁ d d₂ = refl
+  `assoc (c₁ +' d₁) (c +' d) (c₂ +' d₂)
+      rewrite assoc c₁ c c₂ | assoc d₁ d d₂ = refl
+
+  assoc c₁ id★ c₃ rewrite left-id★ c₃ = refl
+  assoc (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃)
+      rewrite `assoc m₁ m₂ m₃ = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ) (𝜖 ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃) = refl
+  assoc (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!) id★ = refl
+  assoc {A} {B} {.⋆} {D} (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!{g = g1}) ((?? ℓ){g = g2} ↷ m₃ , i₃)
+      with (m₁ `⨟ m₂) ⌣' m₃
+  ... | no m123
+      with m₂ ⌣' m₃
+  ... | no m23 = refl
+  ... | yes m23
+      with consis-ground-eq m23 g1 g2
+  ... | refl = ⊥-elim (contradiction m23 m123)
+  assoc {A} {B} {.⋆} {D} (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!{g = g1}) ((?? ℓ){g = g2} ↷ m₃ , i₃)
+      | yes m123
+      with consis-ground-eq m123 g1 g2
+  ... | refl
+      with m₂ ⌣' m₃
+  ... | no m23 = ⊥-elim (contradiction m123 m23)
+  ... | yes m23
+      with consis-ground-eq m23 g1 g2
+  ... | refl rewrite `assoc m₁ m₂ m₃ = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ) (𝜖 ↷ m₂ , !!) id★ = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ) (𝜖 ↷ m₂ , (!!{g = g1})) ((?? ℓ'){g = g2} ↷ m₃ , i₃)
+      with m₂ ⌣' m₃
+  ... | no m23 = refl
+  ... | yes m23
+      with consis-ground-eq m23 g1 g2
+  ... | refl = refl
+  assoc c₁ (𝜖 ↷ m₂ , cfail ℓ) id★ = refl
+  assoc (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , cfail ℓ) (p₃ ↷ m₃ , i₃) = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ') (𝜖 ↷ m₂ , cfail ℓ) (p₃ ↷ m₃ , i₃) = refl
+  assoc {.⋆} {.⋆} {C} {D} id★ ((?? ℓ){g = g} ↷ m₂ , i₂) c₃
+      rewrite left-id★ (((?? ℓ){g = g} ↷ m₂ , i₂) ⨟ c₃) = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , i₂) id★ = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃)
+      with m₁ ⌣' m₂
+  ... | no m12
+         with m₁ ⌣' (m₂ `⨟ m₃)
+  ...    | no m123 = refl
+  ...    | yes m123
+         with consis-ground-eq m123 g1 g2
+  ...    | refl = ⊥-elim (contradiction m123 m12)
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃)
+      | yes m12
+      with consis-ground-eq m12 g1 g2
+  ... | refl
+       with m₁ ⌣' (m₂ `⨟ m₃)
+  ...    | no m123 = ⊥-elim (contradiction m12 m123)
+  ...    | yes m123
+         with consis-ground-eq m123 g1 g2
+  ...    | refl rewrite `assoc m₁ m₂ m₃ = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , cfail ℓ') (𝜖 ↷ m₃ , i₃)
+      with m₁ ⌣' m₂
+  ... | no m12 = refl
+  ... | yes m12
+      with consis-ground-eq m12 g1 g2
+  ... | refl = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1})
+        (?? ℓ {g = g2} ↷ m₂ , !! {g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
+      with m₁ ⌣' m₂
+  ... | no m12
+         with m₂ ⌣' m₃
+  ...    | no m23
+           with m₁ ⌣' m₂ {- need to repeat the with, weird! -}
+  ...      | no m12' = refl
+  ...      | yes m12'
+           with consis-ground-eq m12' g1 g2
+  ...      | refl = ⊥-elim (contradiction m12' m12)
+  
+  assoc (p₁ ↷ m₁ , !! {g = g1})
+        (?? ℓ {g = g2} ↷ m₂ , !! {g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
+      | no m12 | yes m23
+            with consis-ground-eq m23 g3 g4
+  ...       | refl
+               with m₁ ⌣' (m₂ `⨟ m₃)
+  ...          | no m123 = refl
+  ...          | yes m123
+                  with consis-ground-eq m123 g1 g2
+  ...             | refl = ⊥-elim (contradiction m123 m12)
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , !!{g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
+      | yes m12
+      with consis-ground-eq m12 g1 g2
+  ... | refl
+      with (m₁ `⨟ m₂) ⌣' m₃
+  ... | no m123
+      with m₂ ⌣' m₃
+  ... | no m23 
+      with m₁ ⌣' m₂ {- weird repetition needed -}
+  ... | no m12' = ⊥-elim (contradiction m12 m12')
+  ... | yes m12'
+      with consis-ground-eq m12' g1 g2
+  ... | refl = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , !!{g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
+      | yes m12 | refl | no m123 | yes m23
+      with consis-ground-eq m23 g3 g4
+  ... | refl
+      with m₁ ⌣' (m₂ `⨟ m₃)
+  ... | no m123' = ⊥-elim (contradiction m23 m123)
+  ... | yes m123'
+      with consis-ground-eq m123' g1 g2
+  ... | refl = ⊥-elim (contradiction m23 m123)
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , !!{g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
+      | yes m12 | refl | yes m123
+      with consis-ground-eq m123 g3 g4
+  ... | refl
+      with m₂ ⌣' m₃
+  ... | no m23 = ⊥-elim (contradiction m123 m23)
+  ... | yes m23
+      with consis-ground-eq m23 g3 g4
+  ... | refl
+      with m₁ ⌣' (m₂ `⨟ m₃)
+  ... | no m123' = ⊥-elim (contradiction m12 m123')
+  ... | yes m123'
+      with consis-ground-eq m123' g1 g2
+  ... | refl rewrite `assoc m₁ m₂ m₃ = refl
+  assoc (p₁ ↷ m₁ , !! {g = g1}) (?? ℓ {g = g2} ↷ m₂ , cfail ℓ'') (?? ℓ' ↷ m₃ , i₃)
+      with m₁ ⌣' m₂
+  ... | no m12 = refl
+  ... | yes m12
+      with consis-ground-eq m12 g1 g2
+  ... | refl = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , i₂) id★ = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃) = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , cfail x) (𝜖 ↷ m₃ , i₃) = refl
+  assoc (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , !!{g = g2}) ((?? ℓ''){g = g3} ↷ m₃ , i₃)
+      with m₂ ⌣' m₃
+  ... | no m23 = refl
+  ... | yes m23
+      with consis-ground-eq m23 g2 g3
+  ... | refl = refl
+  assoc {A} {.⋆} {.⋆} {D} (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , cfail ℓ''') (?? ℓ'' ↷ m₃ , i₃) = refl
