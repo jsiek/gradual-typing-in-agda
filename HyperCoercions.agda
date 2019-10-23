@@ -534,3 +534,16 @@ module HyperCoercions where
       with consis-ground-eq m23 g2 g3
   ... | refl = refl
   assoc {A} {.⋆} {.⋆} {D} (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , cfail ℓ''') (?? ℓ'' ↷ m₃ , i₃) = refl
+
+
+  cast-id : ∀ (A : Type) → (l : Label)  → (c : A ~ A)
+          → coerce A A {c} l ≡ make-id A
+  cast-id ⋆ l unk~L = refl
+  cast-id ⋆ l unk~R = refl
+  cast-id (` ι) l base~ = refl
+  cast-id (A ⇒ B) l (fun~ c d)
+      rewrite (cast-id A l (Sym~ c)) | cast-id B l d = refl
+  cast-id (A `× B) l (pair~ c d)
+      rewrite (cast-id A l c) | cast-id B l d = refl
+  cast-id (A `⊎ B) l (sum~ c d)
+      rewrite (cast-id A l c) | cast-id B l d = refl
