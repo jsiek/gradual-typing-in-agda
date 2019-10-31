@@ -2,13 +2,16 @@ open import Types
 open import CastStructure
 
 open import Data.Nat
-open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product
+   using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Variables
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+open import Relation.Binary.PropositionalEquality
+   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Data.Empty using (⊥; ⊥-elim)
 
 module EquivCast
@@ -23,12 +26,12 @@ module EquivCast
   open CC₁ using (`_; _·_; $_) renaming (
        _⊢_ to _⊢₁_; ƛ_ to ƛ₁_; _⟨_⟩ to _⟨_⟩₁;
        if to if₁; cons to cons₁; fst to fst₁; snd to snd₁;
-       inl to inl₁; inr to inr₁; case to case₁; blame to blame₁;
+       inl to inl₁; inr to inr₁; case to case₁; blame to blame₁; _[_] to _[_]₁;
        _—→_ to _—→₁_)
   open CC₂ using ()
      renaming (
        _⊢_ to _⊢₂_; `_ to ``_; ƛ_ to ƛ₂_; _·_ to _●_; $_ to #_;
-       if to if₂; cons to cons₂; fst to fst₂; snd to snd₂;
+       if to if₂; cons to cons₂; fst to fst₂; snd to snd₂; _[_] to _[_]₂;
        inl to inl₂; inr to inr₂; case to case₂; _⟨_⟩ to _⟨_⟩₂;
        blame to blame₂;
        _—→_ to _—→₂_)
@@ -123,6 +126,12 @@ module EquivCast
        → CC₁.plug M′ F ≈ CC₂.plug N₂ F₂
     plug-equiv{A}{A₁}{F}{F₂} MF≈M₂F M′≈N₂ = {!!}
 
+    subst-equiv : ∀{A B}{Γ}{M₁ : Γ , A ⊢₁ B}{M₂ : Γ , A ⊢₂ B}{N₁ : Γ ⊢₁ A}{N₂ : Γ ⊢₂ A}
+       → M₁ ≈ M₂
+       → N₁ ≈ N₂
+       → (M₁ [ N₁ ]₁) ≈ (M₂ [ N₂ ]₂)
+    subst-equiv M₁≈M₂ N₁≈N₂ = {!!}
+
     simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
              → M₁ ≈ M₂
              → M₁ —→₁ N₁
@@ -132,9 +141,14 @@ module EquivCast
     ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , eqv ⟩ ⟩ ⟩ rewrite eq
         with simulate eqv M—→₁M′
     ... | ⟨ N₂ , ⟨ M₂—→₂N₂ , N₁≈N₂ ⟩ ⟩ =
-        ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , {!!} ⟩ ⟩
-    simulate M₁≈M₂ CC₁.ξ-blame = {!!}
-    simulate M₁≈M₂ (CC₁.β x) = {!!}
+        ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , plug-equiv M₁≈M₂ N₁≈N₂ ⟩ ⟩
+    simulate M₁≈M₂ (CC₁.ξ-blame {ℓ = ℓ})
+        with plug-equiv-inv M₁≈M₂
+    ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ≈-blame ⟩ ⟩ ⟩ rewrite eq =
+          ⟨ blame₂ ℓ , ⟨ CC₂.ξ-blame , ≈-blame ⟩ ⟩
+    simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
+      let vV = value-equiv M₁≈M₃ vW in
+      ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
     simulate M₁≈M₂ CC₁.δ = {!!}
     simulate M₁≈M₂ CC₁.β-if-true = {!!}
     simulate M₁≈M₂ CC₁.β-if-false = {!!}
