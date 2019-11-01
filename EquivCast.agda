@@ -149,7 +149,7 @@ module EquivCast
     simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
       let vV = value-equiv M₁≈M₃ vW in
       ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
-    simulate (≈-app M₁≈M₂ M₁≈M₃) (_—→₁_.δ) = ?
+    simulate (≈-app M₁≈M₂ M₁≈M₃) (_—→₁_.δ) = {!!}
     simulate M₁≈M₂ CC₁.β-if-true = {!!}
     simulate M₁≈M₂ CC₁.β-if-false = {!!}
     simulate M₁≈M₂ (CC₁.β-fst x x₁) = {!!}

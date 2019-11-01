@@ -225,10 +225,15 @@ module EfficientParamCasts
           ---------------------------
         → e_ctx / plug M F —→ plug M′ F
 
+      ξ-FE : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B}
+        → e_ctx / M —→ M′
+          ---------------------------
+        → e_ctx / plug M F —→ plug M′ F
+
       ξ-E : ∀ {Γ A B} {M M′ : Γ ⊢ A} {E : EFrame A B}
         → e_ctx / M —→ M′
           ---------------------------------
-        → e_ctx / plug-e M E —→ plug-e M′ E
+        → f_ctx / plug-e M E —→ plug-e M′ E
 
       ξ-blame : ∀ {Γ A B} {E : EFrame {Γ} A B} {ℓ} 
           -------------------------------------
@@ -357,19 +362,25 @@ module EfficientParamCasts
     is-cast? (M ⟨ x ⟩) = yes isCast
     is-cast? (blame x) = no λ ()
 
+{-
     f-red-is-cast : ∀ {Γ A} {M M′ : Γ ⊢ A}
         → f_ctx / M —→ M′
         → IsCast M
     f-red-is-cast (cast v) = isCast
     f-red-is-cast compose-casts = isCast
-    
-{-    
+    f-red-is-cast (ξ-E x) = ?
+-}  
+
     switch-back : ∀ {Γ A} {M M′ : Γ ⊢ A}
         → ¬ IsCast M
         → f_ctx / M —→ M′
           ------------------
         → e_ctx / M —→ M′
-    switch-back nc R = {!!}
+    switch-back nc (ξ-E {E = E-F F} R) = ξ-FE {F = F} R
+    switch-back nc (ξ-E {E = E-Cast c} R) = contradiction isCast nc
+    switch-back nc (cast v) = contradiction isCast nc
+    switch-back nc compose-casts = contradiction isCast nc
+{-
     switch-back nc (ξ-cast R) = contradiction isCast nc
     switch-back nc ξ-cast-blame = contradiction isCast nc
     switch-back nc (cast v) = contradiction isCast nc
@@ -411,7 +422,7 @@ module EfficientParamCasts
     progress {A} (_·_ {Γ}{A₁}{A} M₁ M₂)
         with progress M₁
     ... | step {N = N} {ctx = e_ctx } R =
-          step {N = N · M₂} {ctx = e_ctx} (ξ-E {E = E-F (F-·₁ M₂)} R)
+          step {N = N · M₂} {ctx = f_ctx} (ξ-E {E = E-F (F-·₁ M₂)} R)
     ... | step {ctx = f_ctx } R = step (ξ-F {F = F-·₁ M₂} R)
     ... | error E-blame = step (ξ-blame {A = A₁ ⇒ A}{E = E-F (F-·₁ M₂)})
     progress {A} (M₁ · M₂) | done V₁
@@ -501,8 +512,10 @@ module EfficientParamCasts
         with progress M
     ... | step {ctx = e_ctx} R = step (ξ-E {E = E-Cast c} R)
     ... | step {ctx = f_ctx} R
-          with f-red-is-cast R
-    ...   | isCast = step compose-casts
+          with is-cast? M
+    ...   | yes isCast = step compose-casts
+    ...   | no ncM =
+            step (ξ-E {E = E-Cast c} (switch-back ncM R))
     progress (M ⟨ c ⟩)
         | error E-blame = step (ξ-blame {E = E-Cast c})
     progress (M ⟨ c ⟩)
