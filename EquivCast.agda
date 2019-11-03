@@ -147,16 +147,22 @@ module EquivCast
     ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ≈-blame ⟩ ⟩ ⟩ rewrite eq =
           ⟨ blame₂ ℓ , ⟨ CC₂.ξ-blame , ≈-blame ⟩ ⟩
     simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
-      let vV = value-equiv M₁≈M₃ vW in
-      ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
-    simulate (≈-app M₁≈M₂ M₁≈M₃) (_—→₁_.δ) = {!!}
-    simulate M₁≈M₂ CC₁.β-if-true = {!!}
-    simulate M₁≈M₂ CC₁.β-if-false = {!!}
-    simulate M₁≈M₂ (CC₁.β-fst x x₁) = {!!}
-    simulate M₁≈M₂ (CC₁.β-snd x x₁) = {!!}
-    simulate M₁≈M₂ (CC₁.β-caseL x) = {!!}
-    simulate M₁≈M₂ (CC₁.β-caseR x) = {!!}
-    simulate M₁≈M₂ (CC₁.cast v) = {!!}
+       let vV = value-equiv M₁≈M₃ vW in
+       ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
+    simulate (≈-app (≈-lit{k = k}) (≈-lit{k = k₁})) _—→₁_.δ = ⟨ # k k₁ , ⟨ _—→₂_.δ , ≈-lit ⟩ ⟩
+    simulate (≈-if{L₂ = L₂} (≈-lit{k = true}) M₁≈M₃ M₁≈M₄) CC₁.β-if-true = ⟨ L₂ , ⟨ CC₂.β-if-true , M₁≈M₃ ⟩ ⟩
+    simulate (≈-if{M₂ = M₂} (≈-lit{k = false}) M₁≈M₃ M₁≈M₄) CC₁.β-if-false = ⟨ M₂ , ⟨ CC₂.β-if-false , M₁≈M₄ ⟩ ⟩
+    simulate (≈-fst (≈-cons{L₂ = L₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-fst vN₁ vW) =
+       ⟨ L₂ , ⟨ CC₂.β-fst (value-equiv L₁≈L₂ vN₁) (value-equiv M₁≈M₂ vW) , L₁≈L₂ ⟩ ⟩
+    simulate (≈-snd (≈-cons{M₂ = M₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-snd vV vN₁) =
+       ⟨ M₂ , ⟨ CC₂.β-snd (value-equiv L₁≈L₂ vV) (value-equiv M₁≈M₂ vN₁)  , M₁≈M₂ ⟩ ⟩    
+    simulate (≈-case{L₂ = L₂} (≈-inl{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseL vN₁) =
+        ⟨ (L₂ ● N₂) , ⟨ (CC₂.β-caseL (value-equiv N₁≈N₂ vN₁)) , (≈-app L₁≈L₂ N₁≈N₂ ) ⟩ ⟩
+    simulate (≈-case{M₂ = M₂} (≈-inr{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseR vN₁) =
+        ⟨ (M₂ ● N₂) , ⟨ (CC₂.β-caseR (value-equiv N₁≈N₂ vN₁)) , (≈-app M₁≈M₂ N₁≈N₂) ⟩ ⟩
+    simulate (≈-cast{M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂) (CC₁.cast vV {a}) =
+        let vM₂ = value-equiv M₁≈M₂ vV in
+        ⟨ CastStruct.applyCast CastCalc₂ M₂ vM₂ c₂ {{!!}} , ⟨ (CC₂.cast vM₂ {{!!}}) , {!!} ⟩ ⟩
     simulate M₁≈M₂ (CC₁.fun-cast v x) = {!!}
     simulate M₁≈M₂ (CC₁.fst-cast x) = {!!}
     simulate M₁≈M₂ (CC₁.snd-cast x) = {!!}
