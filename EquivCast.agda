@@ -40,6 +40,16 @@ module EquivCast
     (EqCast : ∀{A B} → Cast₁ (A ⇒ B) → Cast₂ (A ⇒ B) → Set)
     (inert-equiv : ∀{A B : Type}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)}
             → CastStruct.Inert CastCalc₁ c₁ → EqCast c₁ c₂ → CastStruct.Inert CastCalc₂ c₂)
+    (active-equiv : ∀{A B : Type}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)}
+            → CastStruct.Active CastCalc₁ c₁ → EqCast c₁ c₂ → CastStruct.Active CastCalc₂ c₂)
+    (dom-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A ⇒ B) ⇒ (C ⇒ D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A ⇒ B) ⇒ (C ⇒ D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.dom CastCalc₁ c₁ i₁) (CastStruct.dom CastCalc₂ c₂ i₂))
+    (cod-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A ⇒ B) ⇒ (C ⇒ D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A ⇒ B) ⇒ (C ⇒ D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.cod CastCalc₁ c₁ i₁) (CastStruct.cod CastCalc₂ c₂ i₂))
     where
 
     data _≈_ : ∀{Γ A} → Γ ⊢₁ A → Γ ⊢₂ A → Set where
@@ -132,38 +142,65 @@ module EquivCast
        → (M₁ [ N₁ ]₁) ≈ (M₂ [ N₂ ]₂)
     subst-equiv M₁≈M₂ N₁≈N₂ = {!!}
 
-    simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
-             → M₁ ≈ M₂
-             → M₁ —→₁ N₁
-             → Σ[ N₂ ∈ (∅ ⊢₂ A) ] ((M₂ —→₂ N₂) × (N₁ ≈ N₂))
-    simulate M₁≈M₂ (CC₁.ξ M—→₁M′)
-        with plug-equiv-inv M₁≈M₂
-    ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , eqv ⟩ ⟩ ⟩ rewrite eq
-        with simulate eqv M—→₁M′
-    ... | ⟨ N₂ , ⟨ M₂—→₂N₂ , N₁≈N₂ ⟩ ⟩ =
-        ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , plug-equiv M₁≈M₂ N₁≈N₂ ⟩ ⟩
-    simulate M₁≈M₂ (CC₁.ξ-blame {ℓ = ℓ})
-        with plug-equiv-inv M₁≈M₂
-    ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ≈-blame ⟩ ⟩ ⟩ rewrite eq =
-          ⟨ blame₂ ℓ , ⟨ CC₂.ξ-blame , ≈-blame ⟩ ⟩
-    simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
-       let vV = value-equiv M₁≈M₃ vW in
-       ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
-    simulate (≈-app (≈-lit{k = k}) (≈-lit{k = k₁})) _—→₁_.δ = ⟨ # k k₁ , ⟨ _—→₂_.δ , ≈-lit ⟩ ⟩
-    simulate (≈-if{L₂ = L₂} (≈-lit{k = true}) M₁≈M₃ M₁≈M₄) CC₁.β-if-true = ⟨ L₂ , ⟨ CC₂.β-if-true , M₁≈M₃ ⟩ ⟩
-    simulate (≈-if{M₂ = M₂} (≈-lit{k = false}) M₁≈M₃ M₁≈M₄) CC₁.β-if-false = ⟨ M₂ , ⟨ CC₂.β-if-false , M₁≈M₄ ⟩ ⟩
-    simulate (≈-fst (≈-cons{L₂ = L₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-fst vN₁ vW) =
-       ⟨ L₂ , ⟨ CC₂.β-fst (value-equiv L₁≈L₂ vN₁) (value-equiv M₁≈M₂ vW) , L₁≈L₂ ⟩ ⟩
-    simulate (≈-snd (≈-cons{M₂ = M₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-snd vV vN₁) =
-       ⟨ M₂ , ⟨ CC₂.β-snd (value-equiv L₁≈L₂ vV) (value-equiv M₁≈M₂ vN₁)  , M₁≈M₂ ⟩ ⟩    
-    simulate (≈-case{L₂ = L₂} (≈-inl{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseL vN₁) =
-        ⟨ (L₂ ● N₂) , ⟨ (CC₂.β-caseL (value-equiv N₁≈N₂ vN₁)) , (≈-app L₁≈L₂ N₁≈N₂ ) ⟩ ⟩
-    simulate (≈-case{M₂ = M₂} (≈-inr{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseR vN₁) =
-        ⟨ (M₂ ● N₂) , ⟨ (CC₂.β-caseR (value-equiv N₁≈N₂ vN₁)) , (≈-app M₁≈M₂ N₁≈N₂) ⟩ ⟩
-    simulate (≈-cast{M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂) (CC₁.cast vV {a}) =
-        let vM₂ = value-equiv M₁≈M₂ vV in
-        ⟨ CastStruct.applyCast CastCalc₂ M₂ vM₂ c₂ {{!!}} , ⟨ (CC₂.cast vM₂ {{!!}}) , {!!} ⟩ ⟩
-    simulate M₁≈M₂ (CC₁.fun-cast v x) = {!!}
-    simulate M₁≈M₂ (CC₁.fst-cast x) = {!!}
-    simulate M₁≈M₂ (CC₁.snd-cast x) = {!!}
-    simulate M₁≈M₂ (CC₁.case-cast x) = {!!}
+    module AppCastEquiv
+      (applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM₁ : CC₁.Value M₁}{vM₂ : CC₂.Value M₂}
+                          {c₁ : Cast₁ (A ⇒ B)}{a₁ : CastStruct.Active CastCalc₁ c₁}
+                          {c₂ : Cast₂ (A ⇒ B)}{a₂ : CastStruct.Active CastCalc₂ c₂}
+              → M₁ ≈ M₂
+              → EqCast c₁ c₂
+              → CastStruct.applyCast CastCalc₁ M₁ vM₁ c₁ {a₁} ≈ CastStruct.applyCast CastCalc₂ M₂ vM₂ c₂ {a₂})
+      (fstCast-equiv : ∀{A B C : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
+                        {c₁ : Cast₁ (A ⇒ (B `× C))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                        {c₂ : Cast₂ (A ⇒ (B `× C))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+              → M₁ ≈ M₂
+              → EqCast c₁ c₂
+              → CastStruct.fstCast CastCalc₁ M₁ c₁ {i₁} ≈ CastStruct.fstCast CastCalc₂ M₂ c₂ {i₂})
+      (sndCast-equiv : ∀{A B C : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
+                        {c₁ : Cast₁ (A ⇒ (B `× C))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                        {c₂ : Cast₂ (A ⇒ (B `× C))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+              → M₁ ≈ M₂
+              → EqCast c₁ c₂
+              → CastStruct.sndCast CastCalc₁ M₁ c₁ {i₁} ≈ CastStruct.sndCast CastCalc₂ M₂ c₂ {i₂})
+      where
+      
+      simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
+               → M₁ ≈ M₂
+               → M₁ —→₁ N₁
+               → Σ[ N₂ ∈ (∅ ⊢₂ A) ] ((M₂ —→₂ N₂) × (N₁ ≈ N₂))
+      simulate M₁≈M₂ (CC₁.ξ M—→₁M′)
+          with plug-equiv-inv M₁≈M₂
+      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , eqv ⟩ ⟩ ⟩ rewrite eq
+          with simulate eqv M—→₁M′
+      ... | ⟨ N₂ , ⟨ M₂—→₂N₂ , N₁≈N₂ ⟩ ⟩ =
+          ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , plug-equiv M₁≈M₂ N₁≈N₂ ⟩ ⟩
+      simulate M₁≈M₂ (CC₁.ξ-blame {ℓ = ℓ})
+          with plug-equiv-inv M₁≈M₂
+      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ≈-blame ⟩ ⟩ ⟩ rewrite eq =
+            ⟨ blame₂ ℓ , ⟨ CC₂.ξ-blame , ≈-blame ⟩ ⟩
+      simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
+         let vV = value-equiv M₁≈M₃ vW in
+         ⟨ L [ V ]₂ , ⟨ _—→₂_.β vV , subst-equiv b₁≈b₂ M₁≈M₃ ⟩ ⟩
+      simulate (≈-app (≈-lit{k = k}) (≈-lit{k = k₁})) _—→₁_.δ = ⟨ # k k₁ , ⟨ _—→₂_.δ , ≈-lit ⟩ ⟩
+      simulate (≈-if{L₂ = L₂} (≈-lit{k = true}) M₁≈M₃ M₁≈M₄) CC₁.β-if-true = ⟨ L₂ , ⟨ CC₂.β-if-true , M₁≈M₃ ⟩ ⟩
+      simulate (≈-if{M₂ = M₂} (≈-lit{k = false}) M₁≈M₃ M₁≈M₄) CC₁.β-if-false = ⟨ M₂ , ⟨ CC₂.β-if-false , M₁≈M₄ ⟩ ⟩
+      simulate (≈-fst (≈-cons{L₂ = L₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-fst vN₁ vW) =
+         ⟨ L₂ , ⟨ CC₂.β-fst (value-equiv L₁≈L₂ vN₁) (value-equiv M₁≈M₂ vW) , L₁≈L₂ ⟩ ⟩
+      simulate (≈-snd (≈-cons{M₂ = M₂} L₁≈L₂ M₁≈M₂)) (CC₁.β-snd vV vN₁) =
+         ⟨ M₂ , ⟨ CC₂.β-snd (value-equiv L₁≈L₂ vV) (value-equiv M₁≈M₂ vN₁)  , M₁≈M₂ ⟩ ⟩    
+      simulate (≈-case{L₂ = L₂} (≈-inl{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseL vN₁) =
+          ⟨ (L₂ ● N₂) , ⟨ (CC₂.β-caseL (value-equiv N₁≈N₂ vN₁)) , (≈-app L₁≈L₂ N₁≈N₂ ) ⟩ ⟩
+      simulate (≈-case{M₂ = M₂} (≈-inr{M₂ = N₂} N₁≈N₂) L₁≈L₂ M₁≈M₂) (CC₁.β-caseR vN₁) =
+          ⟨ (M₂ ● N₂) , ⟨ (CC₂.β-caseR (value-equiv N₁≈N₂ vN₁)) , (≈-app M₁≈M₂ N₁≈N₂) ⟩ ⟩
+      simulate (≈-cast{M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂) (CC₁.cast vV {a}) =
+          let vM₂ = value-equiv M₁≈M₂ vV in
+          let a₂ = active-equiv a c₁≈c₂ in
+          ⟨ CastStruct.applyCast CastCalc₂ M₂ vM₂ c₂ {a₂} , ⟨ (CC₂.cast vM₂ {a₂}) , applyCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
+      simulate (≈-app{M₂ = M₂} (≈-cast{M₂ = V₂}{c₂ = c₂} V₁≈V₂ c₁≈c₂) M₁≈M₂) (CC₁.fun-cast v x {i}) =
+          let i₂ = inert-equiv i c₁≈c₂ in
+          let R = (V₂ ● (M₂ ⟨ CastStruct.dom CastCalc₂ c₂ i₂ ⟩₂)) ⟨ CastStruct.cod CastCalc₂ c₂ i₂ ⟩₂ in
+          ⟨ R , ⟨ (CC₂.fun-cast (value-equiv V₁≈V₂ v) (value-equiv M₁≈M₂ x ) {i₂}) , ≈-cast (≈-app V₁≈V₂ (≈-cast M₁≈M₂ (dom-equiv c₁≈c₂))) (cod-equiv c₁≈c₂) ⟩ ⟩
+      simulate (≈-fst (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.fst-cast {c = c₁} vM₁ {i = i₁}) =
+          ⟨ (CastStruct.fstCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) , ⟨ (CC₂.fst-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) , fstCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
+      simulate (≈-snd (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.snd-cast {c = c₁} vM₁ {i = i₁}) =
+          ⟨ (CastStruct.sndCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) , ⟨ (CC₂.snd-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) , sndCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
+      simulate M₁≈M₂ (CC₁.case-cast x) = {!!}
