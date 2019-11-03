@@ -198,9 +198,17 @@ module EquivCast
       simulate (≈-app{M₂ = M₂} (≈-cast{M₂ = V₂}{c₂ = c₂} V₁≈V₂ c₁≈c₂) M₁≈M₂) (CC₁.fun-cast v x {i}) =
           let i₂ = inert-equiv i c₁≈c₂ in
           let R = (V₂ ● (M₂ ⟨ CastStruct.dom CastCalc₂ c₂ i₂ ⟩₂)) ⟨ CastStruct.cod CastCalc₂ c₂ i₂ ⟩₂ in
-          ⟨ R , ⟨ (CC₂.fun-cast (value-equiv V₁≈V₂ v) (value-equiv M₁≈M₂ x ) {i₂}) , ≈-cast (≈-app V₁≈V₂ (≈-cast M₁≈M₂ (dom-equiv c₁≈c₂))) (cod-equiv c₁≈c₂) ⟩ ⟩
+          ⟨ R , ⟨ (CC₂.fun-cast (value-equiv V₁≈V₂ v) (value-equiv M₁≈M₂ x ) {i₂}) ,
+                  ≈-cast (≈-app V₁≈V₂ (≈-cast M₁≈M₂ (dom-equiv c₁≈c₂))) (cod-equiv c₁≈c₂) ⟩ ⟩
       simulate (≈-fst (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.fst-cast {c = c₁} vM₁ {i = i₁}) =
-          ⟨ (CastStruct.fstCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) , ⟨ (CC₂.fst-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) , fstCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
+          ⟨ (CastStruct.fstCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) ,
+          ⟨ (CC₂.fst-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) ,
+            fstCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
       simulate (≈-snd (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.snd-cast {c = c₁} vM₁ {i = i₁}) =
-          ⟨ (CastStruct.sndCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) , ⟨ (CC₂.snd-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) , sndCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
-      simulate M₁≈M₂ (CC₁.case-cast x) = {!!}
+          ⟨ (CastStruct.sndCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) ,
+          ⟨ (CC₂.snd-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) ,
+            sndCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
+      simulate (≈-case{L₂ = L₂}{M₂ = M₂} (≈-cast {M₂ = N₂}{c₂ = c₂} N₁≈N₂ c₁≈c₂) L₁≈L₂ M₁≈M₂) (CC₁.case-cast vN₁ {i₁}) =
+          ⟨ CastStruct.caseCast CastCalc₂ N₂ {!c₂!} {inert-equiv i₁ c₁≈c₂} L₂ M₂ ,
+          ⟨ (CC₂.case-cast (value-equiv N₁≈N₂ vN₁) {inert-equiv i₁ c₁≈c₂}) ,
+            {!!} ⟩ ⟩
