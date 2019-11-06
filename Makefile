@@ -1,6 +1,6 @@
 
 %.agdai: %.agda
-	agda  $<
+	/usr/local/bin/agda  $<
 
 AGDA = Labels.agda Types.agda Variables.agda \
 	GTLC.agda GTLC2CC.agda \
@@ -8,7 +8,7 @@ AGDA = Labels.agda Types.agda Variables.agda \
 	GroundCast.agda GroundCoercions.agda EfficientGroundCoercions.agda \
 	SimpleCast.agda SimpleFunCast.agda SimpleCoercions.agda \
 	LazyCast.agda LazyCoercions.agda \
-	AGT.agda
+	AGT.agda HyperCoercions.agda
 
 AGDAI = $(AGDA:%.agda=%.agdai)
 

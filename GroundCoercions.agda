@@ -290,6 +290,7 @@ module GroundCoercions where
              ; ActiveOrInert = ActiveOrInert
              ; applyCast = applyCast
              ; funSrc = funSrc
+             ; pairSrc = pairSrc
              ; dom = dom
              ; cod = cod
              ; fstC = fstC

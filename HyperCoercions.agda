@@ -247,6 +247,12 @@ module HyperCoercions where
   funSrc (𝜖 ↷ (_↣_ {A}{B}{A'}{B'} c d) , 𝜖) (I-mid I-cfun) M v =
       ⟨ A , ⟨ A' , refl ⟩ ⟩
 
+  pairSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc .(𝜖 ↷ _ , 𝜖) (I-mid ()) M v
+  
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = c
@@ -254,14 +260,14 @@ module HyperCoercions where
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B')
   cod (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = d
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  fstC .(𝜖 ↷ _ , 𝜖) (I-mid ())
   
-  fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M vM (𝜖 ↷ _ , 𝜖) {I-mid ()}
-  
-  sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M vM (𝜖 ↷ _ , 𝜖) {I-mid ()}
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC .(𝜖 ↷ _ , 𝜖) (I-mid ())
 
   caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
              → (c : Cast (A ⇒ (A' `⊎ B')))
@@ -271,8 +277,8 @@ module HyperCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) nd (I-mid ())
 
-  module Red = EPCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
-                  baseNotInert (_⨟_)
+  module Red = EPCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC
+                  caseCast baseNotInert (_⨟_)
   open Red
 
   data PreType : Type → Set where
