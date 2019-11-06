@@ -51,7 +51,7 @@ module GroundCast where
   For λB, there are two kinds of inert casts, those from a ground
   type to ⋆ and those between two function types.
 
-  -}
+n  -}
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A} → Ground A → (c : Cast (A ⇒ ⋆)) → Inert c
@@ -165,9 +165,9 @@ module GroundCast where
   funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
 
   pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc (cast (A₁ `× A₂) (A' `× B') x) (I-pair _) = [ A₁ , [ A₂ , refl ] ]
+  pairSrc c ()
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
@@ -180,14 +180,12 @@ module GroundCast where
       cast A₂ B' ℓ {~⇒R c}
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  fstC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (I-pair _) =
-      cast A₁ A' ℓ {~⇒L c}
+         → Cast (A₁ ⇒ A')
+  fstC c ()
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (I-pair _) =
-      cast A₂ B' ℓ {~⇒R c}
+  sndC c ()
 
   {-
 
@@ -230,8 +228,8 @@ module GroundCast where
              ; pairSrc = pairSrc
              ; dom = dom
              ; cod = cod
-             ; fstCast = fstC
-             ; sndCast = sndC
+             ; fstC = fstC
+             ; sndC = sndC
              ; caseCast = caseCast
              ; baseNotInert = baseNotInert
              }

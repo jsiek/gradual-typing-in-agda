@@ -695,12 +695,11 @@ module EfficientGroundCoercions where
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          → Cast (A₁ ⇒ A')
-  fstC (` (` (c ×' d))) i = c
-  fstC (` cfail G H ℓ) (I-intmd ())
+  fstC .(` (` _)) (I-intmd (I-gnd ()))
   
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  sndC (` (` (s ×' t))) (I-intmd (I-gnd I-cpair)) = t
+  sndC .(` (` _)) (I-intmd (I-gnd ()))
 
   caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
              → (c : Cast (A ⇒ (A' `⊎ B')))

@@ -45,5 +45,5 @@ module CastCalc (C : CastStruct) where
   open CastStruct C
   open ParamCastCalculus Cast public
   open ParamCastReduction Cast Inert Active ActiveOrInert public
-  open Reduction applyCast funSrc dom cod fstCast sndCast
+  open Reduction applyCast funSrc pairSrc dom cod fstC sndC
          caseCast baseNotInert public

@@ -225,26 +225,15 @@ module GroundCoercions where
   applyCast {Γ} M v (cfun {A₁} {B₁} {A₂} {B₂} c d) {()}
   applyCast M v (inj A) {()}
 
-  {-
-   The following functions handle every elimination form, saying what
-   happens when the value is wrapped in an inert cast.  For function
-   application, we distribute the cast to the argument and return
-   value.
-   -}
-
-  {-
-   V⟨c→d⟩ W    —→     (V  W⟨c⟩)⟨d⟩
-  -}
-  {-
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M (cfun c d) {I-fun} N = (M · (N ⟨ c ⟩)) ⟨ d ⟩
-  -}
-
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   funSrc .(cfun _ _) (I-fun{A = A₁}{A' = A'}) = ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
+
+  pairSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc c ()
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
@@ -254,20 +243,20 @@ module GroundCoercions where
          →  Cast (A₂ ⇒ B')
   cod (cfun c d) I-fun = d
 
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  fstC c ()
+  
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC c ()
+
   {-
 
-  The functions for pairs and sums are vacuous because we categorized
+  The functions sums are vacuous because we categorized
   these casts as inert, not active.
 
   -}
-  
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-          → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M c {()}
-
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-          → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M c {()}
   
   caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
            → ∀ {i : Inert c}
@@ -286,7 +275,7 @@ module GroundCoercions where
   proving type safety for λC. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
+  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
                      baseNotInert
   open Red
 
@@ -303,8 +292,8 @@ module GroundCoercions where
              ; funSrc = funSrc
              ; dom = dom
              ; cod = cod
-             ; fstCast = fstCast
-             ; sndCast = sndCast
+             ; fstC = fstC
+             ; sndC = sndC
              ; caseCast = caseCast
              ; baseNotInert = baseNotInert
              }
