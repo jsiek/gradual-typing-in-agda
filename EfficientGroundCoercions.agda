@@ -678,6 +678,12 @@ module EfficientGroundCoercions where
       (I-intmd (I-gnd (I-cfun{A = A₁}{B = B₁}{A' = A'}{B' = B'}))) M v =
         ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
 
+  pairSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (` (` (c ↣ d))) i = c
@@ -687,16 +693,15 @@ module EfficientGroundCoercions where
          →  Cast (A₂ ⇒ B')
   cod (` (` (s ↣ t))) (I-intmd (I-gnd I-cfun)) = t
 
-  fstCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M v (G ?? x ⨟ x₁) {()}
-  fstCast M v (` .(` _)) {I-intmd (I-gnd ())}
-
-  sndCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-          → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M v (G ?? x ⨟ x₁) {()}
-  sndCast M v (` .(` _)) {I-intmd (I-gnd ())}
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  fstC (` (` (c ×' d))) i = c
+  fstC (` cfail G H ℓ) (I-intmd ())
   
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC (` (` (s ×' t))) (I-intmd (I-gnd I-cpair)) = t
+
   caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
              → (c : Cast (A ⇒ (A' `⊎ B')))
              → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
@@ -708,7 +713,7 @@ module EfficientGroundCoercions where
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
 
-  module Red = EPCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
+  module Red = EPCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
                   baseNotInert compose
   open Red
 

@@ -209,6 +209,6 @@ module EquivCast
           ⟨ (CC₂.snd-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) ,
             sndCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
       simulate (≈-case{L₂ = L₂}{M₂ = M₂} (≈-cast {M₂ = N₂}{c₂ = c₂} N₁≈N₂ c₁≈c₂) L₁≈L₂ M₁≈M₂) (CC₁.case-cast vN₁ {i₁}) =
-          ⟨ CastStruct.caseCast CastCalc₂ N₂ {!c₂!} {inert-equiv i₁ c₁≈c₂} L₂ M₂ ,
+          ⟨ CastStruct.caseCast CastCalc₂ N₂ c₂ {inert-equiv i₁ c₁≈c₂} L₂ M₂ ,
           ⟨ (CC₂.case-cast (value-equiv N₁≈N₂ vN₁) {inert-equiv i₁ c₁≈c₂}) ,
             {!!} ⟩ ⟩

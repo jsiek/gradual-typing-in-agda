@@ -184,21 +184,20 @@ module ParamCastReduction
   module Reduction
     (applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B)
-{-
-    (funCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-                 → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B')
--}
     (funSrc : ∀{A A' B'}
             → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
             → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂)
+    (pairSrc : ∀{A A' B'}
+            → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂)
     (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁))
     (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B'))
-    (fstCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-                 → ∀ {i : Inert c} → Γ ⊢ A')
-    (sndCast : ∀{Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-                 → ∀ {i : Inert c} → Γ ⊢ B')
+    (fstC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
+         → Cast (A₁ ⇒ B₁))
+    (sndC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
+         →  Cast (A₂ ⇒ B₂))
     (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
                  → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
     (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c)
@@ -290,17 +289,17 @@ module ParamCastReduction
           --------------------------------------------------
         → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
-      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
-          {c : Cast (A ⇒ (A' `× B'))}
+      fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
+          {c : Cast ((A `× B) ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
-          --------------------------------
-        → fst (V ⟨ c ⟩) —→ fstCast V c {i}
+          -------------------------------------
+        → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c i ⟩
 
-      snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
-          {c : Cast (A ⇒ (A' `× B'))}
+      snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
+          {c : Cast ((A `× B) ⇒ (A' `× B'))}
         → Value V → {i : Inert c}
-          --------------------------------
-        → snd (V ⟨ c ⟩) —→ sndCast V c {i}
+          -------------------------------------
+        → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
 
       case-cast : ∀ {Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
@@ -392,9 +391,6 @@ module ParamCastReduction
                 with funSrc c i
     ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
                     step (fun-cast v V₂ {i})
-{-
-                    step (fun-cast {∅}{A'}{A}{B}{V}{M₂}{c} v V₂ {i})
--}
     progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂
                 | V-const {k = k₁} {f = f₁} with V₂
     ...             | V-const {k = k₂} {f = f₂} =
@@ -432,19 +428,24 @@ module ParamCastReduction
     progress (fst {Γ}{A}{B} M) with progress M
     ... | step {N} R = step (ξ {F = F-fst} R)
     ... | error E-blame = step (ξ-blame{F = F-fst})
-    ... | done V with V
-    ...     | V-cast {c = c} {i = i} v = step (fst-cast {c = c} v {i = i})
+    ... | done V
+            with V
     ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₁} (β-fst v w)
-    ...     | V-const {k = k} with k
-    ...        | ()
+    ...     | V-const {k = ()}
+    ...     | V-cast {c = c} {i = i} v
+                with pairSrc c i
+    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
+                  step (fst-cast {c = c} v {i = i})
     progress (snd {Γ}{A}{B} M) with progress M
     ... | step {N} R = step (ξ {F = F-snd} R)
     ... | error E-blame = step (ξ-blame{F = F-snd})
     ... | done V with V
-    ...     | V-cast {c = c} {i = i} v = step (snd-cast {c = c} v {i = i})
     ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₂} (β-snd v w)
-    ...     | V-const {k = k} with k
-    ...        | ()
+    ...     | V-const {k = ()}
+    ...     | V-cast {c = c} {i = i} v
+                with pairSrc c i
+    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
+                  step (snd-cast {c = c} v {i = i})
     progress (inl M) with progress M
     ... | step R = step (ξ {F = F-inl} R)
     ... | error E-blame = step (ξ-blame {F = F-inl})

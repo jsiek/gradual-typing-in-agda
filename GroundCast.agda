@@ -158,28 +158,16 @@ module GroundCast where
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
     case M (ƛ l) (ƛ r)
 
-   {-
-   The following functions handle every elimination form, saying what
-   happens when the value is wrapped in an inert cast.  For function
-   application, we distribute the cast to the argument and return
-   value.
-   -}
-
-  {-
-   (V : A→B  ⇒p  A'→B') W   —→   (V (W : A' ⇒-p A)) : B ⇒p B'
-   -}
-  {-
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-          → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {cns})
-            {I-fun {A₁} {A₂} (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ)} N =
-   (M · (N ⟨ cast A' A₁ (flip ℓ) {Sym~ (~⇒L cns)} ⟩)) ⟨ cast A₂ B' ℓ {~⇒R cns} ⟩
-  -}
 
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
+
+  pairSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc (cast (A₁ `× A₂) (A' `× B') x) (I-pair _) = [ A₁ , [ A₂ , refl ] ]
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
@@ -190,21 +178,23 @@ module GroundCast where
          →  Cast (A₂ ⇒ B')
   cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
       cast A₂ B' ℓ {~⇒R c}
-  
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  fstC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (I-pair _) =
+      cast A₁ A' ℓ {~⇒L c}
+
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (I-pair _) =
+      cast A₂ B' ℓ {~⇒R c}
+
   {-
 
-  The functions for pairs and sums are vacuous because we categorized
+  The functions for sums are vacuous because we categorized
   these casts as inert, not active.
 
   -}
-
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-          → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M c {()}
-
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-          → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M c {()}
   
   caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
            → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
@@ -223,7 +213,7 @@ module GroundCast where
   proving type safety for λB. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast
+  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC
                    caseCast baseNotInert
   open Red
 
@@ -237,10 +227,11 @@ module GroundCast where
              ; ActiveOrInert = ActiveOrInert
              ; applyCast = applyCast
              ; funSrc = funSrc
+             ; pairSrc = pairSrc
              ; dom = dom
              ; cod = cod
-             ; fstCast = fstCast
-             ; sndCast = sndCast
+             ; fstCast = fstC
+             ; sndCast = sndC
              ; caseCast = caseCast
              ; baseNotInert = baseNotInert
              }

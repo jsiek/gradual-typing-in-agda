@@ -75,12 +75,6 @@ module SimpleCast where
     let r = inr ((` Z) ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {~⊎R c}⟩) in
     case M (ƛ l) (ƛ r)
      
-{-
-  funCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' ⇒ B')))
-            → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
-  funCast M c {()} N
--}
-
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
@@ -94,13 +88,18 @@ module SimpleCast where
          →  Cast (A₂ ⇒ B')
   cod c ()
 
-  fstCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-            → ∀ {i : Inert c} → Γ ⊢ A'
-  fstCast M c {()}
+  pairSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc c ()
+  
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  fstC c ()
 
-  sndCast : ∀ {Γ A A' B'} → Γ ⊢ A → (c : Cast (A ⇒ (A' `× B')))
-            → ∀ {i : Inert c} → Γ ⊢ B'
-  sndCast M c {()}
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC c ()
   
   caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
@@ -109,7 +108,7 @@ module SimpleCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
-  module Red = PCR.Reduction applyCast funSrc dom cod fstCast sndCast caseCast
+  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
                  baseNotInert
   open Red
 

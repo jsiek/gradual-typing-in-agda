@@ -109,14 +109,18 @@ module EfficientParamCasts
             → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
             → (M : Γ ⊢ A) → SimpleValue M
             → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂)
+    (pairSrc : ∀{A A' B' Γ}
+            → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂)
     (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁))
     (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B'))
-    (fstCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-             → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ A')
-    (sndCast : ∀{Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
-             → (c : Cast (A ⇒ (A' `× B'))) → ∀ {i : Inert c} → Γ ⊢ B')
+    (fstC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
+         → Cast (A₁ ⇒ B₁))
+    (sndC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
+         →  Cast (A₂ ⇒ B₂))
     (caseCast : ∀{Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
               → (c : Cast (A ⇒ (A' `⊎ B')))
               → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
@@ -274,17 +278,17 @@ module EfficientParamCasts
           -------------------------------------------------------------
         → any_ctx / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
-      fst-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} 
-          {c : Cast (A ⇒ (A' `× B'))} 
+      fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B} 
+          {c : Cast ((A `× B) ⇒ (A' `× B'))} 
         → (v : SimpleValue V) → {i : Inert c}
           --------------------------------------------
-        → any_ctx / fst (V ⟨ c ⟩) —→ fstCast V v c {i}
+        → any_ctx / fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c i ⟩
 
-      snd-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A}
-          {c : Cast (A ⇒ (A' `× B'))} 
+      snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
+          {c : Cast ((A `× B) ⇒ (A' `× B'))} 
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------
-        → any_ctx / snd (V ⟨ c ⟩) —→ sndCast V v c {i}
+        → any_ctx / snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
 
       case-cast : ∀ { Γ A A' B' C} {V : Γ ⊢ A}
           {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
@@ -435,20 +439,24 @@ module EfficientParamCasts
         with progress M
     ... | step R = step (ξ {F = F-fst} R)
     ... | error E-blame = step (ξ-blame{F = F-fst})
-    ... | done V with V
-    ...     | V-cast {c = c} {i = i} v = step (fst-cast {c = c} v {i = i})
+    ... | done V
+            with V
     ...     | S-val (V-pair {V = V₁}{W = V₂} v w) = step (β-fst v w)
-    ...     | S-val (V-const {k = k}) with k
-    ...        | ()
+    ...     | S-val (V-const {k = ()})
+    ...     | V-cast {V = V'} {c = c} {i = i} v
+              with pairSrc c i V' v
+    ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (fst-cast {c = c} v {i = i})
     progress (snd M)
         with progress M
     ... | step R = step (ξ {F = F-snd} R)
     ... | error E-blame = step (ξ-blame{F = F-snd})
-    ... | done V with V
-    ...     | V-cast {c = c} {i = i} v = step (snd-cast {c = c} v {i = i})
+    ... | done V
+            with V
     ...     | S-val (V-pair {V = V₁}{W = V₂} v w) = step (β-snd v w)
-    ...     | S-val (V-const {k = k}) with k
-    ...        | ()
+    ...     | S-val (V-const {k = ()})
+    ...     | V-cast {V = V'}{c = c} {i = i} v
+              with pairSrc c i V' v
+    ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (snd-cast {c = c} v {i = i})
     progress (inl M)
         with progress M
     ... | step R = step (ξ {F = F-inl} R)
@@ -463,7 +471,8 @@ module EfficientParamCasts
         with progress L
     ... | step R = step (ξ {F = F-case M N} R)
     ... | error E-blame = step (ξ-blame {F = F-case M N})
-    ... | done V with V
+    ... | done V
+           with V
     ...    | V-cast {c = c} {i = i} v =
              step (case-cast {c = c} v {i = i})
     ...    | S-val (V-inl v) = step (β-caseL v)
