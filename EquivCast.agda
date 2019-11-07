@@ -23,13 +23,13 @@ module EquivCast
   module CC₂ = CastCalc CastCalc₂
   open CastStruct CastCalc₁ using () renaming (Cast to Cast₁)
   open CastStruct CastCalc₂ using () renaming (Cast to Cast₂)
-  open CC₁ using (`_; _·_; $_) renaming (
+  open CC₁ using (`_; _·_; $_) renaming (rename to rename₁;
        _⊢_ to _⊢₁_; ƛ_ to ƛ₁_; _⟨_⟩ to _⟨_⟩₁;
        if to if₁; cons to cons₁; fst to fst₁; snd to snd₁;
        inl to inl₁; inr to inr₁; case to case₁; blame to blame₁; _[_] to _[_]₁;
        _—→_ to _—→₁_)
   open CC₂ using ()
-     renaming (
+     renaming (rename to rename₂;
        _⊢_ to _⊢₂_; `_ to ``_; ƛ_ to ƛ₂_; _·_ to _●_; $_ to #_;
        if to if₂; cons to cons₂; fst to fst₂; snd to snd₂; _[_] to _[_]₂;
        inl to inl₂; inr to inr₂; case to case₂; _⟨_⟩ to _⟨_⟩₂;
@@ -50,6 +50,22 @@ module EquivCast
                               {c₂ : Cast₂ ((A ⇒ B) ⇒ (C ⇒ D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
             → EqCast c₁ c₂ 
             → EqCast (CastStruct.cod CastCalc₁ c₁ i₁) (CastStruct.cod CastCalc₂ c₂ i₂))
+    (fst-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.fstC CastCalc₁ c₁ i₁) (CastStruct.fstC CastCalc₂ c₂ i₂))
+    (snd-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.sndC CastCalc₁ c₁ i₁) (CastStruct.sndC CastCalc₂ c₂ i₂))
+    (inl-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.inlC CastCalc₁ c₁ i₁) (CastStruct.inlC CastCalc₂ c₂ i₂))
+    (inr-equiv : ∀{A B C D : Type}{c₁ : Cast₁ ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
+                              {c₂ : Cast₂ ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
+            → EqCast c₁ c₂ 
+            → EqCast (CastStruct.inrC CastCalc₁ c₁ i₁) (CastStruct.inrC CastCalc₂ c₂ i₂))
     where
 
     data _≈_ : ∀{Γ A} → Γ ⊢₁ A → Γ ⊢₂ A → Set where
@@ -136,6 +152,23 @@ module EquivCast
        → CC₁.plug M′ F ≈ CC₂.plug N₂ F₂
     plug-equiv{A}{A₁}{F}{F₂} MF≈M₂F M′≈N₂ = {!!}
 
+    rename-equiv : ∀{A}{Γ Δ}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A}{ρ : (∀ {A} → Γ ∋ A → Δ ∋ A)}
+       → M₁ ≈ M₂
+       → (rename₁ ρ M₁) ≈ (rename₂ ρ M₂)
+    rename-equiv ≈-var = ≈-var
+    rename-equiv (≈-lam M₁≈M₂) = {!!}
+    rename-equiv (≈-app M₁≈M₂ M₁≈M₃) = {!!}
+    rename-equiv ≈-lit = {!!}
+    rename-equiv (≈-if M₁≈M₂ M₁≈M₃ M₁≈M₄) = {!!}
+    rename-equiv (≈-cons M₁≈M₂ M₁≈M₃) = {!!}
+    rename-equiv (≈-fst M₁≈M₂) = {!!}
+    rename-equiv (≈-snd M₁≈M₂) = {!!}
+    rename-equiv (≈-inl M₁≈M₂) = {!!}
+    rename-equiv (≈-inr M₁≈M₂) = {!!}
+    rename-equiv (≈-case M₁≈M₂ M₁≈M₃ M₁≈M₄) = {!!}
+    rename-equiv (≈-cast M₁≈M₂ x) = {!!}
+    rename-equiv ≈-blame = {!!}
+    
     subst-equiv : ∀{A B}{Γ}{M₁ : Γ , A ⊢₁ B}{M₂ : Γ , A ⊢₂ B}{N₁ : Γ ⊢₁ A}{N₂ : Γ ⊢₂ A}
        → M₁ ≈ M₂
        → N₁ ≈ N₂
@@ -149,18 +182,6 @@ module EquivCast
               → M₁ ≈ M₂
               → EqCast c₁ c₂
               → CastStruct.applyCast CastCalc₁ M₁ vM₁ c₁ {a₁} ≈ CastStruct.applyCast CastCalc₂ M₂ vM₂ c₂ {a₂})
-      (fstCast-equiv : ∀{A B C : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
-                        {c₁ : Cast₁ (A ⇒ (B `× C))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
-                        {c₂ : Cast₂ (A ⇒ (B `× C))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
-              → M₁ ≈ M₂
-              → EqCast c₁ c₂
-              → CastStruct.fstCast CastCalc₁ M₁ c₁ {i₁} ≈ CastStruct.fstCast CastCalc₂ M₂ c₂ {i₂})
-      (sndCast-equiv : ∀{A B C : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
-                        {c₁ : Cast₁ (A ⇒ (B `× C))}{i₁ : CastStruct.Inert CastCalc₁ c₁}
-                        {c₂ : Cast₂ (A ⇒ (B `× C))}{i₂ : CastStruct.Inert CastCalc₂ c₂}
-              → M₁ ≈ M₂
-              → EqCast c₁ c₂
-              → CastStruct.sndCast CastCalc₁ M₁ c₁ {i₁} ≈ CastStruct.sndCast CastCalc₂ M₂ c₂ {i₂})
       where
       
       simulate : ∀{A}{M₁ N₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}
@@ -200,15 +221,18 @@ module EquivCast
           let R = (V₂ ● (M₂ ⟨ CastStruct.dom CastCalc₂ c₂ i₂ ⟩₂)) ⟨ CastStruct.cod CastCalc₂ c₂ i₂ ⟩₂ in
           ⟨ R , ⟨ (CC₂.fun-cast (value-equiv V₁≈V₂ v) (value-equiv M₁≈M₂ x ) {i₂}) ,
                   ≈-cast (≈-app V₁≈V₂ (≈-cast M₁≈M₂ (dom-equiv c₁≈c₂))) (cod-equiv c₁≈c₂) ⟩ ⟩
-      simulate (≈-fst (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.fst-cast {c = c₁} vM₁ {i = i₁}) =
-          ⟨ (CastStruct.fstCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) ,
-          ⟨ (CC₂.fst-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) ,
-            fstCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
-      simulate (≈-snd (≈-cast {M₂ = M₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.snd-cast {c = c₁} vM₁ {i = i₁}) =
-          ⟨ (CastStruct.sndCast CastCalc₂ M₂ c₂ {inert-equiv i₁ c₁≈c₂}) ,
-          ⟨ (CC₂.snd-cast {c = c₂} (value-equiv M₁≈M₂ vM₁)) ,
-            sndCast-equiv M₁≈M₂ c₁≈c₂ ⟩ ⟩
-      simulate (≈-case{L₂ = L₂}{M₂ = M₂} (≈-cast {M₂ = N₂}{c₂ = c₂} N₁≈N₂ c₁≈c₂) L₁≈L₂ M₁≈M₂) (CC₁.case-cast vN₁ {i₁}) =
-          ⟨ CastStruct.caseCast CastCalc₂ N₂ c₂ {inert-equiv i₁ c₁≈c₂} L₂ M₂ ,
-          ⟨ (CC₂.case-cast (value-equiv N₁≈N₂ vN₁) {inert-equiv i₁ c₁≈c₂}) ,
-            {!!} ⟩ ⟩
+      simulate (≈-fst (≈-cast {M₂ = V₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.fst-cast {c = c₁} vM₁ {i = i₁}) =
+          let i₂ = inert-equiv i₁ c₁≈c₂ in
+          let R = (fst₂ V₂) ⟨ CastStruct.fstC CastCalc₂ c₂ i₂ ⟩₂ in
+          ⟨ R , ⟨ CC₂.fst-cast (value-equiv M₁≈M₂ vM₁) {i₂} , ≈-cast (≈-fst M₁≈M₂) (fst-equiv c₁≈c₂) ⟩ ⟩ 
+      simulate (≈-snd (≈-cast {M₂ = V₂}{c₂ = c₂} M₁≈M₂ c₁≈c₂)) (CC₁.snd-cast {c = c₁} vM₁ {i = i₁}) =
+          let i₂ = inert-equiv i₁ c₁≈c₂ in
+          let R = (snd₂ V₂) ⟨ CastStruct.sndC CastCalc₂ c₂ i₂ ⟩₂ in
+          ⟨ R , ⟨ CC₂.snd-cast (value-equiv M₁≈M₂ vM₁) {i₂} , ≈-cast (≈-snd M₁≈M₂) (snd-equiv c₁≈c₂) ⟩ ⟩ 
+      simulate (≈-case{L₂ = L₂}{M₂ = M₂} (≈-cast {M₂ = V₂}{c₂ = c₂} N₁≈N₂ c₁≈c₂) L₁≈L₂ M₁≈M₂) (CC₁.case-cast vN₁ {i₁}) =
+          let i₂ = inert-equiv i₁ c₁≈c₂ in
+          let R = case₂ V₂ (ƛ₂ ((rename₂ S_ L₂) ● ((`` Z) ⟨ CastStruct.inlC CastCalc₂ c₂ i₂ ⟩₂ )))
+                           (ƛ₂ ((rename₂ S_ M₂) ● ((`` Z) ⟨ CastStruct.inrC CastCalc₂ c₂ i₂ ⟩₂ ))) in
+          let r1 = rename-equiv {ρ = S_} L₁≈L₂ in
+          let r2 = rename-equiv {ρ = S_} M₁≈M₂ in
+          ⟨ R , ⟨ CC₂.case-cast (value-equiv N₁≈N₂ vN₁ ) {i₂} , ≈-case N₁≈N₂ (≈-lam (≈-app r1 (≈-cast ≈-var (inl-equiv c₁≈c₂)))) (≈-lam (≈-app r2 (≈-cast ≈-var (inr-equiv c₁≈c₂)))) ⟩ ⟩
