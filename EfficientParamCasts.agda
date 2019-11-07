@@ -113,6 +113,10 @@ module EfficientParamCasts
             → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
             → (M : Γ ⊢ A) → SimpleValue M
             → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂)
+    (sumSrc : ∀{A A' B' Γ}
+            → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂)
     (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁))
     (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
@@ -121,9 +125,10 @@ module EfficientParamCasts
          → Cast (A₁ ⇒ B₁))
     (sndC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
          →  Cast (A₂ ⇒ B₂))
-    (caseCast : ∀{Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
-              → (c : Cast (A ⇒ (A' `⊎ B')))
-              → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
+    (inlC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂))) → Inert c
+         → Cast (A₁ ⇒ B₁))
+    (inrC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂))) → Inert c
+         →  Cast (A₂ ⇒ B₂))
     (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c)
     (compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
              → Cast (A ⇒ C))
@@ -290,12 +295,15 @@ module EfficientParamCasts
           ---------------------------------------------
         → any_ctx / snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
 
-      case-cast : ∀ { Γ A A' B' C} {V : Γ ⊢ A}
-          {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
-          {c : Cast (A ⇒ (A' `⊎ B'))} 
+      case-cast : ∀ { Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
+          {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
+          {c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))} 
         → (v : SimpleValue V) → {i : Inert c}
           ---------------------------------------------------------
-        → any_ctx / case (V ⟨ c ⟩) W W' —→ caseCast V v c {i} W W'
+        → any_ctx / case (V ⟨ c ⟩) W₁ W₂ —→
+                    case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
+                           (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
+        
 
       compose-casts : ∀{Γ A B C} {M : Γ ⊢ A }
           {c : Cast (A ⇒ B)} {d : Cast (B ⇒ C)} 
@@ -473,10 +481,11 @@ module EfficientParamCasts
     ... | error E-blame = step (ξ-blame {F = F-case M N})
     ... | done V
            with V
-    ...    | V-cast {c = c} {i = i} v =
-             step (case-cast {c = c} v {i = i})
     ...    | S-val (V-inl v) = step (β-caseL v)
     ...    | S-val (V-inr v) = step (β-caseR v)
+    ...    | V-cast {V = V'} {c = c} {i = i} v 
+               with sumSrc c i V' v
+    ...        | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (case-cast {c = c} v {i = i})
     progress (blame ℓ) = error E-blame
     progress (M ⟨ c ⟩)
         with progress M

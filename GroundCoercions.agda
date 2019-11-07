@@ -235,6 +235,11 @@ module GroundCoercions where
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
   pairSrc c ()
 
+  sumSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc c ()
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (cfun c d) I-fun = c
@@ -251,18 +256,14 @@ module GroundCoercions where
          →  Cast (A₂ ⇒ B')
   sndC c ()
 
-  {-
-
-  The functions sums are vacuous because we categorized
-  these casts as inert, not active.
-
-  -}
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC c ()
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
-           → ∀ {i : Inert c}
-           → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
-  caseCast L c {()} M N
-  
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC c ()
+
   {-
   Finally, we show that casts to base type are not inert.
   -}
@@ -275,7 +276,8 @@ module GroundCoercions where
   proving type safety for λC. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
+  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
+                     dom cod fstC sndC inlC inrC
                      baseNotInert
   open Red
 
@@ -291,10 +293,12 @@ module GroundCoercions where
              ; applyCast = applyCast
              ; funSrc = funSrc
              ; pairSrc = pairSrc
+             ; sumSrc = sumSrc
              ; dom = dom
              ; cod = cod
              ; fstC = fstC
              ; sndC = sndC
-             ; caseCast = caseCast
+             ; inlC = inlC
+             ; inrC = inrC
              ; baseNotInert = baseNotInert
              }

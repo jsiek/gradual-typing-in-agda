@@ -26,11 +26,11 @@ module SimpleFunCast where
     inert-inj : ∀{A} → A ≢ ⋆ → (c : Cast (A ⇒ ⋆)) → Inert c
     inert-fun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Inert c
     inert-pair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Inert c
+    inert-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Inert c
 
   data Active : ∀{A} → Cast A → Set where
     activeId : ∀{A} → {a : Atomic A} → (c : Cast (A ⇒ A)) → Active c
     activeProj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
-    activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c    
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert (cast .⋆ B ℓ {unk~L}) with eq-unk B
@@ -48,7 +48,7 @@ module SimpleFunCast where
   ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) =
      inj₂ (inert-pair (cast (A `× B) (A' `× B') ℓ))
   ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ {sum~ c c₁}) =
-     inj₁ (activeSum (cast (A `⊎ B) (A' `⊎ B') ℓ))
+     inj₂ (inert-sum (cast (A `⊎ B) (A' `⊎ B') ℓ))
 
   funNotActive : ∀{A₁ A₂ B₁ B₂ ℓ c} → ¬ Active (cast (A₁ ⇒ A₂) (B₁ ⇒ B₂) ℓ {c})
   funNotActive (activeId {a = ()} .(cast (_ ⇒ _) (_ ⇒ _) _))
@@ -88,6 +88,11 @@ module SimpleFunCast where
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
   pairSrc c (inert-pair {A}{B}{A'}{B'} .c) = ⟨ A , ⟨ B , refl ⟩ ⟩
 
+  sumSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc c (inert-sum {A}{B}{A'}{B'} .c) = ⟨ A , ⟨ B , refl ⟩ ⟩
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (inert-fun _) =
@@ -105,14 +110,19 @@ module SimpleFunCast where
          →  Cast (A₂ ⇒ B')
   sndC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (inert-pair _) = cast A₂ B' ℓ {~×R c}
   
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
-           → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
-  caseCast L c {()} M N
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {c}) (inert-sum _) = cast A₁ A' ℓ {~⊎L c}
+
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {c}) (inert-sum _) = cast A₂ B' ℓ {~⊎R c}
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
-  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
+  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
+                  dom cod fstC sndC inlC inrC
                   baseNotInert
   open Red
 

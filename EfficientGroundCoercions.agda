@@ -684,6 +684,12 @@ module EfficientGroundCoercions where
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
   pairSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
 
+  sumSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+            → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (` (` (c ↣ d))) i = c
@@ -701,18 +707,22 @@ module EfficientGroundCoercions where
          →  Cast (A₂ ⇒ B')
   sndC .(` (` _)) (I-intmd (I-gnd ()))
 
-  caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
-             → (c : Cast (A ⇒ (A' `⊎ B')))
-             → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
-  caseCast L v .(` ` _) {I-intmd (I-gnd ())} M N
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC .(` (` _)) (I-intmd (I-gnd ()))
   
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC .(` (` _)) (I-intmd (I-gnd ()))
+
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
   baseNotInert (` .(` _)) A≢⋆ (I-intmd (I-gnd ()))
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
 
-  module Red = EPCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
+  module Red = EPCR.Reduction applyCast funSrc pairSrc sumSrc
+                  dom cod fstC sndC inlC inrC
                   baseNotInert compose
   open Red
 

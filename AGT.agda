@@ -1260,7 +1260,19 @@ module AGT where
   ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
         ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
-  
+
+  sumSrc : ∀{A A' B' Γ}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+         → (M : Γ ⊢ A) → SimpleValue M
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc ((A ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x) M v
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
+      with ⊑L⊎ ab
+  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
+  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⊎A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⊎A₂ =
+        ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (((A₁ ⇒ A₂) ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (inert x)
@@ -1293,22 +1305,21 @@ module AGT where
       with ab
   ... | pair⊑ ab1 ab2 = (A₂ ⇒ B₂ ⇒ C₂){ab2}{c2⊑b2}
 
-  caseCast : ∀ {Γ A A' B' C} → (L : Γ ⊢ A) → SimpleValue L
-             → (c : Cast (A ⇒ (A' `⊎ B')))
-             → ∀ {i : Inert c} → (Γ ⊢ A' ⇒ C) → (Γ ⊢ B' ⇒ C) → Γ ⊢ C
-  caseCast{C = C} L v ((A ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) {inert _} M N
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x)
       with ⊑R⊎ cb
-  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
-      with ⊑L⊎ ab
-  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ L v)
-  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⊎A₂ , ⟨ a1⊑b1 , a2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⊎A₂ =
-      case L (M ⟨ ((C₁ ⇒ C) ⇒ (B₁ ⇒ C) ⇒ (A₁ ⇒ C)){le1}{le2} ⟩)
-             (N ⟨ ((C₂ ⇒ C) ⇒ (B₂ ⇒ C) ⇒ (A₂ ⇒ C)){le3}{le4} ⟩)
-      where
-      le1 = fun⊑ c1⊑b1 Refl⊑
-      le2 = fun⊑ a1⊑b1 Refl⊑
-      le3 = fun⊑ c2⊑b2 Refl⊑
-      le4 = fun⊑ a2⊑b2 Refl⊑
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
+      with ab
+  ... | sum⊑ ab1 ab2 = (A₁ ⇒ B₁ ⇒ C₁){ab1}{c1⊑b1}
+
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x)
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
+      with ab
+  ... | sum⊑ ab1 ab2 = (A₂ ⇒ B₂ ⇒ C₂){ab2}{c2⊑b2}
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose ((A ⇒ B ⇒ C){ab}{cb}) ((C ⇒ B' ⇒ C'){cb'}{c'b'})
@@ -1331,7 +1342,8 @@ module AGT where
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
   baseNotInert (error A B) A⋆ = λ ()
 
-  module Red = EPCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC caseCast
+  module Red = EPCR.Reduction applyCast funSrc pairSrc sumSrc
+                  dom cod fstC sndC inlC inrC
                   baseNotInert compose
   open Red
 

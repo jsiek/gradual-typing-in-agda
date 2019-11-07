@@ -169,6 +169,11 @@ n  -}
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
   pairSrc c ()
 
+  sumSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc c ()
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
   dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
@@ -187,16 +192,13 @@ n  -}
          →  Cast (A₂ ⇒ B')
   sndC c ()
 
-  {-
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC c ()
 
-  The functions for sums are vacuous because we categorized
-  these casts as inert, not active.
-
-  -}
-  
-  caseCast : ∀ {Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
-           → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C
-  caseCast L c {()} M N
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC c ()
 
   {-
   Finally, we show that casts to base type are not inert.
@@ -211,8 +213,9 @@ n  -}
   proving type safety for λB. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc pairSrc dom cod fstC sndC
-                   caseCast baseNotInert
+  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
+                   dom cod fstC sndC inlC inrC
+                   baseNotInert
   open Red
 
   open import CastStructure
@@ -226,10 +229,12 @@ n  -}
              ; applyCast = applyCast
              ; funSrc = funSrc
              ; pairSrc = pairSrc
+             ; sumSrc = sumSrc
              ; dom = dom
              ; cod = cod
              ; fstC = fstC
              ; sndC = sndC
-             ; caseCast = caseCast
+             ; inlC = inlC
+             ; inrC = inrC
              ; baseNotInert = baseNotInert
              }

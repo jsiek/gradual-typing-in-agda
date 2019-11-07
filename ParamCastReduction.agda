@@ -190,6 +190,9 @@ module ParamCastReduction
     (pairSrc : ∀{A A' B'}
             → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
             → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂)
+    (sumSrc : ∀{A A' B'}
+            → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂)
     (dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁))
     (cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
@@ -198,8 +201,10 @@ module ParamCastReduction
          → Cast (A₁ ⇒ B₁))
     (sndC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `× A₂) ⇒ (B₁ `× B₂))) → Inert c
          →  Cast (A₂ ⇒ B₂))
-    (caseCast : ∀{Γ A A' B' C} → Γ ⊢ A → (c : Cast (A ⇒ (A' `⊎ B')))
-                 → ∀ {i : Inert c} → Γ ⊢ A' ⇒ C → Γ ⊢ B' ⇒ C → Γ ⊢ C)
+    (inlC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂))) → Inert c
+         → Cast (A₁ ⇒ B₁))
+    (inrC : ∀{A₁ A₂ B₁ B₂} → (c : Cast ((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂))) → Inert c
+         →  Cast (A₂ ⇒ B₂))
     (baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c)
     where
     {- to do : add condition A ≢ ⋆ to baseNotInert -}
@@ -276,13 +281,6 @@ module ParamCastReduction
           ------------------------------
         → V ⟨ c ⟩ —→ applyCast V v c {a}
 
-{-
-      fun-cast : ∀ {Γ A A' B'} {V : Γ ⊢ A} {W : Γ ⊢ A'}
-          {c : Cast (A ⇒ (A' ⇒ B'))}
-        → Value V → Value W → {i : Inert c}
-          ----------------------------------
-        → (V ⟨ c ⟩) · W —→ funCast V c {i} W 
--}
       fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
           {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
         → (v : Value V) → Value W → {i : Inert c}
@@ -301,13 +299,14 @@ module ParamCastReduction
           -------------------------------------
         → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
 
-      case-cast : ∀ {Γ A A' B' C} {V : Γ ⊢ A}
-          {W : Γ ⊢ A' ⇒ C } {W' : Γ ⊢ B' ⇒ C}
-          {c : Cast (A ⇒ (A' `⊎ B'))}
+      case-cast : ∀ {Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
+          {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
+          {c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))}
         → Value V → {i : Inert c}
           --------------------------------------------
-        → case (V ⟨ c ⟩) W W' —→ caseCast V c {i} W W'
-
+        → case (V ⟨ c ⟩) W₁ W₂ —→
+          case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
+                 (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
 
     {-
 
@@ -460,10 +459,12 @@ module ParamCastReduction
     ... | step R = step (ξ {F = F-case M N} R)
     ... | error E-blame = step (ξ-blame {F = F-case M N})
     ... | done V with V
-    ...    | V-cast {c = c} {i = i} v = step (case-cast {c = c} v {i = i})
-    ...    | V-const {k = k} = ⊥-elim k
+    ...    | V-const {k = ()}
     ...    | V-inl v = step (β-caseL v)
     ...    | V-inr v = step (β-caseR v)
+    ...    | V-cast {c = c} {i = i} v
+                with sumSrc c i
+    ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ = step (case-cast {c = c} v {i = i})
 
     progress (blame ℓ) = error E-blame
 
