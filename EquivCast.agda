@@ -194,7 +194,14 @@ module EquivCast
     rename-equiv (≈-case M₁≈M₂ M₁≈M₃ M₁≈M₄) =(≈-case (rename-equiv M₁≈M₂) (rename-equiv M₁≈M₃) (rename-equiv M₁≈M₄))
     rename-equiv (≈-cast M₁≈M₂ c₁≈c₂) = (≈-cast (rename-equiv M₁≈M₂) c₁≈c₂)
     rename-equiv ≈-blame = ≈-blame
-    
+
+    subst-eq : ∀{Γ Δ} → (∀ {A} → Γ ∋ A → Δ ⊢₁ A) → (∀ {A} → Γ ∋ A → Δ ⊢₂ A) → Set
+    subst-eq {Γ}{Δ} σ₁ σ₂ = (∀ {A}{x : Γ ∋ A} → σ₁ x ≈ σ₂ x)
+
+    subst-zero-eq : ∀{Γ}{A}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A} → M₁ ≈ M₂ → subst-eq (CC₁.subst-zero M₁) (CC₂.subst-zero M₂)
+    subst-zero-eq {Γ} {A} {M₁} {M₂} M₁≈M₂ {.A} {Z} = M₁≈M₂
+    subst-zero-eq {Γ} {A} {M₁} {M₂} M₁≈M₂ {B} {S x} = ≈-var
+
     subst-equiv : ∀{A B}{Γ}{M₁ : Γ , A ⊢₁ B}{M₂ : Γ , A ⊢₂ B}{N₁ : Γ ⊢₁ A}{N₂ : Γ ⊢₂ A}
        → M₁ ≈ M₂
        → N₁ ≈ N₂
