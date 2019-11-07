@@ -202,11 +202,34 @@ module EquivCast
     subst-zero-eq {Γ} {A} {M₁} {M₂} M₁≈M₂ {.A} {Z} = M₁≈M₂
     subst-zero-eq {Γ} {A} {M₁} {M₂} M₁≈M₂ {B} {S x} = ≈-var
 
+    subst-equiv-aux : ∀{A}{Γ Δ}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A}{σ₁ : ∀ {A} → Γ ∋ A → Δ ⊢₁ A}{σ₂ : ∀ {A} → Γ ∋ A → Δ ⊢₂ A}
+       → subst-eq σ₁ σ₂
+       → M₁ ≈ M₂
+       → (CC₁.subst σ₁ M₁) ≈ (CC₂.subst σ₂ M₂)
+    subst-equiv-aux σ₁≈σ₂ ≈-var = σ₁≈σ₂
+    subst-equiv-aux{σ₁ = σ₁}{σ₂} σ₁≈σ₂ (≈-lam M₁≈M₂) = ≈-lam (subst-equiv-aux (λ {B}{x} → G {B}{x}) M₁≈M₂)
+       where G : subst-eq (λ {A} → CC₁.exts σ₁) (λ {A} → CC₂.exts σ₂)
+             G {B} {Z} = ≈-var
+             G {B} {S x} = rename-equiv σ₁≈σ₂
+    subst-equiv-aux σ₁≈σ₂ (≈-app M₁≈M₂ M₁≈M₃) = ≈-app (subst-equiv-aux σ₁≈σ₂ M₁≈M₂) (subst-equiv-aux σ₁≈σ₂ M₁≈M₃)
+    subst-equiv-aux σ₁≈σ₂ ≈-lit = ≈-lit
+    subst-equiv-aux σ₁≈σ₂ (≈-if M₁≈M₂ M₁≈M₃ M₁≈M₄) =
+        ≈-if (subst-equiv-aux σ₁≈σ₂ M₁≈M₂) (subst-equiv-aux σ₁≈σ₂ M₁≈M₃) (subst-equiv-aux σ₁≈σ₂ M₁≈M₄)
+    subst-equiv-aux σ₁≈σ₂ (≈-cons M₁≈M₂ M₁≈M₃) = ≈-cons (subst-equiv-aux σ₁≈σ₂ M₁≈M₂) (subst-equiv-aux σ₁≈σ₂ M₁≈M₃)
+    subst-equiv-aux σ₁≈σ₂ (≈-fst M₁≈M₂) = ≈-fst (subst-equiv-aux σ₁≈σ₂ M₁≈M₂)
+    subst-equiv-aux σ₁≈σ₂ (≈-snd M₁≈M₂) = ≈-snd (subst-equiv-aux σ₁≈σ₂ M₁≈M₂)
+    subst-equiv-aux σ₁≈σ₂ (≈-inl M₁≈M₂) = ≈-inl (subst-equiv-aux σ₁≈σ₂ M₁≈M₂)
+    subst-equiv-aux σ₁≈σ₂ (≈-inr M₁≈M₂) = ≈-inr (subst-equiv-aux σ₁≈σ₂ M₁≈M₂)
+    subst-equiv-aux σ₁≈σ₂ (≈-case M₁≈M₂ M₁≈M₃ M₁≈M₄) =
+        ≈-case (subst-equiv-aux σ₁≈σ₂ M₁≈M₂) (subst-equiv-aux σ₁≈σ₂ M₁≈M₃) (subst-equiv-aux σ₁≈σ₂ M₁≈M₄)
+    subst-equiv-aux σ₁≈σ₂ (≈-cast M₁≈M₂ x) = ≈-cast (subst-equiv-aux σ₁≈σ₂ M₁≈M₂) x
+    subst-equiv-aux σ₁≈σ₂ ≈-blame = ≈-blame
+
     subst-equiv : ∀{A B}{Γ}{M₁ : Γ , A ⊢₁ B}{M₂ : Γ , A ⊢₂ B}{N₁ : Γ ⊢₁ A}{N₂ : Γ ⊢₂ A}
        → M₁ ≈ M₂
        → N₁ ≈ N₂
        → (M₁ [ N₁ ]₁) ≈ (M₂ [ N₂ ]₂)
-    subst-equiv M₁≈M₂ N₁≈N₂ = {!!}
+    subst-equiv M₁≈M₂ N₁≈N₂ = subst-equiv-aux (subst-zero-eq N₁≈N₂) M₁≈M₂
 
     module AppCastEquiv
       (applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM₁ : CC₁.Value M₁}{vM₂ : CC₂.Value M₂}
