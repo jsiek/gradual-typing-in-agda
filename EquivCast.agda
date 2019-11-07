@@ -119,55 +119,81 @@ module EquivCast
     value-equiv (≈-cast M₁≈M₂ ec) (CC₁.V-cast {i = i} VM₁) =
        CC₂.V-cast {i = inert-equiv i ec} (value-equiv M₁≈M₂ VM₁)
 
+    data _≅_ : ∀{Γ A B} → CC₁.Frame {Γ} A B → CC₂.Frame {Γ} A B → Set where
+       ≅-·₁ : ∀{Γ A B}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A} → M₁ ≈ M₂ → (CC₁.F-·₁{B = B} M₁) ≅ (CC₂.F-·₁ M₂)
+       ≅-·₂ : ∀{Γ A B}{M₁ : Γ ⊢₁ A ⇒ B}{M₂ : Γ ⊢₂ A ⇒ B}{v1 : CC₁.Value {Γ} M₁}{v2 : CC₂.Value {Γ} M₂}
+            → M₁ ≈ M₂ → (CC₁.F-·₂ M₁ {v1}) ≅ (CC₂.F-·₂ M₂ {v2})
+       ≅-if : ∀{Γ A}{M₁ N₁ : Γ ⊢₁ A}{M₂ N₂ : Γ ⊢₂ A}
+            → M₁ ≈ M₂ → N₁ ≈ N₂ → (CC₁.F-if M₁ N₁) ≅ (CC₂.F-if M₂ N₂)
+       ≅-×₁ : ∀{Γ A B}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A} → M₁ ≈ M₂ → (CC₁.F-×₁{B = B} M₁) ≅ (CC₂.F-×₁ M₂)
+       ≅-×₂ : ∀{Γ A B}{M₁ : Γ ⊢₁ B}{M₂ : Γ ⊢₂ B} → M₁ ≈ M₂ → (CC₁.F-×₂{A = A} M₁) ≅ (CC₂.F-×₂ M₂)
+       ≅-fst : ∀{Γ A B} → (CC₁.F-fst {Γ}{A}{B}) ≅ (CC₂.F-fst {Γ}{A}{B})
+       ≅-snd : ∀{Γ A B} → (CC₁.F-snd {Γ}{A}{B}) ≅ (CC₂.F-snd {Γ}{A}{B})
+       ≅-inl : ∀{Γ A B} → (CC₁.F-inl {Γ}{A}{B}) ≅ (CC₂.F-inl {Γ}{A}{B})
+       ≅-inr : ∀{Γ A B} → (CC₁.F-inr {Γ}{A}{B}) ≅ (CC₂.F-inr {Γ}{A}{B})
+       ≅-case : ∀{Γ A B C}{M₁ : Γ ⊢₁ A ⇒ C}{N₁ : Γ ⊢₁ B ⇒ C}{M₂ : Γ ⊢₂ A ⇒ C}{N₂ : Γ ⊢₂ B ⇒ C}
+            → M₁ ≈ M₂ → N₁ ≈ N₂ → (CC₁.F-case M₁ N₁) ≅ (CC₂.F-case M₂ N₂)
+       ≅-cast : ∀{Γ A B}{c₁ : Cast₁ (A ⇒ B)}{c₂ : Cast₂ (A ⇒ B)} → EqCast c₁ c₂ → (CC₁.F-cast {Γ} c₁) ≅ (CC₂.F-cast c₂)
+
     plug-equiv-inv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{F₁ : CC₁.Frame {∅} A B}{N₂ : ∅ ⊢₂ B}
        → CC₁.plug M₁ F₁ ≈ N₂
        → Σ[ F₂ ∈ CC₂.Frame {∅} A B ] Σ[ M₂ ∈ ∅ ⊢₂ A ]
-          (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂)
+          (N₂ ≡ CC₂.plug M₂ F₂) × (M₁ ≈ M₂) × F₁ ≅ F₂
     plug-equiv-inv {F₁ = CC₁.F-·₁ L₁} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ (CC₂.F-·₁ L₂) , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-·₁ F₁[M₁]≈N₃ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-·₂ M {v}} (≈-app {∅}{A}{B}{M₁}{M₂}{L₁}{L₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ CC₂.F-·₂ M₂ {value-equiv F₁[M₁]≈N₂ v} , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-·₂ M₂ {value-equiv F₁[M₁]≈N₂ v} , ⟨ L₂ , ⟨ refl , ⟨ F₁[M₁]≈N₃ , ≅-·₂ F₁[M₁]≈N₂ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-if x x₁} (≈-if{N₂ = N₂}{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
-       ⟨ CC₂.F-if L₂ M₂ , ⟨ N₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-if L₂ M₂ , ⟨ N₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-if F₁[M₁]≈N₃ F₁[M₁]≈N₄ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-×₁ x} (≈-cons{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ (CC₂.F-×₁ L₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₃ ⟩ ⟩ ⟩
+       ⟨ (CC₂.F-×₁ L₂) , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₃ , ≅-×₁ F₁[M₁]≈N₂ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-×₂ x} (≈-cons{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃) =
-       ⟨ (CC₂.F-×₂ M₂) , ⟨ L₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ (CC₂.F-×₂ M₂) , ⟨ L₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-×₂ F₁[M₁]≈N₃ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-fst} (≈-fst{M₂ = M₂} F₁[M₁]≈N₂) =
-       ⟨ CC₂.F-fst , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-fst , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-fst ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-snd} (≈-snd{M₂ = M₂} F₁[M₁]≈N₂) =
-       ⟨ CC₂.F-snd , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-snd , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-snd ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-inl} (≈-inl{M₂ = M₂} F₁[M₁]≈N₂) =
-       ⟨ CC₂.F-inl , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-inl , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-inl ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-inr} (≈-inr{M₂ = M₂} F₁[M₁]≈N₂) =
-       ⟨ CC₂.F-inr , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-inr , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-inr ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-case x x₁} (≈-case{N₂ = N₂}{L₂ = L₂}{M₂ = M₂} F₁[M₁]≈N₂ F₁[M₁]≈N₃ F₁[M₁]≈N₄) =
-       ⟨ CC₂.F-case L₂ M₂ , ⟨ N₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ CC₂.F-case L₂ M₂ , ⟨ N₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-case F₁[M₁]≈N₃ F₁[M₁]≈N₄ ⟩ ⟩ ⟩ ⟩
     plug-equiv-inv {F₁ = CC₁.F-cast x} (≈-cast{M₂ = M₂}{c₂ = c₂} F₁[M₁]≈N₂ x₁) =
-       ⟨ (CC₂.F-cast c₂) , ⟨ M₂ , ⟨ refl , F₁[M₁]≈N₂ ⟩ ⟩ ⟩
+       ⟨ (CC₂.F-cast c₂) , ⟨ M₂ , ⟨ refl , ⟨ F₁[M₁]≈N₂ , ≅-cast x₁ ⟩ ⟩ ⟩ ⟩
 
-    plug-equiv : ∀{A A₁ : Type}{F : CC₁.Frame A A₁}{F₂ : CC₂.Frame A A₁}{M M′ : ∅ ⊢₁ A}{M₂ N₂ : ∅ ⊢₂ A}
-       → CC₁.plug M F ≈ CC₂.plug M₂ F₂
-       → M′ ≈ N₂
-       → CC₁.plug M′ F ≈ CC₂.plug N₂ F₂
-    plug-equiv{A}{A₁}{F}{F₂} MF≈M₂F M′≈N₂ = {!!}
+    plug-equiv : ∀{A B : Type}{F₁ : CC₁.Frame A B}{F₂ : CC₂.Frame A B}{M : ∅ ⊢₁ A}{N : ∅ ⊢₂ A}
+       → F₁ ≅ F₂
+       → M ≈ N
+       → CC₁.plug M F₁ ≈ CC₂.plug N F₂
+    plug-equiv (≅-·₁ x) M≈N = ≈-app M≈N x
+    plug-equiv (≅-·₂ x) M≈N = ≈-app x M≈N
+    plug-equiv (≅-if x x₁) M≈N = ≈-if M≈N x x₁
+    plug-equiv (≅-×₁ x) M≈N = ≈-cons x M≈N
+    plug-equiv (≅-×₂ x) M≈N = ≈-cons M≈N x
+    plug-equiv ≅-fst M≈N = ≈-fst M≈N
+    plug-equiv ≅-snd M≈N = ≈-snd M≈N
+    plug-equiv ≅-inl M≈N = ≈-inl M≈N
+    plug-equiv ≅-inr M≈N = ≈-inr M≈N
+    plug-equiv (≅-case x x₁) M≈N = ≈-case M≈N x x₁
+    plug-equiv (≅-cast x) M≈N = ≈-cast M≈N x
 
     rename-equiv : ∀{A}{Γ Δ}{M₁ : Γ ⊢₁ A}{M₂ : Γ ⊢₂ A}{ρ : (∀ {A} → Γ ∋ A → Δ ∋ A)}
        → M₁ ≈ M₂
        → (rename₁ ρ M₁) ≈ (rename₂ ρ M₂)
     rename-equiv ≈-var = ≈-var
-    rename-equiv (≈-lam M₁≈M₂) = {!!}
-    rename-equiv (≈-app M₁≈M₂ M₁≈M₃) = {!!}
-    rename-equiv ≈-lit = {!!}
-    rename-equiv (≈-if M₁≈M₂ M₁≈M₃ M₁≈M₄) = {!!}
-    rename-equiv (≈-cons M₁≈M₂ M₁≈M₃) = {!!}
-    rename-equiv (≈-fst M₁≈M₂) = {!!}
-    rename-equiv (≈-snd M₁≈M₂) = {!!}
-    rename-equiv (≈-inl M₁≈M₂) = {!!}
-    rename-equiv (≈-inr M₁≈M₂) = {!!}
-    rename-equiv (≈-case M₁≈M₂ M₁≈M₃ M₁≈M₄) = {!!}
-    rename-equiv (≈-cast M₁≈M₂ x) = {!!}
-    rename-equiv ≈-blame = {!!}
+    rename-equiv (≈-lam M₁≈M₂) = ≈-lam (rename-equiv M₁≈M₂)
+    rename-equiv (≈-app M₁≈M₂ M₁≈M₃) = ≈-app (rename-equiv M₁≈M₂) (rename-equiv M₁≈M₃)
+    rename-equiv ≈-lit = ≈-lit
+    rename-equiv (≈-if M₁≈M₂ M₁≈M₃ M₁≈M₄) = ≈-if (rename-equiv M₁≈M₂) (rename-equiv M₁≈M₃) (rename-equiv M₁≈M₄)
+    rename-equiv (≈-cons M₁≈M₂ M₁≈M₃) = ≈-cons (rename-equiv M₁≈M₂) (rename-equiv M₁≈M₃)
+    rename-equiv (≈-fst M₁≈M₂) = ≈-fst (rename-equiv M₁≈M₂)
+    rename-equiv (≈-snd M₁≈M₂) = ≈-snd (rename-equiv M₁≈M₂)
+    rename-equiv (≈-inl M₁≈M₂) = ≈-inl (rename-equiv M₁≈M₂)
+    rename-equiv (≈-inr M₁≈M₂) = ≈-inr (rename-equiv M₁≈M₂)
+    rename-equiv (≈-case M₁≈M₂ M₁≈M₃ M₁≈M₄) =(≈-case (rename-equiv M₁≈M₂) (rename-equiv M₁≈M₃) (rename-equiv M₁≈M₄))
+    rename-equiv (≈-cast M₁≈M₂ c₁≈c₂) = (≈-cast (rename-equiv M₁≈M₂) c₁≈c₂)
+    rename-equiv ≈-blame = ≈-blame
     
     subst-equiv : ∀{A B}{Γ}{M₁ : Γ , A ⊢₁ B}{M₂ : Γ , A ⊢₂ B}{N₁ : Γ ⊢₁ A}{N₂ : Γ ⊢₂ A}
        → M₁ ≈ M₂
@@ -190,13 +216,13 @@ module EquivCast
                → Σ[ N₂ ∈ (∅ ⊢₂ A) ] ((M₂ —→₂ N₂) × (N₁ ≈ N₂))
       simulate M₁≈M₂ (CC₁.ξ M—→₁M′)
           with plug-equiv-inv M₁≈M₂
-      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , eqv ⟩ ⟩ ⟩ rewrite eq
+      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ⟨ eqv , F₁≅F₂ ⟩ ⟩ ⟩ ⟩ rewrite eq
           with simulate eqv M—→₁M′
       ... | ⟨ N₂ , ⟨ M₂—→₂N₂ , N₁≈N₂ ⟩ ⟩ =
-          ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , plug-equiv M₁≈M₂ N₁≈N₂ ⟩ ⟩
+          ⟨ CC₂.plug N₂ F₂ , ⟨ CC₂.ξ M₂—→₂N₂ , plug-equiv F₁≅F₂ N₁≈N₂ ⟩ ⟩
       simulate M₁≈M₂ (CC₁.ξ-blame {ℓ = ℓ})
           with plug-equiv-inv M₁≈M₂
-      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ≈-blame ⟩ ⟩ ⟩ rewrite eq =
+      ... | ⟨ F₂ , ⟨ M₂ , ⟨ eq , ⟨ ≈-blame , F₁≅F₂ ⟩ ⟩ ⟩ ⟩ rewrite eq =
             ⟨ blame₂ ℓ , ⟨ CC₂.ξ-blame , ≈-blame ⟩ ⟩
       simulate {M₁ = (ƛ₁ N) · W} {M₂ = ((ƛ₂ L) ● V)} (≈-app (≈-lam b₁≈b₂) M₁≈M₃) (_—→₁_.β vW) =
          let vV = value-equiv M₁≈M₃ vW in
