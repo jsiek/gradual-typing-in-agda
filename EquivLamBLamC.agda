@@ -88,3 +88,30 @@ cod-equiv : ∀{A B C D : Type}{c₁ : CastB ((A ⇒ B) ⇒ (C ⇒ D))}{i₁ : C
           → c₁ ≈ c₂ 
           → (CastStruct.cod sB c₁ i₁) ≈ (CastStruct.cod sC c₂ i₂)
 cod-equiv {c₁ = cast .(_ ⇒ _) .(_ ⇒ _) ℓ (fun~ ca bd)} {I-fun _} {cfun c₂ d₂} {I-fun} (≈-fun c₁≈c₂ c₁≈c₃) = c₁≈c₃
+
+fst-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert sB c₁}
+                             {c₂ : CastC ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert sC c₂}
+          → c₁ ≈ c₂ 
+          → (CastStruct.fstC sB c₁ i₁) ≈ (CastStruct.fstC sC c₂ i₂)
+fst-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ (pair~ ca bd)} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
+
+snd-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert sB c₁}
+                             {c₂ : CastC ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert sC c₂}
+          → c₁ ≈ c₂ 
+          → (CastStruct.sndC sB c₁ i₁) ≈ (CastStruct.sndC sC c₂ i₂)
+snd-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ (pair~ ca bd)} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
+
+inl-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert sB c₁}
+                             {c₂ : CastC ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert sC c₂}
+          → c₁ ≈ c₂ 
+          → (CastStruct.inlC sB c₁ i₁) ≈ (CastStruct.inlC sC c₂ i₂)
+inl-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ (sum~ ca bd)} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
+
+inr-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert sB c₁}
+                             {c₂ : CastC ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert sC c₂}
+          → c₁ ≈ c₂ 
+          → (CastStruct.inrC sB c₁ i₁) ≈ (CastStruct.inrC sC c₂ i₂)
+inr-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ (sum~ ca bd)} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
+
+module EqBC = EquivBC.Equiv _≈_ inert-equiv active-equiv dom-equiv cod-equiv fst-equiv snd-equiv inl-equiv inr-equiv
+

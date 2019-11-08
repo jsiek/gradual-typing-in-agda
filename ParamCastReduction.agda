@@ -1,4 +1,5 @@
 open import Types
+open import Labels
 open import Data.Nat
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -307,6 +308,42 @@ module ParamCastReduction
         → case (V ⟨ c ⟩) W₁ W₂ —→
           case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
                  (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
+
+    infix  2 _—↠_
+    infixr 2 _—→⟨_⟩_
+    infix  3 _∎
+
+    data _—↠_ : ∀{Γ}{A} → Γ ⊢ A → Γ ⊢ A → Set where
+      _∎ : ∀ {Γ}{A} (M : Γ ⊢ A)
+          ---------
+        → M —↠ M
+
+      _—→⟨_⟩_ : ∀ {Γ}{A} (L : Γ ⊢ A) {M N : Γ ⊢ A}
+        → L —→ M
+        → M —↠ N
+          ---------
+        → L —↠ N
+
+    data Observe : Set where
+      O-const : ∀{A} → rep A → Observe
+      O-fun : Observe
+      O-pair : Observe
+      O-sum : Observe
+      O-blame : Label → Observe
+
+    observe : ∀ {Γ A} → (V : Γ ⊢ A) → Value V → Observe
+    observe .(ƛ _) V-ƛ = O-fun
+    observe {A = A} ($ k) V-const = O-const {A} k
+    observe .(cons _ _) (V-pair v v₁) = O-pair
+    observe .(inl _) (V-inl v) = O-sum
+    observe .(inr _) (V-inr v) = O-sum
+    observe (V ⟨ c ⟩) (V-cast v) = observe V v
+
+    data Eval : ∀ {Γ A} → (Γ ⊢ A) → Observe → Set where
+      eval : ∀{Γ}{A}{M V : Γ ⊢ A}
+           → M —↠ V
+           → (v : Value V)
+           → Eval M (observe V v)
 
     {-
 

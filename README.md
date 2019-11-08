@@ -57,6 +57,8 @@ Inventory
    indirections. ("lazy UD")
 * [EquivCast](./EquivCast.agda): Proof of equivalence (simulation)
    between two instances of the Parameterized Cast Calculus.
+* [EquivLamBLamC](./EquivLamBLamC.agda): Proof that 
+   λC simulates λB, by insantiating the above EquivCast module.
 * [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
    forgetful contracts. (UNDER CONSTRUCTION)
 
