@@ -206,7 +206,7 @@ module Types where
     unk~R : ∀ {A} → A ~ ⋆
     base~ : ∀{ι} → ` ι ~ ` ι
     fun~ : ∀{A B A' B'}
-      → A ~ A'  →  B ~ B'
+      → A' ~ A  →  B ~ B'
         -------------------
       → (A ⇒ B) ~ (A' ⇒ B')
     pair~ : ∀{A B A' B'}
@@ -218,6 +218,14 @@ module Types where
         -------------------
       → (A `⊎ B) ~ (A' `⊎ B')
 
+  Sym~ : ∀ {A B} → A ~ B → B ~ A
+  Sym~ unk~L = unk~R
+  Sym~ unk~R = unk~L
+  Sym~ base~ = base~
+  Sym~ (fun~ c c₁) = fun~ (Sym~ c) (Sym~ c₁)
+  Sym~ (pair~ c c₁) = pair~ (Sym~ c) (Sym~ c₁)
+  Sym~ (sum~ c c₁) = sum~ (Sym~ c) (Sym~ c₁)
+
   consis : ∀{C A B}
       → A ⊑ C → B ⊑ C
         -------------
@@ -226,11 +234,14 @@ module Types where
   consis base⊑ unk⊑ = unk~R
   consis base⊑ base⊑ = base~
   consis (fun⊑ ac ac₁) unk⊑ = unk~R
-  consis (fun⊑ ac ac₁) (fun⊑ bc bc₁) = fun~ (consis ac bc) (consis ac₁ bc₁)
+  consis (fun⊑ ac ac₁) (fun⊑ bc bc₁) = fun~ (consis bc ac) (consis ac₁ bc₁)
   consis (pair⊑ ac ac₁) unk⊑ = unk~R
   consis (pair⊑ ac ac₁) (pair⊑ bc bc₁) = pair~ (consis ac bc) (consis ac₁ bc₁)
   consis (sum⊑ ac ac₁) unk⊑ = unk~R
   consis (sum⊑ ac ac₁) (sum⊑ bc bc₁) = sum~ (consis ac bc) (consis ac₁ bc₁)
+
+  Refl~ : ∀ {A} → A ~ A
+  Refl~ {A} = consis Refl⊑ Refl⊑
 
   consis-ub : ∀{A B} → A ~ B → Σ[ C ∈ Type ] A ⊑ C × B ⊑ C
   consis-ub{B = B} unk~L = ⟨ B , ⟨ unk⊑ , Refl⊑ ⟩ ⟩
@@ -239,7 +250,7 @@ module Types where
   consis-ub (fun~ ab₁ ab₂)
       with consis-ub ab₁ | consis-ub ab₂
   ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
-        ⟨ C₁ ⇒ C₂ , ⟨ (fun⊑ ac1 ac2) , fun⊑ bc1 bc2 ⟩ ⟩
+        ⟨ C₁ ⇒ C₂ , ⟨ (fun⊑ bc1 ac2) , fun⊑ ac1 bc2 ⟩ ⟩
   consis-ub (pair~ ab₁ ab₂)
       with consis-ub ab₁ | consis-ub ab₂
   ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
@@ -248,17 +259,6 @@ module Types where
       with consis-ub ab₁ | consis-ub ab₂
   ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
         ⟨ C₁ `⊎ C₂ , ⟨ (sum⊑ ac1 ac2) , sum⊑ bc1 bc2 ⟩ ⟩
-
-  Refl~ : ∀ {A} → A ~ A
-  Refl~ {A} = consis Refl⊑ Refl⊑
-
-  Sym~ : ∀ {A B} → A ~ B → B ~ A
-  Sym~ unk~L = unk~R
-  Sym~ unk~R = unk~L
-  Sym~ base~ = base~
-  Sym~ (fun~ c c₁) = fun~ (Sym~ c) (Sym~ c₁)
-  Sym~ (pair~ c c₁) = pair~ (Sym~ c) (Sym~ c₁)
-  Sym~ (sum~ c c₁) = sum~ (Sym~ c) (Sym~ c₁)
 
   ub : (C : Type) → (A : Type) → (B : Type) → Set
   ub C A B = (A ⊑ C) × (B ⊑ C)
@@ -271,16 +271,19 @@ module Types where
   (.⋆ `⊔ B) {unk~L} = ⟨ B , ⟨ ⟨ unk⊑ , Refl⊑ ⟩ , (λ x → proj₂ x) ⟩ ⟩
   (A `⊔ .⋆) {unk~R} = ⟨ A , ⟨ ⟨ Refl⊑ , unk⊑ ⟩ , (λ {C'} → proj₁) ⟩ ⟩
   (` ι `⊔ ` ι) {base~} = ⟨ ` ι , ⟨ ⟨ base⊑ , base⊑ ⟩ , (λ {x} → proj₁) ⟩ ⟩
-  ((A ⇒ B) `⊔ (A' ⇒ B')) {fun~ c c₁} with (A `⊔ A') {c} | (B `⊔ B') {c₁}
+  ((A ⇒ B) `⊔ (A' ⇒ B')) {fun~ c c₁} with (A' `⊔ A) {c} | (B `⊔ B') {c₁}
   ... | ⟨ C , lub1 ⟩ | ⟨ D , lub2 ⟩ =
     let x = fun⊑ (proj₁ (proj₁ lub1)) (proj₁ (proj₁ lub2)) in
     let y = fun⊑ (proj₂ (proj₁ lub1)) (proj₂ (proj₁ lub2))in 
-    ⟨ (C ⇒ D) , ⟨ ⟨ x , y ⟩ , G ⟩ ⟩
+    ⟨ (C ⇒ D) ,
+    ⟨ ⟨ fun⊑ (proj₂ (proj₁ lub1)) (proj₁ (proj₁ lub2)) ,
+        fun⊑ (proj₁ (proj₁ lub1)) (proj₂ (proj₁ lub2)) ⟩ ,
+      G ⟩ ⟩
     where
     G : {C' : Type} →
         Σ (A ⇒ B ⊑ C') (λ x₁ → A' ⇒ B' ⊑ C') → C ⇒ D ⊑ C'
     G {.(_ ⇒ _)} ⟨ fun⊑ a-b-cp a-b-cp₁ , fun⊑ ap-bp-cp ap-bp-cp₁ ⟩ =
-      fun⊑ (proj₂ lub1 ⟨ a-b-cp , ap-bp-cp ⟩)
+      fun⊑ (proj₂ lub1 ⟨ ap-bp-cp , a-b-cp ⟩)
            (proj₂ lub2 ⟨ a-b-cp₁ , ap-bp-cp₁ ⟩)
 
   ((A `× B) `⊔ (A' `× B')) {pair~ c c₁} with (A `⊔ A') {c} | (B `⊔ B') {c₁}
@@ -322,7 +325,7 @@ module Types where
   ...    | ⟨ B , ⟨ q1 , q2 ⟩ ⟩ = consis {B} (proj₂ q1) (q2 q1)
 
   ~⇒L : ∀{A B A' B'} → (A ⇒ B) ~ (A' ⇒ B') → A ~ A'
-  ~⇒L (fun~ c c₁) = c
+  ~⇒L (fun~ c c₁) = Sym~ c
 
   ~⇒R : ∀{A B A' B'} → (A ⇒ B) ~ (A' ⇒ B') → B ~ B'
   ~⇒R (fun~ c c₁) = c₁
@@ -425,7 +428,7 @@ module Types where
     → ¬ (A ~ B)
       ------------------------
     →  ¬ ((A ⇒ A') ~ (B ⇒ B'))
-  ¬~fL {A} {B} {A'} {B'} d1 (fun~ c c₁) = d1 c
+  ¬~fL {A} {B} {A'} {B'} d1 (fun~ c c₁) = d1 (Sym~ c)
 
   ¬~fR : ∀ {A B A' B'}
     → ¬ (A' ~ B')
@@ -506,7 +509,7 @@ module Types where
   (A ⇒ A₁) `~ (` ι) = no (λ ())
   (A ⇒ A₁) `~ (B ⇒ B₁)
       with A `~ B | A₁ `~ B₁
-  ... | yes ab | yes a1b1 = yes (fun~ ab a1b1)
+  ... | yes ab | yes a1b1 = yes (fun~ (Sym~ ab) a1b1)
   ... | yes ab | no a1b1 = no (¬~fR a1b1)
   ... | no ab  | _ = no (¬~fL ab)
   (A ⇒ A₁) `~ (B `× B₁) = no (λ ())
@@ -612,7 +615,7 @@ module Types where
   ground : (A : Type) → {nd : A ≢ ⋆} → Σ[ B ∈ Type ] Ground B × (A ~ B)
   ground ⋆ {nd} = ⊥-elim (nd refl)
   ground (` ι) {nd} = ⟨ ` ι , ⟨ G-Base , base~ ⟩ ⟩
-  ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~R unk~R ⟩ ⟩
+  ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~L unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
   ground (A `⊎ A₁) {nd} = ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , sum~ unk~R unk~R ⟩ ⟩
 
@@ -684,3 +687,4 @@ module Types where
 
   ¬⌣ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ⌣ ` ι')
   ¬⌣ii neq base⌣ = neq refl
+

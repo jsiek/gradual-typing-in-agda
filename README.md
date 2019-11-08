@@ -55,9 +55,8 @@ Inventory
 * [HyperCoercions](./HyperCoercions.agda): A alternative to
    λS that optimizes the coercion representation by removing
    indirections. ("lazy UD")
-* [EquivCast](./EquivCast.agda): Proof of equivalence of
-   the Parameterized Cast Calculus and 
-   the space-efficient version of it. (UNDER CONSTRUCTION)
+* [EquivCast](./EquivCast.agda): Proof of equivalence (simulation)
+   between two instances of the Parameterized Cast Calculus.
 * [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
    forgetful contracts. (UNDER CONSTRUCTION)
 

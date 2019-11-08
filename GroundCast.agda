@@ -34,14 +34,14 @@ module GroundCast where
    -}
 
   data Cast : Type → Set where
-    cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B)
+    cast : (A : Type) → (B : Type) → Label → A ~ B → Cast (A ⇒ B)
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
   open CastCalc
 
   import GTLC2CC
-  module Compile = GTLC2CC Cast cast
+  module Compile = GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c)
   
   {-
 
@@ -81,22 +81,22 @@ n  -}
    -}
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
-  ActiveOrInert (cast .⋆ B ℓ {unk~L}) with eq-unk B
-  ... | yes eqb rewrite eqb = inj₁ (A-id {⋆} {A-Unk} (cast ⋆ ⋆ ℓ))
-  ... | no neqb = inj₁ (A-proj (cast ⋆ B ℓ) neqb)
-  ActiveOrInert (cast A .⋆ ℓ {unk~R}) with eq-unk A
-  ... | yes eqa rewrite eqa = inj₁ (A-id {⋆}{A-Unk} (cast ⋆ ⋆ ℓ))
+  ActiveOrInert (cast .⋆ B ℓ unk~L) with eq-unk B
+  ... | yes eqb rewrite eqb = inj₁ (A-id {⋆} {A-Unk} (cast ⋆ ⋆ ℓ unk~L))
+  ... | no neqb = inj₁ (A-proj (cast ⋆ B ℓ unk~L) neqb)
+  ActiveOrInert (cast A .⋆ ℓ unk~R) with eq-unk A
+  ... | yes eqa rewrite eqa = inj₁ (A-id {⋆}{A-Unk} (cast ⋆ ⋆ ℓ unk~R))
   ... | no neqa with ground? A
-  ...    | yes g = inj₂ (I-inj g (cast A ⋆ ℓ))
-  ...    | no ng = inj₁ (A-inj (cast A ⋆ ℓ) ng neqa)
-  ActiveOrInert (cast (` ι) (` ι) ℓ {base~}) =
-     inj₁ (A-id {` ι}{A-Base} (cast (` ι) (` ι) ℓ))
-  ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ {fun~ c c₁}) =
-     inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ))
-  ActiveOrInert (cast (A `× B) (A' `× B') ℓ {pair~ c c₁}) =
-     inj₁ (A-pair (cast (A `× B) (A' `× B') ℓ))
-  ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ {sum~ c c₁}) =
-     inj₁ (A-sum (cast (A `⊎ B) (A' `⊎ B') ℓ))
+  ...    | yes g = inj₂ (I-inj g (cast A ⋆ ℓ unk~R))
+  ...    | no ng = inj₁ (A-inj (cast A ⋆ ℓ unk~R) ng neqa)
+  ActiveOrInert (cast (` ι) (` ι) ℓ base~) =
+     inj₁ (A-id {` ι}{A-Base} (cast (` ι) (` ι) ℓ base~))
+  ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c c₁)) =
+     inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c c₁)))
+  ActiveOrInert (cast (A `× B) (A' `× B') ℓ (pair~ c c₁)) =
+     inj₁ (A-pair (cast (A `× B) (A' `× B') ℓ (pair~ c c₁)))
+  ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ (sum~ c c₁)) =
+     inj₁ (A-sum (cast (A `⊎ B) (A' `⊎ B') ℓ (sum~ c c₁)))
 
   {-
 
@@ -131,13 +131,13 @@ n  -}
   {-
     V : A ⇒ ⋆   —→   V : A ⇒ G ⇒ ⋆
    -}
-  applyCast M v (cast A ⋆ ℓ) {A-inj c a-ng a-nd} with ground A {a-nd}
-  ... | [ G , cns ] = (M ⟨ cast A G ℓ {proj₂ cns} ⟩) ⟨ cast G ⋆ ℓ {unk~R} ⟩
+  applyCast M v (cast A ⋆ ℓ cn) {A-inj c a-ng a-nd} with ground A {a-nd}
+  ... | [ G , cns ] = (M ⟨ cast A G ℓ (proj₂ cns) ⟩) ⟨ cast G ⋆ ℓ unk~R ⟩
   {-
     V : G ⇒p ⋆ ⇒q G  —→   V
     V : G ⇒p ⋆ ⇒q H  —→   blame q
    -}
-  applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} with ground? B
+  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd} with ground? B
   ... | yes b-g with PCR.canonical⋆ M v
   ...      | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
                  with gnd-eq? G B {inert-ground c' i} {b-g}
@@ -146,23 +146,23 @@ n  -}
   {-
     V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
    -}
-  applyCast M v (cast ⋆ B ℓ) {A-proj c b-nd} | no b-ng with ground B {b-nd}
+  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd} | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
-           (M ⟨ cast ⋆ H ℓ {unk~L} ⟩) ⟨ cast H B ℓ {Sym~ cns} ⟩
+           (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
   
-  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ {pair~ c c₁}) {A-pair _} =
-    cons (fst M ⟨ cast A₁ B₁ ℓ {c} ⟩) (snd M ⟨ cast A₂ B₂ ℓ {c₁}⟩)
+  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ (pair~ c c₁)) {A-pair _} =
+    cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ c₁ ⟩)
     
-  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ {sum~ c c₁}) {A-sum _} =
-    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ {c}⟩) in
-    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
+  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ (sum~ c c₁)) {A-sum _} =
+    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
+    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ c₁ ⟩) in
     case M (ƛ l) (ƛ r)
 
 
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
+  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x cn) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
 
   pairSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
@@ -176,13 +176,13 @@ n  -}
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
-      cast A' A₁ ℓ {c = Sym~ (~⇒L c)}
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ (fun~ c d)) (I-fun _) =
+      cast A' A₁ ℓ c
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (I-fun _) =
-      cast A₂ B' ℓ {~⇒R c}
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ (fun~ c d)) (I-fun _) =
+      cast A₂ B' ℓ d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          → Cast (A₁ ⇒ A')
