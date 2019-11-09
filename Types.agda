@@ -688,3 +688,17 @@ module Types where
   ¬⌣ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ⌣ ` ι')
   ¬⌣ii neq base⌣ = neq refl
 
+{-
+  consis-eq : ∀{A B} (c : A ~ B)→ (d : A ~ B) → c ≡ d
+  consis-eq {⋆} {⋆} unk~L unk~L = {!!}
+  consis-eq {⋆} {⋆} unk~L unk~R = {!!}
+  consis-eq {⋆} {⋆} unk~R d = {!!}
+  consis-eq {⋆} {` x} c d = {!!}
+  consis-eq {⋆} {B ⇒ B₁} c d = {!!}
+  consis-eq {⋆} {B `× B₁} c d = {!!}
+  consis-eq {⋆} {B `⊎ B₁} c d = {!!}
+  consis-eq {` x} {B} c d = {!!}
+  consis-eq {A ⇒ A₁} {B} c d = {!!}
+  consis-eq {A `× A₁} {B} c d = {!!}
+  consis-eq {A `⊎ A₁} {B} c d = {!!}
+-}

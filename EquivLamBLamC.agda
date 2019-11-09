@@ -1,11 +1,16 @@
 open import Types
+open import Variables
 open import CastStructure
 open import Labels
 import EquivCast
 
+open import Data.Empty using (⊥; ⊥-elim)
+open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+     renaming (_,_ to ⟨_,_⟩)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-open import Data.Empty using (⊥; ⊥-elim)
+open import Relation.Binary.PropositionalEquality
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
 module EquivLamBLamC where
 
@@ -45,12 +50,13 @@ data _≈_ : ∀{A B} → CastB (A ⇒ B) → CastC (A ⇒ B) → Set where
           → cast B D ℓ bd ≈ d
           → cast (A `⊎ B) (C `⊎ D) ℓ (sum~ ac bd) ≈ csum c d
 
-   ≈-inj-seq : ∀{A G}{g : Ground G}{¬gA : ¬ Ground A}{ag : A ~ G}{gs : G ~ ⋆}{ℓ : Label}{c : CastC (A ⇒ G)}{d : CastC (G ⇒ ⋆)}{as : A ~ ⋆}
+   ≈-inj-seq : ∀{A G}{nA : A ≢ ⋆}{g : Ground G}{¬gA : ¬ Ground A}{ag : A ~ G}{gs : G ~ ⋆}{ℓ : Label}{c : CastC (A ⇒ G)}{d : CastC (G ⇒ ⋆)}{as : A ~ ⋆}
+          → ground A {nA} ≡ ⟨ G , ⟨ g , ag ⟩ ⟩
           → cast A G ℓ ag ≈ c
           → cast G ⋆ ℓ gs ≈ d
           → cast A ⋆ ℓ as ≈ cseq c d
 
-   ≈-proj-seq : ∀{A G}{g : Ground G}{¬gA : ¬ Ground A}{sg : ⋆ ~ G}{ga : G ~ A}{ℓ : Label}{c : CastC (⋆ ⇒ G)}{d : CastC (G ⇒ A)}{sa : ⋆ ~ A}
+   ≈-proj-seq : ∀{A G}{nA : A ≢ ⋆}{g : Ground G}{¬gA : ¬ Ground A}{sg : ⋆ ~ G}{ga : G ~ A}{ℓ : Label}{c : CastC (⋆ ⇒ G)}{d : CastC (G ⇒ A)}{sa : ⋆ ~ A}
           → cast ⋆ G ℓ sg ≈ c
           → cast G A ℓ ga ≈ d
           → cast ⋆ A ℓ sa ≈ cseq c d
@@ -58,21 +64,21 @@ data _≈_ : ∀{A B} → CastB (A ⇒ B) → CastC (A ⇒ B) → Set where
 inert-equiv : ∀{A B : Type}{c₁ : CastB (A ⇒ B)}{c₂ : CastC (A ⇒ B)}
             → CastStruct.Inert sB c₁ → c₁ ≈ c₂ → CastStruct.Inert sC c₂
 inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) ≈-inj = I-inj
-inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) (≈-inj-seq {¬gA = ¬gA} c₁≈c₂ c₁≈c₃) = ⊥-elim (contradiction gA ¬gA)
+inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) (≈-inj-seq {¬gA = ¬gA} refl c₁≈c₂ c₁≈c₃) = ⊥-elim (contradiction gA ¬gA)
 inert-equiv (I-fun _) (≈-fun c₁≈c₂ c₁≈c₃) = I-fun
 
 active-equiv : ∀{A B : Type}{c₁ : CastB (A ⇒ B)}{c₂ : CastC (A ⇒ B)}
             → CastStruct.Active sB c₁ → c₁ ≈ c₂ → CastStruct.Active sC c₂
 active-equiv {A} {.A} (A-id .(cast A A _ _)) ≈-id = A-id
-active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-inj .(cast ⋆ ⋆ _ _) x x₁) ≈-id = A-id
 active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) ¬gA x₁) (≈-inj{g = gA}) = ⊥-elim (contradiction gA ¬gA)
-active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) x x₁) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) x x₁) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-inj .(cast ⋆ ⋆ _ _) x x₁) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) ≈-id = A-id
 active-equiv {.⋆} {B} (A-proj .(cast ⋆ B _ _) x) ≈-proj = A-proj
-active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {B} (A-proj .(cast ⋆ B _ _) x) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.(_ `× _)} {.(_ `× _)} (A-pair .(cast (_ `× _) (_ `× _) _ _)) (≈-pair c₁≈c₂ c₁≈c₃) = A-pair
 active-equiv {.(_ `⊎ _)} {.(_ `⊎ _)} (A-sum .(cast (_ `⊎ _) (_ `⊎ _) _ _)) (≈-sum c₁≈c₂ c₁≈c₃) = A-sum
@@ -115,3 +121,58 @@ inr-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ (sum~ ca bd)} {()} {csum c₂
 
 module EqBC = EquivBC.Equiv _≈_ inert-equiv active-equiv dom-equiv cod-equiv fst-equiv snd-equiv inl-equiv inr-equiv
 
+
+open LamB using (`_; _·_; $_; V-ƛ; V-const; V-pair; V-inl; V-inr; V-cast) renaming (rename to rename₁;
+       _⊢_ to _⊢₁_; ƛ_ to ƛ₁_; _⟨_⟩ to _⟨_⟩₁;
+       if to if₁; cons to cons₁; fst to fst₁; snd to snd₁;
+       inl to inl₁; inr to inr₁; case to case₁; blame to blame₁; _[_] to _[_]₁;
+       _—→_ to _—→₁_)
+open LamC using ()
+     renaming (rename to rename₂;
+       _⊢_ to _⊢₂_; `_ to ``_; ƛ_ to ƛ₂_; _·_ to _●_; $_ to #_;
+       if to if₂; cons to cons₂; fst to fst₂; snd to snd₂; _[_] to _[_]₂;
+       inl to inl₂; inr to inr₂; case to case₂; _⟨_⟩ to _⟨_⟩₂;
+       blame to blame₂;
+       _—→_ to _—→₂_)
+
+open EqBC renaming (_≈_ to _≊_)
+
+
+ground-eq : ∀{A nA1 nA2 G1 G2 g1 g2 eq1 eq2}
+          → ground A {nA1} ≡ ⟨ G1 , ⟨ g1 , eq1 ⟩ ⟩
+          → ground A {nA2} ≡ ⟨ G2 , ⟨ g2 , eq2 ⟩ ⟩
+          → G1 ≡ G2
+ground-eq {⋆}{nA1} eq1 eq2 = ⊥-elim (nA1 refl)
+ground-eq {` x} refl refl = refl
+ground-eq {A ⇒ A₁} refl refl = refl
+ground-eq {A `× A₁} refl refl = refl
+ground-eq {A `⊎ A₁} refl refl = refl
+
+applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM₁ : LamB.Value M₁}{vM₂ : LamC.Value M₂}
+                          {c₁ : CastB (A ⇒ B)}{a₁ : CastStruct.Active sB c₁}
+                          {c₂ : CastC (A ⇒ B)}{a₂ : CastStruct.Active sC c₂}
+              → M₁ ≊ M₂
+              → c₁ ≈ c₂
+              → CastStruct.applyCast sB M₁ vM₁ c₁ {a₁} ≊ CastStruct.applyCast sC M₂ vM₂ c₂ {a₂}
+applyCast-equiv {vM₁ = V-ƛ} {vM₂} {.(cast (_ ⇒ _) ⋆ _ _)} {A-inj .(cast (_ ⇒ _) ⋆ _ _) x x₁} {.(cseq _ _)} {a₂}
+    (≈-lam M₁≅M₂) (≈-inj-seq {G = ⋆ ⇒ ⋆}{ag = fun~ _ _}{unk~R} refl c₁≈c₂ c₁≈c₃) = ≈-cast (≈-cast (≈-lam M₁≅M₂) c₁≈c₂) c₁≈c₃
+applyCast-equiv {vM₁ = V-const} {vM₂} {a₁ = A-id _}{a₂ = a₂} ≈-lit (≈-id {a = A-Base}) = ≈-lit
+applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = a₂} ≈-lit (≈-inj-seq{G = G} {nA = nA} refl c₁≈c₂ c₁≈c₃) = ?
+{-
+    rewrite ground-eq {A}{A≢⋆}{nA} refl refl
+    with ground A {A≢⋆} 
+... | ⟨ G' , ⟨ g1 , ag1 ⟩ ⟩
+    with ground A {nA}
+... | ⟨ G'' , ⟨ g2 , ag2 ⟩ ⟩ = {!!}
+    
+    with ground A {A≢⋆} | ground A {nA}
+... | ⟨ G' , ⟨ g , ag ⟩ ⟩ | ⟨ G , ⟨ _ , _ ⟩ ⟩ 
+    rewrite ground-eq {A}{nA}{A≢⋆} refl refl = {!!}
+
+    rewrite ground-eq {A}{nA}{A≢⋆} refl refl | eq  
+-}
+
+applyCast-equiv {vM₁ = V-pair vM₁ vM₃} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
+applyCast-equiv {vM₁ = V-inl vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
+applyCast-equiv {vM₁ = V-inr vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
+applyCast-equiv {vM₁ = V-cast vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
