@@ -51,7 +51,6 @@ data _≈_ : ∀{A B} → CastB (A ⇒ B) → CastC (A ⇒ B) → Set where
           → cast (A `⊎ B) (C `⊎ D) ℓ (sum~ ac bd) ≈ csum c d
 
    ≈-inj-seq : ∀{A G}{nA : A ≢ ⋆}{g : Ground G}{¬gA : ¬ Ground A}{ag : A ~ G}{gs : G ~ ⋆}{ℓ : Label}{c : CastC (A ⇒ G)}{d : CastC (G ⇒ ⋆)}{as : A ~ ⋆}
-          → ground A {nA} ≡ ⟨ G , ⟨ g , ag ⟩ ⟩
           → cast A G ℓ ag ≈ c
           → cast G ⋆ ℓ gs ≈ d
           → cast A ⋆ ℓ as ≈ cseq c d
@@ -64,21 +63,21 @@ data _≈_ : ∀{A B} → CastB (A ⇒ B) → CastC (A ⇒ B) → Set where
 inert-equiv : ∀{A B : Type}{c₁ : CastB (A ⇒ B)}{c₂ : CastC (A ⇒ B)}
             → CastStruct.Inert sB c₁ → c₁ ≈ c₂ → CastStruct.Inert sC c₂
 inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) ≈-inj = I-inj
-inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) (≈-inj-seq {¬gA = ¬gA} refl c₁≈c₂ c₁≈c₃) = ⊥-elim (contradiction gA ¬gA)
+inert-equiv {A} {⋆} (I-inj gA (cast A ⋆ ℓ as)) (≈-inj-seq {¬gA = ¬gA} c₁≈c₂ c₁≈c₃) = ⊥-elim (contradiction gA ¬gA)
 inert-equiv (I-fun _) (≈-fun c₁≈c₂ c₁≈c₃) = I-fun
 
 active-equiv : ∀{A B : Type}{c₁ : CastB (A ⇒ B)}{c₂ : CastC (A ⇒ B)}
             → CastStruct.Active sB c₁ → c₁ ≈ c₂ → CastStruct.Active sC c₂
 active-equiv {A} {.A} (A-id .(cast A A _ _)) ≈-id = A-id
-active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-id .(cast ⋆ ⋆ _ _)) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-inj .(cast ⋆ ⋆ _ _) x x₁) ≈-id = A-id
 active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) ¬gA x₁) (≈-inj{g = gA}) = ⊥-elim (contradiction gA ¬gA)
-active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) x x₁) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {A} {.⋆} (A-inj .(cast A ⋆ _ _) x x₁) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-inj .(cast ⋆ ⋆ _ _) x x₁) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) ≈-id = A-id
 active-equiv {.⋆} {B} (A-proj .(cast ⋆ B _ _) x) ≈-proj = A-proj
-active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) (≈-inj-seq refl c₁≈c₂ c₁≈c₃) = A-seq
+active-equiv {.⋆} {.⋆} (A-proj .(cast ⋆ ⋆ _ _) x) (≈-inj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.⋆} {B} (A-proj .(cast ⋆ B _ _) x) (≈-proj-seq c₁≈c₂ c₁≈c₃) = A-seq
 active-equiv {.(_ `× _)} {.(_ `× _)} (A-pair .(cast (_ `× _) (_ `× _) _ _)) (≈-pair c₁≈c₂ c₁≈c₃) = A-pair
 active-equiv {.(_ `⊎ _)} {.(_ `⊎ _)} (A-sum .(cast (_ `⊎ _) (_ `⊎ _) _ _)) (≈-sum c₁≈c₂ c₁≈c₃) = A-sum
@@ -87,37 +86,37 @@ dom-equiv : ∀{A B C D : Type}{c₁ : CastB ((A ⇒ B) ⇒ (C ⇒ D))}{i₁ : C
                              {c₂ : CastC ((A ⇒ B) ⇒ (C ⇒ D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.dom sB c₁ i₁) ≈ (CastStruct.dom sC c₂ i₂)
-dom-equiv {c₁ = cast .(_ ⇒ _) .(_ ⇒ _) ℓ (fun~ ca bd)} {I-fun _} {cfun c₂ d₂} {I-fun} (≈-fun c₁≈c₂ c₁≈c₃) = c₁≈c₂
+dom-equiv {c₁ = cast .(_ ⇒ _) .(_ ⇒ _) ℓ c} {I-fun _} {cfun c₂ d₂} {I-fun} (≈-fun c₁≈c₂ c₁≈c₃) = c₁≈c₂
 
 cod-equiv : ∀{A B C D : Type}{c₁ : CastB ((A ⇒ B) ⇒ (C ⇒ D))}{i₁ : CastStruct.Inert sB c₁}
                              {c₂ : CastC ((A ⇒ B) ⇒ (C ⇒ D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.cod sB c₁ i₁) ≈ (CastStruct.cod sC c₂ i₂)
-cod-equiv {c₁ = cast .(_ ⇒ _) .(_ ⇒ _) ℓ (fun~ ca bd)} {I-fun _} {cfun c₂ d₂} {I-fun} (≈-fun c₁≈c₂ c₁≈c₃) = c₁≈c₃
+cod-equiv {c₁ = cast .(_ ⇒ _) .(_ ⇒ _) ℓ c} {I-fun _} {cfun c₂ d₂} {I-fun} (≈-fun c₁≈c₂ c₁≈c₃) = c₁≈c₃
 
 fst-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert sB c₁}
                              {c₂ : CastC ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.fstC sB c₁ i₁) ≈ (CastStruct.fstC sC c₂ i₂)
-fst-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ (pair~ ca bd)} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
+fst-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ c} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
 
 snd-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `× B) ⇒ (C `× D))}{i₁ : CastStruct.Inert sB c₁}
                              {c₂ : CastC ((A `× B) ⇒ (C `× D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.sndC sB c₁ i₁) ≈ (CastStruct.sndC sC c₂ i₂)
-snd-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ (pair~ ca bd)} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
+snd-equiv {c₁ = cast .(_ `× _) .(_ `× _) ℓ c} {()} {cpair c₂ d₂} {()} (≈-pair c₁≈c₂ c₁≈c₃)
 
 inl-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert sB c₁}
                              {c₂ : CastC ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.inlC sB c₁ i₁) ≈ (CastStruct.inlC sC c₂ i₂)
-inl-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ (sum~ ca bd)} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
+inl-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ c} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
 
 inr-equiv : ∀{A B C D : Type}{c₁ : CastB ((A `⊎ B) ⇒ (C `⊎ D))}{i₁ : CastStruct.Inert sB c₁}
                              {c₂ : CastC ((A `⊎ B) ⇒ (C `⊎ D))}{i₂ : CastStruct.Inert sC c₂}
           → c₁ ≈ c₂ 
           → (CastStruct.inrC sB c₁ i₁) ≈ (CastStruct.inrC sC c₂ i₂)
-inr-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ (sum~ ca bd)} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
+inr-equiv {c₁ = cast .(_ `⊎ _) .(_ `⊎ _) ℓ c} {()} {csum c₂ d₂} {()} (≈-sum c₁≈c₂ c₁≈c₃)
 
 module EqBC = EquivBC.Equiv _≈_ inert-equiv active-equiv dom-equiv cod-equiv fst-equiv snd-equiv inl-equiv inr-equiv
 
@@ -148,6 +147,13 @@ ground-eq {A ⇒ A₁} refl refl = refl
 ground-eq {A `× A₁} refl refl = refl
 ground-eq {A `⊎ A₁} refl refl = refl
 
+ground-unique : ∀{G1 G2 A}{g1 : Ground G1}{g2 : Ground G2} → G1 ~ A → G2 ~ A → A ≢ ⋆ → G1 ≡ G2
+ground-unique {G1} {G2} {⋆} {g1} {g2} G1~A G2~A A≢⋆ = ⊥-elim (A≢⋆ refl)
+ground-unique {.(` x)} {G2} {` x} {g1} {g2} base~ base~ A≢⋆ = refl
+ground-unique {G1} {G2} {A ⇒ A₁} {G-Fun} {G-Fun} G1~A G2~A A≢⋆ = refl
+ground-unique {G1} {G2} {A `× A₁} {G-Pair} {G-Pair} G1~A G2~A A≢⋆ = refl
+ground-unique {G1} {G2} {A `⊎ A₁} {G-Sum} {G-Sum} G1~A G2~A A≢⋆ = refl
+
 applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM₁ : LamB.Value M₁}{vM₂ : LamC.Value M₂}
                           {c₁ : CastB (A ⇒ B)}{a₁ : CastStruct.Active sB c₁}
                           {c₂ : CastC (A ⇒ B)}{a₂ : CastStruct.Active sC c₂}
@@ -155,23 +161,14 @@ applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM�
               → c₁ ≈ c₂
               → CastStruct.applyCast sB M₁ vM₁ c₁ {a₁} ≊ CastStruct.applyCast sC M₂ vM₂ c₂ {a₂}
 applyCast-equiv {vM₁ = V-ƛ} {vM₂} {.(cast (_ ⇒ _) ⋆ _ _)} {A-inj .(cast (_ ⇒ _) ⋆ _ _) x x₁} {.(cseq _ _)} {a₂}
-    (≈-lam M₁≅M₂) (≈-inj-seq {G = ⋆ ⇒ ⋆}{ag = fun~ _ _}{unk~R} refl c₁≈c₂ c₁≈c₃) = ≈-cast (≈-cast (≈-lam M₁≅M₂) c₁≈c₂) c₁≈c₃
+    (≈-lam M₁≅M₂) (≈-inj-seq {G = ⋆ ⇒ ⋆}{ag = fun~ _ _}{unk~R} c₁≈c₂ c₁≈c₃) = ≈-cast (≈-cast (≈-lam M₁≅M₂) c₁≈c₂) c₁≈c₃
 applyCast-equiv {vM₁ = V-const} {vM₂} {a₁ = A-id _}{a₂ = a₂} ≈-lit (≈-id {a = A-Base}) = ≈-lit
-applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = a₂} ≈-lit (≈-inj-seq{G = G} {nA = nA} refl c₁≈c₂ c₁≈c₃) = {!!}
-{-
-    rewrite ground-eq {A}{A≢⋆}{nA} refl refl
+applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = a₂} ≈-lit (≈-inj-seq{G = G}{nA = nA}{g = gG}{ag = A~G} c₁≈c₂ c₁≈c₃)
     with ground A {A≢⋆} 
-... | ⟨ G' , ⟨ g1 , ag1 ⟩ ⟩
-    with ground A {nA}
-... | ⟨ G'' , ⟨ g2 , ag2 ⟩ ⟩ = {!!}
-    
-    with ground A {A≢⋆} | ground A {nA}
-... | ⟨ G' , ⟨ g , ag ⟩ ⟩ | ⟨ G , ⟨ _ , _ ⟩ ⟩ 
-    rewrite ground-eq {A}{nA}{A≢⋆} refl refl = {!!}
-
-    rewrite ground-eq {A}{nA}{A≢⋆} refl refl | eq  
--}
-
+... | ⟨ G1 , ⟨ g1 , ag1 ⟩ ⟩
+    with ground-unique {g1 = g1}{g2 = gG} (Sym~ ag1) (Sym~ (A~G)) A≢⋆
+... | refl =    
+    ≈-cast (≈-cast ≈-lit c₁≈c₂) c₁≈c₃
 applyCast-equiv {vM₁ = V-pair vM₁ vM₃} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
 applyCast-equiv {vM₁ = V-inl vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
 applyCast-equiv {vM₁ = V-inr vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}

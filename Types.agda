@@ -522,7 +522,7 @@ module Types where
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
 
-  postulate irrelant-contra : ∀ {P : Set} → .P → ¬ P → Bot
+  postulate irrelant-contra : ∀ {P : Set} → .P → .(¬ P) → Bot
 
   ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'
   ~⇒L {A}{B}{A'}{B'} c
@@ -633,8 +633,8 @@ module Types where
   ground⊎2 : ∀{A}{B} → Ground (A `⊎ B) → B ≢ ⋆ → Bot
   ground⊎2 G-Sum nd = nd refl
 
-  ground : (A : Type) → {nd : A ≢ ⋆} → Σ[ B ∈ Type ] Ground B × (A ~ B)
-  ground ⋆ {nd} = ⊥-elim (nd refl)
+  ground : (A : Type) → .{nd : A ≢ ⋆} → Σ[ B ∈ Type ] Ground B × (A ~ B)
+  ground ⋆ {nd} = ⊥-elim (irrelant-contra refl nd)
   ground (` ι) {nd} = ⟨ ` ι , ⟨ G-Base , base~ ⟩ ⟩
   ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~L unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
