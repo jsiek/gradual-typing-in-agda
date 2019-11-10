@@ -34,7 +34,7 @@ module GroundCast where
    -}
 
   data Cast : Type → Set where
-    cast : (A : Type) → (B : Type) → Label → A ~ B → Cast (A ⇒ B)
+    cast : (A : Type) → (B : Type) → Label → .(A ~ B) → Cast (A ⇒ B)
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
@@ -80,23 +80,38 @@ n  -}
 
    -}
 
+  base-consis-eq : ∀ {ι ι' : Base} → .(` ι ~ ` ι') → ι ≡ ι'
+  base-consis-eq {Nat} {Nat} c = refl
+  base-consis-eq {Int} {Int} c = refl
+  base-consis-eq {𝔹} {𝔹} c = refl
+  base-consis-eq {Unit} {Unit} c = refl
+  base-consis-eq {Base.⊥} {Base.⊥} c = refl
+
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
-  ActiveOrInert (cast .⋆ B ℓ unk~L) with eq-unk B
-  ... | yes eqb rewrite eqb = inj₁ (A-id {⋆} {A-Unk} (cast ⋆ ⋆ ℓ unk~L))
-  ... | no neqb = inj₁ (A-proj (cast ⋆ B ℓ unk~L) neqb)
-  ActiveOrInert (cast A .⋆ ℓ unk~R) with eq-unk A
-  ... | yes eqa rewrite eqa = inj₁ (A-id {⋆}{A-Unk} (cast ⋆ ⋆ ℓ unk~R))
-  ... | no neqa with ground? A
-  ...    | yes g = inj₂ (I-inj g (cast A ⋆ ℓ unk~R))
-  ...    | no ng = inj₁ (A-inj (cast A ⋆ ℓ unk~R) ng neqa)
-  ActiveOrInert (cast (` ι) (` ι) ℓ base~) =
-     inj₁ (A-id {` ι}{A-Base} (cast (` ι) (` ι) ℓ base~))
-  ActiveOrInert (cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c c₁)) =
-     inj₂ (I-fun (cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c c₁)))
-  ActiveOrInert (cast (A `× B) (A' `× B') ℓ (pair~ c c₁)) =
-     inj₁ (A-pair (cast (A `× B) (A' `× B') ℓ (pair~ c c₁)))
-  ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ (sum~ c c₁)) =
-     inj₁ (A-sum (cast (A `⊎ B) (A' `⊎ B') ℓ (sum~ c c₁)))
+  ActiveOrInert {.(⋆ ⇒ ⋆)} (cast ⋆ ⋆ ℓ A~B) = inj₁ (A-id {a = A-Unk} (cast ⋆ ⋆ ℓ A~B))
+  ActiveOrInert {.(⋆ ⇒ ` ι)} (cast ⋆ (` ι) ℓ A~B) = inj₁ (A-proj (cast ⋆ (` ι) ℓ A~B) (λ ()))
+  ActiveOrInert {.(⋆ ⇒ (B ⇒ B₁))} (cast ⋆ (B ⇒ B₁) ℓ A~B) = inj₁ (A-proj (cast ⋆ (B ⇒ B₁) ℓ A~B) (λ ()))
+  ActiveOrInert {.(⋆ ⇒ B `× B₁)} (cast ⋆ (B `× B₁) ℓ A~B) = inj₁ (A-proj (cast ⋆ (B `× B₁) ℓ A~B) (λ ()))
+  ActiveOrInert {.(⋆ ⇒ B `⊎ B₁)} (cast ⋆ (B `⊎ B₁) ℓ A~B) = inj₁ (A-proj (cast ⋆ (B `⊎ B₁) ℓ A~B) (λ ()))
+  ActiveOrInert {.(` ι ⇒ ⋆)} (cast (` ι) ⋆ ℓ A~B) = inj₂ (I-inj G-Base (cast (` ι) ⋆ ℓ A~B))
+  ActiveOrInert {.(` ι ⇒ ` ι')} (cast (` ι) (` ι') ℓ A~B)
+      with base-consis-eq A~B
+  ... | refl = inj₁ (A-id {a = A-Base} (cast (` ι) (` ι) ℓ A~B))
+  ActiveOrInert {.((A ⇒ A₁) ⇒ ⋆)} (cast (A ⇒ A₁) ⋆ ℓ A~B)
+      with ground? (A ⇒ A₁)
+  ... | yes g = inj₂ (I-inj g (cast (A ⇒ A₁) ⋆ ℓ A~B))
+  ... | no ng = inj₁ (A-inj (cast (A ⇒ A₁) ⋆ ℓ A~B) ng (λ ()))
+  ActiveOrInert {.((A ⇒ A₁) ⇒ (B ⇒ B₁))} (cast (A ⇒ A₁) (B ⇒ B₁) ℓ A~B) = inj₂ (I-fun (cast (A ⇒ A₁) (B ⇒ B₁) ℓ A~B))
+  ActiveOrInert {.(A `× A₁ ⇒ ⋆)} (cast (A `× A₁) ⋆ ℓ A~B)
+      with ground? (A `× A₁)
+  ... | yes g = inj₂ (I-inj g (cast (A `× A₁) ⋆ ℓ A~B))
+  ... | no ng = inj₁ (A-inj (cast (A `× A₁) ⋆ ℓ A~B) ng (λ ()))
+  ActiveOrInert {.(A `× A₁ ⇒ B `× B₁)} (cast (A `× A₁) (B `× B₁) ℓ A~B) = inj₁ (A-pair (cast (A `× A₁) (B `× B₁) ℓ A~B))
+  ActiveOrInert {.(A `⊎ A₁ ⇒ ⋆)} (cast (A `⊎ A₁) ⋆ ℓ A~B)
+      with ground? (A `⊎ A₁)
+  ... | yes g = inj₂ (I-inj g (cast (A `⊎ A₁) ⋆ ℓ A~B))
+  ... | no ng = inj₁ (A-inj (cast (A `⊎ A₁) ⋆ ℓ A~B) ng (λ ()))
+  ActiveOrInert {.(A `⊎ A₁ ⇒ B `⊎ B₁)} (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B) = inj₁ (A-sum (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B))
 
   {-
 
@@ -150,14 +165,13 @@ n  -}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
   
-  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ (pair~ c c₁)) {A-pair _} =
-    cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ c₁ ⟩)
+  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c) {A-pair _} =
+    cons (fst M ⟨ cast A₁ B₁ ℓ (~×L c) ⟩) (snd M ⟨ cast A₂ B₂ ℓ (~×R c) ⟩)
     
-  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ (sum~ c c₁)) {A-sum _} =
-    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
-    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ c₁ ⟩) in
+  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c) {A-sum _} =
+    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ (~⊎L c) ⟩) in
+    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ (~⊎R c) ⟩) in
     case M (ƛ l) (ƛ r)
-
 
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
@@ -176,13 +190,13 @@ n  -}
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ (fun~ c d)) (I-fun _) =
-      cast A' A₁ ℓ c
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) (I-fun _) =
+      cast A' A₁ ℓ (Sym~ (~⇒L c))
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ (fun~ c d)) (I-fun _) =
-      cast A₂ B' ℓ d
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) (I-fun _) =
+      cast A₂ B' ℓ (~⇒R c)
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          → Cast (A₁ ⇒ A')
@@ -206,7 +220,6 @@ n  -}
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
-
 
   {-
   We now instantiate the inner module of ParamCastReduction, thereby
@@ -238,3 +251,4 @@ n  -}
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+

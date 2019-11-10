@@ -324,24 +324,6 @@ module Types where
   ⊔R {A}{A'}{c} with (A `⊔ A') {c}
   ...    | ⟨ B , ⟨ q1 , q2 ⟩ ⟩ = consis {B} (proj₂ q1) (q2 q1)
 
-  ~⇒L : ∀{A B A' B'} → (A ⇒ B) ~ (A' ⇒ B') → A ~ A'
-  ~⇒L (fun~ c c₁) = Sym~ c
-
-  ~⇒R : ∀{A B A' B'} → (A ⇒ B) ~ (A' ⇒ B') → B ~ B'
-  ~⇒R (fun~ c c₁) = c₁
-
-  ~×L : ∀{A B A' B'} → (A `× B) ~ (A' `× B') → A ~ A'
-  ~×L (pair~ c c₁) = c
-
-  ~×R : ∀{A B A' B'} → (A `× B) ~ (A' `× B') → B ~ B'
-  ~×R (pair~ c c₁) = c₁
-
-  ~⊎L : ∀{A B A' B'} → (A `⊎ B) ~ (A' `⊎ B') → A ~ A'
-  ~⊎L (sum~ c c₁) = c
-
-  ~⊎R : ∀{A B A' B'} → (A `⊎ B) ~ (A' `⊎ B') → B ~ B'
-  ~⊎R (sum~ c c₁) = c₁
-
   ¬~nb : ¬ (` Nat ~ ` 𝔹)
   ¬~nb ()
 
@@ -539,6 +521,45 @@ module Types where
   eq-unk (A ⇒ A₁) = no (λ ())
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
+
+  postulate irrelant-contra : ∀ {P : Set} → .P → ¬ P → Bot
+
+  ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'
+  ~⇒L {A}{B}{A'}{B'} c
+      with A `~ A'
+  ... | yes A~A' = A~A'
+  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~fL ¬A~A'))
+  
+  ~⇒R : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → B ~ B'
+  ~⇒R {A}{B}{A'}{B'} c
+      with B `~ B'
+  ... | yes B~B' = B~B'
+  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~fR ¬B~B'))
+
+  ~×L : ∀{A B A' B'} → .((A `× B) ~ (A' `× B')) → A ~ A'
+  ~×L {A}{B}{A'}{B'} c
+      with A `~ A'
+  ... | yes A~A' = A~A'
+  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~pL ¬A~A'))
+  
+  ~×R : ∀{A B A' B'} → .((A `× B) ~ (A' `× B')) → B ~ B'
+  ~×R {A}{B}{A'}{B'} c
+      with B `~ B'
+  ... | yes B~B' = B~B'
+  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~pR ¬B~B'))
+
+  ~⊎L : ∀{A B A' B'} → .((A `⊎ B) ~ (A' `⊎ B')) → A ~ A'
+  ~⊎L {A}{B}{A'}{B'} c
+      with A `~ A'
+  ... | yes A~A' = A~A'
+  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~sL ¬A~A'))
+  
+  ~⊎R : ∀{A B A' B'} → .((A `⊎ B) ~ (A' `⊎ B')) → B ~ B'
+  ~⊎R {A}{B}{A'}{B'} c
+      with B `~ B'
+  ... | yes B~B' = B~B'
+  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~sR ¬B~B'))
+
 
   {- Shallow Consistency, used in Lazy Casts -}
 

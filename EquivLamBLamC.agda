@@ -157,7 +157,7 @@ applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM�
 applyCast-equiv {vM₁ = V-ƛ} {vM₂} {.(cast (_ ⇒ _) ⋆ _ _)} {A-inj .(cast (_ ⇒ _) ⋆ _ _) x x₁} {.(cseq _ _)} {a₂}
     (≈-lam M₁≅M₂) (≈-inj-seq {G = ⋆ ⇒ ⋆}{ag = fun~ _ _}{unk~R} refl c₁≈c₂ c₁≈c₃) = ≈-cast (≈-cast (≈-lam M₁≅M₂) c₁≈c₂) c₁≈c₃
 applyCast-equiv {vM₁ = V-const} {vM₂} {a₁ = A-id _}{a₂ = a₂} ≈-lit (≈-id {a = A-Base}) = ≈-lit
-applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = a₂} ≈-lit (≈-inj-seq{G = G} {nA = nA} refl c₁≈c₂ c₁≈c₃) = ?
+applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = a₂} ≈-lit (≈-inj-seq{G = G} {nA = nA} refl c₁≈c₂ c₁≈c₃) = {!!}
 {-
     rewrite ground-eq {A}{A≢⋆}{nA} refl refl
     with ground A {A≢⋆} 
