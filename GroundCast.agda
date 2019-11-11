@@ -161,7 +161,8 @@ n  -}
   {-
     V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
    -}
-  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd} | no b-ng with ground B {b-nd}
+  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd}
+      | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
   

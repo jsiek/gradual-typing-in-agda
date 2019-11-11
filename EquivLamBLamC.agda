@@ -160,6 +160,44 @@ applyCast-equiv : ∀{A B : Type}{M₁ : ∅ ⊢₁ A}{M₂ : ∅ ⊢₂ A}{vM�
               → M₁ ≊ M₂
               → c₁ ≈ c₂
               → CastStruct.applyCast sB M₁ vM₁ c₁ {a₁} ≊ CastStruct.applyCast sC M₂ vM₂ c₂ {a₂}
+applyCast-equiv {A} {.A} {_} {_} {vM₁} {vM₂} {.(cast A A _ _)} {A-id .(cast A A _ _)} {.id} {a₂} ≈-lit ≈-id = ≈-lit
+applyCast-equiv {A} {.A} {_} {_} {vM₁} {vM₂} {.(cast A A _ _)} {A-id {a = a} .(cast A A _ _)} {.id} {a₂} (≈-cast M₁≅M₂ c≈d) ≈-id =
+    ≈-cast M₁≅M₂ c≈d
+applyCast-equiv {.⋆} {.⋆} {_} {_} {vM₁} {vM₂} {.(cast ⋆ ⋆ _ _)} {A-id {a = a} .(cast ⋆ ⋆ _ _)} {.(cseq _ _)} {a₂}
+    (≈-cast M₁≅M₂ c≈d) (≈-inj-seq {nA = nA} c₁≈c₂ c₁≈c₃) = ⊥-elim (nA refl)
+applyCast-equiv {.⋆} {.⋆} {_} {_} {vM₁} {vM₂} {.(cast ⋆ ⋆ _ _)} {A-id {a = a} .(cast ⋆ ⋆ _ _)} {.(cseq _ _)} {a₂}
+    (≈-cast M₁≅M₂ c≈d) (≈-proj-seq {nA = nA} c₁≈c₂ c₁≈c₃) = ⊥-elim (nA refl)
+applyCast-equiv {.⋆} {.⋆} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ ⋆ x₁ _)} {A-inj (cast .⋆ .⋆ x₁ x₂) x nd} {.id} {a₂} M₁≅M₂ ≈-id =
+    ⊥-elim (nd refl)
+applyCast-equiv {A} {.⋆} {M₁} {M₂} {vM₁} {vM₂} {.(cast A ⋆ ℓ _)} {A-inj (cast A .⋆ ℓ _) ngA A≢⋆} {.(cseq _ _)} {a₂} M₁≅M₂
+    (≈-inj-seq {g = g1}{ag = A~G} c₁≈c₂ c₁≈c₃)
+    with ground A {A≢⋆}
+... | ⟨ G , ⟨ gG , A~G' ⟩ ⟩
+    with ground-unique {g1 = g1}{g2 = gG} (Sym~ A~G) (Sym~ A~G') A≢⋆
+... | refl = ≈-cast (≈-cast M₁≅M₂ c₁≈c₂) c₁≈c₃
+applyCast-equiv {.⋆} {.⋆} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ ⋆ x₁ _)} {A-inj (cast .⋆ .⋆ x₁ x₂) x nd} {.(cseq _ _)} {a₂} M₁≅M₂
+    (≈-proj-seq {nA = nA} c₁≈c₂ c₁≈c₃) = ⊥-elim (nA refl)
+applyCast-equiv {.⋆} {.⋆} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ ⋆ x₁ _)} {A-proj (cast .⋆ .⋆ x₁ x₂) B≢⋆} {.id} {a₂} M₁≅M₂ ≈-id =
+    ⊥-elim (B≢⋆ refl)
+applyCast-equiv {.⋆} {B} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ B x₁ _)} {A-proj (cast .⋆ B x₁ x₂) B≢⋆} {.(proj B x₁)} {a₂} M₁≅M₂ (≈-proj{g = gB})
+    with ground? B
+... | yes b-g
+    with GroundCast.PCR.canonical⋆ M₁ vM₁
+... | ⟨ G , ⟨ V , ⟨ c' , ⟨ i , meq ⟩ ⟩ ⟩ ⟩
+    with gnd-eq? G B {inert-ground c' i} {b-g}
+... | yes ap-b = {!!}
+... | no ap-b = {!!}
+applyCast-equiv {.⋆} {B} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ B x₁ _)} {A-proj (cast .⋆ B x₁ x₂) B≢⋆} {.(proj B x₁)} {a₂}
+    M₁≅M₂ (≈-proj{g = gB})
+    | no b-ng = {!!}
+applyCast-equiv {.⋆} {.⋆} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ ⋆ x₁ _)} {A-proj (cast .⋆ .⋆ x₁ x₂) B≢⋆} {.(cseq _ _)} {a₂} M₁≅M₂ (≈-inj-seq c₁≈c₂ c₁≈c₃) = {!!}
+applyCast-equiv {.⋆} {B} {M₁} {M₂} {vM₁} {vM₂} {.(cast ⋆ B x₁ _)} {A-proj (cast .⋆ B x₁ x₂) B≢⋆} {.(cseq _ _)} {a₂} M₁≅M₂ (≈-proj-seq c₁≈c₂ c₁≈c₃) = {!!}
+applyCast-equiv {.(_ `× _)} {.(_ `× _)} {M₁} {M₂} {vM₁} {vM₂} {.(cast (_ `× _) (_ `× _) x _)} {A-pair (cast .(_ `× _) .(_ `× _) x x₁)} {.(cpair _ _)} {a₂} M₁≅M₂ (≈-pair c₁≈c₂ c₁≈c₃) =
+    ≈-cons (≈-cast (≈-fst M₁≅M₂) c₁≈c₂) (≈-cast (≈-snd M₁≅M₂) c₁≈c₃)
+applyCast-equiv {.(_ `⊎ _)} {.(_ `⊎ _)} {M₁} {M₂} {vM₁} {vM₂} {.(cast (_ `⊎ _) (_ `⊎ _) x _)} {A-sum (cast .(_ `⊎ _) .(_ `⊎ _) x x₁)} {.(csum _ _)} {a₂} M₁≅M₂ (≈-sum c₁≈c₂ c₁≈c₃) =
+    ≈-case M₁≅M₂ (≈-lam (≈-inl (≈-cast ≈-var c₁≈c₂))) (≈-lam (≈-inr (≈-cast ≈-var c₁≈c₃)))
+
+{-
 applyCast-equiv {vM₁ = V-ƛ} {vM₂} {.(cast (_ ⇒ _) ⋆ _ _)} {A-inj .(cast (_ ⇒ _) ⋆ _ _) x x₁} {.(cseq _ _)} {a₂}
     (≈-lam M₁≅M₂) (≈-inj-seq {G = ⋆ ⇒ ⋆}{ag = fun~ _ _}{unk~R} c₁≈c₂ c₁≈c₃) = ≈-cast (≈-cast (≈-lam M₁≅M₂) c₁≈c₂) c₁≈c₃
 applyCast-equiv {vM₁ = V-const} {vM₂} {a₁ = A-id _}{a₂ = a₂} ≈-lit (≈-id {a = A-Base}) = ≈-lit
@@ -169,7 +207,20 @@ applyCast-equiv {A} {vM₁ = V-const} {vM₂} {a₁ = A-inj _ _ A≢⋆}{a₂ = 
     with ground-unique {g1 = g1}{g2 = gG} (Sym~ ag1) (Sym~ (A~G)) A≢⋆
 ... | refl =    
     ≈-cast (≈-cast ≈-lit c₁≈c₂) c₁≈c₃
-applyCast-equiv {vM₁ = V-pair vM₁ vM₃} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
-applyCast-equiv {vM₁ = V-inl vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
-applyCast-equiv {vM₁ = V-inr vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
+applyCast-equiv {vM₁ = V-pair vM₁ vM₃} {vM₂}{a₁ = A-pair _}{a₂ = A-pair} (≈-cons M₁≅M₂ M₁≅M₃) (≈-pair c₁≈c₂ c₁≈c₃) =
+    ≈-cons (≈-cast (≈-fst (≈-cons M₁≅M₂ M₁≅M₃)) c₁≈c₂) (≈-cast (≈-snd (≈-cons M₁≅M₂ M₁≅M₃)) c₁≈c₃)
+applyCast-equiv {A} {vM₁ = V-pair vM₁ vM₃} {vM₂}{a₁ = A-inj _ ng nd}{a₂ = a₂}
+    (≈-cons M₁≅M₂ M₁≅M₃) (≈-inj-seq {g = G-Pair}{ag = pair~ _ _} c₁≈c₂ c₁≈c₃)
+    with ground A {nd}
+... | ⟨ G , ⟨ gG , ag ⟩ ⟩ =    
+    ≈-cast (≈-cast (≈-cons M₁≅M₂ M₁≅M₃) c₁≈c₂) c₁≈c₃
+applyCast-equiv {vM₁ = V-inl vM₁} {vM₂} (≈-inl M₁≅M₂) (≈-sum c₁≈c₂ c₁≈c₃) = {!!}
+applyCast-equiv {A} {vM₁ = V-inl vM₁} {vM₂} {a₁ = A-inj _ ng nd} (≈-inl M₁≅M₂) (≈-inj-seq {g = G-Sum}{ag = sum~ _ _} c₁≈c₂ c₁≈c₃)
+    with ground A {nd}
+... | ⟨ G , ⟨ gG , ag ⟩ ⟩ =  ≈-cast (≈-cast (≈-inl M₁≅M₂) c₁≈c₂) c₁≈c₃
+applyCast-equiv {vM₁ = V-inr vM₁} {vM₂} (≈-inr M₁≅M₂) (≈-sum c₁≈c₂ c₁≈c₃) = {!!}
+applyCast-equiv {A} {vM₁ = V-inr vM₁} {vM₂} {a₁ = A-inj _ ng nd} (≈-inr M₁≅M₂) (≈-inj-seq {g = G-Sum}{ag = sum~ _ _} c₁≈c₂ c₁≈c₃)
+    with ground A {nd}
+... | ⟨ G , ⟨ gG , ag ⟩ ⟩ =  {!!}
 applyCast-equiv {vM₁ = V-cast vM₁} {vM₂} M₁≅M₂ c₁≈c₂ = {!!}
+-}

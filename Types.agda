@@ -11,7 +11,8 @@ module Types where
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Data.Empty using () renaming (⊥ to Bot)
+  open import Data.Empty.Irrelevant using (⊥-elim)
 
   infix  7 _⇒_
   infix  9 _`×_
@@ -522,43 +523,41 @@ module Types where
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
 
-  postulate irrelant-contra : ∀ {P : Set} → .P → .(¬ P) → Bot
-
   ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'
   ~⇒L {A}{B}{A'}{B'} c
       with A `~ A'
   ... | yes A~A' = A~A'
-  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~fL ¬A~A'))
+  ... | no ¬A~A' = ⊥-elim (¬~fL ¬A~A' c)
   
   ~⇒R : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → B ~ B'
   ~⇒R {A}{B}{A'}{B'} c
       with B `~ B'
   ... | yes B~B' = B~B'
-  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~fR ¬B~B'))
+  ... | no ¬B~B' = ⊥-elim (¬~fR ¬B~B' c)
 
   ~×L : ∀{A B A' B'} → .((A `× B) ~ (A' `× B')) → A ~ A'
   ~×L {A}{B}{A'}{B'} c
       with A `~ A'
   ... | yes A~A' = A~A'
-  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~pL ¬A~A'))
+  ... | no ¬A~A' = ⊥-elim (¬~pL ¬A~A' c)
   
   ~×R : ∀{A B A' B'} → .((A `× B) ~ (A' `× B')) → B ~ B'
   ~×R {A}{B}{A'}{B'} c
       with B `~ B'
   ... | yes B~B' = B~B'
-  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~pR ¬B~B'))
+  ... | no ¬B~B' = ⊥-elim (¬~pR ¬B~B' c)
 
   ~⊎L : ∀{A B A' B'} → .((A `⊎ B) ~ (A' `⊎ B')) → A ~ A'
   ~⊎L {A}{B}{A'}{B'} c
       with A `~ A'
   ... | yes A~A' = A~A'
-  ... | no ¬A~A' = ⊥-elim (irrelant-contra c (¬~sL ¬A~A'))
+  ... | no ¬A~A' = ⊥-elim (¬~sL ¬A~A' c)
   
   ~⊎R : ∀{A B A' B'} → .((A `⊎ B) ~ (A' `⊎ B')) → B ~ B'
   ~⊎R {A}{B}{A'}{B'} c
       with B `~ B'
   ... | yes B~B' = B~B'
-  ... | no ¬B~B' = ⊥-elim (irrelant-contra c (¬~sR ¬B~B'))
+  ... | no ¬B~B' = ⊥-elim (¬~sR ¬B~B' c)
 
 
   {- Shallow Consistency, used in Lazy Casts -}
@@ -634,7 +633,7 @@ module Types where
   ground⊎2 G-Sum nd = nd refl
 
   ground : (A : Type) → .{nd : A ≢ ⋆} → Σ[ B ∈ Type ] Ground B × (A ~ B)
-  ground ⋆ {nd} = ⊥-elim (irrelant-contra refl nd)
+  ground ⋆ {nd} = ⊥-elim (nd refl)
   ground (` ι) {nd} = ⟨ ` ι , ⟨ G-Base , base~ ⟩ ⟩
   ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~L unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
