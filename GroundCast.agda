@@ -146,18 +146,21 @@ n  -}
   {-
     V : A ⇒ ⋆   —→   V : A ⇒ G ⇒ ⋆
    -}
-  applyCast M v (cast A ⋆ ℓ cn) {A-inj c a-ng a-nd} with ground A {a-nd}
+  applyCast M v (cast A ⋆ ℓ cn) {A-inj c a-ng a-nd}
+      with ground A {a-nd}
   ... | [ G , cns ] = (M ⟨ cast A G ℓ (proj₂ cns) ⟩) ⟨ cast G ⋆ ℓ unk~R ⟩
   {-
     V : G ⇒p ⋆ ⇒q G  —→   V
     V : G ⇒p ⋆ ⇒q H  —→   blame q
    -}
-  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd} with ground? B
-  ... | yes b-g with PCR.canonical⋆ M v
-  ...      | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
-                 with gnd-eq? G B {inert-ground c' i} {b-g}
-  ...          | yes ap-b rewrite ap-b = V
-  ...          | no ap-b = blame ℓ
+  applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd}
+      with ground? B
+  ... | yes b-g
+          with PCR.canonical⋆ M v
+  ...     | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
+              with gnd-eq? G B {inert-ground c' i} {b-g}
+  ...         | yes ap-b rewrite ap-b = V
+  ...         | no ap-b = blame ℓ
   {-
     V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
    -}
