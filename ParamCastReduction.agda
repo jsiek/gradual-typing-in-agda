@@ -107,30 +107,30 @@ module ParamCastReduction (cs : CastStruct) where
 
     fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
         {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
-      → (v : Value V) → Value W → {i : Inert c}
+      → (v : Value V) → Value W → {x : Cross c}
         --------------------------------------------------
-      → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
+      → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
 
     fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
         {c : Cast ((A `× B) ⇒ (A' `× B'))}
-      → Value V → {i : Inert c}
+      → Value V → {x : Cross c}
         -------------------------------------
-      → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c i ⟩
+      → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c x ⟩
 
     snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
         {c : Cast ((A `× B) ⇒ (A' `× B'))}
-      → Value V → {i : Inert c}
+      → Value V → {x : Cross c}
         -------------------------------------
-      → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
+      → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c x ⟩
 
     case-cast : ∀ {Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
         {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
         {c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))}
-      → Value V → {i : Inert c}
+      → Value V → {x : Cross c}
         --------------------------------------------
       → case (V ⟨ c ⟩) W₁ W₂ —→
-        case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
-               (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
+        case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ )))
+               (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_
@@ -247,9 +247,9 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | done V₂ with V₁
   ...         | V-ƛ = step (β V₂)
   ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
-              with funSrc c i
-  ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
-                  step (fun-cast v V₂ {i})
+              with Inert-Cross⇒ c i
+  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
+                  step (fun-cast v V₂ {x})
   progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂
               | V-const {k = k₁} {f = f₁} with V₂
   ...             | V-const {k = k₂} {f = f₂} =
@@ -292,9 +292,9 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₁} (β-fst v w)
   ...     | V-const {k = ()}
   ...     | V-cast {c = c} {i = i} v
-              with pairSrc c i
-  ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
-                step (fst-cast {c = c} v {i = i})
+              with Inert-Cross× c i
+  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
+                step (fst-cast {c = c} v {x = x})
   progress (snd {Γ}{A}{B} M) with progress M
   ... | step {N} R = step (ξ {F = F-snd} R)
   ... | error E-blame = step (ξ-blame{F = F-snd})
@@ -302,9 +302,9 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₂} (β-snd v w)
   ...     | V-const {k = ()}
   ...     | V-cast {c = c} {i = i} v
-              with pairSrc c i
-  ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ =
-                step (snd-cast {c = c} v {i = i})
+              with Inert-Cross× c i
+  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
+                step (snd-cast {c = c} v {x = x})
   progress (inl M) with progress M
   ... | step R = step (ξ {F = F-inl} R)
   ... | error E-blame = step (ξ-blame {F = F-inl})
@@ -323,8 +323,8 @@ module ParamCastReduction (cs : CastStruct) where
   ...    | V-inl v = step (β-caseL v)
   ...    | V-inr v = step (β-caseR v)
   ...    | V-cast {c = c} {i = i} v
-              with sumSrc c i
-  ...         | ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ = step (case-cast {c = c} v {i = i})
-
+              with Inert-Cross⊎ c i
+  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
+                step (case-cast {c = c} v {x = x})
   progress (blame ℓ) = error E-blame
 

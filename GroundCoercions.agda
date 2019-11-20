@@ -155,6 +155,31 @@ module GroundCoercions where
     A-id : ∀{A a} → Active (id {A}{a})
     A-seq : ∀{A B C c d} → Active (cseq {A}{B}{C} c d)
 
+
+  {-
+
+    Cross casts are casts between types with the same head type
+    constructor.
+
+  -}
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)    
+    C-pair : ∀{A B A' B' c d} → Cross (cpair {A}{B}{A'}{B'} c d)
+    C-sum : ∀{A B A' B' c d} → Cross (csum {A}{B}{A'}{B'} c d)
+
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ (cfun {A = A}{A' = A'} _ _) I-fun =
+      ⟨ C-fun , ⟨ A , ⟨ A' , refl ⟩ ⟩ ⟩
+
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× c ()
+
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ c ()
+
   {-
 
   We did not forget about any of the coercions in our categorization.
@@ -170,6 +195,7 @@ module GroundCoercions where
   ActiveOrInert (csum c c₁) = inj₁ A-sum
   ActiveOrInert (cseq c c₁) = inj₁ A-seq
 
+{-
   funSrc : ∀{A A' B'}
          → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
@@ -184,30 +210,31 @@ module GroundCoercions where
          → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   sumSrc c ()
+-}
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cfun c d) I-fun = c
+  dom (cfun c d) C-fun = c
   
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cfun c d) I-fun = d
+  cod (cfun c d) C-fun = d
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC c ()
+  fstC (cpair c d) C-pair = c
   
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC c ()
+  sndC (cpair c d) C-pair = d
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC c ()
+  inlC (csum c d) C-sum = c
   
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC c ()
+  inrC (csum c d) C-sum = d
   
   {-
   Finally, we show that casts to base type are not inert.
@@ -230,9 +257,15 @@ module GroundCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+{-
              ; funSrc = funSrc
              ; pairSrc = pairSrc
              ; sumSrc = sumSrc
+-}
              ; dom = dom
              ; cod = cod
              ; fstC = fstC
@@ -267,26 +300,21 @@ module GroundCoercions where
     V⟨G!⟩⟨G?⟩    —→    V
     V⟨G!⟩⟨H?p⟩   —→   blame p  if G ≠ H
    -}
-  applyCast{Γ} M v (proj B ℓ {gb}) {a} with canonical⋆ M v
-  ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {ga} {gb}
+  applyCast M v (proj B ℓ {gb}) {a} with canonical⋆ M v
+  ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩
+         rewrite meq
+         with gnd-eq? G B {ga} {gb}
   ...    | no neq = blame ℓ
-  ...    | yes eq = g  {- odd work-around -}
-           where g : Γ ⊢ B
-                 g rewrite eq = V
+  ...    | yes eq
+            with eq
+  ...       | refl = V
   {-
    V⟨c ; d⟩     —→    V⟨c⟩⟨d⟩
    -}
-  applyCast M x (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
-  
-  applyCast M v (cpair c d) {a} =
-    cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
-    
-  applyCast M v (csum{A₁}{B₁}{A₂}{B₂} c d) {a} =
-    let l = inl ((` Z) ⟨ c ⟩) in
-    let r = inr ((` Z) ⟨ d ⟩) in
-    case M (ƛ l) (ƛ r)
-    
-  applyCast {Γ} M v (cfun {A₁} {B₁} {A₂} {B₂} c d) {()}
+  applyCast M v (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
+  applyCast M v (cpair c d) {a} = eta× M v (cpair c d) C-pair
+  applyCast M v (csum c d) {a} = eta⊎ M v (csum c d) C-sum
+  applyCast M v (cfun c d) {()}
   applyCast M v (inj A) {()}
 
   {-
@@ -304,4 +332,6 @@ module GroundCoercions where
 
   import ParamCastReduction
   open ParamCastReduction cs public
+
+
 
