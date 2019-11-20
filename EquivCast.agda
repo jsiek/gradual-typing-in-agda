@@ -19,8 +19,9 @@ module EquivCast
   (CastCalc₂ : CastStruct)
   where
 
-  module CC₁ = CastCalc CastCalc₁
-  module CC₂ = CastCalc CastCalc₂
+  import MakeCastCalculus
+  module CC₁ = MakeCastCalculus CastCalc₁
+  module CC₂ = MakeCastCalculus CastCalc₂
   open CastStruct CastCalc₁ using () renaming (Cast to Cast₁)
   open CastStruct CastCalc₂ using () renaming (Cast to Cast₂)
   open CC₁ using (`_; _·_; $_) renaming (rename to rename₁;

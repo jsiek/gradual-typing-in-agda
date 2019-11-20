@@ -41,7 +41,7 @@ module SimpleCoercions where
   ... | no neq = inj A {neq}
   coerce (` ι) (` ι) {base~} ℓ = id {` ι} {A-Base}
   coerce (A ⇒ B) (A' ⇒ B') {fun~ c c₁} ℓ =
-    cfun (coerce A' A {Sym~ c} (flip ℓ) ) (coerce B B' {c₁} ℓ)
+    cfun (coerce A' A {c} (flip ℓ) ) (coerce B B' {c₁} ℓ)
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
     cpair (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =

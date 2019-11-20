@@ -8,7 +8,7 @@ AGDA = Labels.agda Types.agda Variables.agda \
 	GroundCast.agda GroundCoercions.agda EfficientGroundCoercions.agda \
 	SimpleCast.agda SimpleFunCast.agda SimpleCoercions.agda \
 	LazyCast.agda LazyCoercions.agda \
-	AGT.agda HyperCoercions.agda
+	HyperCoercions.agda AGT.agda 
 
 AGDAI = $(AGDA:%.agda=%.agdai)
 

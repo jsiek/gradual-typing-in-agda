@@ -280,7 +280,7 @@ module AGT where
   cons-implies-ceq {A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun~ cns₁ cns₂)
       with cons-implies-ceq cns₁ | cons-implies-ceq cns₂
   ... | cons{S = S₁} c1 c2 | cons{S = S₂} c3 c4 =
-    cons (c-fun c1 c3) (c-fun c2 c4)
+    cons (c-fun c2 c3) (c-fun c1 c4)
   cons-implies-ceq {A₁ `× A₂}{B₁ `× B₂} (pair~ cns₁ cns₂)
       with cons-implies-ceq cns₁ | cons-implies-ceq cns₂
   ... | cons{S = S₁} c1 c2 | cons{S = S₂} c3 c4 =
@@ -294,7 +294,7 @@ module AGT where
   ceq-implies-cons {.(` _)} {.(` _)} (cons {S = .(` _)} c-base c-base) = base~
   ceq-implies-cons {.(` _)} {.⋆} (cons {S = .(` _)} c-base c-unk) = unk~R
   ceq-implies-cons (cons {S = .(_ ⇒ _)} (c-fun as as₁) (c-fun bs bs₁)) =
-      fun~ (ceq-implies-cons (cons as bs)) (ceq-implies-cons (cons as₁ bs₁))
+      fun~ (ceq-implies-cons (cons bs as)) (ceq-implies-cons (cons as₁ bs₁))
   ceq-implies-cons (cons {S = .(_ ⇒ _)} (c-fun as as₁) c-unk) = unk~R
   ceq-implies-cons (cons {S = .(_ `× _)} (c-pair as as₁) (c-pair bs bs₁)) =
       pair~ (ceq-implies-cons (cons as bs)) (ceq-implies-cons (cons as₁ bs₁))
@@ -942,7 +942,7 @@ module AGT where
   cct-consis c-base c-base = base~
   cct-consis c-base c-unk = unk~R
   cct-consis (c-fun c1t c1t₁) (c-fun c2t c2t₁) =
-      fun~ (cct-consis c1t c2t) (cct-consis c1t₁ c2t₁)
+      fun~ (cct-consis c2t c1t) (cct-consis c1t₁ c2t₁)
   cct-consis (c-fun c1t c1t₁) c-unk = unk~R
   cct-consis (c-pair c1t c1t₁) (c-pair c2t c2t₁) =
       pair~ (cct-consis c1t c2t) (cct-consis c1t₁ c2t₁)
@@ -959,7 +959,7 @@ module AGT where
   cct-c⊔' {` ι}{⋆}{c = c} c-base c-unk with (` ι `⊔ ⋆){c}
   ... | ⟨ T , ⟨ ⟨ base⊑ , unk⊑ ⟩ , b ⟩ ⟩ = c-base
   cct-c⊔'{c = fun~ c1 c2} (c-fun c1t c1t₁) (c-fun c2t c2t₁) =
-      c-fun (cct-c⊔' {c = c1} c1t c2t) (cct-c⊔' {c = c2} c1t₁ c2t₁)
+      c-fun (cct-c⊔' {c = c1} c2t c1t) (cct-c⊔' {c = c2} c1t₁ c2t₁)
   cct-c⊔'{c = unk~R} (c-fun c1t c1t₁) c-unk = c-fun c1t c1t₁
   cct-c⊔'{c = pair~ c1 c2} (c-pair c1t c1t₁) (c-pair c2t c2t₁) =
       c-pair (cct-c⊔' {c = c1} c1t c2t) (cct-c⊔' {c = c2} c1t₁ c2t₁)
@@ -976,7 +976,7 @@ module AGT where
   cct-c⊔ c-base c-base = c-base
   cct-c⊔ c-base c-unk = c-base
   cct-c⊔ (c-fun c1t c1t₁) (c-fun c2t c2t₁) =
-      c-fun (cct-c⊔ c1t c2t) (cct-c⊔ c1t₁ c2t₁)
+      c-fun (cct-c⊔ c2t c1t) (cct-c⊔ c1t₁ c2t₁)
   cct-c⊔ (c-fun c1t c1t₁) c-unk = c-fun c1t c1t₁
   cct-c⊔ (c-pair c1t c1t₁) (c-pair c2t c2t₁) =
       c-pair (cct-c⊔ c1t c2t) (cct-c⊔ c1t₁ c2t₁)
@@ -991,21 +991,18 @@ module AGT where
   c⊔-cct {.⋆} {G2} {T} {unk~L} ct = ⟨ c-unk , ct ⟩
   c⊔-cct {G1} {.⋆} {T} {unk~R} ct = ⟨ ct , c-unk ⟩
   c⊔-cct {.(` _)} {.(` _)} {T} {base~} ct = ⟨ ct , ct ⟩
-  c⊔-cct {A₁ ⇒ A₂} {B₁ ⇒ B₂} {T₁ ⇒ T₂} {fun~ c c₁} (c-fun ct ct₁) =
-    ⟨ (c-fun (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
-      (c-fun (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
-  c⊔-cct {A₁ `× A₂} {B₁ `× B₂} {T₁ `× T₂} {pair~ c c₁} (c-pair ct ct₁) = 
-    ⟨ (c-pair (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
-      (c-pair (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
-  c⊔-cct {A₁ `⊎ A₂} {B₁ `⊎ B₂} {T₁ `⊎ T₂} {sum~ c c₁} (c-sum ct ct₁) =
-    ⟨ (c-sum (proj₁ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₁ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ,
-      (c-sum (proj₂ (c⊔-cct {A₁}{B₁}{T₁}{c} ct))
-             (proj₂ (c⊔-cct{A₂}{B₂}{T₂}{c₁} ct₁))) ⟩
+  c⊔-cct {A₁ ⇒ A₂} {B₁ ⇒ B₂} {T₁ ⇒ T₂} {fun~ c c₁} (c-fun ct ct₁) 
+      with c⊔-cct {c = c} ct | c⊔-cct {c = c₁} ct₁
+  ... | ⟨ cb1 , ca1 ⟩ | ⟨ cb2 , ba2 ⟩ = 
+        ⟨ (c-fun ca1 cb2) , (c-fun cb1 ba2) ⟩
+  c⊔-cct {A₁ `× A₂} {B₁ `× B₂} {T₁ `× T₂} {pair~ c c₁} (c-pair ct ct₁)
+      with c⊔-cct {c = c} ct | c⊔-cct {c = c₁} ct₁
+  ... | ⟨ cb1 , ca1 ⟩ | ⟨ cb2 , ba2 ⟩ = 
+        ⟨ (c-pair cb1 cb2) , (c-pair ca1 ba2) ⟩
+  c⊔-cct {A₁ `⊎ A₂} {B₁ `⊎ B₂} {T₁ `⊎ T₂} {sum~ c c₁} (c-sum ct ct₁)
+      with c⊔-cct {c = c} ct | c⊔-cct {c = c₁} ct₁
+  ... | ⟨ cb1 , ca1 ⟩ | ⟨ cb2 , ba2 ⟩ = 
+        ⟨ (c-sum cb1 cb2) , (c-sum ca1 ba2 ) ⟩
 
   _iff_ : Set → Set → Set
   P iff Q = (P → Q) × (Q → P)
@@ -1362,10 +1359,10 @@ module AGT where
   base~ ∘ d = yes d
   fun~ c₁ d₁ ∘ unk~R = yes unk~R
   fun~ c₁ d₁ ∘ fun~ c₂ d₂
-      with c₁ ∘ c₂ | d₁ ∘ d₂
+      with c₂ ∘ c₁ | d₁ ∘ d₂
   ... | yes c | yes d = yes (fun~ c d)
   ... | yes c | no d = no (¬~fR d)
-  ... | no c | _ = no (¬~fL c)
+  ... | no c | _ = no (¬~fL λ x → c (Sym~ x))
   pair~ c₁ d₁ ∘ unk~R = yes unk~R
   pair~ c₁ d₁ ∘ pair~ c₂ d₂
       with c₁ ∘ c₂ | d₁ ∘ d₂
@@ -1378,3 +1375,4 @@ module AGT where
   ... | yes c | yes d = yes (sum~ c d)
   ... | yes c | no d = no (¬~sR d)
   ... | no c | _ = no (¬~sL c)
+

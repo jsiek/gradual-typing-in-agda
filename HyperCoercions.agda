@@ -112,7 +112,7 @@ module HyperCoercions where
   coerce A .⋆ {unk~R} ℓ = coerce-to⋆ A ℓ
   coerce (` ι) (` ι) {base~} ℓ = 𝜖 ↷ id ι , 𝜖
   coerce (A ⇒ B) (C ⇒ D) {fun~ c d} ℓ =
-     𝜖 ↷ (coerce C A {Sym~ c} ℓ ↣ coerce B D {d} ℓ) , 𝜖
+     𝜖 ↷ (coerce C A {c} ℓ ↣ coerce B D {d} ℓ) , 𝜖
   coerce (A `× B) (C `× D) {pair~ c d} ℓ =
      𝜖 ↷ (coerce A C {c} ℓ ×' coerce B D {d} ℓ) , 𝜖
   coerce (A `⊎ B) (C `⊎ D) {sum~ c d} ℓ =
@@ -558,7 +558,7 @@ module HyperCoercions where
   cast-id ⋆ l unk~R = refl
   cast-id (` ι) l base~ = refl
   cast-id (A ⇒ B) l (fun~ c d)
-      rewrite (cast-id A l (Sym~ c)) | cast-id B l d = refl
+      rewrite (cast-id A l c) | cast-id B l d = refl
   cast-id (A `× B) l (pair~ c d)
       rewrite (cast-id A l c) | cast-id B l d = refl
   cast-id (A `⊎ B) l (sum~ c d)

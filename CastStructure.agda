@@ -1,4 +1,6 @@
 open import Types
+open import Variables
+open import PreCastStructure
 
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
@@ -10,45 +12,44 @@ open import Relation.Nullary using (¬_)
 module CastStructure where
 
 import ParamCastCalculus
-import ParamCastReduction
+import ParamCastAux
 
+  {-
+
+  We need a few operations to define reduction in a generic way.
+  In particular, we need parameters that say how to reduce casts and
+  how to eliminate values wrapped in casts. 
+  * The applyCast parameter, applies an Active cast to a value. 
+  * The funCast parameter applies a function wrapped in an inert cast
+    to an argument.
+  * The fstCast and sndCast parameters take the first or second part
+    of a pair wrapped in an inert cast.
+  * The caseCast performs a case-elimination on a value of sum type (inl or inr)
+    that is wrapped in an inert cast.
+  * The baseNotInert parameter ensures that every cast to a base type
+    is not inert.
+
+  We define a nested module named Reduction with these parameters
+  because they all depend on parameters of the outer module, and it
+  seems that Agda does not allow parameters to depend on other
+  parameters of the same module.
+
+  -}
+  
 record CastStruct : Set₁ where
   field
-    Cast : Type → Set  
-    Inert : ∀{A} → Cast A → Set
-    Active : ∀{A} → Cast A → Set
-    ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
+    precast : PreCastStruct
+
+  open PreCastStruct precast public
   open ParamCastCalculus Cast
-  open ParamCastReduction Cast Inert Active ActiveOrInert 
+  open ParamCastAux precast
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
-    funSrc : ∀{A A' B'}
-            → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-    pairSrc : ∀{A A' B'}
-            → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-    sumSrc : ∀{A A' B'}
-            → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-            → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-    dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-    cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-    fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-    sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-    inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-    inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-    baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
 
-module CastCalc (C : CastStruct) where
-  open CastStruct C
-  open ParamCastCalculus Cast public
-  open ParamCastReduction Cast Inert Active ActiveOrInert public
-  open Reduction applyCast funSrc pairSrc sumSrc dom cod fstC sndC inlC inrC
-         baseNotInert public
+record EfficientCastStruct : Set₁ where
+  field
+    cast_struct : CastStruct
+  open CastStruct cast_struct public
+  field
+    compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C)

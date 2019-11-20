@@ -15,6 +15,7 @@ module GroundCast where
   open import Data.Nat
   open import Data.Bool
   open import Types
+  open import PreCastStructure
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -37,11 +38,10 @@ module GroundCast where
     cast : (A : Type) → (B : Type) → Label → .(A ~ B) → Cast (A ⇒ B)
 
   import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
+  open ParamCastCalculus Cast public
 
   import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c)
+  open GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c) public
   
   {-
 
@@ -113,27 +113,93 @@ n  -}
   ... | no ng = inj₁ (A-inj (cast (A `⊎ A₁) ⋆ ℓ A~B) ng (λ ()))
   ActiveOrInert {.(A `⊎ A₁ ⇒ B `⊎ B₁)} (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B) = inj₁ (A-sum (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B))
 
+  funSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x cn) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
+
+  pairSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc c ()
+
+  sumSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc c ()
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B')))
+         → Cast (A' ⇒ A₁)
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) =
+      cast A' A₁ ℓ (Sym~ (~⇒L c))
+
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B')))
+         →  Cast (A₂ ⇒ B')
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) =
+      cast A₂ B' ℓ (~⇒R c)
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) 
+         → Cast (A₁ ⇒ A')
+  fstC (cast (A `× B) (C `× D) ℓ cn) = cast A C ℓ (~×L cn)
+
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) 
+         →  Cast (A₂ ⇒ B')
+  sndC (cast (A `× B) (C `× D) ℓ cn) = cast B D ℓ (~×R cn)
+
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) 
+         → Cast (A₁ ⇒ A')
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ cn) = cast A C ℓ (~⊎L cn)
+
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) 
+         →  Cast (A₂ ⇒ B')
+  inrC (cast (A `⊎ B) (C `⊎ D) ℓ cn) = cast B D ℓ (~⊎R cn)
+
+  {-
+  Finally, we show that casts to base type are not inert.
+  -}
+  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
+
   {-
 
    We take the first step of instantiating the reduction semantics of
-   the Parametric Cast Calculus by applying the outer module.
+   the Parametric Cast Calculus by applying the ParamCastAux module.
 
    -}
-
-  import ParamCastReduction
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR
+   
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; funSrc = funSrc
+             ; pairSrc = pairSrc
+             ; sumSrc = sumSrc
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+             
+  import ParamCastAux
+  open ParamCastAux pcs
 
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A
   inert-ground c (I-inj g .c) = g
 
   {-
 
-   To instantiate the inner module, we must provide several functions,
-   the first of which is applyCast. This handles applying an active
-   cast to a value. We comment each case with the reduction rule from
-   Siek, Thiemann, and Wadler (2015). The definition of applyCast
-   is driven by pattern matching on the parameter {a : Active c}.
+   To instantiate the ParamCastReduction module, we must provide
+   several operations, the first of which is applyCast. This handles
+   applying an active cast to a value. We comment each case with the
+   reduction rule from Siek, Thiemann, and Wadler (2015). The
+   definition of applyCast is driven by pattern matching on the
+   parameter {a : Active c}.
 
    -}
 
@@ -156,7 +222,7 @@ n  -}
   applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd}
       with ground? B
   ... | yes b-g
-          with PCR.canonical⋆ M v
+          with canonical⋆ M v
   ...     | [ G , [ V , [ c' , [ i , meq ] ] ] ] rewrite meq
               with gnd-eq? G B {inert-ground c' i} {b-g}
   ...         | yes ap-b rewrite ap-b = V
@@ -177,82 +243,22 @@ n  -}
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ (~⊎R c) ⟩) in
     case M (ƛ l) (ƛ r)
 
-  funSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x cn) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
-
-  pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc c ()
-
-  sumSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc c ()
-
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) (I-fun _) =
-      cast A' A₁ ℓ (Sym~ (~⇒L c))
-
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) (I-fun _) =
-      cast A₂ B' ℓ (~⇒R c)
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC c ()
-
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC c ()
-
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC c ()
-
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC c ()
-
-  {-
-  Finally, we show that casts to base type are not inert.
-  -}
-  
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
-  baseNotInert c ()
-
-  {-
-  We now instantiate the inner module of ParamCastReduction, thereby
-  proving type safety for λB. 
-  -}
-
-  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
-                   dom cod fstC sndC inlC inrC
-                   baseNotInert
-  open Red
-
   open import CastStructure
 
-  struct : CastStruct
-  struct = record
-             { Cast = Cast
-             ; Inert = Inert
-             ; Active = Active
-             ; ActiveOrInert = ActiveOrInert
+  cs : CastStruct
+  cs = record
+             { precast = pcs
              ; applyCast = applyCast
-             ; funSrc = funSrc
-             ; pairSrc = pairSrc
-             ; sumSrc = sumSrc
-             ; dom = dom
-             ; cod = cod
-             ; fstC = fstC
-             ; sndC = sndC
-             ; inlC = inlC
-             ; inrC = inrC
-             ; baseNotInert = baseNotInert
              }
+
+  {-
+
+  We now instantiate the module ParamCastReduction, thereby proving
+  type safety for λB.
+
+  -}
+
+  import ParamCastReduction
+  module Red = ParamCastReduction cs
+  open Red
 

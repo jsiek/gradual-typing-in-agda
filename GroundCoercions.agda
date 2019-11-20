@@ -56,8 +56,7 @@ module GroundCoercions where
       → Cast (A ⇒ C)
 
   import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
+  open ParamCastCalculus Cast
 
   {-
 
@@ -131,7 +130,7 @@ module GroundCoercions where
   -}
 
   import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
 
   {-
 
@@ -177,9 +176,18 @@ module GroundCoercions where
   definitions for values and frames.
 
   -}
-  import ParamCastReduction
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             }
+
+  import ParamCastAux
+  open ParamCastAux pcs
 
   {- 
 
@@ -203,7 +211,7 @@ module GroundCoercions where
     V⟨G!⟩⟨G?⟩    —→    V
     V⟨G!⟩⟨H?p⟩   —→   blame p  if G ≠ H
    -}
-  applyCast{Γ} M v (proj B ℓ {gb}) {a} with PCR.canonical⋆ M v
+  applyCast{Γ} M v (proj B ℓ {gb}) {a} with canonical⋆ M v
   ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {ga} {gb}
   ...    | no neq = blame ℓ
   ...    | yes eq = g  {- odd work-around -}
@@ -276,20 +284,11 @@ module GroundCoercions where
   proving type safety for λC. 
   -}
 
-  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
-                     dom cod fstC sndC inlC inrC
-                     baseNotInert
-  open Red
-
-
   open import CastStructure
 
-  struct : CastStruct
-  struct = record
-             { Cast = Cast
-             ; Inert = Inert
-             ; Active = Active
-             ; ActiveOrInert = ActiveOrInert
+  cs : CastStruct
+  cs = record
+             { precast = pcs
              ; applyCast = applyCast
              ; funSrc = funSrc
              ; pairSrc = pairSrc
@@ -302,3 +301,7 @@ module GroundCoercions where
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+
+  import ParamCastReduction
+  open ParamCastReduction cs public
+

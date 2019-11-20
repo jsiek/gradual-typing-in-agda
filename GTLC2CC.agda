@@ -11,8 +11,7 @@ module GTLC2CC
   open import GTLC
   open import GTLC-materialize
   import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
+  open ParamCastCalculus Cast
   
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
