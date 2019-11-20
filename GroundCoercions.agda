@@ -170,6 +170,52 @@ module GroundCoercions where
   ActiveOrInert (csum c c₁) = inj₁ A-sum
   ActiveOrInert (cseq c c₁) = inj₁ A-seq
 
+  funSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  funSrc .(cfun _ _) (I-fun{A = A₁}{A' = A'}) = ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
+
+  pairSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  pairSrc c ()
+
+  sumSrc : ∀{A A' B'}
+         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
+          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  sumSrc c ()
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         → Cast (A' ⇒ A₁)
+  dom (cfun c d) I-fun = c
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  cod (cfun c d) I-fun = d
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  fstC c ()
+  
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  sndC c ()
+
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         → Cast (A₁ ⇒ A')
+  inlC c ()
+  
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+         →  Cast (A₂ ⇒ B')
+  inrC c ()
+  
+  {-
+  Finally, we show that casts to base type are not inert.
+  -}
+
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
+
   {-
 
   We instantiate the outer module of ParamCastReduction, obtaining the
@@ -184,6 +230,16 @@ module GroundCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; funSrc = funSrc
+             ; pairSrc = pairSrc
+             ; sumSrc = sumSrc
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
              }
 
   import ParamCastAux
@@ -233,52 +289,6 @@ module GroundCoercions where
   applyCast {Γ} M v (cfun {A₁} {B₁} {A₂} {B₂} c d) {()}
   applyCast M v (inj A) {()}
 
-  funSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc .(cfun _ _) (I-fun{A = A₁}{A' = A'}) = ⟨ A₁ , ⟨ A' , refl ⟩ ⟩
-
-  pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc c ()
-
-  sumSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc c ()
-
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom (cfun c d) I-fun = c
-  
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod (cfun c d) I-fun = d
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC c ()
-  
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC c ()
-
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC c ()
-  
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC c ()
-
-  {-
-  Finally, we show that casts to base type are not inert.
-  -}
-
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
-  baseNotInert c ()
-
   {-
   We now instantiate the inner module of ParamCastReduction, thereby
   proving type safety for λC. 
@@ -290,16 +300,6 @@ module GroundCoercions where
   cs = record
              { precast = pcs
              ; applyCast = applyCast
-             ; funSrc = funSrc
-             ; pairSrc = pairSrc
-             ; sumSrc = sumSrc
-             ; dom = dom
-             ; cod = cod
-             ; fstC = fstC
-             ; sndC = sndC
-             ; inlC = inlC
-             ; inrC = inrC
-             ; baseNotInert = baseNotInert
              }
 
   import ParamCastReduction

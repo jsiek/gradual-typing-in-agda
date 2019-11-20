@@ -109,19 +109,19 @@ module ParamCastReduction (cs : CastStruct) where
         {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
       → (v : Value V) → Value W → {i : Inert c}
         --------------------------------------------------
-      → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c ⟩)) ⟨ cod c ⟩
+      → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
 
     fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
         {c : Cast ((A `× B) ⇒ (A' `× B'))}
       → Value V → {i : Inert c}
         -------------------------------------
-      → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c ⟩
+      → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c i ⟩
 
     snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
         {c : Cast ((A `× B) ⇒ (A' `× B'))}
       → Value V → {i : Inert c}
         -------------------------------------
-      → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c ⟩
+      → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
 
     case-cast : ∀ {Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
         {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
@@ -129,8 +129,8 @@ module ParamCastReduction (cs : CastStruct) where
       → Value V → {i : Inert c}
         --------------------------------------------
       → case (V ⟨ c ⟩) W₁ W₂ —→
-        case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c ⟩ )))
-               (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c ⟩ )))
+        case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
+               (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_

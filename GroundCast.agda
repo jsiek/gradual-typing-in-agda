@@ -128,31 +128,31 @@ n  -}
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   sumSrc c ()
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B')))
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) =
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
       cast A' A₁ ℓ (Sym~ (~⇒L c))
 
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B')))
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) =
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
       cast A₂ B' ℓ (~⇒R c)
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) 
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) ℓ cn) = cast A C ℓ (~×L cn)
+  fstC (cast (A `× B) (C `× D) ℓ cn) i = cast A C ℓ (~×L cn)
 
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) 
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) ℓ cn) = cast B D ℓ (~×R cn)
+  sndC (cast (A `× B) (C `× D) ℓ cn) i = cast B D ℓ (~×R cn)
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) 
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) ℓ cn) = cast A C ℓ (~⊎L cn)
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast A C ℓ (~⊎L cn)
 
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) 
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A `⊎ B) (C `⊎ D) ℓ cn) = cast B D ℓ (~⊎R cn)
+  inrC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast B D ℓ (~⊎R cn)
 
   {-
   Finally, we show that casts to base type are not inert.
