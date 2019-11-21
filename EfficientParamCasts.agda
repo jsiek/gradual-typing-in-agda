@@ -174,30 +174,30 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
 
     fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
         {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))} 
-      → (v : SimpleValue V) → Value W → {i : Inert c}
+      → (v : SimpleValue V) → Value W → {x : Cross c}
         -------------------------------------------------------------
-      → any_ctx / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c i ⟩)) ⟨ cod c i ⟩
+      → any_ctx / (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
 
     fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B} 
         {c : Cast ((A `× B) ⇒ (A' `× B'))} 
-      → (v : SimpleValue V) → {i : Inert c}
-        --------------------------------------------
-      → any_ctx / fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c i ⟩
+      → (v : SimpleValue V) → {x : Cross c}
+        -----------------------------------------------
+      → any_ctx / fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c x ⟩
 
     snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
         {c : Cast ((A `× B) ⇒ (A' `× B'))} 
-      → (v : SimpleValue V) → {i : Inert c}
-        ---------------------------------------------
-      → any_ctx / snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c i ⟩
+      → (v : SimpleValue V) → {x : Cross c}
+        -----------------------------------------------
+      → any_ctx / snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c x ⟩
 
     case-cast : ∀ { Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
         {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
         {c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))} 
-      → (v : SimpleValue V) → {i : Inert c}
+      → (v : SimpleValue V) → {x : Cross c}
         ---------------------------------------------------------
       → any_ctx / case (V ⟨ c ⟩) W₁ W₂ —→
-                  case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c i ⟩ )))
-                         (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c i ⟩ )))
+                  case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ )))
+                         (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
 
 
     compose-casts : ∀{Γ A B C} {M : Γ ⊢ A }
@@ -316,11 +316,11 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ...       | V-cast {V = W}{c}{i} sW =
               contradiction i (G f₁)
               where G : Prim (A₁ ⇒ A) → ¬ Inert c
-                    G (P-Fun f) ic = baseNotInert c (simple⋆ W sW) ic
+                    G (P-Fun f) ic = baseNotInert c ic
   progress {A} (M₁ · M₂) | done V₁ | done V₂
           | V-cast {V = V}{c}{i} v
-            with funSrc c i V v
-  ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (fun-cast v V₂ {i})
+            with Inert-Cross⇒ c i 
+  ...       | ⟨ x , ⟨ B , ⟨ C , refl ⟩ ⟩ ⟩ = step (fun-cast v V₂ {x})
   progress ($ k) = done (S-val V-const)
   progress (if L M N)
       with progress L
@@ -329,7 +329,7 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ... | done (S-val (V-const {k = true})) = step β-if-true
   ... | done (S-val (V-const {k = false})) = step β-if-false
   ... | done (V-cast {V = V}{c}{i} v) =
-        contradiction i (baseNotInert c (simple⋆ V v))
+        contradiction i (baseNotInert c)
   progress (cons M₁ M₂)
       with progress M₁
   ... | step R = step (ξ {F = F-×₂ M₂} R)
@@ -347,8 +347,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ...     | S-val (V-pair {V = V₁}{W = V₂} v w) = step (β-fst v w)
   ...     | S-val (V-const {k = ()})
   ...     | V-cast {V = V'} {c = c} {i = i} v
-            with pairSrc c i V' v
-  ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (fst-cast {c = c} v {i = i})
+            with Inert-Cross× c i
+  ...       | ⟨ x , ⟨ B , ⟨ C , refl ⟩ ⟩ ⟩ = step (fst-cast {c = c} v {x})
   progress (snd M)
       with progress M
   ... | step R = step (ξ {F = F-snd} R)
@@ -358,8 +358,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ...     | S-val (V-pair {V = V₁}{W = V₂} v w) = step (β-snd v w)
   ...     | S-val (V-const {k = ()})
   ...     | V-cast {V = V'}{c = c} {i = i} v
-            with pairSrc c i V' v
-  ...       | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (snd-cast {c = c} v {i = i})
+            with Inert-Cross× c i
+  ...       | ⟨ x , ⟨ B , ⟨ C , refl ⟩ ⟩ ⟩ = step (snd-cast {c = c} v {x})
   progress (inl M)
       with progress M
   ... | step R = step (ξ {F = F-inl} R)
@@ -379,8 +379,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ...    | S-val (V-inl v) = step (β-caseL v)
   ...    | S-val (V-inr v) = step (β-caseR v)
   ...    | V-cast {V = V'} {c = c} {i = i} v 
-             with sumSrc c i V' v
-  ...        | ⟨ B , ⟨ C , refl ⟩ ⟩ = step (case-cast {c = c} v {i = i})
+             with Inert-Cross⊎ c i
+  ...        | ⟨ x , ⟨ B , ⟨ C , refl ⟩ ⟩ ⟩ = step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
   progress (M ⟨ c ⟩)
       with progress M

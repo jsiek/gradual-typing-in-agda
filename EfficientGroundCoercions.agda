@@ -98,8 +98,7 @@ module EfficientGroundCoercions where
   -}
 
   import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
+  open ParamCastCalculus Cast
 
   {-
 
@@ -192,7 +191,7 @@ module EfficientGroundCoercions where
 
   -}
   import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
 
 
   {-
@@ -302,6 +301,51 @@ module EfficientGroundCoercions where
   ActiveOrInert (` i) with ActiveOrInertiCast i
   ... | inj₁ a = inj₁ (A-intmd a)
   ... | inj₂ j = inj₂ (I-intmd j)
+
+
+  data Cross : ∀ {A} → Cast A → Set where
+    C-cross : ∀{A B}{g : gCast (A ⇒ B)} → Cross (` ` g)
+
+
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ .(` (` (_ ↣ _))) (I-intmd (I-gnd (I-cfun{A = A}{A' = A'}))) =
+     ⟨ C-cross , ⟨ A , ⟨ A' , refl ⟩ ⟩ ⟩
+
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× .(` (` _)) (I-intmd (I-gnd ()))
+
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ .(` (` _)) (I-intmd (I-gnd ()))
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         → Cast (A' ⇒ A₁)
+  dom (` (` (c ↣ d))) x = c
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  cod (` (` (s ↣ t))) x = t
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  fstC (` (` (c ×' d))) x = c
+  
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  sndC (` (` (c ×' d))) x = d
+
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  inlC (` (` (c +' d))) x = c
+  
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  inrC (` (` (c +' d))) x = d
+
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
   
   {-
 
@@ -310,9 +354,29 @@ module EfficientGroundCoercions where
 
   -}
 
-  import EfficientParamCasts
-  module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
-  open EPCR
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+
+  import EfficientParamCastAux
+  open EfficientParamCastAux pcs
 
   {-
    The following functions compute the size of the three kinds of coercions.
@@ -649,7 +713,7 @@ module EfficientGroundCoercions where
   applyCast M v id★ {a} = M
   applyCast M v (` (` idι)) {a} = M
   applyCast M v (` (cfail G H ℓ)) {a} = blame ℓ
-  applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with EPCR.canonical⋆ M v
+  applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
      M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) {sz} {≤-reflexive refl} ⟩
      where sz = size-cast c + size-cast ((G ?? ℓ ⨟ i) {g})
@@ -690,40 +754,18 @@ module EfficientGroundCoercions where
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   sumSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom (` (` (c ↣ d))) i = c
-  dom (` cfail G H ℓ) (I-intmd ())
-  
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod (` (` (s ↣ t))) (I-intmd (I-gnd I-cfun)) = t
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC .(` (` _)) (I-intmd (I-gnd ()))
-  
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC .(` (` _)) (I-intmd (I-gnd ()))
-
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC .(` (` _)) (I-intmd (I-gnd ()))
-  
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC .(` (` _)) (I-intmd (I-gnd ()))
-
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
-  baseNotInert (` .(` _)) A≢⋆ (I-intmd (I-gnd ()))
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
 
-  module Red = EPCR.Reduction applyCast funSrc pairSrc sumSrc
-                  dom cod fstC sndC inlC inrC
-                  baseNotInert compose
-  open Red
+  open import CastStructure
 
-
+  ecs : EfficientCastStruct
+  ecs = record
+             { precast = pcs
+             ; applyCast = applyCast
+             ; compose = compose
+             }
+             
+  import EfficientParamCasts
+  open EfficientParamCasts ecs public

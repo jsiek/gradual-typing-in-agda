@@ -13,6 +13,7 @@ module CastStructure where
 
 import ParamCastCalculus
 import ParamCastAux
+import EfficientParamCastAux
 
   {-
 
@@ -49,7 +50,11 @@ record CastStruct : Set₁ where
 
 record EfficientCastStruct : Set₁ where
   field
-    cast_struct : CastStruct
-  open CastStruct cast_struct public
+    precast : PreCastStruct
+  open PreCastStruct precast public
+  open ParamCastCalculus Cast
+  open EfficientParamCastAux precast
   field
+    applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
+                 → ∀ {a : Active c} → Γ ⊢ B
     compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C)
