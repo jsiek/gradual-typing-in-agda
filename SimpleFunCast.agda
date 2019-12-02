@@ -53,12 +53,87 @@ module SimpleFunCast where
   funNotActive : ∀{A₁ A₂ B₁ B₂ ℓ c} → ¬ Active (cast (A₁ ⇒ A₂) (B₁ ⇒ B₂) ℓ {c})
   funNotActive (activeId {a = ()} .(cast (_ ⇒ _) (_ ⇒ _) _))
 
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR
+
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
+    C-pair : ∀{A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
+    C-sum : ∀{A B C D} → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D))) → Cross c
+    
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ (cast (A ⇒ B) (C ⇒ D) x) (inert-fun _) =
+      ⟨ C-fun (cast (A ⇒ B) (C ⇒ D) x) , ⟨ A , ⟨ B , refl ⟩ ⟩ ⟩
+
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× (cast (A `× B) (C `× D) x) (inert-pair _) =
+      ⟨ C-pair (cast (A `× B) (C `× D) x) , ⟨ A , ⟨ B , refl ⟩ ⟩ ⟩
+
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ (cast (A `⊎ B) (C `⊎ D) x) (inert-sum _) =
+      ⟨ C-sum (cast (A `⊎ B) (C `⊎ D) x) , ⟨ A , ⟨ B , refl ⟩ ⟩ ⟩
+  
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         → Cast (A' ⇒ A₁)
+  dom (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _) =
+     cast C A ℓ {Sym~ (~⇒L cn)}
+
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  cod (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _) =
+     cast B D ℓ {~⇒R cn}
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  fstC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _) =
+      cast A C ℓ {~×L cn}
+
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  sndC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _) =
+      cast B D ℓ {~×R cn}
+  
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ {cn}) (C-sum _) =
+      cast A C ℓ {~⊎L cn}
+
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {cn}) (C-sum _) =
+      cast A₂ B' ℓ {~⊎R cn}
+  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
+  
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+
+  import ParamCastAux
+  open ParamCastAux pcs
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast {Γ}{A}{B} M v (cast .⋆ B ℓ {unk~L}) {a} with PCR.canonical⋆ M v
+  applyCast {Γ}{A}{B} M v (cast .⋆ B ℓ {unk~L}) {a} with canonical⋆ M v
   ...  | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
   ...    | yes ap-b = M' ⟨ cast A' B ℓ {ap-b} ⟩
   ...    | no ap-b = blame ℓ  
@@ -78,53 +153,17 @@ module SimpleFunCast where
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
     case M (ƛ l) (ƛ r)
 
-  funSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc c (inert-fun {A}{B}{A'}{B'} .c) = ⟨ A , ⟨ B , refl ⟩ ⟩
+  open import CastStructure
 
-  pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc c (inert-pair {A}{B}{A'}{B'} .c) = ⟨ A , ⟨ B , refl ⟩ ⟩
+  cs : CastStruct
+  cs = record
+             { precast = pcs
+             ; applyCast = applyCast
+             }
 
-  sumSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc c (inert-sum {A}{B}{A'}{B'} .c) = ⟨ A , ⟨ B , refl ⟩ ⟩
-
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (inert-fun _) =
-     cast A' A₁ ℓ {Sym~ (~⇒L c)}
-
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ {c}) (inert-fun _) = cast A₂ B' ℓ {~⇒R c}
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (inert-pair _) = cast A₁ A' ℓ {~×L c}
-
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC (cast (A₁ `× A₂) (A' `× B') ℓ {c}) (inert-pair _) = cast A₂ B' ℓ {~×R c}
-  
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {c}) (inert-sum _) = cast A₁ A' ℓ {~⊎L c}
-
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {c}) (inert-sum _) = cast A₂ B' ℓ {~⊎R c}
-  
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
-  baseNotInert c ()
-
-  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
-                  dom cod fstC sndC inlC inrC
-                  baseNotInert
-  open Red
+  import ParamCastReduction
+  open ParamCastReduction cs public
 
   import GTLC2CC
-  module Compile = GTLC2CC Cast cast
+  open GTLC2CC Cast (λ A B ℓ {c} → (cast A B ℓ {c})) public
+

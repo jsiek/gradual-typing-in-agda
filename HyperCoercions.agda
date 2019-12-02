@@ -166,9 +166,77 @@ module HyperCoercions where
   ActiveOrInert {A ⇒ D} (𝜖 ↷ m , (cfail ℓ)) = inj₁ A-fail
   ActiveOrInert {.⋆ ⇒ D} ((?? x) ↷ m , i) = inj₁ A-proj
 
-  import EfficientParamCasts
-  module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
-  open EPCR
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A B A' B'}{c : Cast (B ⇒ A)}{d : Cast (A' ⇒ B')}
+          → Cross (𝜖 ↷ (c ↣ d) , 𝜖)    
+    C-pair : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
+          → Cross (𝜖 ↷ (c ×' d) , 𝜖)    
+    C-sum : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
+          → Cross (𝜖 ↷ (c +' d) , 𝜖)    
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         → Cast (A' ⇒ A₁)
+  dom (𝜖 ↷ c ↣ d , 𝜖) (C-fun) = c
+  
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  cod (𝜖 ↷ c ↣ d , 𝜖) (C-fun) = d
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  fstC (𝜖 ↷ c ×' d , 𝜖) (C-pair) = c
+  
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  sndC (𝜖 ↷ c ×' d , 𝜖) (C-pair) = d
+
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  inlC (𝜖 ↷ c +' d , 𝜖) (C-sum) = c
+  
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  inrC (𝜖 ↷ c +' d , 𝜖) (C-sum) = d
+  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
+  
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ (𝜖 ↷ (c ↣ d) , 𝜖) (I-mid (I-cfun{A}{B}{A'}{B'})) =
+      ⟨ C-fun , ⟨ A , ⟨ A' , refl ⟩ ⟩ ⟩
+
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× .(𝜖 ↷ _ , 𝜖) (I-mid ())
+
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ .(𝜖 ↷ _ , 𝜖) (I-mid ())
+  
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+
+  import EfficientParamCastAux
+  open EfficientParamCastAux pcs
 
   _⨟_ : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
       → Cast (A ⇒ C)
@@ -232,7 +300,7 @@ module HyperCoercions where
     case M (ƛ l) (ƛ r)
   applyCast M v (𝜖 ↷ id ι , 𝜖) {A-mid A-idι} = M
   applyCast M v ((?? ℓ) {g = g} ↷ m , i) {a}
-      with EPCR.canonical⋆ M v
+      with canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
         M' ⟨ c ⨟ ((?? ℓ) {g = g} ↷ m , i) ⟩
 
@@ -240,56 +308,19 @@ module HyperCoercions where
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M v (𝜖 ↷ (c ↣ d) , 𝜖) {I-mid I-cfun} N = (M · N ⟨ c ⟩) ⟨ d ⟩
   
-  funSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-            → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc (𝜖 ↷ (_↣_ {A}{B}{A'}{B'} c d) , 𝜖) (I-mid I-cfun) M v =
-      ⟨ A , ⟨ A' , refl ⟩ ⟩
 
-  pairSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-            → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc .(𝜖 ↷ _ , 𝜖) (I-mid ()) M v
+  open import CastStructure
 
-  sumSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-            → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc .(𝜖 ↷ _ , 𝜖) (I-mid ()) M v
+  ecs : EfficientCastStruct
+  ecs = record
+             { precast = pcs
+             ; applyCast = applyCast
+             ; compose = _⨟_
+             }
+             
+  import EfficientParamCasts
+  open EfficientParamCasts ecs public
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = c
-  
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod (𝜖 ↷ c ↣ d , 𝜖) (I-mid I-cfun) = d
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC .(𝜖 ↷ _ , 𝜖) (I-mid ())
-  
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC .(𝜖 ↷ _ , 𝜖) (I-mid ())
-
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC .(𝜖 ↷ _ , 𝜖) (I-mid ())
-  
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC .(𝜖 ↷ _ , 𝜖) (I-mid ())
-  
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
-  baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) nd (I-mid ())
-
-  module Red = EPCR.Reduction applyCast funSrc pairSrc sumSrc
-                  dom cod fstC sndC inlC inrC
-                  baseNotInert (_⨟_)
-  open Red
 
   data PreType : Type → Set where
     P-Base : ∀{ι} → PreType (` ι)

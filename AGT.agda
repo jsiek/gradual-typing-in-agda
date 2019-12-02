@@ -1181,6 +1181,8 @@ module AGT where
   
   {-
 
+   OBSOLETE, NEEDS TO BE UPDATED, EVEN LESS LIKE AGT NOW
+
    The identity casts (at base type) and error casts are active. All
    the other casts are inert. This treatment of identity casts as
    active is a bit different from the AGT paper, but I think it is
@@ -1191,12 +1193,13 @@ module AGT where
   data Inert : ∀{A} → Cast A → Set where
     inert : ∀{A B C} {ab : A ⊑ B} {cb : C ⊑ B}
           → ¬ (Σ[ ι ∈ Base ] A ≡ ` ι × C ≡ ` ι)
+          → A ≢ ⋆
           → Inert ((A ⇒ B ⇒ C){ab}{cb})
 
   data Active : ∀{A} → Cast A → Set where
     activeId : ∀ {ι : Base}{ab}{cb} → Active (((` ι) ⇒ (` ι) ⇒ (` ι)){ab}{cb})
     activeError : ∀ {A B} → Active (error A B)
-
+    activeA⋆ : ∀{B C}{ab : ⋆ ⊑ B}{cb : C ⊑ B} → Active ((⋆ ⇒ B ⇒ C) {ab}{cb})
 
   baseAndEq? : (A : Type) → (B : Type) → Dec (Σ[ ι ∈ Base ] A ≡ ` ι × B ≡ ` ι)
   baseAndEq? A B
@@ -1219,104 +1222,140 @@ module AGT where
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert {.(A ⇒ C)} ((A ⇒ B ⇒ C){ab}{cb})
       with baseAndEq? A C
-  ... | no nbe = inj₂ (inert nbe)
-  ... | yes ⟨ ι , ⟨ A≡ι , C≡ι ⟩ ⟩ rewrite A≡ι | C≡ι
+  ... | no nbe
+      with eq-unk A
+  ... | yes A≡⋆ rewrite A≡⋆ = inj₁ activeA⋆
+  ... | no A≢⋆ = inj₂ (inert nbe A≢⋆)
+  ActiveOrInert {.(A ⇒ C)} ((A ⇒ B ⇒ C){ab}{cb})
+      | yes ⟨ ι , ⟨ A≡ι , C≡ι ⟩ ⟩ rewrite A≡ι | C≡ι
       with ⊑RBase cb
   ... | b=c rewrite b=c = inj₁ activeId
   ActiveOrInert {.(A ⇒ B)} (error A B) = inj₁ activeError
 
-  import EfficientParamCasts
-  module EPCR = EfficientParamCasts Cast Inert Active ActiveOrInert
-  open EPCR
-  
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
-            → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
-  applyCast M v (error _ _) {activeError} = blame (pos zero)
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A₁ A₂ B₁ B₂ C₁ C₂ ab cb}
+          → Cross (((A₁ ⇒ A₂) ⇒ (B₁ ⇒ B₂) ⇒ (C₁ ⇒ C₂)){ab}{cb})
+    C-pair : ∀{A₁ A₂ B₁ B₂ C₁ C₂ ab cb}
+          → Cross (((A₁ `× A₂) ⇒ (B₁ `× B₂) ⇒ (C₁ `× C₂)){ab}{cb})
+    C-sum : ∀{A₁ A₂ B₁ B₂ C₁ C₂ ab cb}
+          → Cross (((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂) ⇒ (C₁ `⊎ C₂)){ab}{cb})
 
-  funSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-         → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc ((A ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (inert x) M v
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ ((A ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (inert ¬b ¬⋆) 
       with ⊑R⇒ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
       with ⊑L⇒ ab
-  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
+  ... | inj₁ A≡⋆ = ⊥-elim (¬⋆ A≡⋆)
   ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⇒A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⇒A₂ =
-        ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+        ⟨ C-fun , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩
 
-  pairSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-         → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc ((A ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) (inert x) M v
-      with ⊑R× cb
-  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
-      with ⊑L× ab
-  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
-  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁×A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁×A₂ =
-        ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× ((.⋆ ⇒ .(_ `× _) ⇒ .(_ `× _)) {unk⊑} {pair⊑ cb cb₁}) (inert x x₁) =
+      ⊥-elim (x₁ refl)
+  Inert-Cross× (((A₁ `× A₂) ⇒ (B₁ `× B₂) ⇒ (C₁ `× C₂)) {pair⊑ ab ab₁} {pair⊑ cb cb₁})
+      (inert x x₁) =
+      ⟨ C-pair , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩
 
-  sumSrc : ∀{A A' B' Γ}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-         → (M : Γ ⊢ A) → SimpleValue M
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc ((A ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x) M v
-      with ⊑R⊎ cb
-  ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12
-      with ⊑L⊎ ab
-  ... | inj₁ A≡⋆ = contradiction A≡⋆ (simple⋆ M v)
-  ... | inj₂ ⟨ A₁ , ⟨ A₂ , ⟨ A=A₁⊎A₂ , ⟨ A1⊑B1 , A2⊑B2 ⟩ ⟩ ⟩ ⟩ rewrite A=A₁⊎A₂ =
-        ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ ((_ ⇒ _ ⇒ .(_ `⊎ _)) {unk⊑} {sum⊑ cb cb₁}) (inert x x₁) =
+      ⊥-elim (x₁ refl)
+  Inert-Cross⊎ (((A₁ `⊎ A₂) ⇒ (B₁ `⊎ B₂) ⇒ (C₁ `⊎ C₂)) {sum⊑ ab ab₁} {sum⊑ cb cb₁})
+      (inert x x₁) =
+      ⟨ C-sum , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (((A₁ ⇒ A₂) ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (inert x)
+  dom (((A₁ ⇒ A₂) ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (C-fun)
       with ⊑R⇒ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | fun⊑ ab1 ab2 = (C₁ ⇒ B₁ ⇒ A₁){c1⊑b1}{ab1}
 
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (((A₁ ⇒ A₂) ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (inert x)
+  cod (((A₁ ⇒ A₂) ⇒ B ⇒ (C₁ ⇒ C₂)){ab}{cb}) (C-fun)
       with ⊑R⇒ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | fun⊑ ab1 ab2 = (A₂ ⇒ B₂ ⇒ C₂){ab2}{c2⊑b2}
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (((A₁ `× A₂) ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) (inert x)
+  fstC (((A₁ `× A₂) ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) (C-pair)
       with ⊑R× cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | pair⊑ ab1 ab2 = (A₁ ⇒ B₁ ⇒ C₁){ab1}{c1⊑b1}
 
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (((A₁ `× A₂) ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) (inert x)
+  sndC (((A₁ `× A₂) ⇒ B ⇒ (C₁ `× C₂)){ab}{cb}) (C-pair)
       with ⊑R× cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | pair⊑ ab1 ab2 = (A₂ ⇒ B₂ ⇒ C₂){ab2}{c2⊑b2}
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x)
+  inlC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (C-sum)
       with ⊑R⊎ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | sum⊑ ab1 ab2 = (A₁ ⇒ B₁ ⇒ C₁){ab1}{c1⊑b1}
 
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (inert x)
+  inrC (((A₁ `⊎ A₂) ⇒ B ⇒ (C₁ `⊎ C₂)){ab}{cb}) (C-sum)
       with ⊑R⊎ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ b=b12 , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ rewrite b=b12 
       with ab
   ... | sum⊑ ab1 ab2 = (A₂ ⇒ B₂ ⇒ C₂){ab2}{c2⊑b2}
+
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert ((A ⇒ B ⇒ (` ι)) {ab} {cb}) (inert x A≢⋆)
+      with ⊑RBase cb
+  ... | b≡c rewrite b≡c
+      with ⊑LBase ab
+  ... | inj₁ eq rewrite eq = x ⟨ ι , ⟨ refl , refl ⟩ ⟩
+  ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
+
+{-  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
+  baseNotInert ((A ⇒ B ⇒ (` ι)){ab}{cb}) A≢⋆ (inert p)
+      with ⊑RBase cb
+  ... | b≡c rewrite b≡c
+      with ⊑LBase ab
+  ... | inj₁ eq rewrite eq = ⟨ ι , ⟨ refl , refl ⟩ ⟩
+  ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
+  baseNotInert (error A B) A⋆ = λ ()
+-}
+
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+
+  import EfficientParamCastAux
+  open EfficientParamCastAux pcs
 
   compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
   compose ((A ⇒ B ⇒ C){ab}{cb}) ((C ⇒ B' ⇒ C'){cb'}{c'b'})
@@ -1330,20 +1369,25 @@ module AGT where
   compose (error A B) (error B C) = (error A C)
   compose (error A B) (B ⇒ B' ⇒ C) = (error A C)
 
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
-  baseNotInert ((A ⇒ B ⇒ (` ι)){ab}{cb}) A≢⋆ (inert p)
-      with ⊑RBase cb
-  ... | b≡c rewrite b≡c
-      with ⊑LBase ab
-  ... | inj₁ eq rewrite eq = p ⟨ ι , ⟨ refl , refl ⟩ ⟩
-  ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
-  baseNotInert (error A B) A⋆ = λ ()
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+            → ∀ {a : Active c} → Γ ⊢ B
+  applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
+  applyCast M (EfficientParamCastAux.S-val x) .(⋆ ⇒ _ ⇒ _) {activeA⋆} =
+    ⊥-elim (simple⋆ M x refl)
+  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} = M ⟨ compose c d ⟩
+  applyCast M v (error _ _) {activeError} = blame (pos zero)
+  
+  open import CastStructure
 
-  module Red = EPCR.Reduction applyCast funSrc pairSrc sumSrc
-                  dom cod fstC sndC inlC inrC
-                  baseNotInert compose
-  open Red
-
+  ecs : EfficientCastStruct
+  ecs = record
+             { precast = pcs
+             ; applyCast = applyCast
+             ; compose = compose
+             }
+             
+  import EfficientParamCasts
+  open EfficientParamCasts ecs public
 
   {-
 

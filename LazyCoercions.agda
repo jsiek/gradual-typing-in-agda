@@ -74,15 +74,79 @@ module LazyCoercions where
   ActiveOrInert (c `+ c₁) = inj₁ A-sum
   ActiveOrInert (⊥ A ⟨ ℓ ⟩ B) = inj₁ A-fail
 
-  import ParamCastReduction
-  module PCR = ParamCastReduction Cast Inert Active ActiveOrInert
-  open PCR
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A B A' B'}{c : Cast (B ⇒ A)}{d : Cast (A' ⇒ B')} → Cross (c ↣ d)    
+    C-pair : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')} → Cross (c `× d)
+    C-sum : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')} → Cross (c `+ d)
+
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ c ()
+
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× c ()
+
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ c ()
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         → Cast (A' ⇒ A₁)
+  dom (c ↣ d) C-fun = c
+
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  cod (c ↣ d) C-fun = d
+
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  fstC (c `× d) C-pair = c
+
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  sndC (c `× d) C-pair = d
+
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         → Cast (A₁ ⇒ A')
+  inlC (c `+ d) C-sum = c
+
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+         →  Cast (A₂ ⇒ B')
+  inrC (c `+ d) C-sum = d
+  
+  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+  baseNotInert c ()
+
+  open import PreCastStructure
+  
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             }
+
+  import ParamCastAux
+  open ParamCastAux pcs
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
               → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id {a} = M
   applyCast M v (A !!) {()}
-  applyCast M v (B ?? ℓ) {a} with PCR.canonical⋆ M v
+  applyCast M v (B ?? ℓ) {a} with canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
   ...    | yes cns = M' ⟨ coerce A' B ℓ ⟩
   ...    | no incns = blame ℓ
@@ -96,52 +160,16 @@ module LazyCoercions where
     case M (ƛ l) (ƛ r)
   applyCast M v (⊥ A ⟨ ℓ ⟩ B) = blame ℓ
 
-  funSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc c ()
+  open import CastStructure
 
-  pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc c ()
+  cs : CastStruct
+  cs = record
+             { precast = pcs
+             ; applyCast = applyCast
+             }
 
-  sumSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc c ()
-
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         → Cast (A' ⇒ A₁)
-  dom c ()
-
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  cod c ()
-
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  fstC c ()
-
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  sndC c ()
-
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         → Cast (A₁ ⇒ A')
-  inlC c ()
-
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
-         →  Cast (A₂ ⇒ B')
-  inrC c ()
-  
-  baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
-  baseNotInert c ()
-
-  module Red = PCR.Reduction applyCast funSrc pairSrc sumSrc
-                   dom cod fstC sndC inlC inrC
-                   baseNotInert
-  open Red
+  import ParamCastReduction
+  open ParamCastReduction cs public
 
   import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B ℓ)
+  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B ℓ) public

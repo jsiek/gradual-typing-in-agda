@@ -113,44 +113,47 @@ n  -}
   ... | no ng = inj₁ (A-inj (cast (A `⊎ A₁) ⋆ ℓ A~B) ng (λ ()))
   ActiveOrInert {.(A `⊎ A₁ ⇒ B `⊎ B₁)} (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B) = inj₁ (A-sum (cast (A `⊎ A₁) (B `⊎ B₁) ℓ A~B))
 
-  funSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' ⇒ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
-  funSrc (cast (A₁ ⇒ A₂) (A' ⇒ B') x cn) (I-fun _) = [ A₁ , [ A₂ , refl ] ]
+  data Cross : ∀ {A} → Cast A → Set where
+    C-fun : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A ⇒ B) (A' ⇒ B') ℓ cn)
+    C-pair : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A `× B) (A' `× B') ℓ cn)
+    C-sum : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A `⊎ B) (A' `⊎ B') ℓ cn)
 
-  pairSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `× B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
-  pairSrc c ()
+  Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
+  Inert-Cross⇒ (cast (A ⇒ B) (C ⇒ D) ℓ cn) (I-fun _) =
+      [ C-fun , [ A , [ B , refl ] ] ]
 
-  sumSrc : ∀{A A' B'}
-         → (c : Cast (A ⇒ (A' `⊎ B'))) → (i : Inert c)
-          → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
-  sumSrc c ()
+  Inert-Cross× : ∀{A C D} → (c : Cast (A ⇒ (C `× D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `× A₂
+  Inert-Cross× (cast A .(_ `× _) x x₁) ()
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
+              → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
+  Inert-Cross⊎ (cast A .(_ `⊎ _) x x₁) ()
+
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
   dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
       cast A' A₁ ℓ (Sym~ (~⇒L c))
 
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Inert c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
       cast A₂ B' ℓ (~⇒R c)
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
   fstC (cast (A `× B) (C `× D) ℓ cn) i = cast A C ℓ (~×L cn)
 
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Inert c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   sndC (cast (A `× B) (C `× D) ℓ cn) i = cast B D ℓ (~×R cn)
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
   inlC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast A C ℓ (~⊎L cn)
 
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Inert c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   inrC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast B D ℓ (~⊎R cn)
 
@@ -174,9 +177,10 @@ n  -}
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
-             ; funSrc = funSrc
-             ; pairSrc = pairSrc
-             ; sumSrc = sumSrc
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
              ; dom = dom
              ; cod = cod
              ; fstC = fstC

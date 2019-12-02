@@ -306,7 +306,6 @@ module EfficientGroundCoercions where
   data Cross : ∀ {A} → Cast A → Set where
     C-cross : ∀{A B}{g : gCast (A ⇒ B)} → Cross (` ` g)
 
-
   Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   Inert-Cross⇒ .(` (` (_ ↣ _))) (I-intmd (I-gnd (I-cfun{A = A}{A' = A'}))) =
