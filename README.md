@@ -15,9 +15,15 @@ Inventory
 * [ParamCastCalculus.agda](./ParamCastCalculus.agda): Syntax and type
    system (it is intrinsically typed) for the Parameterized Cast
    Calculus. This also includes the definition of substitution.
+* [ParamCastAux.agda](./ParamCastAux.agda): defines `Value`, `Frame`,
+   `plug`, the wrapper reductions based on the idea of eta expansion,
+   and proves a canonical forms lemma for type dynamic.
 * [ParamCastReduction.agda](./ParamCastReduction.agda): Reduction
    rules and proof of type safety for the Parameterized Cast
    Calculus.
+* [EfficientParamCastAux.agda](./EfficientParamCastAux.agda): defines
+   `SimpleValue`, `Value`, and proves a canonical forms lemma for type
+   dynamic.
 * [EfficientParamCasts.agda](./EfficientParamCasts.agda): A
    space-efficient reduction relation for the parameterized cast
    calculus. This module requires a compose function for
