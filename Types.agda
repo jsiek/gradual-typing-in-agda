@@ -74,6 +74,12 @@ module Types where
         ------------------
       → Prim ((` ι) ⇒ B)
 
+  {- TODO: replace rep with the following repp -}
+
+  repp : ∀{A} → Prim A → Set
+  repp {(` ι)} P-Base = rep-base ι
+  repp {(` ι ⇒ _)} (P-Fun p) = (rep-base ι) → repp p 
+
   P-Fun1 : ∀ {A B}
     → Prim (A ⇒ B)
     → Σ[ ι ∈ Base ] A ≡ ` ι
@@ -722,3 +728,33 @@ module Types where
   consis-eq {A `× A₁} {B} c d = {!!}
   consis-eq {A `⊎ A₁} {B} c d = {!!}
 -}
+
+  ⨆ : ∀{A B : Type} → (c : A ~ B) → Type
+  ⨆ {.⋆} {B} unk~L = B
+  ⨆ {A} {.⋆} unk~R = A
+  ⨆ {(` ι)} {.(` _)} base~ = ` ι
+  ⨆ {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~ c d) = (⨆ c) ⇒ (⨆ d)
+  ⨆ {.(_ `× _)} {.(_ `× _)} (pair~ c d) = (⨆ c) `× (⨆ d)
+  ⨆ {.(_ `⊎ _)} {.(_ `⊎ _)} (sum~ c d) = (⨆ c) `⊎ (⨆ d)
+
+
+  ⨆~ : ∀{B C}
+      → (bc : B ~ C)
+      → C ~ ⨆ bc
+
+  ~⨆ : ∀{B C}
+      → (bc : B ~ C)
+      → B ~ ⨆ bc
+  ~⨆ unk~L = unk~L
+  ~⨆ unk~R = Refl~
+  ~⨆ base~ = Refl~
+  ~⨆ (fun~ aa bb) = fun~ (Sym~ (⨆~ aa)) (~⨆ bb)
+  ~⨆ (pair~ aa bb) = pair~ (~⨆ aa) (~⨆ bb)
+  ~⨆ (sum~ aa bb) = sum~ (~⨆ aa) (~⨆ bb)
+
+  ⨆~ unk~L = Refl~
+  ⨆~ unk~R = unk~L
+  ⨆~ base~ = Refl~
+  ⨆~ (fun~ aa bb) = fun~ (Sym~ (~⨆ aa)) (⨆~ bb)
+  ⨆~ (pair~ aa bb) = pair~ (⨆~ aa) (⨆~ bb)
+  ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
