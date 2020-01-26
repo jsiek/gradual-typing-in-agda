@@ -76,33 +76,39 @@ module SimpleFunCast where
   
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _) =
-     cast C A ℓ {Sym~ (~⇒L cn)}
+  dom (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _)
+      with ~-relevant cn
+  ... | fun~ c d = cast C A ℓ {c}
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _) =
-     cast B D ℓ {~⇒R cn}
+  cod (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _)
+      with ~-relevant cn
+  ... | fun~ c d = cast B D ℓ {d}
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _) =
-      cast A C ℓ {~×L cn}
+  fstC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _)
+      with ~-relevant cn
+  ... | pair~ c d = cast A C ℓ {c}
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _) =
-      cast B D ℓ {~×R cn}
+  sndC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _)
+      with ~-relevant cn
+  ... | pair~ c d = cast B D ℓ {d}
   
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) ℓ {cn}) (C-sum _) =
-      cast A C ℓ {~⊎L cn}
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ {cn}) (C-sum _)
+      with ~-relevant cn
+  ... | sum~ c d = cast A C ℓ {c}
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {cn}) (C-sum _) =
-      cast A₂ B' ℓ {~⊎R cn}
+  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {cn}) (C-sum _)
+      with ~-relevant cn
+  ... | sum~ c d = cast A₂ B' ℓ {d}
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()

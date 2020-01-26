@@ -133,29 +133,39 @@ n  -}
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
-      cast A' A₁ ℓ (Sym~ (~⇒L c))
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') i
+      with ~-relevant c'
+  ... | fun~ c d = cast A' A₁ ℓ c
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c) i =
-      cast A₂ B' ℓ (~⇒R c)
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') i
+      with ~-relevant c'
+  ... | fun~ c d = cast A₂ B' ℓ d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) ℓ cn) i = cast A C ℓ (~×L cn)
+  fstC (cast (A `× B) (C `× D) ℓ c') i
+      with ~-relevant c'
+  ... | pair~ c d = cast A C ℓ c
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) ℓ cn) i = cast B D ℓ (~×R cn)
+  sndC (cast (A `× B) (C `× D) ℓ c') i
+      with ~-relevant c'
+  ... | pair~ c d = cast B D ℓ d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast A C ℓ (~⊎L cn)
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ c') i
+      with ~-relevant c'
+  ... | sum~ c d = cast A C ℓ c
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A `⊎ B) (C `⊎ D) ℓ cn) i = cast B D ℓ (~⊎R cn)
+  inrC (cast (A `⊎ B) (C `⊎ D) ℓ c') i
+      with ~-relevant c'
+  ... | sum~ c d = cast B D ℓ d
 
   {-
   Finally, we show that casts to base type are not inert.
@@ -239,12 +249,16 @@ n  -}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
   
-  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c) {A-pair _} =
-    cons (fst M ⟨ cast A₁ B₁ ℓ (~×L c) ⟩) (snd M ⟨ cast A₂ B₂ ℓ (~×R c) ⟩)
+  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c') {A-pair _}
+      with ~-relevant c'
+  ... | pair~ c d =
+    cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ d ⟩)
     
-  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c) {A-sum _} =
-    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ (~⊎L c) ⟩) in
-    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ (~⊎R c) ⟩) in
+  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c') {A-sum _}
+      with ~-relevant c'
+  ... | sum~ c d =
+    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
+    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩) in
     case M (ƛ l) (ƛ r)
 
   open import CastStructure

@@ -66,27 +66,39 @@ module SimpleCast where
   
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (((A ⇒ B) ⇒⟨ ℓ ⟩ (C ⇒ D)){c}) x = (C ⇒⟨ ℓ ⟩ A) {c = ~⇒L (Sym~ c)}
+  dom (((A ⇒ B) ⇒⟨ ℓ ⟩ (C ⇒ D)){c}) x
+      with ~-relevant c
+  ... | fun~ c' d' = (C ⇒⟨ ℓ ⟩ A) {c = c'} 
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (((A ⇒ B) ⇒⟨ ℓ ⟩ (C ⇒ D)){c}) x = (B ⇒⟨ ℓ ⟩ D) {c = ~⇒R c}
+  cod (((A ⇒ B) ⇒⟨ ℓ ⟩ (C ⇒ D)){c}) x
+      with ~-relevant c
+  ... | fun~ c' d' = (B ⇒⟨ ℓ ⟩ D) {c = d'}
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x = (A ⇒⟨ ℓ ⟩ C){~×L c}
+  fstC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x
+      with ~-relevant c
+  ... | pair~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'} 
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x = (B ⇒⟨ ℓ ⟩ D){~×R c}
+  sndC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x
+      with ~-relevant c
+  ... | pair~ c' d' = (B ⇒⟨ ℓ ⟩ D){d'} 
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x = (A ⇒⟨ ℓ ⟩ C){~⊎L c}
+  inlC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x
+      with ~-relevant c
+  ... | sum~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'} 
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x = (B ⇒⟨ ℓ ⟩ D){~⊎R c}
+  inrC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x
+      with ~-relevant c
+  ... | sum~ c' d' = (B ⇒⟨ ℓ ⟩ D){d'}
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
@@ -126,18 +138,19 @@ module SimpleCast where
   ...    | yes ap-b = M' ⟨ (A' ⇒⟨ ℓ ⟩ B) {ap-b} ⟩
   ...    | no ap-b = blame ℓ  
   {- Wrap -}
-  applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c})
+  applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {fun~ c d})
       {activeFun .((_ ⇒ _) ⇒⟨ ℓ ⟩ (_ ⇒ _))} =
-      ƛ ((rename (λ {A} → S_) M · (` Z ⟨ (B₁ ⇒⟨ flip ℓ ⟩ A₁) {Sym~(~⇒L c)} ⟩))
-           ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {~⇒R c} ⟩)
+        ƛ ((rename (λ {A} → S_) M · (` Z ⟨ (B₁ ⇒⟨ flip ℓ ⟩ A₁) {c} ⟩))
+           ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d} ⟩)
   {- Cast Pair -}                   
-  applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){c}){activePair(_ ⇒⟨ ℓ ⟩ _)}=
-      cons (fst M ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {~×L c} ⟩) (snd M ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {~×R c}⟩)
+  applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){pair~ c d}){activePair(_ ⇒⟨ ℓ ⟩ _)} =
+        cons (fst M ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {c} ⟩) (snd M ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d}⟩)
   {- Cast Sum -}
-  applyCast{Γ}{A₁ `⊎ A₂}{B₁ `⊎ B₂}M v((_ ⇒⟨ ℓ ⟩ _){c}){activeSum .(_ ⇒⟨ ℓ ⟩ _)}=
-    let l = inl ((` Z) ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {~⊎L c}⟩) in
-    let r = inr ((` Z) ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {~⊎R c}⟩) in
+  applyCast{Γ}{A₁ `⊎ A₂}{B₁ `⊎ B₂}M v((_ ⇒⟨ ℓ ⟩ _){sum~ c d}){activeSum .(_ ⇒⟨ ℓ ⟩ _)} =
+    let l = inl ((` Z) ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {c}⟩) in
+    let r = inr ((` Z) ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d}⟩) in
     case M (ƛ l) (ƛ r)
+
      
   open import CastStructure
 

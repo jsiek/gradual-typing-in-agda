@@ -522,6 +522,12 @@ module Types where
   ... | yes ab | no a1b1 = no (¬~sR a1b1)
   ... | no ab  | _ = no (¬~sL ab)
 
+  ~-relevant : ∀{A B} → .(A ~ B) → A ~ B
+  ~-relevant {A}{B} A~B
+      with A `~ B
+  ... | yes A~B' = A~B'
+  ... | no A~̸B = ⊥-elim (A~̸B A~B)
+
   eq-unk : (A : Type) → Dec (A ≡ ⋆)
   eq-unk ⋆ = yes refl
   eq-unk (` ι) = no (λ ())
@@ -529,6 +535,7 @@ module Types where
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
 
+{-
   ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'
   ~⇒L {A}{B}{A'}{B'} c
       with A `~ A'
@@ -564,7 +571,7 @@ module Types where
       with B `~ B'
   ... | yes B~B' = B~B'
   ... | no ¬B~B' = ⊥-elim (¬~sR ¬B~B' c)
-
+-}
 
   {- Shallow Consistency, used in Lazy Casts -}
 
