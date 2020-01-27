@@ -138,18 +138,20 @@ module SimpleCast where
   ...    | yes ap-b = M' ⟨ (A' ⇒⟨ ℓ ⟩ B) {ap-b} ⟩
   ...    | no ap-b = blame ℓ  
   {- Wrap -}
-  applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {fun~ c d})
+  applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c})
       {activeFun .((_ ⇒ _) ⇒⟨ ℓ ⟩ (_ ⇒ _))} =
-        ƛ ((rename (λ {A} → S_) M · (` Z ⟨ (B₁ ⇒⟨ flip ℓ ⟩ A₁) {c} ⟩))
-           ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d} ⟩)
+      eta⇒ M v (((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)) {c})
+          (C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)))
   {- Cast Pair -}                   
-  applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){pair~ c d}){activePair(_ ⇒⟨ ℓ ⟩ _)} =
-        cons (fst M ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {c} ⟩) (snd M ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d}⟩)
+  applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){c}){activePair(_ ⇒⟨ ℓ ⟩ _)} =
+       eta× M v (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)){c})
+          (C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
+
   {- Cast Sum -}
-  applyCast{Γ}{A₁ `⊎ A₂}{B₁ `⊎ B₂}M v((_ ⇒⟨ ℓ ⟩ _){sum~ c d}){activeSum .(_ ⇒⟨ ℓ ⟩ _)} =
-    let l = inl ((` Z) ⟨ (A₁ ⇒⟨ ℓ ⟩ B₁) {c}⟩) in
-    let r = inr ((` Z) ⟨ (A₂ ⇒⟨ ℓ ⟩ B₂) {d}⟩) in
-    case M (ƛ l) (ƛ r)
+  applyCast{Γ}{A₁ `⊎ A₂}{B₁ `⊎ B₂}M v((_ ⇒⟨ ℓ ⟩ _){c}){activeSum .(_ ⇒⟨ ℓ ⟩ _)} =
+     eta⊎ M v (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)){c})
+       (C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+
 
      
   open import CastStructure
