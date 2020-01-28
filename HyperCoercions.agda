@@ -176,27 +176,27 @@ module HyperCoercions where
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (𝜖 ↷ c ↣ d , 𝜖) (C-fun) = c
+  dom (𝜖 ↷ c ↣ d , 𝜖) x = c
   
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (𝜖 ↷ c ↣ d , 𝜖) (C-fun) = d
+  cod (𝜖 ↷ c ↣ d , 𝜖) x = d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (𝜖 ↷ c ×' d , 𝜖) (C-pair) = c
+  fstC (𝜖 ↷ c ×' d , 𝜖) x = c
   
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (𝜖 ↷ c ×' d , 𝜖) (C-pair) = d
+  sndC (𝜖 ↷ c ×' d , 𝜖) x = d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (𝜖 ↷ c +' d , 𝜖) (C-sum) = c
+  inlC (𝜖 ↷ c +' d , 𝜖) x = c
   
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (𝜖 ↷ c +' d , 𝜖) (C-sum) = d
+  inrC (𝜖 ↷ c +' d , 𝜖) x = d
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())

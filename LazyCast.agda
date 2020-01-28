@@ -80,27 +80,27 @@ module LazyCast where
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cast (A ⇒ B) (C ⇒ D) x) (C-fun _) = cast C A x
+  dom (cast (A ⇒ B) (C ⇒ D) ℓ) x = cast C A ℓ
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A ⇒ B) (C ⇒ D) x₁) (C-fun _) = cast B D x₁
+  cod (cast (A ⇒ B) (C ⇒ D) ℓ) x = cast B D ℓ
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) x₁) (C-pair _) = cast A C x₁
+  fstC (cast (A `× B) (C `× D) ℓ) x = cast A C ℓ
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) x) (C-pair _) = cast B D x
+  sndC (cast (A `× B) (C `× D) ℓ) x = cast B D ℓ
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) x₁) (C-sum _) = cast A C x₁
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ) x = cast A C ℓ
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A `⊎ B) (C `⊎ D) x₁) (C-sum _) = cast B D x₁
+  inrC (cast (A `⊎ B) (C `⊎ D) ℓ) x = cast B D ℓ
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()

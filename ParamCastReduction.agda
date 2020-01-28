@@ -294,7 +294,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | V-cast {c = c} {i = i} v
               with Inert-Cross× c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (fst-cast {c = c} v {x = x})
+                step (fst-cast {c = c} v {x})
   progress (snd {Γ}{A}{B} M) with progress M
   ... | step {N} R = step (ξ {F = F-snd} R)
   ... | error E-blame = step (ξ-blame{F = F-snd})
@@ -304,7 +304,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | V-cast {c = c} {i = i} v
               with Inert-Cross× c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (snd-cast {c = c} v {x = x})
+                step (snd-cast {c = c} v {x})
   progress (inl M) with progress M
   ... | step R = step (ξ {F = F-inl} R)
   ... | error E-blame = step (ξ-blame {F = F-inl})
@@ -325,6 +325,6 @@ module ParamCastReduction (cs : CastStruct) where
   ...    | V-cast {c = c} {i = i} v
               with Inert-Cross⊎ c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (case-cast {c = c} v {x = x})
+                step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
 

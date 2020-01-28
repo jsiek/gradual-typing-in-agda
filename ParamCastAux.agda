@@ -157,22 +157,25 @@ module ParamCastAux (pcs : PreCastStruct) where
   plug L (F-case M N) = case L M N
   plug M (F-cast c) = M ⟨ c ⟩
 
-  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B) → (Value M)
-       → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → (x : Cross c)
+  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B) 
+       → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
+       → (x : Cross c)
        → Γ ⊢ C ⇒ D
-  eta⇒ M v c x =
+  eta⇒ M c x =
      ƛ (((rename S_ M) · ((` Z) ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
 
-  eta× : ∀ {Γ A B C D} → (M : Γ ⊢ A `× B) → (Value M)
-       → (c : Cast ((A `× B) ⇒ (C `× D))) → (x : Cross c)
+  eta× : ∀ {Γ A B C D} → (M : Γ ⊢ A `× B)
+       → (c : Cast ((A `× B) ⇒ (C `× D)))
+       → (x : Cross c)
        → Γ ⊢ C `× D
-  eta× M v c x =
+  eta× M c x =
      cons (fst M ⟨ fstC c x ⟩) (snd M ⟨ sndC c x ⟩)
 
-  eta⊎ : ∀ {Γ A B C D} → (M : Γ ⊢ A `⊎ B) → (Value M)
-       → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D))) → (x : Cross c)
+  eta⊎ : ∀ {Γ A B C D} → (M : Γ ⊢ A `⊎ B)
+       → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
+       → (x : Cross c)
        → Γ ⊢ C `⊎ D
-  eta⊎ M v c x =
+  eta⊎ M c x =
      let l = inl ((` Z) ⟨ inlC c x ⟩) in
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
      case M (ƛ l) (ƛ r)

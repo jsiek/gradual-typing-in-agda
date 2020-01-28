@@ -197,27 +197,27 @@ module GroundCoercions where
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cfun c d) C-fun = c
+  dom (cfun c d) x = c
   
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cfun c d) C-fun = d
+  cod (cfun c d) x = d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cpair c d) C-pair = c
+  fstC (cpair c d) x = c
   
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cpair c d) C-pair = d
+  sndC (cpair c d) x = d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (csum c d) C-sum = c
+  inlC (csum c d) x = c
   
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (csum c d) C-sum = d
+  inrC (csum c d) x = d
   
   {-
   Finally, we show that casts to base type are not inert.
@@ -295,8 +295,8 @@ module GroundCoercions where
    V⟨c ; d⟩     —→    V⟨c⟩⟨d⟩
    -}
   applyCast M v (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
-  applyCast M v (cpair c d) {a} = eta× M v (cpair c d) C-pair
-  applyCast M v (csum c d) {a} = eta⊎ M v (csum c d) C-sum
+  applyCast M v (cpair c d) {a} = eta× M (cpair c d) C-pair
+  applyCast M v (csum c d) {a} = eta⊎ M (csum c d) C-sum
   applyCast M v (cfun c d) {()}
   applyCast M v (inj A) {()}
 

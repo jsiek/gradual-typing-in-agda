@@ -76,37 +76,37 @@ module SimpleFunCast where
   
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _)
+  dom (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) x
       with ~-relevant cn
   ... | fun~ c d = cast C A ℓ {c}
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) (C-fun _)
+  cod (cast (A ⇒ B) (C ⇒ D) ℓ {cn}) x
       with ~-relevant cn
   ... | fun~ c d = cast B D ℓ {d}
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _)
+  fstC (cast (A `× B) (C `× D) ℓ {cn}) x
       with ~-relevant cn
   ... | pair~ c d = cast A C ℓ {c}
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) ℓ {cn}) (C-pair _)
+  sndC (cast (A `× B) (C `× D) ℓ {cn}) x
       with ~-relevant cn
   ... | pair~ c d = cast B D ℓ {d}
   
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) ℓ {cn}) (C-sum _)
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ {cn}) x
       with ~-relevant cn
   ... | sum~ c d = cast A C ℓ {c}
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {cn}) (C-sum _)
+  inrC (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ {cn}) x
       with ~-relevant cn
   ... | sum~ c d = cast A₂ B' ℓ {d}
   
@@ -139,26 +139,15 @@ module SimpleFunCast where
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast {Γ}{A}{B} M v (cast .⋆ B ℓ {unk~L}) {a} with canonical⋆ M v
-  ...  | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
+  applyCast {Γ} {A} {.A} M v c {activeId .c} = M
+  applyCast {Γ} {.⋆} {B} M v (cast ⋆ B ℓ) {activeProj .(cast ⋆ B ℓ) x}
+       with canonical⋆ M v
+  ...  | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩
+         rewrite meq
+         with A' `~ B
   ...    | yes ap-b = M' ⟨ cast A' B ℓ {ap-b} ⟩
   ...    | no ap-b = blame ℓ  
-  applyCast M v (cast .⋆ ⋆ ℓ {unk~R}) {activeId .(cast ⋆ ⋆ ℓ)} = M
-  applyCast M v (cast A ⋆ ℓ {unk~R}) {activeProj .(cast A ⋆ ℓ) x} =
-     ⊥-elim (x refl)
-  applyCast M v (cast (` ι) (` ι) ℓ {base~}) {a} = M
   
-  applyCast{Γ} M v (cast (A₁ ⇒ A₂) (B₁ ⇒ B₂) ℓ {fun~ c c₁}) {a} =
-     contradiction a funNotActive
-  
-  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ {pair~ c c₁}) {a} =
-    cons (fst M ⟨ cast A₁ B₁ ℓ {c} ⟩) (snd M ⟨ cast A₂ B₂ ℓ {c₁}⟩)
-  
-  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ {sum~ c c₁}) {a} =
-    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ {c}⟩) in
-    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ {c₁}⟩) in
-    case M (ƛ l) (ƛ r)
-
   open import CastStructure
 
   cs : CastStruct

@@ -132,38 +132,38 @@ n  -}
   Inert-Cross⊎ (cast A .(_ `⊎ _) x x₁) ()
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
-         → Cast (A' ⇒ A₁)
-  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') i
+         → Cast (A' ⇒ A₁) 
+  dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') x
       with ~-relevant c'
   ... | fun~ c d = cast A' A₁ ℓ c
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') i
+  cod (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') x
       with ~-relevant c'
   ... | fun~ c d = cast A₂ B' ℓ d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (cast (A `× B) (C `× D) ℓ c') i
+  fstC (cast (A `× B) (C `× D) ℓ c') x
       with ~-relevant c'
   ... | pair~ c d = cast A C ℓ c
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (cast (A `× B) (C `× D) ℓ c') i
+  sndC (cast (A `× B) (C `× D) ℓ c') x
       with ~-relevant c'
   ... | pair~ c d = cast B D ℓ d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (cast (A `⊎ B) (C `⊎ D) ℓ c') i
+  inlC (cast (A `⊎ B) (C `⊎ D) ℓ c') x
       with ~-relevant c'
   ... | sum~ c d = cast A C ℓ c
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (cast (A `⊎ B) (C `⊎ D) ℓ c') i
+  inrC (cast (A `⊎ B) (C `⊎ D) ℓ c') x
       with ~-relevant c'
   ... | sum~ c d = cast B D ℓ d
 
