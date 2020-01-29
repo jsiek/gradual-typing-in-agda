@@ -144,7 +144,7 @@ module SimpleCoercions where
   applyCast M v (cfun c d) {a} = eta⇒ M (cfun c d) C-fun
   applyCast M v (cpair c d) {a} = eta× M (cpair c d) C-pair
   applyCast M v (csum c d) {a} = eta⊎ M (csum c d) C-sum
-     
+
   open import CastStructure
 
   cs : CastStruct

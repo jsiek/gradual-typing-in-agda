@@ -40,19 +40,25 @@ module LazyCoercions where
   module CastCalc = ParamCastCalculus Cast
   open CastCalc
 
-  coerce : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
-  coerce A B ℓ with (A `⌣ B)
-  coerce A B ℓ | yes base⌣ = id {a = A-Base}
-  ... | yes (fun⌣{A₁}{A₂}{B₁}{B₂}) = (coerce B₁ A₁ (flip ℓ)) ↣ (coerce A₂ B₂ ℓ)
-  ... | yes (pair⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `× (coerce A₂ B₂ ℓ)
-  ... | yes (sum⌣{A₁}{A₂}{B₁}{B₂}) = (coerce A₁ B₁ ℓ) `+ (coerce A₂ B₂ ℓ)
-  ... | no nsc = ⊥ A ⟨ ℓ ⟩ B
-  coerce A B ℓ | yes unk⌣L with eq-unk B
+  check : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
+  coerce : ∀{A B : Type} → A ⌣ B → Label → Cast (A ⇒ B)
+
+  check A B ℓ
+      with (A `⌣ B)
+  ... | yes d = coerce d ℓ
+  ... | no _ = ⊥ A ⟨ ℓ ⟩ B
+  
+  coerce {B = B} unk⌣L ℓ with eq-unk B
   ... | yes eq rewrite eq = id {a = A-Unk}
   ... | no neq = (B ?? ℓ) {j = neq}
-  coerce A B ℓ | yes unk⌣R with eq-unk A
+  coerce {A = A} unk⌣R ℓ  with eq-unk A
   ... | yes eq rewrite eq = id {a = A-Unk}
   ... | no neq = (A !!) {i = neq}
+  coerce base⌣ ℓ = id {a = A-Base}
+  coerce (fun⌣{A₁}{A₂}{B₁}{B₂}) ℓ =
+    (check B₁ A₁ (flip ℓ)) ↣ (check A₂ B₂ ℓ)
+  coerce (pair⌣{A₁}{A₂}{B₁}{B₂}) ℓ = (check A₁ B₁ ℓ) `× (check A₂ B₂ ℓ)
+  coerce (sum⌣{A₁}{A₂}{B₁}{B₂}) ℓ = (check A₁ B₁ ℓ) `+ (check A₂ B₂ ℓ)
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A i} → Inert ((A !!) {i})
@@ -147,9 +153,7 @@ module LazyCoercions where
   applyCast M v id {a} = M
   applyCast M v (A !!) {()}
   applyCast M v (B ?? ℓ) {a} with canonical⋆ M v
-  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
-  ...    | yes cns = M' ⟨ coerce A' B ℓ ⟩
-  ...    | no incns = blame ℓ
+  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq = M' ⟨ check A' B ℓ ⟩
   applyCast{Γ} M v (c ↣ d) {a} =
      ƛ (((rename (λ {A} → S_) M) · ((` Z) ⟨ c ⟩)) ⟨ d ⟩)
   applyCast M v (c `× d) {a} =
@@ -172,4 +176,4 @@ module LazyCoercions where
   open ParamCastReduction cs public
 
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B ℓ) public
+  open GTLC2CC Cast (λ A B ℓ {c} → check A B ℓ) public
