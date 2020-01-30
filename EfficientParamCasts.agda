@@ -91,17 +91,20 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
 
   {-
 
-   We parameterize the reduction relation according to whether the
-   congruence rule for casts, ξ-cast, may be used in the current
-   context or not. In particular, we want to disallow reduction
-   under a sequence of two or more casts. So the ξ-cast rule
-   requires the parameter to be 'allow', and it changes the
-   parameter 'disallow' for reducing the subexpression. We include a
-   kind of subsumption rule, named switch, that implicitly changes
-   from 'allow' to 'disallow'. (The other direction would ruin space
-   efficiency.) The rest of the reduction rules are given the
-   'disallow' parameter, which means that they can fire in both
-   allow and disallow contexts thanks to the switch rule.
+   We parameterize the reduction relation according to whether 
+   the reduction can take place in any context or whether 
+   it can only take place in non-cast contexts, that is,
+   the immediately enclosing term cannot be a cast.
+   To prevent reducing under a pair of casts, the
+   congruence rule for casts, ξ-cast, requires a non-cast context.
+   Further, the inner reduction must be OK with any context.
+   The congruence rule for all other language features, ξ,
+   can fire in any context and the inner reduction can require
+   either any context or non-cast contexts.
+   The rule for composing two casts can fire in a non-cast context,
+   which enforces an outside-in strategy for compressing sequences
+   of casts.
+   All other reduction rules can fire in any context.
 
    -}
 
@@ -267,6 +270,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   switch-back nc compose-casts = contradiction isCast nc
 
   {-
+
+  UPDATE ME
 
   For the proof of progress, each recursive call may now result
   in a step-d or a step-a (in addition to error and done).

@@ -253,6 +253,8 @@ module HyperCoercions where
    The following compares two middle coercions to determine whether
    the target and source types are shallowly consistent.
 
+    Ditch this. -Jeremy
+
   -}
 
   _⌣'_ : ∀{A B C D} → Middle (A ⇒ B) → Middle (C ⇒ D)
@@ -280,16 +282,15 @@ module HyperCoercions where
   c ⨟ id★ = c
   id★ ⨟ (p₂ ↷ m₂ , i₂) = (p₂ ↷ m₂ , i₂)
   (p₁ ↷ m₁ , 𝜖) ⨟ (𝜖 ↷ m₂ , i₂) = p₁ ↷ (m₁ `⨟ m₂) , i₂
-  (p₁ ↷ m₁ , (!! {g = gC})) ⨟ ((?? ℓ) {g = gD} ↷ m₂ , i₂)
-      with m₁ ⌣' m₂
-  ... | no C⌣̸D = p₁ ↷ m₁ , cfail ℓ
-  ... | yes C⌣D rewrite (consis-ground-eq C⌣D gC gD) =
-        p₁ ↷ (m₁ `⨟ m₂) , i₂
+  (p₁ ↷ m₁ , (!! {G = C}{g = gC})) ⨟ ((?? ℓ) {H = D}{g = gD} ↷ m₂ , i₂)
+      with gnd-eq? C D {gC}{gD}
+  ... | no C≢D = p₁ ↷ m₁ , cfail ℓ
+  ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
   (p₁ ↷ m₁ , cfail ℓ) ⨟ (p₂ ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v id★ {a} =
+  applyCast M v id★ {A-id★} =
       M
   applyCast M v (𝜖 ↷ m , cfail ℓ) {A-fail} =
       blame ℓ
@@ -433,6 +434,9 @@ module HyperCoercions where
            → id★ ⨟ c ≡ c
   left-id★ {B} c = left-id {⋆}{B}{c}
 
+{-
+  todo: update me to match new definition using ground equality -Jeremy
+
   assoc : ∀{A B C D} (c₁ : Cast (A ⇒ B)) → (c₂ : Cast (B ⇒ C))
         → (c₃ : Cast (C ⇒ D))
         → (c₁ ⨟ c₂) ⨟ c₃ ≡ c₁ ⨟ (c₂ ⨟ c₃)
@@ -454,14 +458,12 @@ module HyperCoercions where
       rewrite `assoc m₁ m₂ m₃ = refl
   assoc (p₁ ↷ m₁ , cfail ℓ) (𝜖 ↷ m₂ , 𝜖) (𝜖 ↷ m₃ , i₃) = refl
   assoc (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!) id★ = refl
-  assoc {A} {B} {.⋆} {D} (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!{g = g1}) ((?? ℓ){g = g2} ↷ m₃ , i₃)
+  assoc {A} {B} {.⋆} {D} (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!{G = G}{g = g1}) ((?? ℓ){H = H}{g = g2} ↷ m₃ , i₃)
       with (m₁ `⨟ m₂) ⌣' m₃
   ... | no m123
-      with m₂ ⌣' m₃
-  ... | no m23 = refl
-  ... | yes m23
-      with consis-ground-eq m23 g1 g2
-  ... | refl = ⊥-elim (contradiction m23 m123)
+      with gnd-eq? G H {g1}{g2}
+  ... | no G≢H = refl
+  ... | yes refl = ⊥-elim (contradiction refl m123)
   assoc {A} {B} {.⋆} {D} (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , !!{g = g1}) ((?? ℓ){g = g2} ↷ m₃ , i₃)
       | yes m123
       with consis-ground-eq m123 g1 g2
@@ -581,7 +583,7 @@ module HyperCoercions where
       with consis-ground-eq m23 g2 g3
   ... | refl = refl
   assoc {A} {.⋆} {.⋆} {D} (p₁ ↷ m₁ , cfail ℓ') (?? ℓ ↷ m₂ , cfail ℓ''') (?? ℓ'' ↷ m₃ , i₃) = refl
-
+-}
 
   cast-id : ∀ (A : Type) → (l : Label)  → (c : A ~ A)
           → coerce A A {c} l ≡ make-id A
