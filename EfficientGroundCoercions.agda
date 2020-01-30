@@ -209,19 +209,6 @@ module EfficientGroundCoercions where
 
   {-
 
-   The other three ground coercions are active.
-
-  -}
-  data ActivegCast : ∀ {A} → gCast A → Set where
-    A-cpair : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
-          → ActivegCast (s ×' t)
-    A-csum : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
-          → ActivegCast (s +' t)
-    A-idι : ∀{B}
-          → ActivegCast (idι {B})
-
-  {-
-
    Of the intermediate coercions, injection is inert and
    so is an inert ground coercion.
    
@@ -233,6 +220,31 @@ module EfficientGroundCoercions where
     I-gnd : ∀{A B}{g : gCast (A ⇒ B)}
           → InertgCast g
           → InertiCast (` g)
+
+  {-
+
+   At the top level, an inert intermediate coercion 
+   is also an inert top-level coercion.
+
+  -}
+
+  data Inert : ∀ {A} → Cast A → Set where
+    I-intmd : ∀{A B}{i : iCast (A ⇒ B)}
+          → InertiCast i
+          → Inert (` i)
+
+  {-
+
+   The other three ground coercions are active.
+
+  -}
+  data ActivegCast : ∀ {A} → gCast A → Set where
+    A-cpair : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
+          → ActivegCast (s ×' t)
+    A-csum : ∀{A B A' B'}{s : Cast (A ⇒ B)} {t : Cast (A' ⇒ B')}
+          → ActivegCast (s +' t)
+    A-idι : ∀{B}
+          → ActivegCast (idι {B})
 
   {-
   
@@ -247,18 +259,6 @@ module EfficientGroundCoercions where
           → ActiveiCast (` g)
     A-cfail : ∀{A B G H ℓ nd}
           → ActiveiCast (cfail {A}{B} G H ℓ {nd})
-
-  {-
-
-   At the top level, an inert intermediate coercion 
-   is also an inert top-level coercion.
-
-  -}
-
-  data Inert : ∀ {A} → Cast A → Set where
-    I-intmd : ∀{A B}{i : iCast (A ⇒ B)}
-          → InertiCast i
-          → Inert (` i)
 
   {-
 
@@ -321,27 +321,27 @@ module EfficientGroundCoercions where
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (` (` (c ↣ d))) x = c
+  dom (` (` (c ↣ d))) C-cross = c
   
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (` (` (s ↣ t))) x = t
+  cod (` (` (s ↣ t))) C-cross = t
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (` (` (c ×' d))) x = c
+  fstC (` (` (c ×' d))) C-cross = c
   
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (` (` (c ×' d))) x = d
+  sndC (` (` (c ×' d))) C-cross = d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (` (` (c +' d))) x = c
+  inlC (` (` (c +' d))) C-cross = c
   
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (` (` (c +' d))) x = d
+  inrC (` (` (c +' d))) C-cross = d
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
@@ -373,6 +373,8 @@ module EfficientGroundCoercions where
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+
+  open import ParamCastAux pcs using (eta×; eta⊎)
 
   import EfficientParamCastAux
   open EfficientParamCastAux pcs
@@ -716,11 +718,8 @@ module EfficientGroundCoercions where
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
      M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) {sz} {≤-reflexive refl} ⟩
      where sz = size-cast c + size-cast ((G ?? ℓ ⨟ i) {g})
-  applyCast M v (` ` c ×' d) {a} =
-    cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
-  applyCast{A = A₁ `⊎ A₂} M v (` ` c +' d) {a} =
-    let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
-    case M (ƛ l) (ƛ r)
+  applyCast M v (` ` c ×' d) {a} = eta× M (` (` (c ×' d))) C-cross
+  applyCast{A = A₁ `⊎ A₂} M v (` ` c +' d) {a} = eta⊎ M (` (` (c +' d))) C-cross
   {- Vacuous cases -}
   applyCast M v (` ` (c ↣ d)) {A-intmd (A-gnd ())}
   applyCast M v (` (g ⨟!)) {A-intmd ()}

@@ -176,27 +176,27 @@ module HyperCoercions where
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
-  dom (𝜖 ↷ c ↣ d , 𝜖) x = c
+  dom (𝜖 ↷ c ↣ d , 𝜖) C-fun = c
   
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  cod (𝜖 ↷ c ↣ d , 𝜖) x = d
+  cod (𝜖 ↷ c ↣ d , 𝜖) C-fun = d
 
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  fstC (𝜖 ↷ c ×' d , 𝜖) x = c
+  fstC (𝜖 ↷ c ×' d , 𝜖) C-pair = c
   
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  sndC (𝜖 ↷ c ×' d , 𝜖) x = d
+  sndC (𝜖 ↷ c ×' d , 𝜖) C-pair = d
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
-  inlC (𝜖 ↷ c +' d , 𝜖) x = c
+  inlC (𝜖 ↷ c +' d , 𝜖) C-sum = c
   
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
-  inrC (𝜖 ↷ c +' d , 𝜖) x = d
+  inrC (𝜖 ↷ c +' d , 𝜖) C-sum = d
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
@@ -234,6 +234,8 @@ module HyperCoercions where
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+
+  open import ParamCastAux pcs using (eta×; eta⊎)
 
   import EfficientParamCastAux
   open EfficientParamCastAux pcs
@@ -292,17 +294,13 @@ module HyperCoercions where
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id★ {A-id★} =
       M
-  applyCast M v (𝜖 ↷ m , cfail ℓ) {A-fail} =
-      blame ℓ
-  applyCast M v (𝜖 ↷ (c ×' d) , 𝜖) {A-mid A-cpair} =
-      cons (fst M ⟨ c ⟩) (snd M ⟨ d ⟩)
-  applyCast M v (𝜖 ↷ (c +' d) , 𝜖) {A-mid A-csum} =
-    let l = inl ((` Z) ⟨ c ⟩) in let r = inr ((` Z) ⟨ d ⟩) in
-    case M (ƛ l) (ƛ r)
+  applyCast M v (p ↷ m , cfail ℓ) {A-fail} = blame ℓ
+  applyCast M v c {A-mid A-cpair} = eta× M c C-pair
+  applyCast M v c {A-mid A-csum} = eta⊎ M c C-sum
   applyCast M v (𝜖 ↷ id ι , 𝜖) {A-mid A-idι} = M
-  applyCast M v ((?? ℓ) {g = g} ↷ m , i) {a}
+  applyCast M v ((?? ℓ) {g = g} ↷ m , i) {A-proj}
       with canonical⋆ M v
-  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
+  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ refl , _ ⟩ ⟩ ⟩ ⟩ ⟩ =
         M' ⟨ c ⨟ ((?? ℓ) {g = g} ↷ m , i) ⟩
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
