@@ -10,6 +10,9 @@
   module just has to provide the appropriate parameters, the most
   important of which is the compose function, written ⨟.
 
+  This module is authored by Jeremy Siek with improvements
+  from Kuang-chen Lu.
+
 -}
 
 module EfficientGroundCoercions where
@@ -48,8 +51,9 @@ module EfficientGroundCoercions where
   infix  10 `_
   infix 5 _⨟!
   infix 5 _??_⨟_
-  infix 5 _`⨟_
-  infix 5 _⨟'_
+  infix 5 _g⨟g_
+  infix 5 _i⨟s_
+  infix 5 _g⨟i_
   infix 5 _⨟_
 
   data Cast where
@@ -379,206 +383,6 @@ module EfficientGroundCoercions where
   import EfficientParamCastAux
   open EfficientParamCastAux pcs
 
-  {-
-   The following functions compute the size of the three kinds of coercions.
-   These are used in the termination argument of the compose function.
-   -}
-
-  size-gnd : ∀{A} → gCast A → ℕ
-  size-intmd : ∀{A} → iCast A → ℕ  
-  size-cast : ∀{A} → Cast A → ℕ  
-
-  size-gnd idι = 1
-  size-gnd (c ↣ d) = 1 + size-cast c + size-cast d
-  size-gnd (c ×' d) = 1 + size-cast c + size-cast d
-  size-gnd (c +' d) =  1 + size-cast c + size-cast d
-
-  size-intmd (g ⨟!) = 2 + size-gnd g
-  size-intmd (` g) = 1 + size-gnd g
-  size-intmd (cfail G H ℓ) = 1
-  
-  size-cast id★ = 1
-  size-cast (G ?? ℓ ⨟ i) = 2 + size-intmd i
-  size-cast (` i) = 1 + size-intmd i
-
-  size-gnd-pos : ∀{A c} → size-gnd {A} c ≢ 0
-  size-gnd-pos {.(_ ⇒ _)} {idι} = λ ()
-  size-gnd-pos {.((_ ⇒ _) ⇒ (_ ⇒ _))} {c ↣ d} = λ ()
-  size-gnd-pos {.(_ `× _ ⇒ _ `× _)} {c ×' d} = λ ()
-  size-gnd-pos {.(_ `⊎ _ ⇒ _ `⊎ _)} {c +' d} = λ ()
-
-  size-intmd-pos : ∀{A c} → size-intmd {A} c ≢ 0
-  size-intmd-pos {.(_ ⇒ ⋆)} {g ⨟!} = λ ()
-  size-intmd-pos {.(_ ⇒ _)} {` g} = λ ()
-  size-intmd-pos {.(_ ⇒ _)} {cfail G H x} = λ ()
-
-  size-cast-pos : ∀{A c} → size-cast {A} c ≢ 0
-  size-cast-pos {.(⋆ ⇒ ⋆)} {id★} = λ ()
-  size-cast-pos {.(⋆ ⇒ _)} {G ?? x ⨟ x₁} = λ ()
-  size-cast-pos {.(_ ⇒ _)} {` x} = λ ()
-
-  plus-01 : ∀{a}{b} → a + b ≡ 0 → a ≡ 0
-  plus-01 {0} {b} p = refl
-  plus-01 {suc a} {b} ()
-
-  plus-gnd-pos : ∀{A}{B}{c}{d} → size-gnd{A} c + size-gnd{B} d ≤ 0 → Bot
-  plus-gnd-pos {A}{B}{c}{d} p =
-     let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-01 {size-gnd c}{size-gnd d} cd-z in
-     contradiction c-z (size-gnd-pos{A}{c})
-
-  plus-cast-pos : ∀{A}{B}{c}{d} → size-cast{A} c + size-cast{B} d ≤ 0 → Bot
-  plus-cast-pos {A}{B}{c}{d} p =
-     let cd-z = n≤0⇒n≡0 p in
-     let c-z = plus-01 {size-cast c}{size-cast d} cd-z in
-     contradiction c-z (size-cast-pos{A}{c})
-
-  plus1-suc : ∀{n} → n + 1 ≡ suc n
-  plus1-suc {0} = refl
-  plus1-suc {suc n} = cong suc plus1-suc
-
-  inequality-3 : ∀{sc sd sc1 sd1 n}
-       → sc + sd + suc (sc1 + sd1) ≤ n
-       → sc + sc1 ≤ n
-  inequality-3{sc}{sd}{sc1}{sd1}{n} m =
-    begin sc + sc1
-               ≤⟨ m≤m+n (sc + sc1) (sd + (sd1 + 1)) ⟩
-          (sc + sc1) + (sd + (sd1 + 1))
-               ≤⟨ ≤-reflexive (+-assoc (sc) (sc1) (sd + (sd1 + 1))) ⟩
-          sc + (sc1 + (sd + (sd1 + 1)))
-               ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sc})
-                              (sym (+-assoc (sc1) (sd) (sd1 + 1)))) ⟩
-          sc + ((sc1 + sd) + (sd1 + 1))
-               ≤⟨ ≤-reflexive (cong₂ (_+_) ((refl{x = sc}))
-                                       (cong₂ (_+_) (+-comm (sc1) (sd)) refl)) ⟩
-          sc + ((sd + sc1) + (sd1 + 1))
-               ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sc})
-                                (+-assoc (sd) (sc1) (sd1 + 1))) ⟩
-          sc + (sd + (sc1 + (sd1 + 1)))
-               ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sc})
-                            (cong₂ (_+_) (refl{x = sd})
-                                 (sym (+-assoc (sc1) (sd1) 1)))) ⟩
-          sc + (sd + ((sc1 + sd1) + 1))
-               ≤⟨ ≤-reflexive (sym (+-assoc (sc) (sd) (sc1 + sd1 + 1))) ⟩
-          (sc + sd) + ((sc1 + sd1) + 1)
-               ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sc + sd}) plus1-suc) ⟩
-          (sc + sd) + suc (sc1 + sd1)
-               ≤⟨ m ⟩
-          n
-    ∎  
-
-  inequality-1 : ∀{sc sd sc1 sd1 n}
-       → sc + sd + suc (sc1 + sd1) ≤ n
-       → sc1 + sc ≤ n
-  inequality-1{sc}{sd}{sc1}{sd1}{n} m =
-    begin sc1 + sc
-               ≤⟨ ≤-reflexive (+-comm sc1 sc) ⟩
-          sc + sc1
-               ≤⟨ inequality-3{sc} m ⟩
-          n
-    ∎  
-
-  inequality-2 : ∀{sc sd sc1 sd1 n}
-       → sc + sd + suc (sc1 + sd1) ≤ n 
-       → sd + sd1 ≤ n
-  inequality-2{sc}{sd}{sc1}{sd1}{n} m =
-    begin
-      sd + sd1
-           ≤⟨ m≤m+n (sd + sd1) (sc + (sc1 + 1)) ⟩
-      (sd + sd1) + (sc + (sc1 + 1))
-           ≤⟨ ≤-reflexive (+-assoc sd sd1 (sc + (sc1 + 1))) ⟩
-      sd + (sd1 + (sc + (sc1 + 1)))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sd}) (sym (+-assoc sd1 sc (sc1 + 1)))) ⟩
-      sd + ((sd1 + sc) + (sc1 + 1))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sd})
-                             (cong₂ (_+_) (+-comm sd1 sc) (refl{x = sc1 + 1}))) ⟩
-      sd + ((sc + sd1) + (sc1 + 1))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sd}) (+-assoc sc sd1 (sc1 + 1))) ⟩
-      sd + (sc + (sd1 + (sc1 + 1)))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sd})
-                 (cong₂ (_+_) (refl{x = sc}) (sym (+-assoc sd1 sc1 1)))) ⟩
-      sd + (sc + ((sd1 + sc1) + 1))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sd})
-                 (cong₂ (_+_) (refl{x = sc}) plus1-suc)) ⟩
-      sd + (sc + (suc (sd1 + sc1)))
-           ≤⟨  ≤-reflexive (sym (+-assoc sd sc (suc (sd1 + sc1)))) ⟩
-      (sd + sc) + (suc (sd1 + sc1))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (+-comm sd sc) (refl{x = suc (sd1 + sc1)})) ⟩
-      (sc + sd) + (suc (sd1 + sc1))
-           ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = sc + sd}) (cong suc (+-comm sd1 sc1))) ⟩
-      (sc + sd) + suc (sc1 + sd1)          
-           ≤⟨ m ⟩
-      n
-    ∎  
-
-  {- 
-
-    Next we define the composition operation from Figure 5 of Siek,
-    Thiemann, and Wadler (2015). We break down the operation into
-    a family of three functions in Agda, which enables us to capture
-    more invariants about the type of the resulting coercion,
-    which is necessary to pass the Agda type checker.
-    First, observe that in equation #6, we compose two ground
-    coercions (g ⨟ h) and the result must be a ground coercion.
-    Second, in equation #5 we compose an intermediate coercion
-    with a top-level coercion (i ⨟ t) and the result must
-    be an intermeidate coercion. Thus, we shall define 
-    composition with three functions in Agda,
-    * (s ⨟ t) composition of top-level coercions
-    * (i ⨟' t) composition of an intermediate coercion with a top-level coercion
-    * (g `⨟ h) composition of two ground coercions
-
-    Each of the equations from Figure 5 are placed in one of these
-    three functions according to which kinds of coercions they refer
-    to.
-
-   -}
-
-   {-
-    
-     The composition of ground coercions applies composition of
-     top-level coercions, so we forward declare the later.
-
-    -}
-
-  _⨟_ : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
-          → {n : ℕ} → {m : size-cast c + size-cast d ≤ n }
-          → Cast (A ⇒ C)
-
-  {- 
-   
-    The following is composition for ground coercions, which covers
-    rules #1 and #2 from Figure 5 of Siek, Thiemann, and Wadler
-    (2015).
-
-   -}
-  _`⨟_ : ∀{A B C} → (c : gCast (A ⇒ B)) → (d : gCast (B ⇒ C))
-          → {n : ℕ} → {m : size-gnd c + size-gnd d ≤ n }
-          → gCast (A ⇒ C)
-  _`⨟_{A}{B}{C} c d {0}{m} = ⊥-elim (plus-gnd-pos {A ⇒ B}{B ⇒ C}{c}{d} m)
-  
-  {- Rule #1 id ⨟ id = id -}
-  (idι{A} `⨟ idι) {suc n} = idι{A}
-  
-  {- Rule #2   (s → t) ⨟ (s' → t') = (s' ⨟ s) → (t ⨟ t') -}
-  (s ↣ t `⨟ s' ↣ t') {suc n} {s≤s m} =
-       (s' ⨟ s) {n}{m1} ↣ (t ⨟ t') {n}{m2}
-     where m1 = inequality-1{size-cast s} m
-           m2 = inequality-2{size-cast s} m
-           
-  {- Equivalent of #2 for pairs -}
-  (s ×' t `⨟ s' ×' t') {suc n} {s≤s m} =
-      (s ⨟ s') {n}{m1} ×' (t ⨟ t') {n}{m2}
-    where m1 = inequality-3{size-cast s} m
-          m2 = inequality-2{size-cast s} m
-          
-  {- Equivalent of #2 for sums -}
-  (s +' t `⨟ s' +' t') {suc n}{s≤s m} =
-      (s ⨟ s') {n}{m1} +' (t ⨟ t') {n}{m2}
-    where m1 = inequality-3{size-cast s} m
-          m2 = inequality-2{size-cast s} m
-
-
   gnd-src-nd : ∀{A B} → (g : gCast (A ⇒ B)) → A ≢ ⋆
   gnd-src-nd {` ι} {` ι} (idι {ι} ) ()
   gnd-src-nd {.(_ ⇒ _)} {.(_ ⇒ _)} (c ↣ d) ()
@@ -596,118 +400,104 @@ module EfficientGroundCoercions where
   intmd-nd{A}{B} (` g) A≡⋆ = contradiction A≡⋆ (gnd-src-nd g)
   intmd-nd{A}{B} (cfail G H p {A≢⋆}) A≡⋆ = contradiction A≡⋆ A≢⋆
 
-  {-
+  {- 
 
-   Composition of an intermediate coercion with a top-level coercion
-   results in an intermediate coercion. This includes rule #4, #6, #7,
-   #8, #9, and #10 from Figure 5 of Siek, Thiemann, and Wadler (2015).
+    We define the composition operation from Figure 5 of Siek,
+    Thiemann, and Wadler (2015). We break down the operation into
+    a family of four functions in Agda, which enables us to capture
+    more invariants about the type of the resulting coercion,
+    which is necessary to pass the Agda type checker.
+    First, observe that in equation #6, we compose two ground
+    coercions (g ⨟ h) and the result must be a ground coercion.
+    Second, in equation #5 we compose an intermediate coercion
+    with a top-level coercion (i ⨟ t) and the result must
+    be an intermediate coercion. Finally, we note that
+    rules #6 and #10 compose a ground coercion with an intermediate
+    coercion, producing and intermediate coercion.
+    Thus, we shall define composition with four functions in Agda,
+    * (s ⨟ t) composition of top-level coercions
+    * (i i⨟s t) composition of an intermediate coercion with a top coercion
+    * (g g⨟i i) composition of ground and intermediate coercion
+    * (g g⨟g h) composition of two ground coercions
+
+    Each of the equations from Figure 5 are placed in one of these
+    three functions according to which kinds of coercions they refer to.
 
    -}
 
-  _⨟'_ : ∀{A B C} → (i : iCast (A ⇒ B))
-          → (t : Cast (B ⇒ C))
-          → {n : ℕ} → {m : size-intmd i + size-cast t ≤ n }
+  _⨟_ : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
+          → Cast (A ⇒ C)
+  _i⨟s_ : ∀{A B C} → (i : iCast (A ⇒ B)) → (t : Cast (B ⇒ C))
           → iCast (A ⇒ C)
-  _⨟'_{A}{B}{C} i t {0} {m} =
-    contradiction (m+n≡0⇒n≡0 (size-intmd i) (n≤0⇒n≡0 m))
-                  (size-cast-pos{B ⇒ C}{t})
-    
-  {- Rule #4   (g ; G!) ⨟ id★ = (g ; G!)  -}
-  ((g ⨟!) {gg} ⨟' id★) {suc n} {m} = (g ⨟!) {gg}
-  
-  {- Rule #6   g ⨟ (h ; H!) = (g ⨟ h) ; H! -}
-  (` g ⨟' ` (h ⨟!) {hg}) {suc n} {s≤s m} =
-    ((g `⨟ h) {n} {m'} ⨟!) {hg}
-    where m' = let g' = size-gnd g in let h' = size-gnd h in
-              begin
-                g' + h'
-                   ≤⟨ m≤m+n (g' + h') 3 ⟩
-                (g' + h') + 3
-                   ≤⟨ ≤-reflexive (+-assoc g' h' 3) ⟩
-                g' + (h' + 3)
-                   ≤⟨ ≤-reflexive (cong₂ (_+_) refl (+-comm h' 3)) ⟩
-                g' + (3 + h')
-                   ≤⟨ m ⟩
-                n
-              ∎  
-  {- Rule #7   (g ; G!) ⨟ (G?p ; i) = g ⨟ i
-     Rule #8   (g ; G!) ⨟ (H?p ; i) = BotGpH    if G ≠ H  -}
-  (_⨟! {G = G} g {gg} ⨟' (H ?? p ⨟ i) {hg}) {suc n} {s≤s m}
-        with gnd-eq? G H {gg}{hg}
-  ... | no neq = cfail G H p {gnd-src-nd g}
-  ... | yes eq rewrite eq = (` g ⨟' ` i) {n} {m'}
-       where m' = let g' = size-gnd g in let i' = size-intmd i in 
-              begin
-                suc (g' + suc i')
-                    ≤⟨ m≤m+n (suc (g' + suc i')) 1 ⟩
-                suc (g' + suc i') + 1
-                    ≤⟨ ≤-reflexive (cong₂ (_+_) (refl{x = suc (g' + suc i')})
-                                                (refl{x = 1})) ⟩
-                ((1 + g') + suc i') + 1
-                    ≤⟨ ≤-reflexive (cong₂ (_+_) ((cong₂ (_+_) (+-comm 1 g')
-                                            (refl{x = suc i'}))) refl) ⟩
-                ((g' + 1) + suc i') + 1
-                    ≤⟨ ≤-reflexive (cong₂ (_+_) (+-assoc g' 1 (suc i')) refl)⟩
-                (g' + (1 + suc i')) + 1
-                    ≤⟨ ≤-reflexive plus1-suc ⟩
-                suc (g' + (1 + suc i'))
-                    ≤⟨ m ⟩
-                n
-              ∎  
-  {- Dispatch to ⨟ for ground types -}
-  (` g ⨟' ` ` h) {suc n} {s≤s m} = ` (g `⨟ h) {n} {m'}
-    where m' = let g' = size-gnd g in let h' = size-gnd h in
-              begin
-                g' + h'
-                   ≤⟨ m≤m+n (g' + h') 2 ⟩
-                g' + h' + 2
-                   ≤⟨ ≤-reflexive (+-assoc g' h' 2) ⟩
-                g' + (h' + 2)
-                   ≤⟨ ≤-reflexive (cong₂ (_+_) refl (+-comm h' 2)) ⟩
-                g' + (2 + h')
-                   ≤⟨ m ⟩
-                n
-              ∎  
-  {- Rule #9    BotGpH ⨟ s = BotGpH    -}
-  (cfail G H p {A≢⋆} ⨟' s) {suc n} {m} = cfail G H p {A≢⋆}
-  
-  {- Rule #10    g ⨟ BotGpH = BotGpH -}
-  (` g ⨟' ` cfail G H p {neq}) {suc n} {m} = cfail G H p {gnd-src-nd g}
-    
-  {- Vacuous cases -}
-  ((i₁ ⨟!) ⨟' ` i₂) {suc n} {m} = contradiction refl (intmd-nd i₂)
-  (` g ⨟' id★) {suc n} {m} = contradiction refl (gnd-tgt-nd g)
-  (` g ⨟' (G ?? p ⨟ i)) {suc n} {m} = contradiction refl (gnd-tgt-nd g)
+  _g⨟i_ : ∀{A B C} → (g : gCast (A ⇒ B)) → (i : iCast (B ⇒ C))
+          → iCast (A ⇒ C)
+  _g⨟g_ : ∀{A B C} → (c : gCast (A ⇒ B)) → (d : gCast (B ⇒ C))
+          → gCast (A ⇒ C)
 
-  {-
+  {- 
 
-   The definition of compose first does case analysis on the fuel
-   parameter n. The case for 0 is vacuous thanks to the metric m.
-
-   We then perform case analysis on parameter s, so we have three
-   cases. The first case is equation #3 in the paper and the second is
-   equation #5. The third case dispatches to a helper function for
-   composing an intermediate coercion with a top-level coercion.
+   For top-level composition, qe perform case analysis on parameter s,
+   so we have three cases. The first case is equation #3 in the paper
+   and the second is equation #5. The third case dispatches to a
+   helper function for composing an intermediate coercion with a
+   top-level coercion.
 
    -}
-
-  _⨟_{A}{B}{C} s t {0}{m} = ⊥-elim (plus-cast-pos {A ⇒ B}{B ⇒ C}{s}{t} m)
 
   {- Rule #3 id★ ⨟ t = t -}
-  (id★ ⨟ t) {suc n}  = t
-
+  id★ ⨟ t = t
   {- Rule #5 (G? ; i) ⨟ t = G? ; (i ⨟ t) -}
-  ((G ?? p ⨟ i) {gg} ⨟ t) {suc n} {s≤s m} = (G ?? p ⨟ (i ⨟' t) {n}{m'}) {gg}
-    where m' =
-            begin
-              size-intmd i + size-cast t
-                 ≤⟨ ≤-step (≤-reflexive refl ) ⟩
-              suc (size-intmd i + size-cast t)
-                 ≤⟨ m ⟩
-              n
-            ∎  
-  {- Dispatch to composition on intermediate coercion -}
-  (` i ⨟ t) {suc n}{m} = ` (i ⨟' t) {n}{≤-pred m}
+  ((G ?? p ⨟ i) {gg} ⨟ t) = (G ?? p ⨟ (i i⨟s t)) {gg}
+  {- Dispatch to i⨟s -}
+  (` i ⨟ t) = ` (i i⨟s t)
+  
+  {- 
+    The following is composition for ground coercions, which covers
+    rules #1 and #2 from Figure 5 of Siek, Thiemann, and Wadler (2015).
+   -}
+  
+  {- Rule #1 -}
+  (idι{A} g⨟g idι) = idι{A}
+  {- Rule #2 -}
+  (s ↣ t g⨟g s' ↣ t') = (s' ⨟ s) ↣ (t ⨟ t')
+  {- Equivalent of #2 for pairs -}
+  (s ×' t g⨟g s' ×' t') = (s ⨟ s') ×' (t ⨟ t')
+  {- Equivalent of #2 for sums -}
+  (s +' t g⨟g s' +' t') = (s ⨟ s') +' (t ⨟ t')
+
+  {-
+   Composition of an intermediate coercion with a top-level coercion
+   results in an intermediate coercion. This includes rule #4, #7,
+   #8, and #9 from Figure 5 of Siek, Thiemann, and Wadler (2015).
+   -}
+    
+  {- Rule #4   (g ; G!) ⨟ id★ = (g ; G!)  -}
+  ((g ⨟!) {gg} i⨟s id★) = (g ⨟!) {gg}
+  {- Rule #7   (g ; G!) ⨟ (G?p ; i) = g ⨟ i
+     Rule #8   (g ; G!) ⨟ (H?p ; i) = ⊥GpH    if G ≠ H  -}
+  (_⨟! {G = G} g {gg} i⨟s (H ?? p ⨟ i) {hg})
+        with gnd-eq? G H {gg}{hg}
+  ... | no neq = cfail G H p {gnd-src-nd g}
+  ... | yes eq rewrite eq = g g⨟i i
+  {- Rule #9    ⊥GpH ⨟ s = ⊥GpH    -}
+  (cfail G H p {A≢⋆} i⨟s s) = cfail G H p {A≢⋆}
+  {- Dispatch to g⨟i -}
+  (` g i⨟s ` i) = g g⨟i i
+  {- Vacuous case -}
+  ((i₁ ⨟!) i⨟s ` i₂) = contradiction refl (intmd-nd i₂)
+
+  {-
+   Composition of a ground coercion with an intermediate coercion.
+   This includes rules #6 and #10.
+   -}
+
+  {- Rule #6 -}
+  g g⨟i ((h ⨟!) {g = gG})  = ((g g⨟g h) ⨟!) {g = gG}
+  {- Rule #10 -}
+  g g⨟i (cfail G H p {a})  = (cfail G H p {gnd-src-nd g})
+  {- Dispatch to g⨟g -}
+  g g⨟i ` h                = ` (g g⨟g h) 
+
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
@@ -716,8 +506,7 @@ module EfficientGroundCoercions where
   applyCast M v (` (cfail G H ℓ)) {a} = blame ℓ
   applyCast M v ((G ?? ℓ ⨟ i) {g}) {a} with canonical⋆ M v
   ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ meq , _ ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
-     M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) {sz} {≤-reflexive refl} ⟩
-     where sz = size-cast c + size-cast ((G ?? ℓ ⨟ i) {g})
+     M' ⟨ (c ⨟ (G ?? ℓ ⨟ i) {g}) ⟩
   applyCast M v (` ` c ×' d) {a} = eta× M (` (` (c ×' d))) C-cross
   applyCast{A = A₁ `⊎ A₂} M v (` ` c +' d) {a} = eta⊎ M (` (` (c +' d))) C-cross
   {- Vacuous cases -}
@@ -753,16 +542,13 @@ module EfficientGroundCoercions where
   sumSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
 
 
-  compose : ∀{A B C} → Cast (A ⇒ B) → Cast (B ⇒ C) → Cast (A ⇒ C)
-  compose c d = (c ⨟ d) {size-cast c + size-cast d} {≤-reflexive refl}
-
   open import CastStructure
 
   ecs : EfficientCastStruct
   ecs = record
              { precast = pcs
              ; applyCast = applyCast
-             ; compose = compose
+             ; compose = _⨟_
              }
              
   import EfficientParamCasts
