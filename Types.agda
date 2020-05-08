@@ -9,7 +9,8 @@ module Types where
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Unit renaming (⊤ to Top)
-  open import Primitives renaming (Prim to PrimD; Void to ⊥; rep to prim-rep)
+  open import Primitives renaming (Prim to PrimD; Void to ⊥; rep to prim-rep;
+     Label to DenotLabel)
      public
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
