@@ -43,6 +43,7 @@ open import DenotProdSum
 𝓑 𝔹 (v₁ ⊔ v₂) = 𝓑 𝔹 v₁ × 𝓑 𝔹 v₂
 𝓑 Unit (const {Unit} x) = ⊤
 𝓑 Unit (v₁ ⊔ v₂) = 𝓑 Unit v₁ × 𝓑 Unit v₂
+𝓑 b (const {Blame} ℓ) = ⊤
 𝓑 b v = False
 
 ret : (Value → Set) → Denotation
@@ -52,10 +53,13 @@ ret f γ v = f v
 𝒯 ⋆ v = ⊤
 𝒯 (` b) v = 𝓑 b v
 𝒯 (A ⇒ B) ⊥ = ⊤
+𝒯 (A ⇒ B) (const {Blame} ℓ) = ⊤
 𝒯 (A ⇒ B) (const x) = False
 𝒯 (A ⇒ B) (v ↦ w) = 𝒯 A v → 𝒯 B w
 𝒯 (A ⇒ B) (v₁ ⊔ v₂) = 𝒯 (A ⇒ B) v₁ × 𝒯 (A ⇒ B) v₂
-𝒯 (A `× B) = ⟬ ret (𝒯 A) , ret (𝒯 B) ⟭ `∅
+𝒯 (A `× B) (const {Blame} ℓ) = ⊤
+𝒯 (A `× B) v = ⟬ ret (𝒯 A) , ret (𝒯 B) ⟭ `∅ v
+𝒯 (A `⊎ B) (const {Blame} ℓ) = ⊤
 𝒯 (A `⊎ B) v = inj1 (ret (𝒯 A)) `∅ v ⊎ inj2 (ret (𝒯 A)) `∅ v
 
 𝒞 : Type → Label → Denotation → Denotation
