@@ -3,6 +3,7 @@ module DenotGTLC where
 open import GTLC
 open import Data.Bool using (true; false)
 open import Data.Empty renaming (⊥ to False)
+open import Data.Nat using (ℕ)
 open import Data.Product using (_×_; Σ; Σ-syntax; ∃; ∃-syntax; proj₁; proj₂)
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -62,21 +63,48 @@ ret f γ v = f v
               ⊎ ((Σ[ w ∈ Value ] (wf w × D γ w × ¬ (𝒯 B w)))
                  × const (label (label→ℕ ℓ)) ⩽ v)
 
+{-
+ Need a monad for propagating blame
+-}
+
+_>>=_ : Denotation → (Denotation → Denotation) → Denotation
+(D >>= f) γ v = (f D) γ v
+              ⊎ Σ[ ℓ ∈ ℕ ] ((D γ (const (label ℓ)) × const (label ℓ) ⩽ v))
+
 ℰ : ∀{Γ A} → (Γ ⊢G A) → Denotation
 ℰ ($_ k {P}) γ v = ℘ {prim→primd P} (rep→prim-rep P k) v
 ℰ (` x) γ v = v ⩽ (γ (∋→ℕ x))
 ℰ (ƛ A ˙ N) = ℱ (ℰ N)
-ℰ (_·_at_ {A = A}{A₁}{A₂}{B} L M ℓ {m} {cn}) =
-  (𝒞 (A₁ ⇒ A₂) ℓ (ℰ L)) ● (𝒞 B ℓ (ℰ M))
-ℰ (if L M N ℓ {bb} {aa}) γ v =
-    (ℰ L γ (const true) × ℰ M γ v)
-    ⊎ (ℰ L γ (const false) × ℰ L γ v)
-ℰ (cons M N) = ⟬ ℰ M , ℰ N ⟭
-ℰ (fst {A₁ = A₁}{A₂} M ℓ {m}) = π₁ (𝒞 (A₁ `× A₂) ℓ (ℰ M)) 
-ℰ (snd M ℓ {m}) = π₂ (ℰ M)
-ℰ (inl B M) = inj1 (ℰ M)
-ℰ (inr A M) = inj2 (ℰ M)
-ℰ (case L M N ℓ {ma}{mb}{mc}{ab}{ac}{bc}) = case⊎ (ℰ L) (ℰ M) (ℰ N)
+ℰ (_·_at_ {A = A}{A₁}{A₂}{B} L M ℓ {m} {cn}) = do
+    D₁ ← 𝒞 (A₁ ⇒ A₂) ℓ (ℰ L)
+    D₂ ← 𝒞 B ℓ (ℰ M)
+    D₁ ● D₂
+ℰ (if L M N ℓ {bb} {aa}) = do
+    D ← 𝒞 (` 𝔹) ℓ (ℰ L)
+    λ γ v → (D γ (const true) × 𝒞 (⨆ aa) ℓ (ℰ M) γ v)
+          ⊎ (D γ (const false) × 𝒞 (⨆ aa) ℓ (ℰ L) γ v)
+ℰ (cons M N) = do
+    D₁ ← ℰ M
+    D₂ ← ℰ N
+    ⟬ D₁ , D₂ ⟭
+ℰ (fst {A₁ = A₁}{A₂} M ℓ {m}) = do
+    D ← 𝒞 (A₁ `× A₂) ℓ (ℰ M)
+    π₁ D
+ℰ (snd {A₁ = A₁}{A₂} M ℓ {m}) = do
+    D ← 𝒞 (A₁ `× A₂) ℓ (ℰ M)
+    π₂ D
+ℰ (inl B M) = do
+    D ← ℰ M
+    inj1 D
+ℰ (inr A M) = do
+    D ← ℰ M
+    inj2 D
+{- case needs work -Jeremy -}    
+ℰ (case {A₁ = A₁}{A₂}{B₁ = B₁}{B₂}{C₁ = C₁}{C₂}
+         L M N ℓ {ma}{mb}{mc}{ab}{ac}{bc}) =
+   𝒞 (⨆ bc) ℓ (case⊎ (𝒞 (A₁ `⊎ A₂) ℓ (ℰ L))
+                     (𝒞 (B₁ ⇒ B₂) ℓ (ℰ M))
+                     (𝒞 (C₁ ⇒ C₂) ℓ (ℰ N)))
 
 {-
  TODO:
