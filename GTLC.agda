@@ -1,9 +1,9 @@
 
 module GTLC where
 
-open import Types
-open import Variables
-open import Labels
+open import Types public
+open import Variables public
+open import Labels public
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Maybe
 open import Data.Unit

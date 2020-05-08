@@ -1,31 +1,35 @@
 module Types where
 
-  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
-  open import Data.Integer using (ℤ)
   open import Data.Bool
-  open import Data.Unit renaming (⊤ to Top)
+  open import Data.Empty using () renaming (⊥ to Bot)
+  open import Data.Empty.Irrelevant using (⊥-elim)
+  open import Data.Integer using (ℤ)
+  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
+  open import Data.Sum using (_⊎_; inj₁; inj₂)
+  open import Data.Unit renaming (⊤ to Top)
+  open import Primitives renaming (Prim to PrimD; Void to ⊥; rep to prim-rep)
+     public
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
-  open import Data.Sum using (_⊎_; inj₁; inj₂)
-  open import Data.Empty using () renaming (⊥ to Bot)
-  open import Data.Empty.Irrelevant using (⊥-elim)
 
   infix  7 _⇒_
   infix  9 _`×_
   infix  8 _`⊎_
   infix 10 `_
 
+{-
   data Base : Set where
     Nat : Base
     Int : Base
     𝔹 : Base
     Unit : Base
     ⊥ : Base
-    
+-}
+
   data Type : Set where
     ⋆ : Type
     `_ : Base → Type
@@ -54,12 +58,15 @@ module Types where
           G ⟨ _ , () ⟩
 
   rep-base : Base → Set
+  rep-base = base-rep
+{-
   rep-base Nat = ℕ
   rep-base Int = ℤ
   rep-base 𝔹 = Bool
   rep-base Unit = Top
   rep-base ⊥ = Bot
-  
+-}
+
   rep : Type → Set
   rep ⋆ = Bot
   rep (` ι) = rep-base ι
@@ -73,6 +80,14 @@ module Types where
       → Prim B
         ------------------
       → Prim ((` ι) ⇒ B)
+
+  prim→primd : ∀{A} → Prim A → PrimD
+  prim→primd {` ι} P-Base = base ι
+  prim→primd {` ι ⇒ B} (P-Fun P) = ι ⇒ prim→primd P
+
+  rep→prim-rep : ∀{A} → (P : Prim A) → (k : rep A) → prim-rep (prim→primd P)
+  rep→prim-rep {` ι} P-Base k = k
+  rep→prim-rep {` ι ⇒ B} (P-Fun P) k x = rep→prim-rep P (k x)
 
   {- TODO: replace rep with the following repp -}
 
@@ -455,6 +470,7 @@ module Types where
   ⊑Base→~Base unk⊑ = unk~L
   ⊑Base→~Base base⊑ = base~
 
+{-
   base-eq? : (A : Base) → (B : Base) 
           → Dec (A ≡ B)
   base-eq? Nat Nat = yes refl
@@ -482,6 +498,7 @@ module Types where
   base-eq? ⊥ 𝔹 = no (λ ())
   base-eq? ⊥ Unit = no (λ ())
   base-eq? ⊥ ⊥ = yes refl
+-}
 
   _`~_ : (A : Type) → (B : Type) → Dec (A ~ B)
   ⋆ `~ B = yes unk~L

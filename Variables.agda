@@ -1,5 +1,6 @@
 module Variables where
 
+open import Data.Nat using (ℕ; zero; suc)
 open import Types
 
 infixl 5 _,_
@@ -23,3 +24,6 @@ data _∋_ : Context → Type → Set where
       ---------
     → Γ , B ∋ A
 
+∋→ℕ : ∀{Γ}{A} → Γ ∋ A → ℕ
+∋→ℕ {.(_ , A)} {A} Z = 0
+∋→ℕ {.(_ , _)} {A} (S Γ∋A) = suc (∋→ℕ Γ∋A) 
