@@ -24,13 +24,10 @@ open import CurryApplyAux
    value_struct ordering consistent _●_ ℱ model_curry_apply public
 open import DenotProdSum
 
-{------------------------------------------------------------------------------
-  Omniscient Denotational Semantics of GTLC
- -----------------------------------------------------------------------------}
 
-{-
+{------------------------------------------------------------------------------
   Denotation of Types
--}
+ -----------------------------------------------------------------------------}
 
 𝓑 : Base → Value → Set
 𝓑 Nat ⊥ = ⊤
@@ -39,19 +36,21 @@ open import DenotProdSum
 𝓑 Int ⊥ = ⊤
 𝓑 Int (const {Int} x) = ⊤
 𝓑 Int (v₁ ⊔ v₂) = 𝓑 Int v₁ × 𝓑 Int v₂
+𝓑 𝔹 ⊥ = ⊤
 𝓑 𝔹 (const {𝔹} x) = ⊤
 𝓑 𝔹 (v₁ ⊔ v₂) = 𝓑 𝔹 v₁ × 𝓑 𝔹 v₂
+𝓑 Unit ⊥ = ⊤
 𝓑 Unit (const {Unit} x) = ⊤
 𝓑 Unit (v₁ ⊔ v₂) = 𝓑 Unit v₁ × 𝓑 Unit v₂
-𝓑 b (const {Blame} ℓ) = ⊤
-𝓑 b v = False
+𝓑 ι (const {Blame} ℓ) = ⊤
+𝓑 ι v = False
 
 ret : (Value → Set) → Denotation
 ret f γ v = f v
 
 𝒯 : Type → Value → Set
 𝒯 ⋆ v = ⊤
-𝒯 (` b) v = 𝓑 b v
+𝒯 (` ι) v = 𝓑 ι v
 𝒯 (A ⇒ B) ⊥ = ⊤
 𝒯 (A ⇒ B) (const {Blame} ℓ) = ⊤
 𝒯 (A ⇒ B) (const x) = False
@@ -62,53 +61,150 @@ ret f γ v = f v
 𝒯 (A `⊎ B) (const {Blame} ℓ) = ⊤
 𝒯 (A `⊎ B) v = inj1 (ret (𝒯 A)) `∅ v ⊎ inj2 (ret (𝒯 A)) `∅ v
 
-𝒞 : Type → Label → Denotation → Denotation
-𝒞 B ℓ D γ v = (D γ v × 𝒯 B v)
-              ⊎ ((Σ[ w ∈ Value ] (wf w × D γ w × ¬ (𝒯 B w)))
-                 × const (label (label→ℕ ℓ)) ⩽ v)
-
 {-
- Need a monad for propagating blame
+ A monad for propagating blame
 -}
 
 _>>=_ : Denotation → (Denotation → Denotation) → Denotation
 (D >>= f) γ v = (f D) γ v
               ⊎ Σ[ ℓ ∈ ℕ ] ((D γ (const (label ℓ)) × const (label ℓ) ⩽ v))
 
-ℰ : ∀{Γ A} → (Γ ⊢G A) → Denotation
-ℰ ($_ k {P}) γ v = ℘ {prim→primd P} (rep→prim-rep P k) v
-ℰ (` x) γ v = v ⩽ (γ (∋→ℕ x))
-ℰ (ƛ A ˙ N) = ℱ (ℰ N)
-ℰ (_·_at_ {A = A}{A₁}{A₂}{B} L M ℓ {m} {cn}) = do
-    D₁ ← 𝒞 (A₁ ⇒ A₂) ℓ (ℰ L)
-    D₂ ← 𝒞 B ℓ (ℰ M)
-    D₁ ● D₂
-ℰ (if L M N ℓ {bb} {aa}) = do
-    D ← 𝒞 (` 𝔹) ℓ (ℰ L)
-    λ γ v → (D γ (const true) × 𝒞 (⨆ aa) ℓ (ℰ M) γ v)
-          ⊎ (D γ (const false) × 𝒞 (⨆ aa) ℓ (ℰ L) γ v)
-ℰ (cons M N) = do
-    D₁ ← ℰ M
-    D₂ ← ℰ N
-    ⟬ D₁ , D₂ ⟭
-ℰ (fst {A₁ = A₁}{A₂} M ℓ {m}) = do
-    D ← 𝒞 (A₁ `× A₂) ℓ (ℰ M)
-    π₁ D
-ℰ (snd {A₁ = A₁}{A₂} M ℓ {m}) = do
-    D ← 𝒞 (A₁ `× A₂) ℓ (ℰ M)
-    π₂ D
-ℰ (inl B M) = do
-    D ← ℰ M
-    inj1 D
-ℰ (inr A M) = do
-    D ← ℰ M
-    inj2 D
-{- case needs work -Jeremy -}    
-ℰ (case {A₁ = A₁}{A₂}{B₁ = B₁}{B₂}{C₁ = C₁}{C₂}
-         L M N ℓ {ma}{mb}{mc}{ab}{ac}{bc}) =
-   𝒞 (⨆ bc) ℓ (case⊎ (𝒞 (A₁ `⊎ A₂) ℓ (ℰ L))
-                     (𝒞 (B₁ ⇒ B₂) ℓ (ℰ M))
-                     (𝒞 (C₁ ⇒ C₂) ℓ (ℰ N)))
+module Denot (𝒞 : Type → Type → Label → Denotation → Denotation) where
+
+  ℰ : ∀{Γ A} → (Γ ⊢G A) → Denotation
+  ℰ ($_ k {P}) γ v = ℘ {prim→primd P} (rep→prim-rep P k) v
+  ℰ (` x) γ v = v ⩽ (γ (∋→ℕ x))
+  ℰ (ƛ A ˙ N) = ℱ (ℰ N)
+  ℰ (_·_at_ {A = A}{A₁}{A₂}{B} L M ℓ {m} {cn}) = do
+      D₁ ← 𝒞 A (A₁ ⇒ A₂) ℓ (ℰ L)
+      D₂ ← 𝒞 B A₁ ℓ (ℰ M)
+      D₁ ● D₂
+  ℰ (if {A = A}{A'}{B} L M N ℓ {bb} {aa}) = do
+      D ← 𝒞 B (` 𝔹) ℓ (ℰ L)
+      λ γ v → (D γ (const true) × 𝒞 A (⨆ aa) ℓ (ℰ M) γ v)
+            ⊎ (D γ (const false) × 𝒞 A' (⨆ aa) ℓ (ℰ N) γ v)
+  ℰ (cons M N) = do
+      D₁ ← ℰ M
+      D₂ ← ℰ N
+      ⟬ D₁ , D₂ ⟭
+  ℰ (fst {A = A}{A₁}{A₂} M ℓ {m}) = do
+      D ← 𝒞 A (A₁ `× A₂) ℓ (ℰ M)
+      π₁ D
+  ℰ (snd {A = A}{A₁}{A₂} M ℓ {m}) = do
+      D ← 𝒞 A (A₁ `× A₂) ℓ (ℰ M)
+      π₂ D
+  ℰ (inl B M) = do
+      D ← ℰ M
+      inj1 D
+  ℰ (inr A M) = do
+      D ← ℰ M
+      inj2 D
+  ℰ (case {A = A}{A₁}{A₂}{B}{B₁}{B₂}{C}{C₁}{C₂}
+           L M N ℓ {ma}{mb}{mc}{ab}{ac}{bc}) =
+     case⊎ (𝒞 A (B₁ `⊎ C₁) ℓ (ℰ L))
+           (𝒞 B (B₁ ⇒ (⨆ bc)) ℓ (ℰ M))
+           (𝒞 C (C₁ ⇒ (⨆ bc)) ℓ (ℰ N))
+
+{------------------------------------------------------------------------------
+  Denotational Semantics of GTLC
+ -----------------------------------------------------------------------------}
+
+{- Or should casts be expressed using function values and applied using ●?
+   𝐶 : Type → Type → Label → Denotation
+  -Jeremy -}
+
+{-
+promote : Value → Denotation
+promote v γ v' = (v' ⩽ v)
+
+𝐹 : (Denotation → Denotation) → Denotation
+𝐹 f γ ⊥ = {!!}
+𝐹 f γ (const k) = {!!}
+𝐹 f γ (v ↦ w) = (f (promote v)) γ w
+𝐹 f γ (v₁ ⊔ v₂) = {!!}
+
+to-fun : Label → Denotation → Denotation
+to-fun ℓ D = {!!}
+
+𝐶 : Type → Type → Label → Denotation → Denotation
+𝐶 ⋆ ⋆ ℓ D = D
+𝐶 ⋆ (` ι) ℓ D γ v = D γ v × 𝓑 ι v
+𝐶 ⋆ (A ⇒ B) ℓ D = do
+  D′ ← to-fun ℓ D
+  𝐹 (λ x → 𝐶 ⋆ B ℓ (D′ ● (𝐶 A ⋆ ℓ x)))
+  
+𝐶 ⋆ (A `× B) ℓ D = {!!}
+𝐶 ⋆ (A `⊎ B) ℓ D = {!!}
+𝐶 (` ι) B ℓ D = {!!}
+𝐶 (A ⇒ A₁) B ℓ D = {!!}
+𝐶 (A `× A₁) B ℓ D = {!!}
+𝐶 (A `⊎ A₁) B ℓ D = {!!}
+-}
+
+{------------------------------------------------------------------------------
+  Denotational Semantics of GTLC
+ -----------------------------------------------------------------------------}
+
+mkfun : (Env → Value → Value → Set) → Denotation
+mkfun f γ ⊥ = ⊤
+mkfun f γ (const k) = False
+mkfun f γ (v ↦ w) = f γ v w
+mkfun f γ (v₁ ⊔ v₂) = mkfun f γ v₁ × mkfun f γ v₂
+
+id : Denotation
+id = mkfun (λ γ v w → w ⩽ v)
+
+{-
+  This is D style projection.
+-}
+
+_??_ : Type → ℕ → Denotation
+A ?? ℓ = mkfun (λ γ v w → (𝒯 A v × w ⩽ v)  ⊎  ((¬ 𝒯 A v) × const (label ℓ) ⩽ w))
+
+!! : Type → Denotation
+!! A = id
+
+_⨟_ : Denotation → Denotation → Denotation
+D₁ ⨟ D₂ = mkfun (λ γ v₁ v₃ → Σ[ v₂ ∈ Value ] D₁ γ (v₁ ↦ v₂) × D₂ γ (v₂ ↦ v₃))
+
+_↪_ : Denotation → Denotation → Denotation
+D₁ ↪ D₂ = mkfun G
+    where G : Env → Value → Value → Set
+          G γ ⊥ w = w ⩽ ⊥
+          G γ (const k) w = False
+          G γ (v₁ ↦ v₂) w = D₁ γ v₁ × D₂ γ v₂ × w ⩽ (v₁ ↦ v₂)
+          G γ (v₁ ⊔ v₂) w = G γ v₁ w × G γ v₂ w
+
+_⊗_ : Denotation → Denotation → Denotation
+D₁ ⊗ D₂ = {!!}
+
+_⊕_ : Denotation → Denotation → Denotation
+D₁ ⊕ D₂ = {!!}
+
+blame : ℕ → Denotation
+blame ℓ γ v = const (label ℓ) ⩽ v
+
+𝐶 : ∀{A B} → (c : A ~ B) → ℕ → Denotation
+𝐶 {.⋆} {B} unk~L ℓ = B ?? ℓ
+𝐶 {A} {.⋆} unk~R ℓ = !! A
+𝐶 {` ι} {.(` ι)} base~ ℓ = id
+𝐶 {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~ c d) ℓ = 𝐶 c ℓ ↪ 𝐶 d ℓ
+𝐶 {.(_ `× _)} {.(_ `× _)} (pair~ c d) ℓ = 𝐶 c ℓ ⊗ 𝐶 d ℓ
+𝐶 {.(_ `⊎ _)} {.(_ `⊎ _)} (sum~ c d) ℓ = 𝐶 c ℓ ⊕ 𝐶 d ℓ
+
+
+{------------------------------------------------------------------------------
+  Omniscient Denotational Semantics of GTLC
+ -----------------------------------------------------------------------------}
+
+𝒞 : Type → Type → Label → Denotation → Denotation
+𝒞 A B ℓ D γ v = (D γ v × 𝒯 B v)
+              ⊎ ((Σ[ w ∈ Value ] (wf w × D γ w × ¬ (𝒯 B w)))
+                 × const (label (label→ℕ ℓ)) ⩽ v)
+
+open Denot 𝒞 renaming (ℰ to 𝒪) 
+
+
 
 {-
  TODO:
