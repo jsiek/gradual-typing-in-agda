@@ -24,6 +24,15 @@ open import CurryApplyAux
    value_struct ordering consistent _●_ ℱ model_curry_apply public
 open import DenotProdSum
 
+promote : Value → Denotation
+promote w γ v = (v ⩽ w)
+
+𝐹 : (Denotation → Denotation) → Denotation
+𝐹 f γ ⊥ = ⊤
+𝐹 f γ (const k) = False
+𝐹 f γ (v ↦ w) = (f (promote v)) γ w
+𝐹 f γ (v₁ ⊔ v₂) = 𝐹 f γ v₁ × 𝐹 f γ v₂
+
 
 {------------------------------------------------------------------------------
   Denotation of Types
@@ -114,15 +123,6 @@ module Denot (𝒞 : Type → Type → Label → Denotation → Denotation) wher
   -Jeremy -}
 
 {-
-promote : Value → Denotation
-promote v γ v' = (v' ⩽ v)
-
-𝐹 : (Denotation → Denotation) → Denotation
-𝐹 f γ ⊥ = {!!}
-𝐹 f γ (const k) = {!!}
-𝐹 f γ (v ↦ w) = (f (promote v)) γ w
-𝐹 f γ (v₁ ⊔ v₂) = {!!}
-
 to-fun : Label → Denotation → Denotation
 to-fun ℓ D = {!!}
 
@@ -159,13 +159,13 @@ id = mkfun (λ γ v w → w ⩽ v)
 -}
 
 _??_ : Type → ℕ → Denotation
-A ?? ℓ = mkfun (λ γ v w → (𝒯 A v × w ⩽ v)  ⊎  ((¬ 𝒯 A v) × const (label ℓ) ⩽ w))
+A ?? ℓ = mkfun (λ γ v w → (𝒯 A v × w ⩽ v) ⊎ ((¬ 𝒯 A v) × const (label ℓ) ⩽ w))
 
 !! : Type → Denotation
 !! A = id
 
 _⨟_ : Denotation → Denotation → Denotation
-D₁ ⨟ D₂ = mkfun (λ γ v₁ v₃ → Σ[ v₂ ∈ Value ] D₁ γ (v₁ ↦ v₂) × D₂ γ (v₂ ↦ v₃))
+D₁ ⨟ D₂ = 𝐹 (λ D → D₂ ● (D₁ ● D))
 
 _↪_ : Denotation → Denotation → Denotation
 D₁ ↪ D₂ = mkfun G
@@ -176,10 +176,15 @@ D₁ ↪ D₂ = mkfun G
           G γ (v₁ ⊔ v₂) w = G γ v₁ w × G γ v₂ w
 
 _⊗_ : Denotation → Denotation → Denotation
-D₁ ⊗ D₂ = {!!}
+D₁ ⊗ D₂ = 𝐹 (λ D → ⟬ D₁ ● π₁ D , D₂ ● π₂ D ⟭)
 
 _⊕_ : Denotation → Denotation → Denotation
-D₁ ⊕ D₂ = {!!}
+D₁ ⊕ D₂ = mkfun G
+    where G : Env → Value → Value → Set
+          G γ ⊥ w = w ⩽ ⊥
+          G γ (const x) w = False
+          G γ (v₁ ↦ v₂) w = {!(const 0 ⩽ v₁ × !}
+          G γ (v₁ ⊔ v₂) w = G γ v₁ w × G γ v₂ w 
 
 blame : ℕ → Denotation
 blame ℓ γ v = const (label ℓ) ⩽ v
