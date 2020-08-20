@@ -85,7 +85,9 @@ n  -}
   base-consis-eq {Int} {Int} c = refl
   base-consis-eq {𝔹} {𝔹} c = refl
   base-consis-eq {Unit} {Unit} c = refl
-  base-consis-eq {Base.⊥} {Base.⊥} c = refl
+  -- Updated the constructor names according to the definition of base types in Primitives . - Tianyu
+  base-consis-eq {Base.Void} {Base.Void} _ = refl
+  base-consis-eq {Blame} {Blame} _ = refl
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert {.(⋆ ⇒ ⋆)} (cast ⋆ ⋆ ℓ A~B) = inj₁ (A-id {a = A-Unk} (cast ⋆ ⋆ ℓ A~B))
