@@ -1,6 +1,6 @@
 
 %.agdai: %.agda
-	/usr/local/bin/agda  $<
+	/usr/bin/env agda  $<
 
 AGDA = Labels.agda Types.agda Variables.agda \
 	GTLC.agda GTLC2CC.agda \
