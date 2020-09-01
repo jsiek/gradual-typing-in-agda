@@ -1,14 +1,12 @@
 module CastSubtyping where
 
 open import SimpleCast using (Cast)
-open Cast
 open import Types
 open import Variables
 open import Labels
 
 import ParamCastCalculus
 open ParamCastCalculus Cast
-
 
 
 -- The subtyping relation.
@@ -126,7 +124,7 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → Set where
     → CastsRespect<: N
     → CastsRespect<: (ƛ N)
 
-  CastsRespect<:-· : ∀ {Γ A B S T} {L : Γ ⊢ A ⇒ B} {M : Γ ⊢ A} {c : Cast (S ⇒ T)}
+  CastsRespect<:-· : ∀ {Γ A B} {L : Γ ⊢ A ⇒ B} {M : Γ ⊢ A}
     → CastsRespect<: L
     → CastsRespect<: M
     → CastsRespect<: (L · M)
@@ -166,6 +164,3 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → Set where
     → CastsRespect<: M
     → CastsRespect<: N
     → CastsRespect<: (case L M N)
-
-  CastsRespect<:-blame : ∀ {Γ A 𝓁}
-    → CastsRespect<: (blame {Γ} {A} 𝓁)
