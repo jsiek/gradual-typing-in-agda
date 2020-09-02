@@ -164,3 +164,8 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → Set where
     → CastsRespect<: M
     → CastsRespect<: N
     → CastsRespect<: (case L M N)
+
+  {- NOTE:
+    Part of the reason that there is no case for `blame` is -
+    a well-typed surface language term can never be compiled into a blame in the cast calculus.
+  -}

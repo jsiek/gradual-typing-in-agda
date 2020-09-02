@@ -37,7 +37,24 @@ postulate
     → ¬ (M —→ N)
 
 open CastsRespect<:
+open Frame
 open _<:_
+
+-- There is no way to plug a blame in a frame and produce a term where every cast respects <: .
+plug-blame→¬respect<: : ∀ {Γ A B 𝓁}
+  → (F : Frame {Γ} A B)
+  → ¬ (CastsRespect<: (plug (blame 𝓁) F))
+plug-blame→¬respect<: (F-·₁ M) (CastsRespect<:-· () _)                   -- □ · M
+plug-blame→¬respect<: (F-·₂ L) (CastsRespect<:-· _ ())                   -- L · □
+plug-blame→¬respect<: (F-if M N) (CastsRespect<:-if () _ _)              -- if □ M N
+plug-blame→¬respect<: (F-×₁ M) (CastsRespect<:-cons _ ())                -- cons M □
+plug-blame→¬respect<: (F-×₂ L) (CastsRespect<:-cons () _)                -- cons □ L
+plug-blame→¬respect<: F-fst (CastsRespect<:-fst ())                      -- fst □
+plug-blame→¬respect<: F-snd (CastsRespect<:-snd ())                      -- snd □
+plug-blame→¬respect<: F-inl (CastsRespect<:-inl ())                      -- inl □
+plug-blame→¬respect<: F-inr (CastsRespect<:-inr ())                      -- inr □
+plug-blame→¬respect<: (F-case M N) (CastsRespect<:-case () _ _)          -- case □ M N
+plug-blame→¬respect<: (F-cast c) (CastsRespect<:-cast _ ())              -- □ ⟨ c ⟩
 
 {-
   If every cast in the term M respects subtyping, then M ⌿↠ blame 𝓁 for any 𝓁 .
@@ -50,7 +67,8 @@ soundness-<: resp-plugMF ⟨ 𝓁 , .(plug _ _) —→⟨ ξ M→M′ ⟩ plugM�
   -- In this case we need to prove that reduction preserves `CastsRespect<:` .
   soundness-<: {!!} (⟨ 𝓁 , plugM′F↠blame ⟩)
 
-soundness-<: resp ⟨ 𝓁 , .(plug (blame _) _) —→⟨ ξ-blame ⟩ rdd ⟩ = {!!}
+-- There is no way to plug a blame in a frame and produce a term where every cast respects <: .
+soundness-<: resp ⟨ 𝓁 , .(plug (blame _) _) —→⟨ ξ-blame {F = F} ⟩ _ ⟩ = plug-blame→¬respect<: F resp
 
 soundness-<: {M = (ƛ N) · W} (CastsRespect<:-· resp-ƛN resp-W) ⟨ 𝓁 , .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ⟩ = {!!}
 
