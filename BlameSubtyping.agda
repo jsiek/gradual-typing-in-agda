@@ -70,7 +70,12 @@ soundness-<: resp-plugMF ⟨ 𝓁 , .(plug _ _) —→⟨ ξ M→M′ ⟩ plugM�
 -- There is no way to plug a blame in a frame and produce a term where every cast respects <: .
 soundness-<: resp ⟨ 𝓁 , .(plug (blame _) _) —→⟨ ξ-blame {F = F} ⟩ _ ⟩ = plug-blame→¬respect<: F resp
 
-soundness-<: {M = (ƛ N) · W} (CastsRespect<:-· resp-ƛN resp-W) ⟨ 𝓁 , .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ⟩ = {!!}
+soundness-<: {M = (ƛ N) · W} (CastsRespect<:-· resp-ƛN resp-W) ⟨ 𝓁 , .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ⟩ =
+  {-
+    We need to prove that given Γ , A ⊢ N ⦂ B and Γ ⊢ W ⦂ A that both satisfy `CastsRespect<:`,
+    the substituted term N [ W ] also satisfies `CastsRespect<:` - single substitution preserves `CastsRespect<:` .
+  -}
+  soundness-<: {!!} (⟨ 𝓁 , N[W]↠blame ⟩)
 
 soundness-<: {M = ($ f) · ($ k)} -- This case corresponds to the δ rule.
   (CastsRespect<:-· resp-f resp-k)
@@ -110,7 +115,7 @@ soundness-<: {M = case (inr V) L M}
 
 soundness-<: {M = V ⟨ c ⟩}
   (CastsRespect<:-cast {S = S} {T} S<:T resp-V)
-  ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ V⟨c⟩↠blame ⟩ = {!!}
+  ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ = {!!}
 
 soundness-<: {M = (_⟨_⟩ {A = S₁ ⇒ S₂} {B = T₁ ⇒ T₂} V c) · W}
   (CastsRespect<:-· (CastsRespect<:-cast (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W)
