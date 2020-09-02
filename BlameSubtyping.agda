@@ -17,8 +17,9 @@ import ParamCastAux
 open ParamCastAux pcs using (Value; Frame; plug)
 import ParamCastReduction
 open ParamCastReduction cs
-open import CastSubtyping using (CastsRespect<:)
-open CastsRespect<:
+open import CastSubtyping using (CastsRespect<:; _<:_)
+
+
 
 -- Test
 -- M : ∅ ⊢ ⋆
@@ -35,31 +36,85 @@ postulate
     → Value M
     → ¬ (M —→ N)
 
+open CastsRespect<:
+open _<:_
+
 {-
   If every cast in the term M respects subtyping, then M ⌿↠ blame 𝓁 for any 𝓁 .
 -}
 soundness-<: : ∀ {Γ A} {M : Γ ⊢ A}
   → CastsRespect<: M
   → ¬ (∃[ 𝓁 ] (M —↠ blame 𝓁))
-soundness-<: resp ⟨ 𝓁 , .(plug _ _) —→⟨ ξ rd ⟩ rdd ⟩ = {!!}
+-- By induction on M —↠ blame 𝓁 .
+soundness-<: resp-plugMF ⟨ 𝓁 , .(plug _ _) —→⟨ ξ M→M′ ⟩ plugM′F↠blame ⟩ =
+  -- In this case we need to prove that reduction preserves `CastsRespect<:` .
+  soundness-<: {!!} (⟨ 𝓁 , plugM′F↠blame ⟩)
+
 soundness-<: resp ⟨ 𝓁 , .(plug (blame _) _) —→⟨ ξ-blame ⟩ rdd ⟩ = {!!}
+
 soundness-<: {M = (ƛ N) · W} (CastsRespect<:-· resp-ƛN resp-W) ⟨ 𝓁 , .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ⟩ = {!!}
-soundness-<: resp ⟨ 𝓁 , .(($ _) · ($ _)) —→⟨ δ ⟩ rdd ⟩ = {!!}
-soundness-<: {M = if ($ true) M N} (CastsRespect<:-if _ resp-M _) ⟨ 𝓁 , .(if ($ true) M N) —→⟨ β-if-true ⟩ M↠blame ⟩ =
-  soundness-<: resp-M (⟨ 𝓁 , M↠blame ⟩)
-soundness-<: {M = if ($ false) M N} (CastsRespect<:-if _ _ resp-N) ⟨ 𝓁 , .(if ($ false) M N) —→⟨ β-if-false ⟩ N↠blame ⟩ =
-  soundness-<: resp-N (⟨ 𝓁 , N↠blame ⟩)
-soundness-<: {M = fst (cons V W)} (CastsRespect<:-fst (CastsRespect<:-cons resp-V resp-W)) ⟨ 𝓁 , .(fst (cons V W)) —→⟨ β-fst vV vW ⟩ V↠blame ⟩ =
-  -- Another way to do this is to prove that V cannot step to blame.
-  soundness-<: resp-V (⟨ 𝓁 , V↠blame ⟩)
-soundness-<: {M = snd (cons V W)} (CastsRespect<:-snd (CastsRespect<:-cons resp-V resp-W)) ⟨ 𝓁 , .(snd (cons V W)) —→⟨ β-snd vV vW ⟩ W↠blame ⟩ =
-  soundness-<: resp-W (⟨ 𝓁 , W↠blame ⟩)
-soundness-<: {M = case (inl V) L M} (CastsRespect<:-case (CastsRespect<:-inl resp-V) resp-L _) ⟨ 𝓁 , .(case (inl V) L M) —→⟨ β-caseL vV ⟩ L·V↠blame ⟩ =
-  soundness-<: (CastsRespect<:-· resp-L resp-V) (⟨ 𝓁 , L·V↠blame ⟩)
-soundness-<: {M = case (inr V) L M} (CastsRespect<:-case (CastsRespect<:-inr resp-V) _ resp-M) ⟨ 𝓁 , .(case (inr V) L M) —→⟨ β-caseR vV ⟩ M·V↠blame ⟩ =
-  soundness-<: (CastsRespect<:-· resp-M resp-V) (⟨ 𝓁 , M·V↠blame ⟩)
-soundness-<: resp ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast v ⟩ rdd ⟩ = {!!}
-soundness-<: resp ⟨ 𝓁 , .(_ ⟨ _ ⟩ · _) —→⟨ fun-cast v x ⟩ rdd ⟩ = {!!}
-soundness-<: resp ⟨ 𝓁 , .(fst (_ ⟨ _ ⟩)) —→⟨ fst-cast x ⟩ rdd ⟩ = {!!}
-soundness-<: resp ⟨ 𝓁 , .(snd (_ ⟨ _ ⟩)) —→⟨ snd-cast x ⟩ rdd ⟩ = {!!}
-soundness-<: resp ⟨ 𝓁 , .(case (_ ⟨ _ ⟩) _ _) —→⟨ case-cast x ⟩ rdd ⟩ = {!!}
+
+soundness-<: {M = ($ f) · ($ k)} -- This case corresponds to the δ rule.
+  (CastsRespect<:-· resp-f resp-k)
+  ⟨ 𝓁 , .(($ _) · ($ _)) —→⟨ δ ⟩ fk↠blame ⟩ =
+    soundness-<: CastsRespect<:-prim (⟨ 𝓁 , fk↠blame ⟩)
+
+soundness-<: {M = if ($ true) M N}
+  (CastsRespect<:-if _ resp-M _)
+  ⟨ 𝓁 , .(if ($ true) M N) —→⟨ β-if-true ⟩ M↠blame ⟩ =
+    soundness-<: resp-M (⟨ 𝓁 , M↠blame ⟩)
+
+soundness-<: {M = if ($ false) M N}
+  (CastsRespect<:-if _ _ resp-N)
+  ⟨ 𝓁 , .(if ($ false) M N) —→⟨ β-if-false ⟩ N↠blame ⟩ =
+    soundness-<: resp-N (⟨ 𝓁 , N↠blame ⟩)
+
+soundness-<: {M = fst (cons V W)}
+  (CastsRespect<:-fst (CastsRespect<:-cons resp-V resp-W))
+  ⟨ 𝓁 , .(fst (cons V W)) —→⟨ β-fst vV vW ⟩ V↠blame ⟩ =
+    -- Another way to do this is to prove that V cannot step to blame.
+    soundness-<: resp-V (⟨ 𝓁 , V↠blame ⟩)
+
+soundness-<: {M = snd (cons V W)}
+  (CastsRespect<:-snd (CastsRespect<:-cons resp-V resp-W))
+  ⟨ 𝓁 , .(snd (cons V W)) —→⟨ β-snd vV vW ⟩ W↠blame ⟩ =
+    soundness-<: resp-W (⟨ 𝓁 , W↠blame ⟩)
+
+soundness-<: {M = case (inl V) L M}
+  (CastsRespect<:-case (CastsRespect<:-inl resp-V) resp-L _)
+  ⟨ 𝓁 , .(case (inl V) L M) —→⟨ β-caseL vV ⟩ L·V↠blame ⟩ =
+    soundness-<: (CastsRespect<:-· resp-L resp-V) (⟨ 𝓁 , L·V↠blame ⟩)
+
+soundness-<: {M = case (inr V) L M}
+  (CastsRespect<:-case (CastsRespect<:-inr resp-V) _ resp-M)
+  ⟨ 𝓁 , .(case (inr V) L M) —→⟨ β-caseR vV ⟩ M·V↠blame ⟩ =
+    soundness-<: (CastsRespect<:-· resp-M resp-V) (⟨ 𝓁 , M·V↠blame ⟩)
+
+soundness-<: {M = V ⟨ c ⟩}
+  (CastsRespect<:-cast {S = S} {T} S<:T resp-V)
+  ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ V⟨c⟩↠blame ⟩ = {!!}
+
+soundness-<: {M = (_⟨_⟩ {A = S₁ ⇒ S₂} {B = T₁ ⇒ T₂} V c) · W}
+  (CastsRespect<:-· (CastsRespect<:-cast (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W)
+  ⟨ 𝓁 , .(V ⟨ c ⟩ · W) —→⟨ fun-cast vV vW ⟩ V·W↠blame ⟩ =
+  soundness-<: (CastsRespect<:-cast S₂<:T₂
+                                    (CastsRespect<:-· resp-V (CastsRespect<:-cast T₁<:S₁ resp-W)))
+               (⟨ 𝓁 , V·W↠blame ⟩)
+
+soundness-<: {M = fst (_⟨_⟩ {A = A₁ `× A₂} {B = B₁ `× B₂} V c)}
+  (CastsRespect<:-fst (CastsRespect<:-cast (<:-× A₁<:B₁ A₂<:B₂) resp-V))
+  ⟨ 𝓁 , .(fst (V ⟨ c ⟩)) —→⟨ fst-cast _ ⟩ fstV⟨fstc⟩↠blame ⟩ =
+    soundness-<: (CastsRespect<:-cast A₁<:B₁ (CastsRespect<:-fst resp-V)) (⟨ 𝓁 , fstV⟨fstc⟩↠blame ⟩)
+
+soundness-<: {M = snd (_⟨_⟩ {A = A₁ `× A₂} {B = B₁ `× B₂} V c)}
+  (CastsRespect<:-snd (CastsRespect<:-cast (<:-× A₁<:B₁ A₂<:B₂) resp-V))
+  ⟨ 𝓁 , .(snd (V ⟨ c ⟩)) —→⟨ snd-cast _ ⟩ sndV⟨sndc⟩↠blame ⟩ =
+    soundness-<: (CastsRespect<:-cast A₂<:B₂ (CastsRespect<:-snd resp-V)) (⟨ 𝓁 , sndV⟨sndc⟩↠blame ⟩)
+
+soundness-<: {M = case (_⟨_⟩ {A = A₁ `⊎ A₂} {B = B₁ `⊎ B₂} V c) W₁ W₂}
+  (CastsRespect<:-case (CastsRespect<:-cast (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂)
+  ⟨ 𝓁 , .(case (V ⟨ c ⟩) W₁ W₂) —→⟨ case-cast vV ⟩ ↠blame ⟩ =
+    soundness-<: (CastsRespect<:-case resp-V
+                                      (CastsRespect<:-ƛ (CastsRespect<:-· {!!} (CastsRespect<:-cast A₁<:B₁ CastsRespect<:-var)))
+                                      (CastsRespect<:-ƛ (CastsRespect<:-· {!!} (CastsRespect<:-cast A₂<:B₂ CastsRespect<:-var))))
+                 (⟨ 𝓁 , ↠blame ⟩)
