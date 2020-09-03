@@ -6,7 +6,7 @@ open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-
 open import Data.Nat.Properties using (_≟_)
 
 -- We're using simple cast - at least for now.
-open import SimpleCast using (Cast; pcs; cs)
+open import SimpleCast using (Cast; Active; applyCast; pcs; cs)
 open import Types
 open import Variables
 open import Labels
@@ -55,6 +55,66 @@ plug-blame→¬respect<: F-inl (CastsRespect<:-inl ())                      -- i
 plug-blame→¬respect<: F-inr (CastsRespect<:-inr ())                      -- inr □
 plug-blame→¬respect<: (F-case M N) (CastsRespect<:-case () _ _)          -- case □ M N
 plug-blame→¬respect<: (F-cast c) (CastsRespect<:-cast _ ())              -- □ ⟨ c ⟩
+
+data NotBlame : ∀ {Γ A} → Γ ⊢ A → Set where
+
+  `-not-blame : ∀ {Γ A} {M : Γ ⊢ A}
+    → ∃[ x ] (M ≡ ` x)
+    → NotBlame M
+
+  ƛ-not-blame : ∀ {Γ B A} {M : Γ ⊢ A ⇒ B}
+    → ∃[ N ] (M ≡ ƛ N)
+    → NotBlame M
+
+  ·-not-blame : ∀ {Γ A B} {M : Γ ⊢ B}
+    → Σ[ L ∈ Γ ⊢ A ⇒ B ] ∃[ N ] (M ≡ L · N)
+    → NotBlame M
+
+  $-not-blame : ∀ {Γ A} {p : rep A} {f : Prim A} {M : Γ ⊢ A}
+    → ∃[ p ] (M ≡ $_ {Γ} p {f})
+    → NotBlame M
+
+  if-not-blame : ∀ {Γ A} {M : Γ ⊢ A}
+    → ∃[ L ] ∃[ N₁ ] ∃[ N₂ ] (M ≡ if L N₁ N₂)
+    → NotBlame M
+
+  cons-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `× B}
+    → ∃[ L ] ∃[ N ] (M ≡ cons L N)
+    → NotBlame M
+
+  fst-not-blame : ∀ {Γ A B} {M : Γ ⊢ A}
+    → Σ[ N ∈ Γ ⊢ A `× B ] (M ≡ fst N)
+    → NotBlame M
+
+  snd-not-blame : ∀ {Γ A B} {M : Γ ⊢ B}
+    → Σ[ N ∈ Γ ⊢ A `× B ] (M ≡ snd N)
+    → NotBlame M
+
+  inl-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `⊎ B}
+    → ∃[ N ] (M ≡ inl N)
+    → NotBlame M
+
+  inr-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `⊎ B}
+    → ∃[ N ] (M ≡ inr N)
+    → NotBlame M
+
+  case-not-blame : ∀ {Γ A B C} {M : Γ ⊢ C}
+    → Σ[ L ∈ Γ ⊢ A `⊎ B ] ∃[ N₁ ] ∃[ N₂ ] (M ≡ case L N₁ N₂)
+    → NotBlame M
+
+  cast-not-blame : ∀ {Γ A B} {M : Γ ⊢ B}
+    → Σ[ N ∈ Γ ⊢ A ] ∃[ c ] (M ≡ N ⟨ c ⟩)
+    → NotBlame M
+
+<:-safe-cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+  → (a : Active c)
+  → (vV : Value V)
+  → A <: B
+  → NotBlame (applyCast V vV c {a})
+
+{- TODO:
+  We need to prove preservation w.r.t `CastsRespect<:` .
+-}
 
 {-
   If every cast in the term M respects subtyping, then M ⌿↠ blame 𝓁 for any 𝓁 .
@@ -113,9 +173,19 @@ soundness-<: {M = case (inr V) L M}
   ⟨ 𝓁 , .(case (inr V) L M) —→⟨ β-caseR vV ⟩ M·V↠blame ⟩ =
     soundness-<: (CastsRespect<:-· resp-M resp-V) (⟨ 𝓁 , M·V↠blame ⟩)
 
+{- NOTE:
+  We need to prove two things here:
+    1. Reduction `—→` preserves `CastsRespect<:`
+    2. `applyCast` preserves `CastsRespect<:`
+-}
 soundness-<: {M = V ⟨ c ⟩}
   (CastsRespect<:-cast {S = S} {T} S<:T resp-V)
-  ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ = {!!}
+  ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ = ?
+--   with <:-safe-cast a vV S<:T
+-- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | `-not-blame (⟨ x , eq ⟩) rewrite eq with applyCastVc↠blame
+-- ...   | ` x —→⟨ `x→M ⟩ M↠blame = soundness-<: {!!} (⟨ 𝓁 , M↠blame ⟩)
+-- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ 𝓁 , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | ƛ-not-blame (⟨ N , eq ⟩) rewrite eq with applyCastVc↠blame
+-- ...   | ƛ N —→⟨ ƛN→M ⟩ M↠blame = soundness-<: {!!} (⟨ 𝓁 , M↠blame ⟩)
 
 soundness-<: {M = (_⟨_⟩ {A = S₁ ⇒ S₂} {B = T₁ ⇒ T₂} V c) · W}
   (CastsRespect<:-· (CastsRespect<:-cast (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W)
