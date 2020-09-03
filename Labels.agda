@@ -16,7 +16,7 @@ module Labels where
   label→ℕ (pos ℓ) = ℓ
   label→ℕ (neg ℓ) = ℓ
 
-  label-eq? : ∀ (𝓁₁ 𝓁₂ : Label) → Dec (𝓁₁ ≡ 𝓁₂)
+  label-eq? : ∀ (ℓ₁ ℓ₂ : Label) → Dec (ℓ₁ ≡ ℓ₂)
   label-eq? (pos x₁) (pos x₂) with x₁ ≟ x₂
   ... | yes x₁≡x₂ = yes (cong pos x₁≡x₂)
   ... | no  x₁≢x₂ = no λ { refl → x₁≢x₂ refl }
