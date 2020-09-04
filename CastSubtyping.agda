@@ -1,5 +1,7 @@
 module CastSubtyping where
 
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+
 open import SimpleCast using (Cast)
 open import Types
 open import Variables
@@ -35,6 +37,8 @@ data _<:_ : Type → Type → Set where
       ---------------------
     → S₁ ⇒ S₂ <: T₁ ⇒ T₂
 
+⋆<:T→T≡⋆ : ∀ {T} → ⋆ <: T → T ≡ ⋆
+⋆<:T→T≡⋆ T<:⋆ = refl
 
 
 -- The inductively defined datatype `HasCast` talks about what it means for a cast `c` to appear in a term `M` .
