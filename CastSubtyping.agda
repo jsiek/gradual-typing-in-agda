@@ -1,5 +1,6 @@
 module CastSubtyping where
 
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
 open import SimpleCast using (Cast)
@@ -9,6 +10,7 @@ open import Labels
 
 import ParamCastCalculus
 open ParamCastCalculus Cast
+open Cast
 
 
 -- The subtyping relation.
@@ -40,6 +42,13 @@ data _<:_ : Type → Type → Set where
 ⋆<:T→T≡⋆ : ∀ {T} → ⋆ <: T → T ≡ ⋆
 ⋆<:T→T≡⋆ T<:⋆ = refl
 
+-- Subtyping `<:` implies consistency.
+<:→~ : ∀ {S T} → S <: T → S ~ T
+<:→~ T<:⋆ = unk~R
+<:→~ <:-B = base~
+<:→~ (<:-× sub₁ sub₂) = pair~ (<:→~ sub₁) (<:→~ sub₂)
+<:→~ (<:-⊎ sub₁ sub₂) = sum~ (<:→~ sub₁) (<:→~ sub₂)
+<:→~ (<:-⇒ sub₁ sub₂) = fun~ (<:→~ sub₁) (<:→~ sub₂)
 
 -- The inductively defined datatype `HasCast` talks about what it means for a cast `c` to appear in a term `M` .
 data HasCast : ∀ {Γ A S T} → (M : Γ ⊢ A) → (c : Cast (S ⇒ T)) → Set where
@@ -113,63 +122,93 @@ data HasCast : ∀ {Γ A S T} → (M : Γ ⊢ A) → (c : Cast (S ⇒ T)) → Se
     → HasCast N c
     → HasCast (case L M N) c
 
--- Data type `CastsRespect<:` says all casts in M respect subtyping.
-data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → Set where
+-- Data type `CastsRespect<:` says all casts in M with blame label ℓ respect subtyping.
+data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set where
 
-  CastsRespect<:-cast : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)}
-    → S <: T
-    → CastsRespect<: M
-    → CastsRespect<: (M ⟨ c ⟩)
+  {-
+    If the cast has the same blame label as ℓ , which is what the data type is quantified over,
+    we require that the source & target types respect subtyping <: .
+  -}
+  CR<:-cast-same-ℓ : ∀ {Γ S T} {S~T : S ~ T} {M : Γ ⊢ S} {ℓ}
+    → (S<:T : S <: T)
+    → CastsRespect<: M ℓ
+      -------------------------------------
+    → CastsRespect<: (M ⟨ (S ⇒⟨ ℓ ⟩ T) {S~T} ⟩) ℓ
 
-  CastsRespect<:-var : ∀ {Γ A} {x : Γ ∋ A}
-    → CastsRespect<: (` x)
+  {-
+    If the blame label ℓ′ on the cast is different from what the data type is quantified over,
+    this is fine and we don't impose any restriction on this cast.
+  -}
+  CR<:-cast-diff-ℓ : ∀ {Γ S T} {S~T : S ~ T} {M : Γ ⊢ S} {ℓ ℓ′}
+    → ℓ ≢ ℓ′
+    → CastsRespect<: M ℓ
+      ----------------------------------------------
+    → CastsRespect<: (M ⟨ (S ⇒⟨ ℓ′ ⟩ T) {S~T} ⟩) ℓ
 
-  CastsRespect<:-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
-    → CastsRespect<: N
-    → CastsRespect<: (ƛ N)
+  CR<:-var : ∀ {Γ A} {x : Γ ∋ A} {ℓ}
+      ------------------------------
+    → CastsRespect<: (` x) ℓ
 
-  CastsRespect<:-· : ∀ {Γ A B} {L : Γ ⊢ A ⇒ B} {M : Γ ⊢ A}
-    → CastsRespect<: L
-    → CastsRespect<: M
-    → CastsRespect<: (L · M)
+  CR<:-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B} {ℓ}
+    → CastsRespect<: N ℓ
+      -----------------------
+    → CastsRespect<: (ƛ N) ℓ
 
-  CastsRespect<:-prim : ∀ {Γ A} {p : rep A} {f : Prim A}
-    → CastsRespect<: ($_ {Γ} p {f})
+  CR<:-· : ∀ {Γ A B} {L : Γ ⊢ A ⇒ B} {M : Γ ⊢ A} {ℓ}
+    → CastsRespect<: L ℓ
+    → CastsRespect<: M ℓ
+      -------------------------
+    → CastsRespect<: (L · M) ℓ
 
-  CastsRespect<:-if : ∀ {Γ A} {L : Γ ⊢ ` 𝔹} {M : Γ ⊢ A} {N : Γ ⊢ A}
-    → CastsRespect<: L
-    → CastsRespect<: M
-    → CastsRespect<: N
-    → CastsRespect<: (if L M N)
+  CR<:-prim : ∀ {Γ A} {p : rep A} {f : Prim A} {ℓ}
+      --------------------------------------------
+    → CastsRespect<: ($_ {Γ} p {f}) ℓ
 
-  CastsRespect<:-cons : ∀ {Γ A B} {M : Γ ⊢ A} {N : Γ ⊢ B}
-    → CastsRespect<: M
-    → CastsRespect<: N
-    → CastsRespect<: (cons M N)
+  CR<:-if : ∀ {Γ A} {L : Γ ⊢ ` 𝔹} {M : Γ ⊢ A} {N : Γ ⊢ A} {ℓ}
+    → CastsRespect<: L ℓ
+    → CastsRespect<: M ℓ
+    → CastsRespect<: N ℓ
+      -----------------------------
+    → CastsRespect<: (if L M N) ℓ
 
-  CastsRespect<:-fst : ∀ {Γ A B} {M : Γ ⊢ A `× B}
-    → CastsRespect<: M
-    → CastsRespect<: (fst M)
+  CR<:-cons : ∀ {Γ A B} {M : Γ ⊢ A} {N : Γ ⊢ B} {ℓ}
+    → CastsRespect<: M ℓ
+    → CastsRespect<: N ℓ
+      ----------------------------
+    → CastsRespect<: (cons M N) ℓ
 
-  CastsRespect<:-snd : ∀ {Γ A B} {M : Γ ⊢ A `× B}
-    → CastsRespect<: M
-    → CastsRespect<: (snd M)
+  CR<:-fst : ∀ {Γ A B} {M : Γ ⊢ A `× B} {ℓ}
+    → CastsRespect<: M ℓ
+      -------------------------
+    → CastsRespect<: (fst M) ℓ
 
-  CastsRespect<:-inl : ∀ {Γ A B} {M : Γ ⊢ A}
-    → CastsRespect<: M
-    → CastsRespect<: (inl {B = B} M)
+  CR<:-snd : ∀ {Γ A B} {M : Γ ⊢ A `× B} {ℓ}
+    → CastsRespect<: M ℓ
+      -------------------------
+    → CastsRespect<: (snd M) ℓ
 
-  CastsRespect<:-inr : ∀ {Γ A B} {N : Γ ⊢ B}
-    → CastsRespect<: N
-    → CastsRespect<: (inr {A = A} N)
+  CR<:-inl : ∀ {Γ A B} {M : Γ ⊢ A} {ℓ}
+    → CastsRespect<: M ℓ
+      ---------------------------------
+    → CastsRespect<: (inl {B = B} M) ℓ
 
-  CastsRespect<:-case : ∀ {Γ A B C} {L : Γ ⊢ A `⊎ B} {M : Γ ⊢ A ⇒ C} {N : Γ ⊢ B ⇒ C}
-    → CastsRespect<: L
-    → CastsRespect<: M
-    → CastsRespect<: N
-    → CastsRespect<: (case L M N)
+  CR<:-inr : ∀ {Γ A B} {N : Γ ⊢ B} {ℓ}
+    → CastsRespect<: N ℓ
+      ----------------------------------
+    → CastsRespect<: (inr {A = A} N) ℓ
+
+  CR<:-case : ∀ {Γ A B C} {L : Γ ⊢ A `⊎ B} {M : Γ ⊢ A ⇒ C} {N : Γ ⊢ B ⇒ C} {ℓ}
+    → CastsRespect<: L ℓ
+    → CastsRespect<: M ℓ
+    → CastsRespect<: N ℓ
+      ------------------------------
+    → CastsRespect<: (case L M N) ℓ
 
   {- NOTE:
-    Part of the reason that there is no case for `blame` is -
-    a well-typed surface language term can never be compiled into a blame in the cast calculus.
+    A well-typed surface language term can never be compiled into a blame in the cast calculus (CC).
+    However we still have a case for `blame ℓ` here since it has such a case in CC.
   -}
+  CR<:-blame-diff-ℓ : ∀ {Γ A} {ℓ ℓ′}
+    → ℓ ≢ ℓ′
+      ------------------------------------
+    → CastsRespect<: (blame {Γ} {A} ℓ′) ℓ
