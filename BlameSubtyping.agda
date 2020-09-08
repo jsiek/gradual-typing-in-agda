@@ -9,7 +9,7 @@ open import Data.Nat.Properties using (_≟_)
 open import Data.Empty using (⊥; ⊥-elim)
 
 -- We're using simple cast - at least for now.
-open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC)
+open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC)
 open import Types
 open import Variables
 open import Labels
@@ -368,14 +368,48 @@ soundness-<: {ℓ = ℓ} (CR<:-snd (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (
   resp : CastsRespect<: (snd V ⟨ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c′}) ⟩ ) ℓ
   resp = CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-snd resp-V)
 
-soundness-<: {ℓ = ℓ} (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV ⟩ ↠blame ) =
-  {!!}
+soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
+  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
+                                 (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
+               ↠blame
+  where
+  c′ : A₁ ~ B₁
+  c′ with ~-relevant c
+  ... | sum~ c′ _ =  c′
+  c″ : A₂ ~ B₂
+  c″ with ~-relevant c
+  ... | sum~ _ c″ =  c″
+  eq-inl : (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′})
+  eq-inl with ~-relevant c
+  ... | sum~ _ _ = refl
+  eq-inr : (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c″})
+  eq-inr with ~-relevant c
+  ... | sum~ _ _ = refl
+  respl : CastsRespect<: ((`_ {Γ = Γ , A₁} Z) ⟨ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′}) ⟩) ℓ
+  respl = CR<:-cast-same-ℓ A₁<:B₁ CR<:-var
+  respr : CastsRespect<: ((`_ {Γ = Γ , A₂} Z) ⟨ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c″}) ⟩) ℓ
+  respr = CR<:-cast-same-ℓ A₂<:B₂ CR<:-var
 
-soundness-<: {ℓ = ℓ} (CR<:-case (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV ⟩ ↠blame ) =
-  {!!}
-    -- soundness-<: (CastsRespect<:-case resp-V
-    --                                   (CastsRespect<:-ƛ (CastsRespect<:-· {!!} (CastsRespect<:-cast A₁<:B₁ CastsRespect<:-var)))
-    --                                   (CastsRespect<:-ƛ (CastsRespect<:-· {!!} (CastsRespect<:-cast A₂<:B₂ CastsRespect<:-var))))
-    --              (⟨ ℓ , ↠blame ⟩)
+soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
+  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
+                                 (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
+               ↠blame
+  where
+  c′ : A₁ ~ B₁
+  c′ with ~-relevant c
+  ... | sum~ c′ _ =  c′
+  c″ : A₂ ~ B₂
+  c″ with ~-relevant c
+  ... | sum~ _ c″ =  c″
+  eq-inl : (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′})
+  eq-inl with ~-relevant c
+  ... | sum~ _ _ = refl
+  eq-inr : (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c″})
+  eq-inr with ~-relevant c
+  ... | sum~ _ _ = refl
+  respl : CastsRespect<: ((`_ {Γ = Γ , A₁} Z) ⟨ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′}) ⟩) ℓ
+  respl = CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var
+  respr : CastsRespect<: ((`_ {Γ = Γ , A₂} Z) ⟨ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c″}) ⟩) ℓ
+  respr = CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var
 
 soundness-<: (CR<:-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ refl
