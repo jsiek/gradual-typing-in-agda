@@ -17,7 +17,7 @@ open import Labels
 import ParamCastCalculus
 open ParamCastCalculus Cast
 import ParamCastAux
-open ParamCastAux pcs using (Value; Frame; plug)
+open ParamCastAux pcs using (Value; Frame; plug; canonical⋆)
 import ParamCastReduction
 open ParamCastReduction cs
 import ParamCastReductionNoFrame
@@ -221,6 +221,56 @@ open Cast
 -- <:-safe-cast {A = A₁ `⊎ A₂} {B = B₁ `⊎ B₂} {V = V} (activeSum ((.(_ `⊎ _) ⇒⟨ x ⟩ .(_ `⊎ _)) {c})) vV _ =
 --   case-not-blame (⟨ V , ⟨ ƛ (inl ((` Z) ⟨ SimpleCast.inlC (((A₁ `⊎ A₂) ⇒⟨ x ⟩ (B₁ `⊎ B₂)) {c}) (Cross.C-sum _) ⟩)) , ⟨ ƛ (inr ((` Z) ⟨ SimpleCast.inrC (((A₁ `⊎ A₂) ⇒⟨ x ⟩ (B₁ `⊎ B₂)) {c}) (Cross.C-sum _) ⟩)) , refl ⟩ ⟩ ⟩)
 
+pair~-fst : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → A₁ ~ B₁
+pair~-fst A~B with ~-relevant A~B
+... | pair~ A₁~B₁ _ = A₁~B₁
+
+pair~-snd : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → A₂ ~ B₂
+pair~-snd A~B with ~-relevant A~B
+... | pair~ _ A₂~B₂ = A₂~B₂
+
+fstC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → (x : Cross ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
+    -----------------------------------------------
+  → (fstC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {A~B}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {pair~-fst A~B}) -- here we use a helper to destruct A~B
+fstC-eq A~B x with ~-relevant A~B
+... | pair~ _ _ = refl
+
+sndC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → (x : Cross ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
+    ------------------------------------------------
+  → (sndC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {A~B}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {pair~-snd A~B})
+sndC-eq A~B x with ~-relevant A~B
+... | pair~ _ _ = refl
+
+applyCast-same-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ}
+  → (A~B : A ~ B)
+  → (a : Active ((A ⇒⟨ ℓ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
+  → A <: B         -- We require A <: B since the label on the cast is the same as the one CR<: is quantified with.
+  → (resp-V : CastsRespect<: V ℓ)
+  → CastsRespect<: (applyCast V vV (A ⇒⟨ ℓ ⟩ B) {a}) ℓ
+applyCast-same-ℓ-pres-CR<: _ (activeId (A ⇒⟨ ℓ ⟩ A)) A<:B resp-V = resp-V
+-- For simple cast, the key observation here is that B must be ⋆ .
+applyCast-same-ℓ-pres-CR<: {V = V} {vV} A~B (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) T<:⋆ resp-V
+  with canonical⋆ V vV
+... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+...   | no _ = CR<:-blame-diff-ℓ (λ _ → x refl)
+...   | yes _ with resp-V
+...     | CR<:-cast-same-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
+...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
+applyCast-same-ℓ-pres-CR<: A~B (activeFun .((_ ⇒ _) ⇒⟨ _ ⟩ (_ ⇒ _))) A<:B resp-V = {!!}
+applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) (<:-× A₁<:B₁ A₂<:B₂) resp-V
+  rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
+  -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
+    CR<:-cons (CR<:-cast-same-ℓ A₁<:B₁ (CR<:-fst resp-V)) (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-snd resp-V))
+applyCast-same-ℓ-pres-CR<: A~B (activeSum .((_ `⊎ _) ⇒⟨ _ ⟩ (_ `⊎ _))) A<:B resp-V = {!!}
+
 {- TODO:
   We need to prove preservation w.r.t `CastsRespect<:` .
 -}
@@ -278,8 +328,10 @@ soundness-<: (CR<:-case (CR<:-inr resp-V) _ resp-M) ( .(case (inr _) _ _) —→
     2. `applyCast` preserves `CastsRespect<:`
   The data type `NotBlame` is useful here to discriminate on `applyCastVc↠blame` .
 -}
-soundness-<: {M = V ⟨ c ⟩} (CR<:-cast-same-ℓ {S = S} {T} S<:T resp-V) (.(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) = {!!}
-soundness-<: {M = V ⟨ c ⟩} (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) (.(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) = {!!}
+soundness-<: (CR<:-cast-same-ℓ A<:B resp-V) ((V ⟨ ((A ⇒⟨ ℓ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
+  soundness-<: (applyCast-same-ℓ-pres-CR<: c a A<:B resp-V) applyCastVc↠blame
+soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ c ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
+  soundness-<: {!!} applyCastVc↠blame
 --   with <:-safe-cast a vV S<:T
 -- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ ℓ , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | `-not-blame (⟨ x , eq ⟩) rewrite eq with applyCastVc↠blame
 -- ...   | ` x —→⟨ `x→M ⟩ M↠blame = soundness-<: {!!} (⟨ ℓ , M↠blame ⟩)
