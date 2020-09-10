@@ -105,86 +105,6 @@ plug-blame→¬respect<: (F-case M N) (CR<:-case (CR<:-blame-diff-ℓ ℓ≢ℓ)
 plug-blame→¬respect<: (F-cast _) (CR<:-cast-same-ℓ _ (CR<:-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl -- □ ⟨ c ⟩
 plug-blame→¬respect<: (F-cast _) (CR<:-cast-diff-ℓ _ (CR<:-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl
 
--- A term does not blame on ℓ. The data type is useful when discriminating on the reduction.
-data NotBlameℓ : ∀ {Γ A} → Γ ⊢ A → Label → Set where
-
-  blame-diff-ℓ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
-    → ∃[ ℓ′ ] ((M ≡ blame ℓ′) × (ℓ ≢ ℓ′))
-      ------------------------------------
-    → NotBlameℓ M ℓ
-
-  `-not-blame : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
-    → ∃[ x ] (M ≡ ` x)
-      -----------------
-    → NotBlameℓ M ℓ
-
-  ƛ-not-blame : ∀ {Γ B A} {M : Γ ⊢ A ⇒ B} {ℓ}
-    → ∃[ N ] (M ≡ ƛ N)
-      -----------------
-    → NotBlameℓ M ℓ
-
-  ·-not-blame : ∀ {Γ A B} {M : Γ ⊢ B} {ℓ}
-    → Σ[ L ∈ Γ ⊢ A ⇒ B ] ∃[ N ] (M ≡ L · N)
-      ---------------------------------------
-    → NotBlameℓ M ℓ
-
-  $-not-blame : ∀ {Γ A} {p : rep A} {f : Prim A} {M : Γ ⊢ A} {ℓ}
-    → ∃[ p ] (M ≡ $_ {Γ} p {f})
-      --------------------------
-    → NotBlameℓ M ℓ
-
-  if-not-blame : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
-    → ∃[ L ] ∃[ N₁ ] ∃[ N₂ ] (M ≡ if L N₁ N₂)
-      ----------------------------------------
-    → NotBlameℓ M ℓ
-
-  cons-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `× B} {ℓ}
-    → ∃[ L ] ∃[ N ] (M ≡ cons L N)
-      ----------------------------
-    → NotBlameℓ M ℓ
-
-  fst-not-blame : ∀ {Γ A B} {M : Γ ⊢ A} {ℓ}
-    → Σ[ N ∈ Γ ⊢ A `× B ] (M ≡ fst N)
-      -------------------------------
-    → NotBlameℓ M ℓ
-
-  snd-not-blame : ∀ {Γ A B} {M : Γ ⊢ B} {ℓ}
-    → Σ[ N ∈ Γ ⊢ A `× B ] (M ≡ snd N)
-      --------------------------------
-    → NotBlameℓ M ℓ
-
-  inl-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `⊎ B} {ℓ}
-    → ∃[ N ] (M ≡ inl N)
-      -------------------
-    → NotBlameℓ M ℓ
-
-  inr-not-blame : ∀ {Γ A B} {M : Γ ⊢ A `⊎ B} {ℓ}
-    → ∃[ N ] (M ≡ inr N)
-      -------------------
-    → NotBlameℓ M ℓ
-
-  case-not-blame : ∀ {Γ A B C} {M : Γ ⊢ C} {ℓ}
-    → Σ[ L ∈ Γ ⊢ A `⊎ B ] ∃[ N₁ ] ∃[ N₂ ] (M ≡ case L N₁ N₂)
-      -------------------------------------------------------
-    → NotBlameℓ M ℓ
-
-  cast-not-blame : ∀ {Γ A B} {M : Γ ⊢ B} {ℓ}
-    → Σ[ N ∈ Γ ⊢ A ] ∃[ c ] (M ≡ N ⟨ c ⟩)
-      ------------------------------------
-    → NotBlameℓ M ℓ
-
--- -- A value V is not blame.
-value-not-blame : ∀ {Γ A} {V : Γ ⊢ A} {ℓ}
-  → (vV : Value V)
-    ---------------
-  → NotBlameℓ V ℓ
-value-not-blame V-ƛ = ƛ-not-blame (⟨ _ , refl ⟩)
-value-not-blame (V-const {k = p}) = $-not-blame {p = p} (⟨ _ , refl ⟩)
-value-not-blame (V-pair vV vW) = cons-not-blame (⟨ _ , ⟨ _ , refl ⟩ ⟩)
-value-not-blame (V-inl vV) = inl-not-blame (⟨ _ , refl ⟩)
-value-not-blame (V-inr vV) = inr-not-blame (⟨ _ , refl ⟩)
-value-not-blame (V-cast vV) = cast-not-blame (⟨ _ , ⟨ _ , refl ⟩ ⟩)
-
 
 -- Lemma:
 blame↠blame→ℓ≡ : ∀ {Γ A} {ℓ₁ ℓ₂}
@@ -197,29 +117,31 @@ blame↠blame→ℓ≡ (.(blame _) —→⟨ rd ⟩ rd*) = ⊥-elim (blame⌿→
 open Active
 open Cast
 
-{-
-  This proposition says that a safe cast, that is, a cast whose source type S and target type T respect subtyping <: ,
-  never results in a blame.
--}
--- <:-safe-cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
---   → (a : Active c)
---   → (vV : Value V)
---   → A <: B
---     --------------------------------
---   → NotBlame (applyCast V vV c {a})
--- -- Id
--- <:-safe-cast (activeId (A ⇒⟨ _ ⟩ .A)) vV sub = value-not-blame vV
--- -- Collapse and conflict.
--- <:-safe-cast (activeProj (.⋆ ⇒⟨ x₁ ⟩ B) x) vV sub = {!!}
--- -- Function
--- <:-safe-cast {A = A₁ ⇒ A₂} {B = B₁ ⇒ B₂} {V = V} (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c})) vV _ =
---   ƛ-not-blame (⟨ (((rename S_ V) · ((` Z) ⟨ dom (((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)) {c}) (Cross.C-fun _) ⟩)) ⟨ cod (((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)) {c}) (Cross.C-fun _) ⟩) , refl ⟩)
--- -- Product
--- <:-safe-cast {A = A₁ `× A₂} {B = B₁ `× B₂} {V = V} (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c})) vV _ =
---   cons-not-blame (⟨ (fst V ⟨ SimpleCast.fstC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) (Cross.C-pair _) ⟩) , ⟨ (snd V ⟨ SimpleCast.sndC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) (Cross.C-pair _) ⟩) , refl ⟩ ⟩)
--- -- Sum
--- <:-safe-cast {A = A₁ `⊎ A₂} {B = B₁ `⊎ B₂} {V = V} (activeSum ((.(_ `⊎ _) ⇒⟨ x ⟩ .(_ `⊎ _)) {c})) vV _ =
---   case-not-blame (⟨ V , ⟨ ƛ (inl ((` Z) ⟨ SimpleCast.inlC (((A₁ `⊎ A₂) ⇒⟨ x ⟩ (B₁ `⊎ B₂)) {c}) (Cross.C-sum _) ⟩)) , ⟨ ƛ (inr ((` Z) ⟨ SimpleCast.inrC (((A₁ `⊎ A₂) ⇒⟨ x ⟩ (B₁ `⊎ B₂)) {c}) (Cross.C-sum _) ⟩)) , refl ⟩ ⟩ ⟩)
+fun~-dom : ∀ {S₁ S₂ T₁ T₂}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → T₁ ~ S₁
+fun~-dom S~T with ~-relevant S~T
+... | fun~ T₁~S₁ _ = T₁~S₁
+
+fun~-cod : ∀ {S₁ S₂ T₁ T₂}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → S₂ ~ T₂
+fun~-cod S~T with ~-relevant S~T
+... | fun~ _ S₂~T₂ = S₂~T₂
+
+dom-eq : ∀ {S₁ S₂ T₁ T₂} {ℓ}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → (x : Cross ((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)))
+  → (dom (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {S~T}) x) ≡ ((T₁ ⇒⟨ ℓ ⟩ S₁) {fun~-dom S~T})
+dom-eq S~T x with ~-relevant S~T
+... | fun~ _ _ = refl
+
+cod-eq : ∀ {S₁ S₂ T₁ T₂} {ℓ}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → (x : Cross ((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)))
+  → (cod (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {S~T}) x) ≡ ((S₂ ⇒⟨ ℓ ⟩ T₂) {fun~-cod S~T})
+cod-eq S~T x with ~-relevant S~T
+... | fun~ _ _ = refl
 
 pair~-fst : ∀ {A₁ A₂ B₁ B₂}
   → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
@@ -249,6 +171,36 @@ sndC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
 sndC-eq A~B x with ~-relevant A~B
 ... | pair~ _ _ = refl
 
+sum~-inl : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → A₁ ~ B₁
+sum~-inl A~B with ~-relevant A~B
+... | sum~ A₁~B₁ _ = A₁~B₁
+
+sum~-inr : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → A₂ ~ B₂
+sum~-inr A~B with ~-relevant A~B
+... | sum~ _ A₂~B₂ = A₂~B₂
+
+inlC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → (x : Cross ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+    -----------------------------------------------
+  → (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {A~B}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {sum~-inl A~B})
+inlC-eq A~B x with ~-relevant A~B
+... | sum~ _ _ = refl
+
+inrC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → (x : Cross ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+    -----------------------------------------------
+  → (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {A~B}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {sum~-inr A~B})
+inrC-eq A~B x with ~-relevant A~B
+... | sum~ _ _ = refl
+
+{- Applying (an active) cast on a value preserves CastsRespect<: . -}
+-- If the cast has the same blame label with the one that CR<: is quantified with :
 applyCast-same-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ}
   → (A~B : A ~ B)
   → (a : Active ((A ⇒⟨ ℓ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
@@ -264,12 +216,16 @@ applyCast-same-ℓ-pres-CR<: {V = V} {vV} A~B (activeProj (⋆ ⇒⟨ ℓ ⟩ B)
 ...   | yes _ with resp-V
 ...     | CR<:-cast-same-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
 ...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
-applyCast-same-ℓ-pres-CR<: A~B (activeFun .((_ ⇒ _) ⇒⟨ _ ⟩ (_ ⇒ _))) A<:B resp-V = {!!}
+applyCast-same-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) (<:-⇒ B₁<:A₁ A₂<:B₂) resp-V
+  rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
+    CR<:-ƛ (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-· {!!} (CR<:-cast-same-ℓ B₁<:A₁ CR<:-var)))
 applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) (<:-× A₁<:B₁ A₂<:B₂) resp-V
   rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
   -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
     CR<:-cons (CR<:-cast-same-ℓ A₁<:B₁ (CR<:-fst resp-V)) (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-snd resp-V))
-applyCast-same-ℓ-pres-CR<: A~B (activeSum .((_ `⊎ _) ⇒⟨ _ ⟩ (_ `⊎ _))) A<:B resp-V = {!!}
+applyCast-same-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V
+  rewrite inlC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) | inrC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-inl (CR<:-cast-same-ℓ A₁<:B₁ CR<:-var))) (CR<:-ƛ (CR<:-inr (CR<:-cast-same-ℓ A₂<:B₂ CR<:-var)))
 
 {- TODO:
   We need to prove preservation w.r.t `CastsRespect<:` .
@@ -330,7 +286,7 @@ soundness-<: (CR<:-case (CR<:-inr resp-V) _ resp-M) ( .(case (inr _) _ _) —→
 -}
 soundness-<: (CR<:-cast-same-ℓ A<:B resp-V) ((V ⟨ ((A ⇒⟨ ℓ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: (applyCast-same-ℓ-pres-CR<: c a A<:B resp-V) applyCastVc↠blame
-soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ c ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
+soundness-<: {ℓ = ℓ} (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ ((A ⇒⟨ ℓ′ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: {!!} applyCastVc↠blame
 --   with <:-safe-cast a vV S<:T
 -- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ ℓ , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | `-not-blame (⟨ x , eq ⟩) rewrite eq with applyCastVc↠blame
