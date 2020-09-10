@@ -1,7 +1,16 @@
 module CastSubtyping where
 
-open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+
+
+open import Data.Nat using (ℕ; zero; suc)
+open import Data.Bool
+open import Relation.Nullary using (¬_; Dec; yes; no)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
+  renaming (subst to subst-eq; subst₂ to subst₂-eq)
+open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Nat.Properties using (_≟_)
+open import Data.Empty using (⊥; ⊥-elim)
 
 open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC)
 open import Types
@@ -16,7 +25,7 @@ import ParamCastReduction
 open ParamCastReduction cs
 
 
-
+open Active
 open Cast
 open Frame
 
@@ -226,6 +235,146 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wh
     → CastsRespect<: (blame {Γ} {A} ℓ′) ℓ
 
 
+fun~-dom : ∀ {S₁ S₂ T₁ T₂}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → T₁ ~ S₁
+fun~-dom S~T with ~-relevant S~T
+... | fun~ T₁~S₁ _ = T₁~S₁
+
+fun~-cod : ∀ {S₁ S₂ T₁ T₂}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → S₂ ~ T₂
+fun~-cod S~T with ~-relevant S~T
+... | fun~ _ S₂~T₂ = S₂~T₂
+
+dom-eq : ∀ {S₁ S₂ T₁ T₂} {ℓ}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → (x : Cross ((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)))
+  → (dom (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {S~T}) x) ≡ ((T₁ ⇒⟨ ℓ ⟩ S₁) {fun~-dom S~T})
+dom-eq S~T x with ~-relevant S~T
+... | fun~ _ _ = refl
+
+cod-eq : ∀ {S₁ S₂ T₁ T₂} {ℓ}
+  → (S~T : (S₁ ⇒ S₂) ~ (T₁ ⇒ T₂))
+  → (x : Cross ((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)))
+  → (cod (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {S~T}) x) ≡ ((S₂ ⇒⟨ ℓ ⟩ T₂) {fun~-cod S~T})
+cod-eq S~T x with ~-relevant S~T
+... | fun~ _ _ = refl
+
+pair~-fst : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → A₁ ~ B₁
+pair~-fst A~B with ~-relevant A~B
+... | pair~ A₁~B₁ _ = A₁~B₁
+
+pair~-snd : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → A₂ ~ B₂
+pair~-snd A~B with ~-relevant A~B
+... | pair~ _ A₂~B₂ = A₂~B₂
+
+fstC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → (x : Cross ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
+    -----------------------------------------------
+  → (fstC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {A~B}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {pair~-fst A~B}) -- here we use a helper to destruct A~B
+fstC-eq A~B x with ~-relevant A~B
+... | pair~ _ _ = refl
+
+sndC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `× A₂) ~ (B₁ `× B₂))
+  → (x : Cross ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
+    ------------------------------------------------
+  → (sndC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {A~B}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {pair~-snd A~B})
+sndC-eq A~B x with ~-relevant A~B
+... | pair~ _ _ = refl
+
+sum~-inl : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → A₁ ~ B₁
+sum~-inl A~B with ~-relevant A~B
+... | sum~ A₁~B₁ _ = A₁~B₁
+
+sum~-inr : ∀ {A₁ A₂ B₁ B₂}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → A₂ ~ B₂
+sum~-inr A~B with ~-relevant A~B
+... | sum~ _ A₂~B₂ = A₂~B₂
+
+inlC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → (x : Cross ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+    -----------------------------------------------
+  → (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {A~B}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {sum~-inl A~B})
+inlC-eq A~B x with ~-relevant A~B
+... | sum~ _ _ = refl
+
+inrC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
+  → (A~B : (A₁ `⊎ A₂) ~ (B₁ `⊎ B₂))
+  → (x : Cross ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+    -----------------------------------------------
+  → (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {A~B}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {sum~-inr A~B})
+inrC-eq A~B x with ~-relevant A~B
+... | sum~ _ _ = refl
+
+{- Applying (an active) cast on a value preserves CastsRespect<: . -}
+-- If the cast has the same blame label with the one that CR<: is quantified with :
+applyCast-same-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ}
+    → (A~B : A ~ B)
+    → (a : Active ((A ⇒⟨ ℓ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
+    → A <: B         -- We require A <: B since the label on the cast is the same as the one CR<: is quantified with.
+    → (resp-V : CastsRespect<: V ℓ)
+      -----------------------------------------------------
+    → CastsRespect<: (applyCast V vV (A ⇒⟨ ℓ ⟩ B) {a}) ℓ
+applyCast-same-ℓ-pres-CR<: _ (activeId (A ⇒⟨ ℓ ⟩ A)) A<:B resp-V = resp-V
+-- For simple cast, the key observation here is that B must be ⋆ .
+applyCast-same-ℓ-pres-CR<: {V = V} {vV} A~B (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) T<:⋆ resp-V
+  with canonical⋆ V vV
+... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+...   | no _ = CR<:-blame-diff-ℓ (λ _ → x refl)
+...   | yes _ with resp-V
+...     | CR<:-cast-same-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
+...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
+applyCast-same-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) (<:-⇒ B₁<:A₁ A₂<:B₂) resp-V
+  rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
+    -- We need to prove renaming preserves CR<: .
+    CR<:-ƛ (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-· {!!} (CR<:-cast-same-ℓ B₁<:A₁ CR<:-var)))
+applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) (<:-× A₁<:B₁ A₂<:B₂) resp-V
+  rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
+  -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
+    CR<:-cons (CR<:-cast-same-ℓ A₁<:B₁ (CR<:-fst resp-V)) (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-snd resp-V))
+applyCast-same-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V
+  rewrite inlC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) | inrC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-inl (CR<:-cast-same-ℓ A₁<:B₁ CR<:-var))) (CR<:-ƛ (CR<:-inr (CR<:-cast-same-ℓ A₂<:B₂ CR<:-var)))
+
+-- This handles the other case when the blame label on the cast is different from the one that CR<: is quantified with :
+applyCast-diff-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ ℓ′}
+    → (A~B : A ~ B)
+    → (a : Active ((A ⇒⟨ ℓ′ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
+    → ℓ ≢ ℓ′
+    → (resp-V : CastsRespect<: V ℓ)
+      -----------------------------------------------------
+    → CastsRespect<: (applyCast V vV (A ⇒⟨ ℓ′ ⟩ B) {a}) ℓ
+applyCast-diff-ℓ-pres-CR<: _ (activeId (A ⇒⟨ ℓ′ ⟩ A)) ℓ≢ℓ′ resp-V = resp-V
+applyCast-diff-ℓ-pres-CR<: {V = V} {vV} {ℓ} A~B (activeProj (⋆ ⇒⟨ ℓ′ ⟩ B) x) ℓ≢ℓ′ resp-V
+  with canonical⋆ V vV
+... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+...   | no _ = CR<:-blame-diff-ℓ ℓ≢ℓ′
+...   | yes _ with resp-V
+...     | CR<:-cast-same-ℓ _ resp-M′ = CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-M′
+...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-M′
+applyCast-diff-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) ℓ≢ℓ′ resp-V
+  rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
+    -- We need to prove renaming preserves CR<: .
+    CR<:-ƛ (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
+applyCast-diff-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) ℓ≢ℓ′ resp-V
+  rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
+  -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
+    CR<:-cons (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-fst resp-V)) (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-snd resp-V))
+applyCast-diff-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) ℓ≢ℓ′ resp-V
+  rewrite inlC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) | inrC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-inl (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var))) (CR<:-ƛ (CR<:-inr (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
+
 
 
 plug-blame-CR<:-inv : ∀ {Γ A B} {F : Frame {Γ = Γ} A B} {ℓ ℓ′}
@@ -255,10 +404,10 @@ preserve-CR<:-plug : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ℓ}
   → CastsRespect<: (plug M′ F) ℓ
 
 preserve-CR<: : ∀ {Γ A} {M M′ : Γ ⊢ A} {ℓ}
-  → CastsRespect<: M ℓ
-  → M —→ M′
-    --------------------
-  → CastsRespect<: M′ ℓ
+    → CastsRespect<: M ℓ
+    → M —→ M′
+      --------------------
+    → CastsRespect<: M′ ℓ
 
 preserve-CR<:-plug {M = L} {L′} {F = F-·₁ M} (CR<:-· resp-L resp-M) rd = CR<:-· (preserve-CR<: resp-L rd) resp-M
 preserve-CR<:-plug {F = F-·₂ L {v}} (CR<:-· resp-L resp-M) rd = CR<:-· resp-L (preserve-CR<: resp-M rd)
@@ -275,16 +424,19 @@ preserve-CR<:-plug {F = F-cast c} (CR<:-cast-diff-ℓ neq resp-M) rd = CR<:-cast
 
 preserve-CR<: resp (ξ rd) = preserve-CR<:-plug resp rd
 preserve-CR<: resp ξ-blame = CR<:-blame-diff-ℓ (plug-blame-CR<:-inv resp)
-preserve-CR<: resp (β x) = {!!}
-preserve-CR<: resp δ = {!!}
-preserve-CR<: resp β-if-true = {!!}
-preserve-CR<: resp β-if-false = {!!}
-preserve-CR<: resp (β-fst x x₁) = {!!}
-preserve-CR<: resp (β-snd x x₁) = {!!}
-preserve-CR<: resp (β-caseL x) = {!!}
-preserve-CR<: resp (β-caseR x) = {!!}
-preserve-CR<: resp (cast v) = {!!}
-preserve-CR<: resp (fun-cast v x) = {!!}
+preserve-CR<: resp (β v) = {!!}
+preserve-CR<: resp δ = CR<:-prim
+preserve-CR<: (CR<:-if _ resp-M _) β-if-true = resp-M
+preserve-CR<: (CR<:-if _ _ resp-M′) β-if-false = resp-M′
+preserve-CR<: (CR<:-fst (CR<:-cons resp-M _)) (β-fst _ _) = resp-M
+preserve-CR<: (CR<:-snd (CR<:-cons _ resp-N)) (β-snd _ _) = resp-N
+preserve-CR<: (CR<:-case (CR<:-inl resp) resp-M _) (β-caseL x) = CR<:-· resp-M resp
+preserve-CR<: (CR<:-case (CR<:-inr resp) _ resp-N) (β-caseR x) = CR<:-· resp-N resp
+preserve-CR<: (CR<:-cast-same-ℓ {S~T = S~T} S<:T resp) (cast v {a}) =
+  applyCast-same-ℓ-pres-CR<: S~T a S<:T resp
+preserve-CR<: (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ℓ′ resp) (cast v {a}) =
+  applyCast-diff-ℓ-pres-CR<: S~T a ℓ≢ℓ′ resp
+preserve-CR<: (CR<:-· resp resp₁) (ParamCastReduction.fun-cast v x) = {!!}
 preserve-CR<: resp (fst-cast x) = {!!}
 preserve-CR<: resp (snd-cast x) = {!!}
 preserve-CR<: resp (case-cast x) = {!!}
