@@ -3,14 +3,22 @@ module CastSubtyping where
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 
-open import SimpleCast using (Cast)
+open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC)
 open import Types
 open import Variables
 open import Labels
 
 import ParamCastCalculus
 open ParamCastCalculus Cast
+import ParamCastAux
+open ParamCastAux pcs using (Value; Frame; plug; canonical⋆)
+import ParamCastReduction
+open ParamCastReduction cs
+
+
+
 open Cast
+open Frame
 
 
 -- The subtyping relation.
@@ -39,6 +47,8 @@ data _<:_ : Type → Type → Set where
       ---------------------
     → S₁ ⇒ S₂ <: T₁ ⇒ T₂
 
+
+-- A few lemmas about `<:` :
 ⋆<:T→T≡⋆ : ∀ {T} → ⋆ <: T → T ≡ ⋆
 ⋆<:T→T≡⋆ T<:⋆ = refl
 
@@ -122,10 +132,12 @@ data HasCast : ∀ {Γ A S T} → (M : Γ ⊢ A) → (c : Cast (S ⇒ T)) → Se
     → HasCast N c
     → HasCast (case L M N) c
 
+
+
 -- Data type `CastsRespect<:` says all casts in M with blame label ℓ respect subtyping.
 data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set where
 
-  {-
+  {- NOTE:
     If the cast has the same blame label as ℓ , which is what the data type is quantified over,
     we require that the source & target types respect subtyping <: .
   -}
@@ -135,7 +147,7 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wh
       -------------------------------------
     → CastsRespect<: (M ⟨ (S ⇒⟨ ℓ ⟩ T) {S~T} ⟩) ℓ
 
-  {-
+  {- NOTE:
     If the blame label ℓ′ on the cast is different from what the data type is quantified over,
     this is fine and we don't impose any restriction on this cast.
   -}
@@ -212,3 +224,67 @@ data CastsRespect<: : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wh
     → ℓ ≢ ℓ′
       ------------------------------------
     → CastsRespect<: (blame {Γ} {A} ℓ′) ℓ
+
+
+
+
+plug-blame-CR<:-inv : ∀ {Γ A B} {F : Frame {Γ = Γ} A B} {ℓ ℓ′}
+  → CastsRespect<: (plug (blame ℓ′) F) ℓ
+    -------------------------------------
+  → ℓ ≢ ℓ′
+plug-blame-CR<:-inv {F = F-·₁ _} (CR<:-· (CR<:-blame-diff-ℓ ℓ≢ℓ′) _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-·₂ _} (CR<:-· _ (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-if _ _} (CR<:-if (CR<:-blame-diff-ℓ ℓ≢ℓ′) _ _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-×₁ _} (CR<:-cons _ (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-×₂ _} (CR<:-cons (CR<:-blame-diff-ℓ ℓ≢ℓ′) _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-fst} (CR<:-fst (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-snd} (CR<:-snd (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-inl} (CR<:-inl (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-inr} (CR<:-inr (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-case _ _} (CR<:-case (CR<:-blame-diff-ℓ ℓ≢ℓ′) _ _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-cast .(_ ⇒⟨ _ ⟩ _)} (CR<:-cast-same-ℓ _ (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-CR<:-inv {F = F-cast .(_ ⇒⟨ _ ⟩ _)} (CR<:-cast-diff-ℓ _ (CR<:-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+
+{-
+  We need to prove preservation w.r.t `CastsRespect<:` .
+-}
+preserve-CR<:-plug : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ℓ}
+  → CastsRespect<: (plug M F) ℓ
+  → M —→ M′
+    -----------------------------
+  → CastsRespect<: (plug M′ F) ℓ
+
+preserve-CR<: : ∀ {Γ A} {M M′ : Γ ⊢ A} {ℓ}
+  → CastsRespect<: M ℓ
+  → M —→ M′
+    --------------------
+  → CastsRespect<: M′ ℓ
+
+preserve-CR<:-plug {M = L} {L′} {F = F-·₁ M} (CR<:-· resp-L resp-M) rd = CR<:-· (preserve-CR<: resp-L rd) resp-M
+preserve-CR<:-plug {F = F-·₂ L {v}} (CR<:-· resp-L resp-M) rd = CR<:-· resp-L (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-if M N} (CR<:-if resp-L resp-M resp-N) rd = CR<:-if (preserve-CR<: resp-L rd ) resp-M resp-N
+preserve-CR<:-plug {F = F-×₁ M} (CR<:-cons resp-M resp-N) rd = CR<:-cons resp-M (preserve-CR<: resp-N rd)
+preserve-CR<:-plug {F = F-×₂ N} (CR<:-cons resp-M resp-N) rd = CR<:-cons (preserve-CR<: resp-M rd) resp-N
+preserve-CR<:-plug {F = F-fst} (CR<:-fst resp-M) rd = CR<:-fst (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-snd} (CR<:-snd resp-M) rd = CR<:-snd (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-inl} (CR<:-inl resp-M) rd = CR<:-inl (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-inr} (CR<:-inr resp-M) rd = CR<:-inr (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-case M N} (CR<:-case resp-L resp-M resp-N) rd = CR<:-case (preserve-CR<: resp-L rd) resp-M resp-N
+preserve-CR<:-plug {F = F-cast c} (CR<:-cast-same-ℓ sub resp-M) rd = CR<:-cast-same-ℓ sub (preserve-CR<: resp-M rd)
+preserve-CR<:-plug {F = F-cast c} (CR<:-cast-diff-ℓ neq resp-M) rd = CR<:-cast-diff-ℓ neq (preserve-CR<: resp-M rd)
+
+preserve-CR<: resp (ξ rd) = preserve-CR<:-plug resp rd
+preserve-CR<: resp ξ-blame = CR<:-blame-diff-ℓ (plug-blame-CR<:-inv resp)
+preserve-CR<: resp (β x) = {!!}
+preserve-CR<: resp δ = {!!}
+preserve-CR<: resp β-if-true = {!!}
+preserve-CR<: resp β-if-false = {!!}
+preserve-CR<: resp (β-fst x x₁) = {!!}
+preserve-CR<: resp (β-snd x x₁) = {!!}
+preserve-CR<: resp (β-caseL x) = {!!}
+preserve-CR<: resp (β-caseR x) = {!!}
+preserve-CR<: resp (cast v) = {!!}
+preserve-CR<: resp (fun-cast v x) = {!!}
+preserve-CR<: resp (fst-cast x) = {!!}
+preserve-CR<: resp (snd-cast x) = {!!}
+preserve-CR<: resp (case-cast x) = {!!}

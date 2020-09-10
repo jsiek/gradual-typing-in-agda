@@ -22,7 +22,7 @@ import ParamCastReduction
 open ParamCastReduction cs
 import ParamCastReductionNoFrame
 open ParamCastReductionNoFrame cs renaming (_—→_ to _—→′_; _—↠_ to _—↠′_)
-open import CastSubtyping using (CastsRespect<:; _<:_)
+open import CastSubtyping
 
 
 
@@ -259,10 +259,6 @@ applyCast-diff-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B�
 
 
 
-{- TODO:
-  We need to prove preservation w.r.t `CastsRespect<:` .
--}
-
 {-
   If every cast in the term M with blame label ℓ respects subtyping, then M ⌿↠ blame ℓ .
 -}
@@ -273,7 +269,7 @@ soundness-<: : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
 soundness-<: resp-plugMF ( .(plug _ _) —→⟨ ξ {F = F} M→M′ ⟩ plugM′F↠blame ) =
   -- In this case we need to prove that single step reduction preserves `CastsRespect<:` .
   let plugMF→plugM′F = ξ {F = F} M→M′ in
-    soundness-<: {!!} plugM′F↠blame
+    soundness-<: (preserve-CR<: resp-plugMF plugMF→plugM′F) plugM′F↠blame
 
 -- There is no way to plug a `blame ℓ` in a frame and produce a term where every cast with ℓ respects <: .
 soundness-<: resp ( .(plug (blame _) _) —→⟨ ξ-blame {F = F} {ℓ₁} ⟩ blame↠blame ) =
