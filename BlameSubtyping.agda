@@ -206,6 +206,7 @@ applyCast-same-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ}
   → (a : Active ((A ⇒⟨ ℓ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
   → A <: B         -- We require A <: B since the label on the cast is the same as the one CR<: is quantified with.
   → (resp-V : CastsRespect<: V ℓ)
+    -----------------------------------------------------
   → CastsRespect<: (applyCast V vV (A ⇒⟨ ℓ ⟩ B) {a}) ℓ
 applyCast-same-ℓ-pres-CR<: _ (activeId (A ⇒⟨ ℓ ⟩ A)) A<:B resp-V = resp-V
 -- For simple cast, the key observation here is that B must be ⋆ .
@@ -218,6 +219,7 @@ applyCast-same-ℓ-pres-CR<: {V = V} {vV} A~B (activeProj (⋆ ⇒⟨ ℓ ⟩ B)
 ...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-same-ℓ T<:⋆ resp-M′
 applyCast-same-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) (<:-⇒ B₁<:A₁ A₂<:B₂) resp-V
   rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
+    -- We need to prove renaming preserves CR<: .
     CR<:-ƛ (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-· {!!} (CR<:-cast-same-ℓ B₁<:A₁ CR<:-var)))
 applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) (<:-× A₁<:B₁ A₂<:B₂) resp-V
   rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
@@ -226,6 +228,36 @@ applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B�
 applyCast-same-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V
   rewrite inlC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) | inrC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) =
     CR<:-case resp-V (CR<:-ƛ (CR<:-inl (CR<:-cast-same-ℓ A₁<:B₁ CR<:-var))) (CR<:-ƛ (CR<:-inr (CR<:-cast-same-ℓ A₂<:B₂ CR<:-var)))
+
+-- This handles the other case when the blame label on the cast is different from the one that CR<: is quantified with :
+applyCast-diff-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ ℓ′}
+  → (A~B : A ~ B)
+  → (a : Active ((A ⇒⟨ ℓ′ ⟩ B) {A~B})) -- Since the cast can apply, it need to active.
+  → ℓ ≢ ℓ′
+  → (resp-V : CastsRespect<: V ℓ)
+    -----------------------------------------------------
+  → CastsRespect<: (applyCast V vV (A ⇒⟨ ℓ′ ⟩ B) {a}) ℓ
+applyCast-diff-ℓ-pres-CR<: _ (activeId (A ⇒⟨ ℓ′ ⟩ A)) ℓ≢ℓ′ resp-V = resp-V
+applyCast-diff-ℓ-pres-CR<: {V = V} {vV} {ℓ} A~B (activeProj (⋆ ⇒⟨ ℓ′ ⟩ B) x) ℓ≢ℓ′ resp-V
+  with canonical⋆ V vV
+... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+...   | no _ = CR<:-blame-diff-ℓ ℓ≢ℓ′
+...   | yes _ with resp-V
+...     | CR<:-cast-same-ℓ _ resp-M′ = CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-M′
+...     | CR<:-cast-diff-ℓ _ resp-M′ = CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-M′
+applyCast-diff-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) ℓ≢ℓ′ resp-V
+  rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
+    -- We need to prove renaming preserves CR<: .
+    CR<:-ƛ (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
+applyCast-diff-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) ℓ≢ℓ′ resp-V
+  rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
+  -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
+    CR<:-cons (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-fst resp-V)) (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-snd resp-V))
+applyCast-diff-ℓ-pres-CR<: A~B (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) ℓ≢ℓ′ resp-V
+  rewrite inlC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) | inrC-eq A~B (Cross.C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂))) =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-inl (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var))) (CR<:-ƛ (CR<:-inr (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
+
+
 
 {- TODO:
   We need to prove preservation w.r.t `CastsRespect<:` .
@@ -278,21 +310,10 @@ soundness-<: (CR<:-case (CR<:-inl resp-V) resp-L _) ( .(case (inl _) _ _) —→
 soundness-<: (CR<:-case (CR<:-inr resp-V) _ resp-M) ( .(case (inr _) _ _) —→⟨ β-caseR vV ⟩ M·V↠blame ) =
     soundness-<: (CR<:-· resp-M resp-V) M·V↠blame
 
-{- NOTE:
-  We need to prove two things here:
-    1. Reduction `—→` preserves `CastsRespect<:`
-    2. `applyCast` preserves `CastsRespect<:`
-  The data type `NotBlame` is useful here to discriminate on `applyCastVc↠blame` .
--}
 soundness-<: (CR<:-cast-same-ℓ A<:B resp-V) ((V ⟨ ((A ⇒⟨ ℓ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: (applyCast-same-ℓ-pres-CR<: c a A<:B resp-V) applyCastVc↠blame
 soundness-<: {ℓ = ℓ} (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ ((A ⇒⟨ ℓ′ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
-  soundness-<: {!!} applyCastVc↠blame
---   with <:-safe-cast a vV S<:T
--- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ ℓ , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | `-not-blame (⟨ x , eq ⟩) rewrite eq with applyCastVc↠blame
--- ...   | ` x —→⟨ `x→M ⟩ M↠blame = soundness-<: {!!} (⟨ ℓ , M↠blame ⟩)
--- soundness-<: {M = V ⟨ c ⟩} (CastsRespect<:-cast {S = S} {T} S<:T resp-V) ⟨ ℓ , .(_ ⟨ _ ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ⟩ | ƛ-not-blame (⟨ N , eq ⟩) rewrite eq with applyCastVc↠blame
--- ...   | ƛ N —→⟨ ƛN→M ⟩ M↠blame = soundness-<: {!!} (⟨ ℓ , M↠blame ⟩)
+  soundness-<: (applyCast-diff-ℓ-pres-CR<: c a ℓ≢ℓ′ resp-V) applyCastVc↠blame
 
 soundness-<: {ℓ = ℓ} (CR<:-· (CR<:-cast-same-ℓ (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W) ((V ⟨ (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c}) ⟩ · W) —→⟨ fun-cast vV vW {x = x} ⟩ V·W↠blame) =
   soundness-<: (subst₂-eq (λ C₁ C₂ → CastsRespect<: ((V · (W ⟨ C₁ ⟩)) ⟨ C₂ ⟩) ℓ) (sym eq-dom) (sym eq-cod) resp)  V·W↠blame
