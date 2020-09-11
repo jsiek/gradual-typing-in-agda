@@ -436,7 +436,12 @@ preserve-CR<: (CR<:-cast-same-ℓ {S~T = S~T} S<:T resp) (cast v {a}) =
   applyCast-same-ℓ-pres-CR<: S~T a S<:T resp
 preserve-CR<: (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ℓ′ resp) (cast v {a}) =
   applyCast-diff-ℓ-pres-CR<: S~T a ℓ≢ℓ′ resp
-preserve-CR<: (CR<:-· resp resp₁) (ParamCastReduction.fun-cast v x) = {!!}
+preserve-CR<: (CR<:-· (CR<:-cast-same-ℓ {S~T = S~T} (<:-⇒ sub-dom sub-cod) resp-V) resp-W) (fun-cast vV vW {x = x})
+  rewrite dom-eq S~T x | cod-eq S~T x =
+    CR<:-cast-same-ℓ sub-cod (CR<:-· resp-V (CR<:-cast-same-ℓ sub-dom resp-W))
+preserve-CR<: (CR<:-· (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V) resp-W) (fun-cast vV vW {x = x})
+  rewrite dom-eq S~T x | cod-eq S~T x =
+    CR<:-cast-diff-ℓ ℓ≢ (CR<:-· resp-V (CR<:-cast-diff-ℓ ℓ≢ resp-W))
 preserve-CR<: resp (fst-cast x) = {!!}
 preserve-CR<: resp (snd-cast x) = {!!}
 preserve-CR<: resp (case-cast x) = {!!}
