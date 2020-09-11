@@ -442,6 +442,21 @@ preserve-CR<: (CR<:-· (CR<:-cast-same-ℓ {S~T = S~T} (<:-⇒ sub-dom sub-cod) 
 preserve-CR<: (CR<:-· (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V) resp-W) (fun-cast vV vW {x = x})
   rewrite dom-eq S~T x | cod-eq S~T x =
     CR<:-cast-diff-ℓ ℓ≢ (CR<:-· resp-V (CR<:-cast-diff-ℓ ℓ≢ resp-W))
-preserve-CR<: resp (fst-cast x) = {!!}
-preserve-CR<: resp (snd-cast x) = {!!}
-preserve-CR<: resp (case-cast x) = {!!}
+preserve-CR<: (CR<:-fst (CR<:-cast-same-ℓ {S~T = S~T} (<:-× sub-fst sub-snd) resp-V)) (fst-cast vV {x = x})
+  rewrite fstC-eq S~T x =
+    CR<:-cast-same-ℓ sub-fst (CR<:-fst resp-V)
+preserve-CR<: (CR<:-fst (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V)) (fst-cast vV {x = x})
+  rewrite fstC-eq S~T x =
+    CR<:-cast-diff-ℓ ℓ≢ (CR<:-fst resp-V)
+preserve-CR<: (CR<:-snd (CR<:-cast-same-ℓ {S~T = S~T} (<:-× sub-fst sub-snd) resp-V)) (snd-cast vV {x = x})
+  rewrite sndC-eq S~T x =
+    CR<:-cast-same-ℓ sub-snd (CR<:-snd resp-V)
+preserve-CR<: (CR<:-snd (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V)) (snd-cast vV {x = x})
+  rewrite sndC-eq S~T x =
+    CR<:-cast-diff-ℓ ℓ≢ (CR<:-snd resp-V)
+preserve-CR<: (CR<:-case (CR<:-cast-same-ℓ {S~T = S~T} (<:-⊎ sub-l sub-r) resp-V) resp-W₁ resp-W₂) (case-cast vV {x = x})
+  rewrite inlC-eq S~T x | inrC-eq S~T x =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ sub-l CR<:-var))) (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ sub-r CR<:-var)))
+preserve-CR<: (CR<:-case (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V) resp-W₁ resp-W₂) (case-cast vV {x = x})
+  rewrite inlC-eq S~T x | inrC-eq S~T x =
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ CR<:-var))) (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ CR<:-var)))
