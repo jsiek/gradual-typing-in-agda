@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module CastSubtyping where
 
 
@@ -317,6 +319,31 @@ inrC-eq : ∀ {A₁ A₂ B₁ B₂} {ℓ}
 inrC-eq A~B x with ~-relevant A~B
 ... | sum~ _ _ = refl
 
+{- NOTE:
+  Renaming (rebasing a type derivation) preserves `CR<:` . The statement of this lemma is similar to the
+  one about well-typedness in `Properties` chapter, PLFA.
+-}
+rename-CR<: : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
+  → (ρ : ∀ {X} → Γ ∋ X → Δ ∋ X)
+    ----------------------------------------------------
+  → CastsRespect<: M ℓ → CastsRespect<: (rename ρ M) ℓ
+rename-CR<: ρ (CR<:-cast-same-ℓ S<:T resp) = CR<:-cast-same-ℓ S<:T (rename-CR<: ρ resp)
+rename-CR<: ρ (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp) = CR<:-cast-diff-ℓ ℓ≢ℓ′ (rename-CR<: ρ resp)
+rename-CR<: ρ CR<:-var = CR<:-var
+rename-CR<: ρ (CR<:-ƛ resp) = CR<:-ƛ (rename-CR<: (λ {X} → ext ρ) resp)
+rename-CR<: ρ (CR<:-· resp-L resp-M) = CR<:-· (rename-CR<: ρ resp-L) (rename-CR<: ρ resp-M)
+rename-CR<: ρ CR<:-prim = CR<:-prim
+rename-CR<: ρ (CR<:-if resp-L resp-M resp-N) = CR<:-if (rename-CR<: ρ resp-L) (rename-CR<: ρ resp-M)
+                                                 (rename-CR<: ρ resp-N)
+rename-CR<: ρ (CR<:-cons resp-M resp-N) = CR<:-cons (rename-CR<: ρ resp-M) (rename-CR<: ρ resp-N)
+rename-CR<: ρ (CR<:-fst resp) = CR<:-fst (rename-CR<: ρ resp)
+rename-CR<: ρ (CR<:-snd resp) = CR<:-snd (rename-CR<: ρ resp)
+rename-CR<: ρ (CR<:-inl resp) = CR<:-inl (rename-CR<: ρ resp)
+rename-CR<: ρ (CR<:-inr resp) = CR<:-inr (rename-CR<: ρ resp)
+rename-CR<: ρ (CR<:-case resp-L resp-M resp-N) = CR<:-case (rename-CR<: ρ resp-L) (rename-CR<: ρ resp-M)
+                                                   (rename-CR<: ρ resp-N)
+rename-CR<: ρ (CR<:-blame-diff-ℓ ℓ≢ℓ′) = CR<:-blame-diff-ℓ ℓ≢ℓ′
+
 {- Applying (an active) cast on a value preserves CastsRespect<: . -}
 -- If the cast has the same blame label with the one that CR<: is quantified with :
 applyCast-same-ℓ-pres-CR<: : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {ℓ}
@@ -338,7 +365,7 @@ applyCast-same-ℓ-pres-CR<: {V = V} {vV} A~B (activeProj (⋆ ⇒⟨ ℓ ⟩ B)
 applyCast-same-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) (<:-⇒ B₁<:A₁ A₂<:B₂) resp-V
   rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
     -- We need to prove renaming preserves CR<: .
-    CR<:-ƛ (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-· {!!} (CR<:-cast-same-ℓ B₁<:A₁ CR<:-var)))
+    CR<:-ƛ (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-· (rename-CR<: S_ resp-V) (CR<:-cast-same-ℓ B₁<:A₁ CR<:-var)))
 applyCast-same-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) (<:-× A₁<:B₁ A₂<:B₂) resp-V
   rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
   -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
@@ -366,7 +393,7 @@ applyCast-diff-ℓ-pres-CR<: {V = V} {vV} {ℓ} A~B (activeProj (⋆ ⇒⟨ ℓ�
 applyCast-diff-ℓ-pres-CR<: A~B (activeFun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) ℓ≢ℓ′ resp-V
   rewrite dom-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) | cod-eq A~B (Cross.C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂))) =
     -- We need to prove renaming preserves CR<: .
-    CR<:-ƛ (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
+    CR<:-ƛ (CR<:-cast-diff-ℓ ℓ≢ℓ′ (CR<:-· (rename-CR<: S_ resp-V) (CR<:-cast-diff-ℓ ℓ≢ℓ′ CR<:-var)))
 applyCast-diff-ℓ-pres-CR<: A~B (activePair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) ℓ≢ℓ′ resp-V
   rewrite fstC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) | sndC-eq A~B (Cross.C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂))) =
   -- Prove CastsRespect<: (cons (fst V ⟨ fstC c x ⟩) (snd V ⟨ sndC c x ⟩)) ℓ
@@ -456,7 +483,9 @@ preserve-CR<: (CR<:-snd (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V)) (snd-cas
     CR<:-cast-diff-ℓ ℓ≢ (CR<:-snd resp-V)
 preserve-CR<: (CR<:-case (CR<:-cast-same-ℓ {S~T = S~T} (<:-⊎ sub-l sub-r) resp-V) resp-W₁ resp-W₂) (case-cast vV {x = x})
   rewrite inlC-eq S~T x | inrC-eq S~T x =
-    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ sub-l CR<:-var))) (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ sub-r CR<:-var)))
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (CR<:-cast-same-ℓ sub-l CR<:-var)))
+                     (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (CR<:-cast-same-ℓ sub-r CR<:-var)))
 preserve-CR<: (CR<:-case (CR<:-cast-diff-ℓ {S~T = S~T} ℓ≢ resp-V) resp-W₁ resp-W₂) (case-cast vV {x = x})
   rewrite inlC-eq S~T x | inrC-eq S~T x =
-    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ CR<:-var))) (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ ℓ≢ CR<:-var)))
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (CR<:-cast-diff-ℓ ℓ≢ CR<:-var)))
+                     (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (CR<:-cast-diff-ℓ ℓ≢ CR<:-var)))

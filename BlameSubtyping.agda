@@ -252,8 +252,8 @@ soundness-<: {ℓ = ℓ} (CR<:-snd (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (
   resp = CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-snd resp-V)
 
 soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
-  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
-                                 (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
+  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
+                                 (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
                ↠blame
   where
   c′ : A₁ ~ B₁
@@ -274,8 +274,8 @@ soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:
   respr = CR<:-cast-same-ℓ A₂<:B₂ CR<:-var
 
 soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
-  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
-                                 (CR<:-ƛ (CR<:-· {!!} (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
+  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
+                                 (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
                ↠blame
   where
   c′ : A₁ ~ B₁
