@@ -1,5 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 module CastSubtyping where
 
 
@@ -8,7 +6,7 @@ open import Data.Nat using (ℕ; zero; suc)
 open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
+  using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Nat.Properties using (_≟_)
@@ -324,7 +322,7 @@ inrC-eq A~B x with ~-relevant A~B
   one about well-typedness in `Properties` chapter, PLFA.
 -}
 rename-CR<: : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
-  → (ρ : ∀ {X} → Γ ∋ X → Δ ∋ X)
+  → (ρ : Rename Γ Δ)
     ----------------------------------------------------
   → CastsRespect<: M ℓ → CastsRespect<: (rename ρ M) ℓ
 rename-CR<: ρ (CR<:-cast-same-ℓ S<:T resp) = CR<:-cast-same-ℓ S<:T (rename-CR<: ρ resp)
@@ -343,6 +341,55 @@ rename-CR<: ρ (CR<:-inr resp) = CR<:-inr (rename-CR<: ρ resp)
 rename-CR<: ρ (CR<:-case resp-L resp-M resp-N) = CR<:-case (rename-CR<: ρ resp-L) (rename-CR<: ρ resp-M)
                                                    (rename-CR<: ρ resp-N)
 rename-CR<: ρ (CR<:-blame-diff-ℓ ℓ≢ℓ′) = CR<:-blame-diff-ℓ ℓ≢ℓ′
+
+{- NOTE:
+  Substitution preserves `CR<:` .
+-}
+
+-- What it means for a substitution to respect `CR<:` .
+CR<:-σ : ∀ {Γ Δ} → Subst Γ Δ → Label → Set
+CR<:-σ {Γ} {Δ} σ ℓ = ∀ {X} → (x : Γ ∋ X) → CastsRespect<: {A = X} (σ x) ℓ
+
+-- We need a lemma about `exts`, as always.
+exts-CR<: : ∀ {Γ Δ X} {σ : Subst Γ Δ} {ℓ}
+  → CR<:-σ σ ℓ → CR<:-σ (exts σ {B = X}) ℓ
+exts-CR<: resp-σ Z = CR<:-var
+exts-CR<: resp-σ (S x) = rename-CR<: S_ (resp-σ x)
+
+subst-CR<: : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
+  → CR<:-σ σ ℓ
+    ---------------------------------------------------
+  → CastsRespect<: M ℓ → CastsRespect<: (subst σ M) ℓ
+subst-CR<: resp-σ (CR<:-cast-same-ℓ S<:T resp) = CR<:-cast-same-ℓ S<:T (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp) = CR<:-cast-diff-ℓ ℓ≢ℓ′ (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-var {x = x}) = resp-σ x
+-- Need to prove that `exts σ` satisfies `CR<:-σ` .
+subst-CR<: resp-σ (CR<:-ƛ resp) = CR<:-ƛ (subst-CR<: (exts-CR<: resp-σ) resp)
+subst-CR<: resp-σ (CR<:-· resp-L resp-M) = CR<:-· (subst-CR<: resp-σ resp-L) (subst-CR<: resp-σ resp-M)
+subst-CR<: resp-σ CR<:-prim = CR<:-prim
+subst-CR<: resp-σ (CR<:-if resp-L resp-M resp-N) = CR<:-if (subst-CR<: resp-σ resp-L) (subst-CR<: resp-σ resp-M)
+                                                     (subst-CR<: resp-σ resp-N)
+subst-CR<: resp-σ (CR<:-cons resp-M resp-N) = CR<:-cons (subst-CR<: resp-σ resp-M) (subst-CR<: resp-σ resp-N)
+subst-CR<: resp-σ (CR<:-fst resp) = CR<:-fst (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-snd resp) = CR<:-snd (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-inl resp) = CR<:-inl (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-inr resp) = CR<:-inr (subst-CR<: resp-σ resp)
+subst-CR<: resp-σ (CR<:-case resp-L resp-M resp-N) = CR<:-case (subst-CR<: resp-σ resp-L) (subst-CR<: resp-σ resp-M)
+                                                       (subst-CR<: resp-σ resp-N)
+subst-CR<: resp-σ (CR<:-blame-diff-ℓ ℓ≢ℓ′) = CR<:-blame-diff-ℓ ℓ≢ℓ′
+
+subst-zero-CR<: : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
+  → CastsRespect<: M ℓ
+  → CR<:-σ (subst-zero M) ℓ
+subst-zero-CR<: resp Z = resp
+subst-zero-CR<: resp (S x) = CR<:-var
+
+substitution-CR<: : ∀ {Γ A B} {N : Γ , A ⊢ B} {M : Γ ⊢ A} {ℓ}
+  → CastsRespect<: N ℓ
+  → CastsRespect<: M ℓ
+    -----------------------------
+  → CastsRespect<: ( N [ M ] ) ℓ
+substitution-CR<: resp-N resp-M = subst-CR<: (subst-zero-CR<: resp-M) resp-N
 
 {- Applying (an active) cast on a value preserves CastsRespect<: . -}
 -- If the cast has the same blame label with the one that CR<: is quantified with :
@@ -451,7 +498,7 @@ preserve-CR<:-plug {F = F-cast c} (CR<:-cast-diff-ℓ neq resp-M) rd = CR<:-cast
 
 preserve-CR<: resp (ξ rd) = preserve-CR<:-plug resp rd
 preserve-CR<: resp ξ-blame = CR<:-blame-diff-ℓ (plug-blame-CR<:-inv resp)
-preserve-CR<: resp (β v) = {!!}
+preserve-CR<: (CR<:-· (CR<:-ƛ resp-N) resp-W) (β v) = substitution-CR<: resp-N resp-W
 preserve-CR<: resp δ = CR<:-prim
 preserve-CR<: (CR<:-if _ resp-M _) β-if-true = resp-M
 preserve-CR<: (CR<:-if _ _ resp-M′) β-if-false = resp-M′

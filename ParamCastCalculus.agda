@@ -178,3 +178,11 @@ _[_] : ∀ {Γ A B}
         → Γ ⊢ A
 _[_] {Γ} {A} {B} N M =  subst {Γ , B} {Γ} (subst-zero M) {A} N
 
+{-
+  The type signatures for `rename` and `substitution`.
+-}
+Rename : Context → Context → Set
+Rename Γ Δ = ∀ {X} → Γ ∋ X → Δ ∋ X
+
+Subst : Context → Context → Set
+Subst Γ Δ = ∀ {X} → Γ ∋ X → Δ ⊢ X
