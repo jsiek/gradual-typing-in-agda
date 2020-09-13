@@ -26,14 +26,12 @@ open import CastSubtyping
 
 
 
--- Test
--- M : ∅ ⊢ ⋆
--- M = ($_ zero {Prim.P-Base}) ⟨ _⇒⟨_⟩_ (` Nat) (Label.pos zero) ⋆ {unk~R} ⟩
-
-
 open Value
 
--- Experimental
+{- NOTE:
+  We currently rely on a module with expanded frame and plug to do the 'blame does not reduce' proof.
+  Not sure if this is the best way though ...
+-}
 rd→rd′ : ∀ {Γ A} {M M′ : Γ ⊢ A}
   → M —→ M′
   → M —→′ M′
@@ -166,133 +164,37 @@ soundness-<: (CR<:-case (CR<:-inr resp-V) _ resp-M) ( .(case (inr _) _ _) —→
 
 soundness-<: (CR<:-cast-same-ℓ A<:B resp-V) ((V ⟨ ((A ⇒⟨ ℓ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: (applyCast-same-ℓ-pres-CR<: c a A<:B resp-V) applyCastVc↠blame
-soundness-<: {ℓ = ℓ} (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ ((A ⇒⟨ ℓ′ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
+soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ′ resp-V) ((V ⟨ ((A ⇒⟨ ℓ′ ⟩ B) {c}) ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: (applyCast-diff-ℓ-pres-CR<: c a ℓ≢ℓ′ resp-V) applyCastVc↠blame
 
-soundness-<: {ℓ = ℓ} (CR<:-· (CR<:-cast-same-ℓ (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W) ((V ⟨ (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c}) ⟩ · W) —→⟨ fun-cast vV vW {x = x} ⟩ V·W↠blame) =
-  soundness-<: (subst₂-eq (λ C₁ C₂ → CastsRespect<: ((V · (W ⟨ C₁ ⟩)) ⟨ C₂ ⟩) ℓ) (sym eq-dom) (sym eq-cod) resp)  V·W↠blame
-  where
-  c′ : T₁ ~ S₁
-  c′ with ~-relevant c
-  ... | fun~ c′ _ =  c′
-  c″ : S₂ ~ T₂
-  c″ with ~-relevant c
-  ... | fun~ _ c″ = c″
-  eq-dom : (dom (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c}) x) ≡ ((T₁ ⇒⟨ ℓ ⟩ S₁) {c′})
-  eq-dom with ~-relevant c
-  ... | fun~ _ _ = refl
-  eq-cod : (cod (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c}) x) ≡ ((S₂ ⇒⟨ ℓ ⟩ T₂) {c″})
-  eq-cod with ~-relevant c
-  ... | fun~ _ _ = refl
-  resp : CastsRespect<: ((V · (W ⟨ ((T₁ ⇒⟨ ℓ ⟩ S₁) {c′}) ⟩)) ⟨ ((S₂ ⇒⟨ ℓ ⟩ T₂) {c″}) ⟩) ℓ
-  resp = CR<:-cast-same-ℓ S₂<:T₂ (CR<:-· resp-V (CR<:-cast-same-ℓ T₁<:S₁ resp-W))
-soundness-<: {ℓ = ℓ} (CR<:-· (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W) ((V ⟨ (((S₁ ⇒ S₂) ⇒⟨ ℓ₁ ⟩ (T₁ ⇒ T₂)) {c}) ⟩ · W) —→⟨ fun-cast vV vW {x = x} ⟩ V·W↠blame) =
-  soundness-<: (subst₂-eq (λ C₁ C₂ → CastsRespect<: ((V · (W ⟨ C₁ ⟩)) ⟨ C₂ ⟩) ℓ) (sym eq-dom) (sym eq-cod) resp) V·W↠blame
-  where
-  c′ : T₁ ~ S₁
-  c′ with ~-relevant c
-  ... | fun~ c′ _ =  c′
-  c″ : S₂ ~ T₂
-  c″ with ~-relevant c
-  ... | fun~ _ c″ = c″
-  -- This is essentially the same proof except that we use a differennt constructor for CR<: .
-  eq-dom : (dom (((S₁ ⇒ S₂) ⇒⟨ ℓ₁ ⟩ (T₁ ⇒ T₂)) {c}) x) ≡ ((T₁ ⇒⟨ ℓ₁ ⟩ S₁) {c′})
-  eq-dom with ~-relevant c
-  ... | fun~ _ _ = refl
-  eq-cod : (cod (((S₁ ⇒ S₂) ⇒⟨ ℓ₁ ⟩ (T₁ ⇒ T₂)) {c}) x) ≡ ((S₂ ⇒⟨ ℓ₁ ⟩ T₂) {c″})
-  eq-cod with ~-relevant c
-  ... | fun~ _ _ = refl
-  resp : CastsRespect<: ((V · (W ⟨ ((T₁ ⇒⟨ ℓ₁ ⟩ S₁) {c′}) ⟩)) ⟨ ((S₂ ⇒⟨ ℓ₁ ⟩ T₂) {c″}) ⟩) ℓ
-  resp = CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-· resp-V (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-W))
+soundness-<: (CR<:-· (CR<:-cast-same-ℓ (<:-⇒ T₁<:S₁ S₂<:T₂) resp-V) resp-W) ((V ⟨ (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c}) ⟩ · W) —→⟨ fun-cast vV vW {x = x} ⟩ V·W↠blame)
+  rewrite dom-eq c x | cod-eq c x =
+    soundness-<: (CR<:-cast-same-ℓ S₂<:T₂ (CR<:-· resp-V (CR<:-cast-same-ℓ T₁<:S₁ resp-W))) V·W↠blame
+soundness-<: (CR<:-· (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W) ((V ⟨ (((S₁ ⇒ S₂) ⇒⟨ ℓ₁ ⟩ (T₁ ⇒ T₂)) {c}) ⟩ · W) —→⟨ fun-cast vV vW {x = x} ⟩ V·W↠blame)
+  rewrite dom-eq c x | cod-eq c x =
+    soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-· resp-V (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-W))) V·W↠blame
 
-soundness-<: {ℓ = ℓ} (CR<:-fst (CR<:-cast-same-ℓ (<:-× A₁<:B₁ A₂<:B₂) resp-V)) ( (fst (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ fst-cast _ {x = x} ⟩ fstV⟨fstc⟩↠blame ) =
-  soundness-<: (subst-eq (λ C → CastsRespect<: (fst V ⟨ C ⟩) ℓ) (sym eq-fst) resp) fstV⟨fstc⟩↠blame
-  where
-  c′ : A₁ ~ B₁
-  c′ with ~-relevant c
-  ... | pair~ c′ _ =  c′
-  eq-fst : (fstC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′})
-  eq-fst with ~-relevant c
-  ... | pair~ _ _ = refl
-  resp : CastsRespect<: (fst V ⟨ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′}) ⟩ ) ℓ
-  resp = CR<:-cast-same-ℓ A₁<:B₁ (CR<:-fst resp-V)
-soundness-<: {ℓ = ℓ} (CR<:-fst (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (fst (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ fst-cast _ {x = x} ⟩ fstV⟨fstc⟩↠blame ) =
-  soundness-<: (subst-eq (λ C → CastsRespect<: (fst V ⟨ C ⟩) ℓ) (sym eq-fst) resp) fstV⟨fstc⟩↠blame
-  where
-  c′ : A₁ ~ B₁
-  c′ with ~-relevant c
-  ... | pair~ c′ _ =  c′
-  eq-fst : (fstC (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′})
-  eq-fst with ~-relevant c
-  ... | pair~ _ _ = refl
-  resp : CastsRespect<: (fst V ⟨ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′}) ⟩ ) ℓ
-  resp = CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-fst resp-V)
+soundness-<: (CR<:-fst (CR<:-cast-same-ℓ (<:-× A₁<:B₁ A₂<:B₂) resp-V)) ( (fst (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ fst-cast _ {x = x} ⟩ fstV⟨fstc⟩↠blame )
+  rewrite fstC-eq c x =
+    soundness-<: (CR<:-cast-same-ℓ A₁<:B₁ (CR<:-fst resp-V)) fstV⟨fstc⟩↠blame
+soundness-<: (CR<:-fst (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (fst (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ fst-cast _ {x = x} ⟩ fstV⟨fstc⟩↠blame )
+  rewrite fstC-eq c x =
+    soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-fst resp-V)) fstV⟨fstc⟩↠blame
 
-soundness-<: {ℓ = ℓ} (CR<:-snd (CR<:-cast-same-ℓ (<:-× A₁<:B₁ A₂<:B₂) resp-V)) ( (snd (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ snd-cast _ {x = x} ⟩ sndV⟨sndc⟩↠blame ) =
-  soundness-<: (subst-eq (λ C → CastsRespect<: (snd V ⟨ C ⟩) ℓ) (sym eq-snd) resp) sndV⟨sndc⟩↠blame
-  where
-  c′ : A₂ ~ B₂
-  c′ with ~-relevant c
-  ... | pair~ _ c′ =  c′
-  eq-snd : (sndC (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c′})
-  eq-snd with ~-relevant c
-  ... | pair~ _ _ = refl
-  resp : CastsRespect<: (snd V ⟨ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c′}) ⟩ ) ℓ
-  resp = CR<:-cast-same-ℓ A₂<:B₂ (CR<:-snd resp-V)
-soundness-<: {ℓ = ℓ} (CR<:-snd (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (snd (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ snd-cast _ {x = x} ⟩ sndV⟨sndc⟩↠blame ) =
-  soundness-<: (subst-eq (λ C → CastsRespect<: (snd V ⟨ C ⟩) ℓ) (sym eq-snd) resp) sndV⟨sndc⟩↠blame
-  where
-  c′ : A₂ ~ B₂
-  c′ with ~-relevant c
-  ... | pair~ _ c′ =  c′
-  eq-snd : (sndC (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c′})
-  eq-snd with ~-relevant c
-  ... | pair~ _ _ = refl
-  resp : CastsRespect<: (snd V ⟨ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c′}) ⟩ ) ℓ
-  resp = CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-snd resp-V)
+soundness-<: (CR<:-snd (CR<:-cast-same-ℓ (<:-× A₁<:B₁ A₂<:B₂) resp-V)) ( (snd (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ snd-cast _ {x = x} ⟩ sndV⟨sndc⟩↠blame )
+  rewrite sndC-eq c x =
+    soundness-<: (CR<:-cast-same-ℓ A₂<:B₂ (CR<:-snd resp-V)) sndV⟨sndc⟩↠blame
+soundness-<: (CR<:-snd (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V)) ( (snd (V ⟨ (((A₁ `× A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `× B₂)) {c}) ⟩)) —→⟨ snd-cast _ {x = x} ⟩ sndV⟨sndc⟩↠blame )
+  rewrite sndC-eq c x =
+    soundness-<: (CR<:-cast-diff-ℓ ℓ≢ℓ₁ (CR<:-snd resp-V)) sndV⟨sndc⟩↠blame
 
-soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
-  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
-                                 (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
-               ↠blame
-  where
-  c′ : A₁ ~ B₁
-  c′ with ~-relevant c
-  ... | sum~ c′ _ =  c′
-  c″ : A₂ ~ B₂
-  c″ with ~-relevant c
-  ... | sum~ _ c″ =  c″
-  eq-inl : (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′})
-  eq-inl with ~-relevant c
-  ... | sum~ _ _ = refl
-  eq-inr : (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c″})
-  eq-inr with ~-relevant c
-  ... | sum~ _ _ = refl
-  respl : CastsRespect<: ((`_ {Γ = Γ , A₁} Z) ⟨ ((A₁ ⇒⟨ ℓ ⟩ B₁) {c′}) ⟩) ℓ
-  respl = CR<:-cast-same-ℓ A₁<:B₁ CR<:-var
-  respr : CastsRespect<: ((`_ {Γ = Γ , A₂} Z) ⟨ ((A₂ ⇒⟨ ℓ ⟩ B₂) {c″}) ⟩) ℓ
-  respr = CR<:-cast-same-ℓ A₂<:B₂ CR<:-var
-
-soundness-<: {Γ = Γ} {ℓ = ℓ} (CR<:-case (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame ) =
-  soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inl) respl)))
-                                 (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (subst-eq (λ C → CastsRespect<: ((` Z) ⟨ C ⟩) ℓ) (sym eq-inr) respr))))
-               ↠blame
-  where
-  c′ : A₁ ~ B₁
-  c′ with ~-relevant c
-  ... | sum~ c′ _ =  c′
-  c″ : A₂ ~ B₂
-  c″ with ~-relevant c
-  ... | sum~ _ c″ =  c″
-  eq-inl : (inlC (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′})
-  eq-inl with ~-relevant c
-  ... | sum~ _ _ = refl
-  eq-inr : (inrC (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) x) ≡ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c″})
-  eq-inr with ~-relevant c
-  ... | sum~ _ _ = refl
-  respl : CastsRespect<: ((`_ {Γ = Γ , A₁} Z) ⟨ ((A₁ ⇒⟨ ℓ₁ ⟩ B₁) {c′}) ⟩) ℓ
-  respl = CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var
-  respr : CastsRespect<: ((`_ {Γ = Γ , A₂} Z) ⟨ ((A₂ ⇒⟨ ℓ₁ ⟩ B₂) {c″}) ⟩) ℓ
-  respr = CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var
+soundness-<: (CR<:-case (CR<:-cast-same-ℓ (<:-⊎ A₁<:B₁ A₂<:B₂) resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame )
+  rewrite inlC-eq c x | inrC-eq c x =
+    soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (CR<:-cast-same-ℓ A₁<:B₁ CR<:-var)))
+                                   (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (CR<:-cast-same-ℓ A₂<:B₂ CR<:-var)))) ↠blame
+soundness-<: (CR<:-case (CR<:-cast-diff-ℓ ℓ≢ℓ₁ resp-V) resp-W₁ resp-W₂) ( (case (V ⟨ (((A₁ `⊎ A₂) ⇒⟨ ℓ₁ ⟩ (B₁ `⊎ B₂)) {c}) ⟩) W₁ W₂) —→⟨ case-cast vV {x = x} ⟩ ↠blame )
+  rewrite inlC-eq c x | inrC-eq c x =
+    soundness-<: (CR<:-case resp-V (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₁) (CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var)))
+                                   (CR<:-ƛ (CR<:-· (rename-CR<: S_ resp-W₂) (CR<:-cast-diff-ℓ ℓ≢ℓ₁ CR<:-var)))) ↠blame
 
 soundness-<: (CR<:-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ refl
