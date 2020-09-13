@@ -134,12 +134,12 @@ soundness-<: resp ( .(plug (blame _) _) —→⟨ ξ-blame {F = F} {ℓ₁} ⟩ 
   let ℓ₁≡ℓ = blame↠blame→ℓ≡ blame↠blame in
     plug-blame→¬respect<: F (subst-eq (λ □ → CastsRespect<: (plug (blame □) _) _) ℓ₁≡ℓ resp)
 
-soundness-<: {M = (ƛ N) · W} (CR<:-· resp-ƛN resp-W) ( .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ) =
+soundness-<: {M = (ƛ N) · W} (CR<:-· (CR<:-ƛ resp-N) resp-W) ( .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ) =
   {-
     We need to prove that given Γ , A ⊢ N ⦂ B and Γ ⊢ W ⦂ A that both satisfy `CastsRespect<:`,
     the substituted term N [ W ] also satisfies `CastsRespect<:` - single substitution preserves `CastsRespect<:` .
   -}
-  soundness-<: {!!} N[W]↠blame
+  soundness-<: (substitution-CR<: resp-N resp-W) N[W]↠blame
 
  -- This case corresponds to the δ rule.
 soundness-<: (CR<:-· resp-f resp-k) ( .(($ _) · ($ _)) —→⟨ δ ⟩ fk↠blame ) =
