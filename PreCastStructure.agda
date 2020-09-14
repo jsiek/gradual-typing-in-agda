@@ -1,6 +1,8 @@
 open import Types
+open import Labels
 open import Data.Sum using (_⊎_)
 open import Data.Product using (_×_; Σ; Σ-syntax)
+open import Data.Maybe using (Maybe)
 open import Relation.Binary.PropositionalEquality using (_≡_)
 open import Relation.Nullary using (¬_)
 
@@ -32,4 +34,14 @@ record PreCastStruct : Set₁ where
     inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
     baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
-
+    {- The fields below are for blame-subtyping. -}
+    labC : ∀ {A} → (c : Cast A) → Maybe Label
+    Safe : ∀ {A} → Cast A → Set
+    domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
+            → Safe (dom c x)
+    codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
+            → Safe (cod c x)
+    domLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
+           → labC c ≡ labC (dom c x)
+    codLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
+           → labC c ≡ labC (cod c x)

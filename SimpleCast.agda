@@ -2,6 +2,7 @@ module SimpleCast where
 
   open import Data.Nat
   open import Data.Bool
+  open import Data.Maybe
   open import Types
   open import Variables
   open import Labels
@@ -103,6 +104,40 @@ module SimpleCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  labC : ∀ {A} → (c : Cast A) → Maybe Label
+  labC (A ⇒⟨ ℓ ⟩ B) = just ℓ
+
+  open import Subtyping using (_<:₁_)
+  open _<:₁_
+
+  infix 5 _<:_
+  _<:_ = _<:₁_
+
+  data Safe : ∀ {A} → Cast A → Set where
+
+    safe-<: : ∀ {S T} {c : Cast (S ⇒ T)}
+      → S <: T
+        --------
+      → Safe c
+
+  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
+          → Safe (dom c x)
+  domSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-dom
+
+  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
+          → Safe (cod c x)
+  codSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-cod
+
+  domLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
+           → labC c ≡ labC (dom c x)
+  domLabEq (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c~}) x with ~-relevant c~
+  ... | fun~ dom~ cod~ = refl
+
+  codLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
+           → labC c ≡ labC (cod c x)
+  codLabEq (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c~}) x with ~-relevant c~
+  ... | fun~ dom~ cod~ = refl
+
   open import PreCastStructure
   
   pcs : PreCastStruct
@@ -122,6 +157,12 @@ module SimpleCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; labC = labC
+             ; Safe = Safe
+             ; domSafe = domSafe
+             ; codSafe = codSafe
+             ; domLabEq = domLabEq
+             ; codLabEq = codLabEq
              }
 
   import ParamCastAux
