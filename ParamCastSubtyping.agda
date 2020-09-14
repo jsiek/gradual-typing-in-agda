@@ -192,3 +192,26 @@ preserve-CR<: (CR<:-· (CR<:-cast-diff-ℓ neq resp-V) resp-W) (fun-cast {c = c}
   let dom-neq = subst-eq (λ □ → □ ≢ just _) (domLabEq c x) neq in
   let cod-neq = subst-eq (λ □ → □ ≢ just _) (codLabEq c x) neq in
     CR<:-cast-diff-ℓ cod-neq (CR<:-· resp-V (CR<:-cast-diff-ℓ dom-neq resp-W))
+preserve-CR<: (CR<:-fst (CR<:-cast-same-ℓ safe eq resp-V)) (fst-cast {c = c} vV {x}) =
+  let fst-eq = subst-eq (λ □ → □ ≡ just _) (fstLabEq c x) eq in
+    CR<:-cast-same-ℓ (fstSafe safe x) fst-eq (CR<:-fst resp-V)
+preserve-CR<: (CR<:-fst (CR<:-cast-diff-ℓ neq resp-V)) (fst-cast {c = c} vV {x}) =
+  let fst-neq = subst-eq (λ □ → □ ≢ just _) (fstLabEq c x) neq in
+    CR<:-cast-diff-ℓ fst-neq (CR<:-fst resp-V)
+preserve-CR<: (CR<:-snd (CR<:-cast-same-ℓ safe eq resp-V)) (snd-cast {c = c} vV {x}) =
+  let snd-eq = subst-eq (λ □ → □ ≡ just _) (sndLabEq c x) eq in
+    CR<:-cast-same-ℓ (sndSafe safe x) snd-eq (CR<:-snd resp-V)
+preserve-CR<: (CR<:-snd (CR<:-cast-diff-ℓ neq resp-V)) (snd-cast {c = c} vV {x}) =
+  let snd-neq = subst-eq (λ □ → □ ≢ just _) (sndLabEq c x) neq in
+    CR<:-cast-diff-ℓ snd-neq (CR<:-snd resp-V)
+preserve-CR<: (CR<:-case (CR<:-cast-same-ℓ safe eq resp-V) resp-W₁ resp-W₂) (case-cast {c = c} vV {x}) =
+  let inl-eq = subst-eq (λ □ → □ ≡ just _) (inlLabEq c x) eq in
+  let inr-eq = subst-eq (λ □ → □ ≡ just _) (inrLabEq c x) eq in
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ (inlSafe safe x) inl-eq CR<:-var)))
+                     (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-same-ℓ (inrSafe safe x) inr-eq CR<:-var)))
+preserve-CR<: (CR<:-case (CR<:-cast-diff-ℓ neq resp-V) resp-W₁ resp-W₂) (case-cast {c = c} vV {x}) =
+  let inl-neq = subst-eq (λ □ → □ ≢ just _) (inlLabEq c x) neq in
+  let inr-neq = subst-eq (λ □ → □ ≢ just _) (inrLabEq c x) neq in
+    CR<:-case resp-V (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ inl-neq CR<:-var)))
+                     (CR<:-ƛ (CR<:-· {!!} (CR<:-cast-diff-ℓ inr-neq CR<:-var)))
+
