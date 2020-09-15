@@ -138,6 +138,42 @@ module SimpleCast where
   codLabEq (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c~}) x with ~-relevant c~
   ... | fun~ dom~ cod~ = refl
 
+  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
+          → Safe (fstC c x)
+  fstSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-fst
+
+  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
+          → Safe (sndC c x)
+  sndSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-snd
+
+  fstLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
+           → labC c ≡ labC (fstC c x)
+  fstLabEq (((S₁ `× S₂) ⇒⟨ ℓ ⟩ (T₁ `× T₂)) {c~}) x with ~-relevant c~
+  ... | pair~ fst~ snd~ = refl
+
+  sndLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
+           → labC c ≡ labC (sndC c x)
+  sndLabEq (((S₁ `× S₂) ⇒⟨ ℓ ⟩ (T₁ `× T₂)) {c~}) x with ~-relevant c~
+  ... | pair~ fst~ snd~ = refl
+
+  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
+          → Safe (inlC c x)
+  inlSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-l
+
+  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
+          → Safe (inrC c x)
+  inrSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-r
+
+  inlLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
+           → labC c ≡ labC (inlC c x)
+  inlLabEq (((S₁ `⊎ S₂) ⇒⟨ ℓ ⟩ (T₁ `⊎ T₂)) {c~}) x with ~-relevant c~
+  ... | sum~ l~ r~ = refl
+
+  inrLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
+           → labC c ≡ labC (inrC c x)
+  inrLabEq (((S₁ `⊎ S₂) ⇒⟨ ℓ ⟩ (T₁ `⊎ T₂)) {c~}) x with ~-relevant c~
+  ... | sum~ l~ r~ = refl
+
   open import PreCastStructure
   
   pcs : PreCastStruct
@@ -163,6 +199,14 @@ module SimpleCast where
              ; codSafe = codSafe
              ; domLabEq = domLabEq
              ; codLabEq = codLabEq
+             ; fstSafe = fstSafe
+             ; sndSafe = sndSafe
+             ; fstLabEq = fstLabEq
+             ; sndLabEq = sndLabEq
+             ; inlSafe = inlSafe
+             ; inrSafe = inrSafe
+             ; inlLabEq = inlLabEq
+             ; inrLabEq = inrLabEq
              }
 
   import ParamCastAux
