@@ -310,3 +310,5 @@ module SimpleCast where
   import GTLC2CC
   open GTLC2CC Cast (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
 
+  -- Instantiate blame-subtyping theorem for `SimpleCast`.
+  open import ParamBlameSubtyping cs using (soundness-<:) public
