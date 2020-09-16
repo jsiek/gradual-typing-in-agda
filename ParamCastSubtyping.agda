@@ -150,3 +150,55 @@ rename-pres-allsafe ρ (allsafe-case allsafe-L allsafe-M allsafe-N) =
   allsafe-case (rename-pres-allsafe ρ allsafe-L) (rename-pres-allsafe ρ allsafe-M)
                (rename-pres-allsafe ρ allsafe-N)
 rename-pres-allsafe ρ (allsafe-blame-diff-ℓ ℓ≢ℓ′) = allsafe-blame-diff-ℓ ℓ≢ℓ′
+
+{- NOTE:
+  Substitution preserves `CR<:` .
+-}
+
+-- What it means for a substitution to respect `CR<:` .
+CastsAllSafe-σ : ∀ {Γ Δ} → Subst Γ Δ → Label → Set
+CastsAllSafe-σ {Γ} {Δ} σ ℓ = ∀ {X} → (x : Γ ∋ X) → CastsAllSafe {A = X} (σ x) ℓ
+
+-- We need a lemma about `exts`, as always.
+exts-allsafe : ∀ {Γ Δ X} {σ : Subst Γ Δ} {ℓ}
+  → CastsAllSafe-σ σ ℓ → CastsAllSafe-σ (exts σ {B = X}) ℓ
+exts-allsafe allsafe-σ Z = allsafe-var
+exts-allsafe allsafe-σ (S x) = rename-pres-allsafe S_ (allsafe-σ x)
+
+subst-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
+  → CastsAllSafe-σ σ ℓ
+    ---------------------------------------------------
+  → CastsAllSafe M ℓ → CastsAllSafe (subst σ M) ℓ
+subst-pres-allsafe allsafe-σ (allsafe-cast-same-ℓ safe eq allsafe) = allsafe-cast-same-ℓ safe eq (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-cast-diff-ℓ neq allsafe) = allsafe-cast-diff-ℓ neq (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-var {x = x}) = allsafe-σ x
+-- Need to prove that `exts σ` satisfies `CR<:-σ` .
+subst-pres-allsafe allsafe-σ (allsafe-ƛ allsafe) = allsafe-ƛ (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-· allsafe-L allsafe-M) = allsafe-· (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe allsafe-σ allsafe-M)
+subst-pres-allsafe allsafe-σ allsafe-prim = allsafe-prim
+subst-pres-allsafe allsafe-σ (allsafe-if allsafe-L allsafe-M allsafe-N) =
+  allsafe-if (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe allsafe-σ allsafe-M)
+                                                      (subst-pres-allsafe allsafe-σ allsafe-N)
+subst-pres-allsafe allsafe-σ (allsafe-cons allsafe-M allsafe-N) =
+  allsafe-cons (subst-pres-allsafe allsafe-σ allsafe-M) (subst-pres-allsafe allsafe-σ allsafe-N)
+subst-pres-allsafe allsafe-σ (allsafe-fst allsafe) = allsafe-fst (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-snd allsafe) = allsafe-snd (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-inl allsafe) = allsafe-inl (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-inr allsafe) = allsafe-inr (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-case allsafe-L allsafe-M allsafe-N) =
+  allsafe-case (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe allsafe-σ allsafe-M)
+                                                        (subst-pres-allsafe allsafe-σ allsafe-N)
+subst-pres-allsafe allsafe-σ (allsafe-blame-diff-ℓ ℓ≢ℓ′) = allsafe-blame-diff-ℓ ℓ≢ℓ′
+
+subst-zero-allafe : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
+  → CastsAllSafe M ℓ
+  → CastsAllSafe-σ (subst-zero M) ℓ
+subst-zero-allafe allsafe Z = allsafe
+subst-zero-allafe allsafe (S x) = allsafe-var
+
+substitution-allsafe : ∀ {Γ A B} {N : Γ , A ⊢ B} {M : Γ ⊢ A} {ℓ}
+  → CastsAllSafe N ℓ
+  → CastsAllSafe M ℓ
+    -----------------------------
+  → CastsAllSafe ( N [ M ] ) ℓ
+substitution-allsafe allsafe-N allsafe-M = subst-pres-allsafe (subst-zero-allafe allsafe-M) allsafe-N
