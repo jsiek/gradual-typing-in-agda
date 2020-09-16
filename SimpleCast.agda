@@ -211,6 +211,7 @@ module SimpleCast where
 
   import ParamCastAux
   open ParamCastAux pcs
+  open import ParamCastSubtyping pcs
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
@@ -231,11 +232,65 @@ module SimpleCast where
   applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){c}){activePair(_ ⇒⟨ ℓ ⟩ _)} =
        eta× M (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)){c})
           (C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
-
   {- Cast Sum -}
   applyCast{Γ}{A₁ `⊎ A₂}{B₁ `⊎ B₂}M v((_ ⇒⟨ ℓ ⟩ _){c}){activeSum .(_ ⇒⟨ ℓ ⟩ _)} =
      eta⊎ M (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)){c})
        (C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
+
+  applyCast-pres-allsafe-same-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    → (a : Active c)
+    → labC c ≡ just ℓ
+    → Safe c
+    → CastsAllSafe V ℓ
+      --------------------------------------
+    → CastsAllSafe (applyCast V vV c {a}) ℓ
+  applyCast-pres-allsafe-same-ℓ (activeId (A ⇒⟨ x ⟩ .A)) eq safe allsafe = allsafe
+  applyCast-pres-allsafe-same-ℓ {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) refl (safe-<: T<:⋆) allsafe with canonical⋆ _ vV
+  ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+  ...   | no _ = allsafe-blame-diff-ℓ (λ _ → x refl)
+  ...   | yes _ with allsafe
+  ...     | allsafe-cast-same-ℓ _ _ allsafe-M′ = allsafe-cast-same-ℓ (safe-<: T<:⋆) refl allsafe-M′
+  ...     | allsafe-cast-diff-ℓ _ allsafe-M′ = allsafe-cast-same-ℓ (safe-<: T<:⋆) refl allsafe-M′
+  applyCast-pres-allsafe-same-ℓ (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) refl (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe
+    with ~-relevant c~
+  ... | fun~ _ _ =
+      allsafe-ƛ (allsafe-cast-same-ℓ (safe-<: sub-cod) refl (allsafe-· (rename-pres-allsafe S_ allsafe)
+                                                                       (allsafe-cast-same-ℓ (safe-<: sub-dom) refl allsafe-var)))
+  applyCast-pres-allsafe-same-ℓ (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) refl (safe-<: (<:-× sub-fst sub-snd)) allsafe
+    with ~-relevant c~
+  ... | pair~ _ _ = allsafe-cons (allsafe-cast-same-ℓ (safe-<: sub-fst) refl (allsafe-fst allsafe))
+                                 (allsafe-cast-same-ℓ (safe-<: sub-snd) refl (allsafe-snd allsafe))
+  applyCast-pres-allsafe-same-ℓ (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) refl (safe-<: (<:-⊎ sub-l sub-r)) allsafe
+    with ~-relevant c~
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast-same-ℓ (safe-<: sub-l) refl allsafe-var)))
+                                        (allsafe-ƛ (allsafe-inr (allsafe-cast-same-ℓ (safe-<: sub-r) refl allsafe-var)))
+
+  applyCast-pres-allsafe-diff-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    → (a : Active c)
+    → labC c ≢ just ℓ
+    → CastsAllSafe V ℓ
+      --------------------------------------
+    → CastsAllSafe (applyCast V vV c {a}) ℓ
+  applyCast-pres-allsafe-diff-ℓ (activeId (A ⇒⟨ x ⟩ .A)) neq allsafe = allsafe
+  applyCast-pres-allsafe-diff-ℓ {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) neq allsafe with canonical⋆ _ vV
+  ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+  ...   | no _ = allsafe-blame-diff-ℓ λ ℓ′≡ℓ → neq (cong (λ □ → just □) (sym ℓ′≡ℓ))
+  ...   | yes _ with allsafe
+  ...     | allsafe-cast-same-ℓ _ _ allsafe-M′ = allsafe-cast-diff-ℓ neq allsafe-M′
+  ...     | allsafe-cast-diff-ℓ _ allsafe-M′ = allsafe-cast-diff-ℓ neq allsafe-M′
+  applyCast-pres-allsafe-diff-ℓ (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) neq allsafe
+    with ~-relevant c~
+  ... | fun~ _ _ =
+      allsafe-ƛ (allsafe-cast-diff-ℓ neq (allsafe-· (rename-pres-allsafe S_ allsafe)
+                                         (allsafe-cast-diff-ℓ neq allsafe-var)))
+  applyCast-pres-allsafe-diff-ℓ (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) neq allsafe
+    with ~-relevant c~
+  ... | pair~ _ _ = allsafe-cons (allsafe-cast-diff-ℓ neq (allsafe-fst allsafe))
+                                 (allsafe-cast-diff-ℓ neq (allsafe-snd allsafe))
+  applyCast-pres-allsafe-diff-ℓ (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) neq allsafe
+    with ~-relevant c~
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast-diff-ℓ neq allsafe-var)))
+                                        (allsafe-ƛ (allsafe-inr (allsafe-cast-diff-ℓ neq allsafe-var)))
 
 
      
@@ -245,6 +300,8 @@ module SimpleCast where
   cs = record
              { precast = pcs
              ; applyCast = applyCast
+             ; applyCast-pres-allsafe-same-ℓ = applyCast-pres-allsafe-same-ℓ
+             ; applyCast-pres-allsafe-diff-ℓ = applyCast-pres-allsafe-diff-ℓ
              }
 
   import ParamCastReduction
