@@ -30,25 +30,10 @@ open ParamCastCalculus Cast
 -- Data type `CastsAllSafe` says all casts in M with blame label ℓ are safe casts.
 data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set where
 
-  -- {- NOTE:
-  --   If the cast has the same blame label as ℓ , which is what the data type is quantified over,
-  --   we require that it satisfies safety (the source & target types respect subtyping <: ).
-  -- -}
-  allsafe-cast-same-ℓ : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {ℓ}
-    → Safe c
-    → labC c ≡ just ℓ
+  allsafe-cast : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {ℓ}
+    → Safe c ℓ
     → CastsAllSafe M ℓ
       -------------------------------------
-    → CastsAllSafe (M ⟨ c ⟩) ℓ
-
-  -- {- NOTE:
-  --   If the blame label ℓ′ on the cast is different from what the data type is quantified over,
-  --   this is fine and we don't impose any restriction on this cast.
-  -- -}
-  allsafe-cast-diff-ℓ : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {ℓ}
-    → labC c ≢ just ℓ
-    → CastsAllSafe M ℓ
-      ----------------------------------------------
     → CastsAllSafe (M ⟨ c ⟩) ℓ
 
   allsafe-var : ∀ {Γ A} {x : Γ ∋ A} {ℓ}
@@ -130,8 +115,7 @@ rename-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
   → (ρ : Rename Γ Δ)
     ----------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (rename ρ M) ℓ
-rename-pres-allsafe ρ (allsafe-cast-same-ℓ safe eq allsafe) = allsafe-cast-same-ℓ safe eq (rename-pres-allsafe ρ allsafe)
-rename-pres-allsafe ρ (allsafe-cast-diff-ℓ neq allsafe) = allsafe-cast-diff-ℓ neq (rename-pres-allsafe ρ allsafe)
+rename-pres-allsafe ρ (allsafe-cast safe allsafe) = allsafe-cast safe (rename-pres-allsafe ρ allsafe)
 rename-pres-allsafe ρ allsafe-var = allsafe-var
 rename-pres-allsafe ρ (allsafe-ƛ allsafe) = allsafe-ƛ (rename-pres-allsafe (λ {X} → ext ρ) allsafe)
 rename-pres-allsafe ρ (allsafe-· allsafe-L allsafe-M) =
@@ -169,8 +153,7 @@ subst-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
   → CastsAllSafe-σ σ ℓ
     ---------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (subst σ M) ℓ
-subst-pres-allsafe allsafe-σ (allsafe-cast-same-ℓ safe eq allsafe) = allsafe-cast-same-ℓ safe eq (subst-pres-allsafe allsafe-σ allsafe)
-subst-pres-allsafe allsafe-σ (allsafe-cast-diff-ℓ neq allsafe) = allsafe-cast-diff-ℓ neq (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-cast safe allsafe) = allsafe-cast safe (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-var {x = x}) = allsafe-σ x
 -- Need to prove that `exts σ` satisfies `CR<:-σ` .
 subst-pres-allsafe allsafe-σ (allsafe-ƛ allsafe) = allsafe-ƛ (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe)

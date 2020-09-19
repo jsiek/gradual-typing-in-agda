@@ -35,29 +35,17 @@ record PreCastStruct : Set₁ where
          →  Cast (A₂ ⇒ B')
     baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
     {- The fields below are for blame-subtyping. -}
-    labC : ∀ {A} → (c : Cast A) → Maybe Label
-    Safe : ∀ {A} → Cast A → Set
-    domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
-            → Safe (dom c x)
-    codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
-            → Safe (cod c x)
-    domLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
-           → labC c ≡ labC (dom c x)
-    codLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
-           → labC c ≡ labC (cod c x)
-    fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
-            → Safe (fstC c x)
-    sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
-            → Safe (sndC c x)
-    fstLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
-           → labC c ≡ labC (fstC c x)
-    sndLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
-           → labC c ≡ labC (sndC c x)
-    inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
-            → Safe (inlC c x)
-    inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
-            → Safe (inrC c x)
-    inlLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
-           → labC c ≡ labC (inlC c x)
-    inrLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
-           → labC c ≡ labC (inrC c x)
+    Safe : ∀ {A} → Cast A → Label → Set
+    domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (dom c x) ℓ
+    codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (cod c x) ℓ
+    fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (fstC c x) ℓ
+    sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (sndC c x) ℓ
+    inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inlC c x) ℓ
+    inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inrC c x) ℓ
+

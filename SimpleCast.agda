@@ -104,75 +104,64 @@ module SimpleCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
-  labC : ∀ {A} → (c : Cast A) → Maybe Label
-  labC (A ⇒⟨ ℓ ⟩ B) = just ℓ
-
   open import Subtyping using (_<:₁_)
   open _<:₁_
-
   infix 5 _<:_
   _<:_ = _<:₁_
 
-  data Safe : ∀ {A} → Cast A → Set where
+  data Safe : ∀ {A} → Cast A → Label → Set where
 
-    safe-<: : ∀ {S T} {c : Cast (S ⇒ T)}
+    safe-<: : ∀ {S T} {c~ : S ~ T} {ℓ}
       → S <: T
-        --------
-      → Safe c
+        ----------------------------
+      → Safe ((S ⇒⟨ ℓ ⟩ T) {c~}) ℓ
 
-  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
-          → Safe (dom c x)
-  domSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-dom
+    safe-ℓ≢ : ∀ {S T} {c~ : S ~ T} {ℓ ℓ′}
+      → ℓ ≢ ℓ′
+        -----------------------------
+      → Safe ((S ⇒⟨ ℓ′ ⟩ T) {c~}) ℓ
 
-  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} → Safe c → (x : Cross c)
-          → Safe (cod c x)
-  codSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-cod
+  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (dom c x) ℓ
+  domSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ _ _ = safe-<: sub-dom
+  domSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ _ _ = safe-ℓ≢ ℓ≢
 
-  domLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
-           → labC c ≡ labC (dom c x)
-  domLabEq (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c~}) x with ~-relevant c~
-  ... | fun~ dom~ cod~ = refl
+  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (cod c x) ℓ
+  codSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ _ _ = safe-<: sub-cod
+  codSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ _ _ = safe-ℓ≢ ℓ≢
 
-  codLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))) → (x : Cross c)
-           → labC c ≡ labC (cod c x)
-  codLabEq (((S₁ ⇒ S₂) ⇒⟨ ℓ ⟩ (T₁ ⇒ T₂)) {c~}) x with ~-relevant c~
-  ... | fun~ dom~ cod~ = refl
+  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (fstC c x) ℓ
+  fstSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ _ _ = safe-<: sub-fst
+  fstSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ _ _ = safe-ℓ≢ ℓ≢
 
-  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
-          → Safe (fstC c x)
-  fstSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-fst
+  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (sndC c x) ℓ
+  sndSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ _ _ = safe-<: sub-snd
+  sndSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ _ _ = safe-ℓ≢ ℓ≢
 
-  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} → Safe c → (x : Cross c)
-          → Safe (sndC c x)
-  sndSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-snd
+  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inlC c x) ℓ
+  inlSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ _ _ = safe-<: sub-l
+  inlSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
-  fstLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
-           → labC c ≡ labC (fstC c x)
-  fstLabEq (((S₁ `× S₂) ⇒⟨ ℓ ⟩ (T₁ `× T₂)) {c~}) x with ~-relevant c~
-  ... | pair~ fst~ snd~ = refl
-
-  sndLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))) → (x : Cross c)
-           → labC c ≡ labC (sndC c x)
-  sndLabEq (((S₁ `× S₂) ⇒⟨ ℓ ⟩ (T₁ `× T₂)) {c~}) x with ~-relevant c~
-  ... | pair~ fst~ snd~ = refl
-
-  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
-          → Safe (inlC c x)
-  inlSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-l
-
-  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} → Safe c → (x : Cross c)
-          → Safe (inrC c x)
-  inrSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-r
-
-  inlLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
-           → labC c ≡ labC (inlC c x)
-  inlLabEq (((S₁ `⊎ S₂) ⇒⟨ ℓ ⟩ (T₁ `⊎ T₂)) {c~}) x with ~-relevant c~
-  ... | sum~ l~ r~ = refl
-
-  inrLabEq : ∀ {S₁ S₂ T₁ T₂} → (c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))) → (x : Cross c)
-           → labC c ≡ labC (inrC c x)
-  inrLabEq (((S₁ `⊎ S₂) ⇒⟨ ℓ ⟩ (T₁ `⊎ T₂)) {c~}) x with ~-relevant c~
-  ... | sum~ l~ r~ = refl
+  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inrC c x) ℓ
+  inrSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ _ _ = safe-<: sub-r
+  inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
   
@@ -193,20 +182,13 @@ module SimpleCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
-             ; labC = labC
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe
-             ; domLabEq = domLabEq
-             ; codLabEq = codLabEq
              ; fstSafe = fstSafe
              ; sndSafe = sndSafe
-             ; fstLabEq = fstLabEq
-             ; sndLabEq = sndLabEq
              ; inlSafe = inlSafe
              ; inrSafe = inrSafe
-             ; inlLabEq = inlLabEq
-             ; inrLabEq = inrLabEq
              }
 
   import ParamCastAux
@@ -237,71 +219,54 @@ module SimpleCast where
      eta⊎ M (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)){c})
        (C-sum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
 
-  applyCast-pres-allsafe-same-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+  applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
-    → labC c ≡ just ℓ
-    → Safe c
+    → Safe c ℓ
     → CastsAllSafe V ℓ
       --------------------------------------
     → CastsAllSafe (applyCast V vV c {a}) ℓ
-  applyCast-pres-allsafe-same-ℓ (activeId (A ⇒⟨ x ⟩ .A)) eq safe allsafe = allsafe
-  applyCast-pres-allsafe-same-ℓ {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) refl (safe-<: T<:⋆) allsafe with canonical⋆ _ vV
+  applyCast-pres-allsafe (activeId (A ⇒⟨ x ⟩ .A)) safe allsafe = allsafe
+  applyCast-pres-allsafe {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) (safe-<: T<:⋆) allsafe with canonical⋆ _ vV
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
-  ...   | no _ = allsafe-blame-diff-ℓ (λ _ → x refl)
-  ...   | yes _ with allsafe
-  ...     | allsafe-cast-same-ℓ _ _ allsafe-M′ = allsafe-cast-same-ℓ (safe-<: T<:⋆) refl allsafe-M′
-  ...     | allsafe-cast-diff-ℓ _ allsafe-M′ = allsafe-cast-same-ℓ (safe-<: T<:⋆) refl allsafe-M′
-  applyCast-pres-allsafe-same-ℓ (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) refl (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe
-    with ~-relevant c~
-  ... | fun~ _ _ =
-      allsafe-ƛ (allsafe-cast-same-ℓ (safe-<: sub-cod) refl (allsafe-· (rename-pres-allsafe S_ allsafe)
-                                                                       (allsafe-cast-same-ℓ (safe-<: sub-dom) refl allsafe-var)))
-  applyCast-pres-allsafe-same-ℓ (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) refl (safe-<: (<:-× sub-fst sub-snd)) allsafe
-    with ~-relevant c~
-  ... | pair~ _ _ = allsafe-cons (allsafe-cast-same-ℓ (safe-<: sub-fst) refl (allsafe-fst allsafe))
-                                 (allsafe-cast-same-ℓ (safe-<: sub-snd) refl (allsafe-snd allsafe))
-  applyCast-pres-allsafe-same-ℓ (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) refl (safe-<: (<:-⊎ sub-l sub-r)) allsafe
-    with ~-relevant c~
-  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast-same-ℓ (safe-<: sub-l) refl allsafe-var)))
-                                        (allsafe-ƛ (allsafe-inr (allsafe-cast-same-ℓ (safe-<: sub-r) refl allsafe-var)))
-
-  applyCast-pres-allsafe-diff-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-    → (a : Active c)
-    → labC c ≢ just ℓ
-    → CastsAllSafe V ℓ
-      --------------------------------------
-    → CastsAllSafe (applyCast V vV c {a}) ℓ
-  applyCast-pres-allsafe-diff-ℓ (activeId (A ⇒⟨ x ⟩ .A)) neq allsafe = allsafe
-  applyCast-pres-allsafe-diff-ℓ {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) neq allsafe with canonical⋆ _ vV
+  ...   | no _  = allsafe-blame-diff-ℓ (λ _ → x refl)
+  ...   | yes _ = contradiction refl x
+  applyCast-pres-allsafe {vV = vV} (activeProj (⋆ ⇒⟨ ℓ′ ⟩ B) x) (safe-ℓ≢ ℓ≢) allsafe with canonical⋆ _ vV
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
-  ...   | no _ = allsafe-blame-diff-ℓ λ ℓ′≡ℓ → neq (cong (λ □ → just □) (sym ℓ′≡ℓ))
+  ...   | no _  = allsafe-blame-diff-ℓ ℓ≢
   ...   | yes _ with allsafe
-  ...     | allsafe-cast-same-ℓ _ _ allsafe-M′ = allsafe-cast-diff-ℓ neq allsafe-M′
-  ...     | allsafe-cast-diff-ℓ _ allsafe-M′ = allsafe-cast-diff-ℓ neq allsafe-M′
-  applyCast-pres-allsafe-diff-ℓ (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) neq allsafe
+  ...     | (allsafe-cast _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
+  applyCast-pres-allsafe (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe
     with ~-relevant c~
-  ... | fun~ _ _ =
-      allsafe-ƛ (allsafe-cast-diff-ℓ neq (allsafe-· (rename-pres-allsafe S_ allsafe)
-                                         (allsafe-cast-diff-ℓ neq allsafe-var)))
-  applyCast-pres-allsafe-diff-ℓ (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) neq allsafe
+  ... | fun~ _ _ = allsafe-ƛ (allsafe-cast (safe-<: sub-cod) (allsafe-· (rename-pres-allsafe S_ allsafe)
+                                                             (allsafe-cast (safe-<: sub-dom) allsafe-var)))
+  applyCast-pres-allsafe (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ′ ⟩ .(_ ⇒ _)) {c~})) (safe-ℓ≢ ℓ≢) allsafe
     with ~-relevant c~
-  ... | pair~ _ _ = allsafe-cons (allsafe-cast-diff-ℓ neq (allsafe-fst allsafe))
-                                 (allsafe-cast-diff-ℓ neq (allsafe-snd allsafe))
-  applyCast-pres-allsafe-diff-ℓ (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) neq allsafe
+  ... | fun~ _ _ = allsafe-ƛ (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-· (rename-pres-allsafe S_ allsafe)
+                                                        (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
+  applyCast-pres-allsafe (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) (safe-<: (<:-× sub-fst sub-snd)) allsafe
     with ~-relevant c~
-  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast-diff-ℓ neq allsafe-var)))
-                                        (allsafe-ƛ (allsafe-inr (allsafe-cast-diff-ℓ neq allsafe-var)))
+  ... | pair~ _ _ = allsafe-cons (allsafe-cast (safe-<: sub-fst) (allsafe-fst allsafe))
+                                 (allsafe-cast (safe-<: sub-snd) (allsafe-snd allsafe))
+  applyCast-pres-allsafe (activePair ((.(_ `× _) ⇒⟨ ℓ ⟩ .(_ `× _)) {c~})) (safe-ℓ≢ ℓ≢) allsafe
+    with ~-relevant c~
+  ... | pair~ _ _ = allsafe-cons (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-fst allsafe))
+                                 (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-snd allsafe))
+  applyCast-pres-allsafe (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) (safe-<: (<:-⊎ sub-l sub-r)) allsafe
+    with ~-relevant c~
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var)))
+                                        (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var)))
+  applyCast-pres-allsafe (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) (safe-ℓ≢ ℓ≢) allsafe
+    with ~-relevant c~
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
+                                        (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
 
-
-     
   open import CastStructure
 
   cs : CastStruct
   cs = record
              { precast = pcs
              ; applyCast = applyCast
-             ; applyCast-pres-allsafe-same-ℓ = applyCast-pres-allsafe-same-ℓ
-             ; applyCast-pres-allsafe-diff-ℓ = applyCast-pres-allsafe-diff-ℓ
+             ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
 
   import ParamCastReduction

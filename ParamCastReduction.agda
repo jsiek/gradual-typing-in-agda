@@ -349,8 +349,7 @@ module ParamCastReduction (cs : CastStruct) where
   plug-blame-allsafe-inv {F = F-inl} (allsafe-inl (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
   plug-blame-allsafe-inv {F = F-inr} (allsafe-inr (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
   plug-blame-allsafe-inv {F = F-case _ _} (allsafe-case (allsafe-blame-diff-ℓ ℓ≢ℓ′) _ _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-allsafe-inv {F = F-cast _} (allsafe-cast-same-ℓ _ _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-allsafe-inv {F = F-cast _} (allsafe-cast-diff-ℓ _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-allsafe-inv {F = F-cast _} (allsafe-cast _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 
   preserve-allsafe-plug : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ℓ}
     → CastsAllSafe (plug M F) ℓ
@@ -374,8 +373,7 @@ module ParamCastReduction (cs : CastStruct) where
   preserve-allsafe-plug {F = F-inl} (allsafe-inl allsafe-M) rd = allsafe-inl (preserve-allsafe allsafe-M rd)
   preserve-allsafe-plug {F = F-inr} (allsafe-inr allsafe-M) rd = allsafe-inr (preserve-allsafe allsafe-M rd)
   preserve-allsafe-plug {F = F-case M N} (allsafe-case allsafe-L allsafe-M allsafe-N) rd = allsafe-case (preserve-allsafe allsafe-L rd) allsafe-M allsafe-N
-  preserve-allsafe-plug {F = F-cast c} (allsafe-cast-same-ℓ safe eq allsafe-M) rd = allsafe-cast-same-ℓ safe eq (preserve-allsafe allsafe-M rd)
-  preserve-allsafe-plug {F = F-cast c} (allsafe-cast-diff-ℓ neq allsafe-M) rd = allsafe-cast-diff-ℓ neq (preserve-allsafe allsafe-M rd)
+  preserve-allsafe-plug {F = F-cast c} (allsafe-cast safe allsafe-M) rd = allsafe-cast safe (preserve-allsafe allsafe-M rd)
 
   preserve-allsafe allsafe (ξ rd) = preserve-allsafe-plug allsafe rd
   preserve-allsafe allsafe ξ-blame = allsafe-blame-diff-ℓ (plug-blame-allsafe-inv allsafe)
@@ -388,37 +386,15 @@ module ParamCastReduction (cs : CastStruct) where
   preserve-allsafe (allsafe-snd (allsafe-cons _ allsafe-N)) (β-snd _ _) = allsafe-N
   preserve-allsafe (allsafe-case (allsafe-inl allsafe) allsafe-M _) (β-caseL x) = allsafe-· allsafe-M allsafe
   preserve-allsafe (allsafe-case (allsafe-inr allsafe) _ allsafe-N) (β-caseR x) = allsafe-· allsafe-N allsafe
-  preserve-allsafe (allsafe-cast-same-ℓ safe eq allsafe) (cast v {a}) = applyCast-pres-allsafe-same-ℓ a eq safe allsafe
-  preserve-allsafe (allsafe-cast-diff-ℓ neq allsafe) (cast v {a}) = applyCast-pres-allsafe-diff-ℓ a neq allsafe
+  preserve-allsafe (allsafe-cast safe allsafe) (cast v {a}) = applyCast-pres-allsafe a safe allsafe
   -- CR<: (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
-  preserve-allsafe (allsafe-· (allsafe-cast-same-ℓ safe eq allsafe-V) allsafe-W) (fun-cast {c = c} vV vW {x}) =
+  preserve-allsafe (allsafe-· (allsafe-cast safe allsafe-V) allsafe-W) (fun-cast {c = c} vV vW {x}) =
     -- Here we expect a proof that `labC c ≡ labC (dom c x)` , where `c` is a function cast.
-    let dom-eq = subst-eq (λ □ → □ ≡ just _) (domLabEq c x) eq in
-    let cod-eq = subst-eq (λ □ → □ ≡ just _) (codLabEq c x) eq in
-      allsafe-cast-same-ℓ (codSafe safe x) cod-eq (allsafe-· allsafe-V (allsafe-cast-same-ℓ (domSafe safe x) dom-eq allsafe-W))
-  preserve-allsafe (allsafe-· (allsafe-cast-diff-ℓ neq allsafe-V) allsafe-W) (fun-cast {c = c} vV vW {x}) =
-    let dom-neq = subst-eq (λ □ → □ ≢ just _) (domLabEq c x) neq in
-    let cod-neq = subst-eq (λ □ → □ ≢ just _) (codLabEq c x) neq in
-      allsafe-cast-diff-ℓ cod-neq (allsafe-· allsafe-V (allsafe-cast-diff-ℓ dom-neq allsafe-W))
-  preserve-allsafe (allsafe-fst (allsafe-cast-same-ℓ safe eq allsafe-V)) (fst-cast {c = c} vV {x}) =
-    let fst-eq = subst-eq (λ □ → □ ≡ just _) (fstLabEq c x) eq in
-      allsafe-cast-same-ℓ (fstSafe safe x) fst-eq (allsafe-fst allsafe-V)
-  preserve-allsafe (allsafe-fst (allsafe-cast-diff-ℓ neq allsafe-V)) (fst-cast {c = c} vV {x}) =
-    let fst-neq = subst-eq (λ □ → □ ≢ just _) (fstLabEq c x) neq in
-      allsafe-cast-diff-ℓ fst-neq (allsafe-fst allsafe-V)
-  preserve-allsafe (allsafe-snd (allsafe-cast-same-ℓ safe eq allsafe-V)) (snd-cast {c = c} vV {x}) =
-    let snd-eq = subst-eq (λ □ → □ ≡ just _) (sndLabEq c x) eq in
-      allsafe-cast-same-ℓ (sndSafe safe x) snd-eq (allsafe-snd allsafe-V)
-  preserve-allsafe (allsafe-snd (allsafe-cast-diff-ℓ neq allsafe-V)) (snd-cast {c = c} vV {x}) =
-    let snd-neq = subst-eq (λ □ → □ ≢ just _) (sndLabEq c x) neq in
-      allsafe-cast-diff-ℓ snd-neq (allsafe-snd allsafe-V)
-  preserve-allsafe (allsafe-case (allsafe-cast-same-ℓ safe eq allsafe-V) allsafe-W₁ allsafe-W₂) (case-cast {c = c} vV {x}) =
-    let inl-eq = subst-eq (λ □ → □ ≡ just _) (inlLabEq c x) eq in
-    let inr-eq = subst-eq (λ □ → □ ≡ just _) (inrLabEq c x) eq in
-      allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁) (allsafe-cast-same-ℓ (inlSafe safe x) inl-eq allsafe-var)))
-                             (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂) (allsafe-cast-same-ℓ (inrSafe safe x) inr-eq allsafe-var)))
-  preserve-allsafe (allsafe-case (allsafe-cast-diff-ℓ neq allsafe-V) allsafe-W₁ allsafe-W₂) (case-cast {c = c} vV {x}) =
-    let inl-neq = subst-eq (λ □ → □ ≢ just _) (inlLabEq c x) neq in
-    let inr-neq = subst-eq (λ □ → □ ≢ just _) (inrLabEq c x) neq in
-      allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁) (allsafe-cast-diff-ℓ inl-neq allsafe-var)))
-                             (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂) (allsafe-cast-diff-ℓ inr-neq allsafe-var)))
+    allsafe-cast (codSafe safe x) (allsafe-· allsafe-V (allsafe-cast (domSafe safe x) allsafe-W))
+  preserve-allsafe (allsafe-fst (allsafe-cast safe allsafe-V)) (fst-cast {c = c} vV {x}) =
+    allsafe-cast (fstSafe safe x) (allsafe-fst allsafe-V)
+  preserve-allsafe (allsafe-snd (allsafe-cast safe allsafe-V)) (snd-cast {c = c} vV {x}) =
+    allsafe-cast (sndSafe safe x) (allsafe-snd allsafe-V)
+  preserve-allsafe (allsafe-case (allsafe-cast safe allsafe-V) allsafe-W₁ allsafe-W₂) (case-cast {c = c} vV {x}) =
+    allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁) (allsafe-cast (inlSafe safe x) allsafe-var)))
+                           (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂) (allsafe-cast (inrSafe safe x) allsafe-var)))

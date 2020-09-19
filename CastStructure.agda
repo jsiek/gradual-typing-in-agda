@@ -53,16 +53,9 @@ record CastStruct : Set₁ where
     {- NOTE:
       The fields below are for blame-subtyping.
     -}
-    applyCast-pres-allsafe-same-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
       → (a : Active c)
-      → labC c ≡ just ℓ
-      → Safe c
-      → CastsAllSafe V ℓ
-      → CastsAllSafe (applyCast V vV c {a}) ℓ
-
-    applyCast-pres-allsafe-diff-ℓ : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-      → (a : Active c)
-      → labC c ≢ just ℓ
+      → Safe c ℓ
       → CastsAllSafe V ℓ
       → CastsAllSafe (applyCast V vV c {a}) ℓ
 
