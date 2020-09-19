@@ -34,17 +34,17 @@ postulate
 plug-blame→¬allsafe : ∀ {Γ A B ℓ}
   → (F : Frame {Γ} A B)
   → ¬ (CastsAllSafe (plug (blame ℓ) F) ℓ)
-plug-blame→¬allsafe (F-·₁ M) (allsafe-· (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ refl                               -- □ · M
-plug-blame→¬allsafe (F-·₂ L) (allsafe-· _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                               -- L · □
-plug-blame→¬allsafe (F-if M N) (allsafe-if (allsafe-blame-diff-ℓ ℓ≢ℓ) _ _) = ℓ≢ℓ refl                          -- if □ M N
-plug-blame→¬allsafe (F-×₁ M) (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                            -- cons M □
-plug-blame→¬allsafe (F-×₂ L) (allsafe-cons (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ refl                            -- cons □ L
-plug-blame→¬allsafe F-fst (allsafe-fst (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                                  -- fst □
-plug-blame→¬allsafe F-snd (allsafe-snd (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                                  -- snd □
-plug-blame→¬allsafe F-inl (allsafe-inl (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                                  -- inl □
-plug-blame→¬allsafe F-inr (allsafe-inr (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl                                  -- inr □
-plug-blame→¬allsafe (F-case M N) (allsafe-case (allsafe-blame-diff-ℓ ℓ≢ℓ) _ _) = ℓ≢ℓ refl                      -- case □ M N
-plug-blame→¬allsafe (F-cast _) (allsafe-cast _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ refl
+plug-blame→¬allsafe (F-·₁ M) (allsafe-· (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ ≡̂-refl                               -- □ · M
+plug-blame→¬allsafe (F-·₂ L) (allsafe-· _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                               -- L · □
+plug-blame→¬allsafe (F-if M N) (allsafe-if (allsafe-blame-diff-ℓ ℓ≢ℓ) _ _) = ℓ≢ℓ ≡̂-refl                          -- if □ M N
+plug-blame→¬allsafe (F-×₁ M) (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                            -- cons M □
+plug-blame→¬allsafe (F-×₂ L) (allsafe-cons (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ ≡̂-refl                            -- cons □ L
+plug-blame→¬allsafe F-fst (allsafe-fst (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- fst □
+plug-blame→¬allsafe F-snd (allsafe-snd (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- snd □
+plug-blame→¬allsafe F-inl (allsafe-inl (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- inl □
+plug-blame→¬allsafe F-inr (allsafe-inr (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- inr □
+plug-blame→¬allsafe (F-case M N) (allsafe-case (allsafe-blame-diff-ℓ ℓ≢ℓ) _ _) = ℓ≢ℓ ≡̂-refl                      -- case □ M N
+plug-blame→¬allsafe (F-cast _) (allsafe-cast _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl
 
 
 -- Lemma:
@@ -115,5 +115,5 @@ soundness-<: (allsafe-case (allsafe-cast safe allsafe-V) allsafe-W₁ allsafe-W�
                                          (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂)
                                                                (allsafe-cast (inrSafe safe x) allsafe-var)))) ↠blame
 -- Blame
-soundness-<: (allsafe-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ refl
+soundness-<: (allsafe-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ ≡̂-refl
 

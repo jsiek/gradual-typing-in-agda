@@ -100,7 +100,7 @@ data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wher
     However we still have a case for `blame ℓ` here since it has such a case in CC.
   -}
   allsafe-blame-diff-ℓ : ∀ {Γ A} {ℓ ℓ′}
-    → ℓ ≢ ℓ′
+    → ℓ ≢̂ ℓ′
       ------------------------------------
     → CastsAllSafe (blame {Γ} {A} ℓ′) ℓ
 
