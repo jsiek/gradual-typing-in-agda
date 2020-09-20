@@ -226,10 +226,7 @@ module SimpleCast where
       --------------------------------------
     → CastsAllSafe (applyCast V vV c {a}) ℓ
   applyCast-pres-allsafe (activeId (A ⇒⟨ x ⟩ .A)) safe allsafe = allsafe
-  applyCast-pres-allsafe {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ B) x) (safe-<: T<:⋆) allsafe with canonical⋆ _ vV
-  ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
-  ...   | no _  = allsafe-blame-diff-ℓ (λ _ → x refl)
-  ...   | yes _ = contradiction refl x
+  applyCast-pres-allsafe {vV = vV} (activeProj (⋆ ⇒⟨ ℓ ⟩ .⋆) ⋆≢⋆) (safe-<: T<:⋆) = contradiction refl ⋆≢⋆
   applyCast-pres-allsafe {vV = vV} (activeProj (⋆ ⇒⟨ ℓ′ ⟩ B) x) (safe-ℓ≢ ℓ≢) allsafe with canonical⋆ _ vV
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
   ...   | no _  = allsafe-blame-diff-ℓ ℓ≢
