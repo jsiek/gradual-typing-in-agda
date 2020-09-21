@@ -2,7 +2,7 @@
 
   This module formalizes the λB calculus (Siek, Thiemann, Wadler
   2015), aka. the blame calculus without predicate types, and proves
-  type safety via progress and preservation.  
+  type safety via progress and preservation.
 
   This module is relatively small because it reuses the definitions
   and proofs from the Parameterized Cast Calculus. This module just
@@ -42,11 +42,11 @@ module GroundCast where
 
   import GTLC2CC
   open GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c) public
-  
+
   {-
 
   We categorize casts into the inert ones (that form values) and
-  the active ones (that reduce).  
+  the active ones (that reduce).
 
   For λB, there are two kinds of inert casts, those from a ground
   type to ⋆ and those between two function types.
@@ -71,7 +71,7 @@ n  -}
     A-inj : ∀{A} → (c : Cast (A ⇒ ⋆)) → ¬ Ground A → A ≢ ⋆ → Active c
     A-proj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
     A-pair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
-    A-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c    
+    A-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
 
   {-
 
@@ -134,7 +134,7 @@ n  -}
   Inert-Cross⊎ (cast A .(_ `⊎ _) x x₁) ()
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
-         → Cast (A' ⇒ A₁) 
+         → Cast (A' ⇒ A₁)
   dom (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ c') x
       with ~-relevant c'
   ... | fun~ c d = cast A' A₁ ℓ c
@@ -172,9 +172,68 @@ n  -}
   {-
   Finally, we show that casts to base type are not inert.
   -}
-  
+
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
+
+  open import Subtyping using (_<:₃_)
+  open _<:₃_
+  infix 5 _<:_
+  _<:_ = _<:₃_
+
+  data Safe : ∀ {A} → Cast A → Label → Set where
+
+    safe-<: : ∀ {S T} {c~ : S ~ T} {ℓ}
+      → S <: T
+        ----------------------------
+      → Safe (cast S T ℓ c~) ℓ
+
+    safe-ℓ≢ : ∀ {S T} {c~ : S ~ T} {ℓ ℓ′}
+      → ℓ ≢̂ ℓ′
+        -----------------------------
+      → Safe (cast S T ℓ′ c~) ℓ
+
+  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (dom c x) ℓ
+  domSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ d~ _ = safe-<: {c~ = d~} sub-dom
+  domSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ d~ _ = safe-ℓ≢ {c~ = d~} ℓ≢
+
+  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (cod c x) ℓ
+  codSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ _ d~ = safe-<: {c~ = d~} sub-cod
+  codSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ _ d~ = safe-ℓ≢ {c~ = d~} ℓ≢
+
+  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (fstC c x) ℓ
+  fstSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ d~ _ = safe-<: {c~ = d~} sub-fst
+  fstSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ d~ _ = safe-ℓ≢ {c~ = d~} ℓ≢
+
+  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (sndC c x) ℓ
+  sndSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ _ d~ = safe-<: {c~ = d~} sub-snd
+  sndSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ _ d~ = safe-ℓ≢ {c~ = d~} ℓ≢
+
+  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inlC c x) ℓ
+  inlSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ d~ _ = safe-<: {c~ = d~} sub-l
+  inlSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ d~ _ = safe-ℓ≢ {c~ = d~} ℓ≢
+
+  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inrC c x) ℓ
+  inrSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ _ d~ = safe-<: {c~ = d~} sub-r
+  inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ _ d~ = safe-ℓ≢ {c~ = d~} ℓ≢
 
   {-
 
@@ -182,7 +241,6 @@ n  -}
    the Parametric Cast Calculus by applying the ParamCastAux module.
 
    -}
-   
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -200,10 +258,18 @@ n  -}
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; Safe = Safe
+             ; domSafe = domSafe
+             ; codSafe = codSafe
+             ; fstSafe = fstSafe
+             ; sndSafe = sndSafe
+             ; inlSafe = inlSafe
+             ; inrSafe = inrSafe
              }
-             
+
   import ParamCastAux
   open ParamCastAux pcs
+  open import ParamCastSubtyping pcs
 
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A
   inert-ground c (I-inj g .c) = g
@@ -222,7 +288,7 @@ n  -}
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
      → ∀ {a : Active c} → Γ ⊢ B
   {-
-    V : ι ⇒ ι   —→   V 
+    V : ι ⇒ ι   —→   V
    -}
   applyCast M v c {A-id c} = M
   {-
@@ -250,12 +316,10 @@ n  -}
       | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
-  
   applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c') {A-pair _}
       with ~-relevant c'
   ... | pair~ c d =
     cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ d ⟩)
-    
   applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c') {A-sum _}
       with ~-relevant c'
   ... | sum~ c d =
@@ -263,12 +327,58 @@ n  -}
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩) in
     case M (ƛ l) (ƛ r)
 
+  applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    → (a : Active c)
+    → Safe c ℓ
+    → CastsAllSafe V ℓ
+      --------------------------------------
+    → CastsAllSafe (applyCast V vV c {a}) ℓ
+  applyCast-pres-allsafe (A-id _) safe allsafe = allsafe
+  applyCast-pres-allsafe (A-inj (cast ⋆ .⋆ _ _) _ ⋆≢⋆) (safe-<: <:-⋆) allsafe = contradiction refl ⋆≢⋆
+  applyCast-pres-allsafe (A-inj (cast A .⋆ ℓ _) ¬gA A≢⋆) (safe-<: {c~ = c~} (<:-G A<:G gG)) allsafe with A | gG | ground A {A≢⋆}
+  ... | ` ι | G-Base | [ ` ι  , [ G-Base , base~ ] ] =
+    allsafe-cast (safe-<: {c~ = c~} (<:-G A<:G gG)) (allsafe-cast (safe-<: {c~ = base~} <:-B) allsafe)
+  ... | (A₁ ⇒ A₂) | G-Fun | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⇒ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = fun~ unk~L unk~R} A<:G) allsafe)
+  ... | (A₁ `× A₂) | G-Pair | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-× <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = pair~ unk~R unk~R} A<:G) allsafe)
+  ... | (A₁ `⊎ A₂) | G-Sum | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⊎ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = sum~ unk~R unk~R} A<:G) allsafe)
+  applyCast-pres-allsafe (A-inj (cast A .⋆ ℓ′ _) _ A≢⋆) (safe-ℓ≢ ℓ≢) allsafe with ground A {A≢⋆}
+  ... | [ ` ι  , [ G-Base , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)
+  ... | [ ⋆ ⇒ ⋆ , [ G-Fun , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)
+  ... | [ ⋆ `× ⋆ , [ G-Pair , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)
+  ... | [ ⋆ `⊎ ⋆ , [ G-Sum , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)
+  applyCast-pres-allsafe (A-proj (cast ⋆ .⋆ ℓ _) ⋆≢⋆) (safe-<: <:-⋆) allsafe = contradiction refl ⋆≢⋆
+  applyCast-pres-allsafe (A-proj (cast ⋆ .⋆ ℓ _) ⋆≢⋆) (safe-<: (<:-G _ _)) allsafe = contradiction refl ⋆≢⋆
+  applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe with ground? B
+  ... | yes gB with canonical⋆ _ vV
+  ...   | [ G , [ V , [ c , [ i , meq ] ] ] ] rewrite meq with gnd-eq? G B {inert-ground c i} {gB}
+  ...     | yes eq rewrite eq with allsafe
+  ...       | allsafe-cast _ allsafe-V = allsafe-V
+  applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | yes gB | _ | no _ = allsafe-blame-diff-ℓ ℓ≢
+  applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | no ¬gB with ground B {B≢⋆}
+  ...   | [ H , [ gH , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = Sym~ c~} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = unk~L} ℓ≢) allsafe)
+  applyCast-pres-allsafe (A-pair (cast (_ `× _) (_ `× _) ℓ c~)) (safe-<: (<:-× sub-fst sub-snd)) allsafe with ~-relevant c~
+  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-<: {c~ = c~fst} sub-fst) (allsafe-fst allsafe))
+                                         (allsafe-cast (safe-<: {c~ = c~snd} sub-snd) (allsafe-snd allsafe))
+  applyCast-pres-allsafe (A-pair (cast (_ `× _) (_ `× _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) allsafe with ~-relevant c~
+  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-ℓ≢ {c~ = c~fst} ℓ≢) (allsafe-fst allsafe))
+                                         (allsafe-cast (safe-ℓ≢ {c~ = c~snd} ℓ≢) (allsafe-snd allsafe))
+  applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) allsafe with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe-var)))
+                                            (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe-var)))
+  applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) allsafe with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe-var)))
+                                            (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var)))
+
   open import CastStructure
 
   cs : CastStruct
   cs = record
              { precast = pcs
              ; applyCast = applyCast
+             ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
 
   {-
@@ -282,3 +392,5 @@ n  -}
   module Red = ParamCastReduction cs
   open Red
 
+  -- Instantiate blame-subtyping theorem for `GroundCast`.
+  open import ParamBlameSubtyping cs using (soundness-<:) public
