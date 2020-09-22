@@ -26,13 +26,13 @@ open import ParamCastAux precast
 open import ParamCastSubtyping pcss
 open import ParamCastReduction cs
 
-  {- NOTE:
-     The props below are for blame-subtyping.
-  -}
+{- NOTE:
+   To prove blame-subtyping, we first prove preservation of `CastsAllSafe` .
+-}
 plug-blame-allsafe-inv : ∀ {Γ A B} {F : Frame {Γ = Γ} A B} {ℓ ℓ′}
-    → CastsAllSafe (plug (blame ℓ′) F) ℓ
-      -------------------------------------
-    → ℓ ≢̂ ℓ′
+  → CastsAllSafe (plug (blame ℓ′) F) ℓ
+    -------------------------------------
+  → ℓ ≢̂ ℓ′
 plug-blame-allsafe-inv {F = F-·₁ _} (allsafe-· (allsafe-blame-diff-ℓ ℓ≢ℓ′) _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-·₂ _} (allsafe-· _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-if _ _} (allsafe-if (allsafe-blame-diff-ℓ ℓ≢ℓ′) _ _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
@@ -46,16 +46,16 @@ plug-blame-allsafe-inv {F = F-case _ _} (allsafe-case (allsafe-blame-diff-ℓ �
 plug-blame-allsafe-inv {F = F-cast _} (allsafe-cast _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 
 preserve-allsafe-plug : ∀ {Γ A B} {M M′ : Γ ⊢ A} {F : Frame A B} {ℓ}
-    → CastsAllSafe (plug M F) ℓ
-    → M —→ M′
-      -----------------------------
-    → CastsAllSafe (plug M′ F) ℓ
+  → CastsAllSafe (plug M F) ℓ
+  → M —→ M′
+    -----------------------------
+  → CastsAllSafe (plug M′ F) ℓ
 
 preserve-allsafe : ∀ {Γ A} {M M′ : Γ ⊢ A} {ℓ}
-    → CastsAllSafe M ℓ
-    → M —→ M′
-      --------------------
-    → CastsAllSafe M′ ℓ
+  → CastsAllSafe M ℓ
+  → M —→ M′
+    --------------------
+  → CastsAllSafe M′ ℓ
 
 preserve-allsafe-plug {M = L} {L′} {F = F-·₁ M} (allsafe-· allsafe-L allsafe-M) rd = allsafe-· (preserve-allsafe allsafe-L rd) allsafe-M
 preserve-allsafe-plug {F = F-·₂ L {v}} (allsafe-· allsafe-L allsafe-M) rd = allsafe-· allsafe-L (preserve-allsafe allsafe-M rd)
@@ -93,10 +93,6 @@ preserve-allsafe (allsafe-case (allsafe-cast safe allsafe-V) allsafe-W₁ allsaf
   allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁) (allsafe-cast (inlSafe safe x) allsafe-var)))
                          (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂) (allsafe-cast (inrSafe safe x) allsafe-var)))
 
-
--- Blame does not reduce.
-postulate
-  blame⌿→ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ} → ¬ (blame {Γ} {A} ℓ —→ M)
 
 -- There is no way to plug a `blame ℓ` in a frame and produce a term where every cast with label ℓ respects <: .
 plug-blame→¬allsafe : ∀ {Γ A B ℓ}

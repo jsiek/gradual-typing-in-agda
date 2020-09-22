@@ -328,3 +328,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
                 step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
+
+  -- Blame does not reduce.
+  postulate
+    blame⌿→ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ} → ¬ (blame {Γ} {A} ℓ —→ M)
