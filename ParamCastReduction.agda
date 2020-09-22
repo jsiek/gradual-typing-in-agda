@@ -329,6 +329,57 @@ module ParamCastReduction (cs : CastStruct) where
                 step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
 
+
+  open import ParamCastReductionNoFrame cs renaming (_—→_ to _—→′_; _—↠_ to _—↠′_)
+  {- NOTE:
+    We currently rely on a module with expanded frame and plug to do the 'blame does not reduce' proof.
+    Not sure if this is the best way though ...
+  -}
+  rd→rd′ : ∀ {Γ A} {M M′ : Γ ⊢ A}
+    → M —→ M′
+    → M —→′ M′
+  rd→rd′ (ξ {F = ParamCastAux.F-·₁ _} rd) = ξ-·₁ (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-·₂ _ {v = v}} rd) = ξ-·₂ {v = v} (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-if _ _} rd) = ξ-if (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-×₁ _} rd) = ξ-×₂ (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-×₂ _} rd) = ξ-x₁ (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-fst} rd) = ξ-fst (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-snd} rd) = ξ-snd (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-inl} rd) = ξ-inl (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-inr} rd) = ξ-inr (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-case _ _} rd) = ξ-case (rd→rd′ rd)
+  rd→rd′ (ξ {F = ParamCastAux.F-cast _} rd) = ξ-cast (rd→rd′ rd)
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-·₁ _}) = ξ-blame-·₁
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-·₂ _ {v = v}}) = (ξ-blame-·₂ {v = v})
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-if _ _}) = ξ-blame-if
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-×₁ _}) = ξ-blame-×₂
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-×₂ _}) = ξ-blame-x₁
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-fst}) = ξ-blame-fst
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-snd}) = ξ-blame-snd
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-inl}) = ξ-blame-inl
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-inr}) = ξ-blame-inr
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-case _ _}) = ξ-blame-case
+  rd→rd′ (ξ-blame {F = ParamCastAux.F-cast _}) = ξ-blame-cast
+  rd→rd′ (β v) = β v
+  rd→rd′ δ = δ
+  rd→rd′ β-if-true = β-if-true
+  rd→rd′ β-if-false = β-if-false
+  rd→rd′ (β-fst vv vw) = β-fst vv vw
+  rd→rd′ (β-snd vv vw) = β-snd vv vw
+  rd→rd′ (β-caseL v) = β-caseL v
+  rd→rd′ (β-caseR v) = β-caseR v
+  rd→rd′ (cast v) = cast v
+  rd→rd′ (fun-cast v vv {x = x}) = fun-cast v vv {x = x}
+  rd→rd′ (fst-cast v {x = x}) = fst-cast v {x = x}
+  rd→rd′ (snd-cast v {x = x}) = snd-cast v {x = x}
+  rd→rd′ (case-cast v {x = x}) = case-cast v {x = x}
+
   -- Blame does not reduce.
-  postulate
-    blame⌿→ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ} → ¬ (blame {Γ} {A} ℓ —→ M)
+  blame⌿→ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ} → ¬ (blame {Γ} {A} ℓ —→ M)
+  blame⌿→ rd with rd→rd′ rd
+  ... | ()
+
+  -- Values do not reduce.
+  -- V⌿→ : ∀ {Γ A} {M N : Γ ⊢ A}
+  --   → Value M
+  --   → ¬ (M —→ N)
