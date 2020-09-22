@@ -71,7 +71,7 @@ preserve-allsafe-plug {F = F-cast c} (allsafe-cast safe allsafe-M) rd = allsafe-
 
 preserve-allsafe allsafe (ξ rd) = preserve-allsafe-plug allsafe rd
 preserve-allsafe allsafe ξ-blame = allsafe-blame-diff-ℓ (plug-blame-allsafe-inv allsafe)
--- Need to prove substitution preserves `CR<:` .
+-- Recall that substitution preserves `allsafe` .
 preserve-allsafe (allsafe-· (allsafe-ƛ allsafe-N) allsafe-W) (β v) = substitution-allsafe allsafe-N allsafe-W
 preserve-allsafe allsafe δ = allsafe-prim
 preserve-allsafe (allsafe-if _ allsafe-M _) β-if-true = allsafe-M
@@ -81,7 +81,7 @@ preserve-allsafe (allsafe-snd (allsafe-cons _ allsafe-N)) (β-snd _ _) = allsafe
 preserve-allsafe (allsafe-case (allsafe-inl allsafe) allsafe-M _) (β-caseL x) = allsafe-· allsafe-M allsafe
 preserve-allsafe (allsafe-case (allsafe-inr allsafe) _ allsafe-N) (β-caseR x) = allsafe-· allsafe-N allsafe
 preserve-allsafe (allsafe-cast safe allsafe) (cast v {a}) = applyCast-pres-allsafe a safe allsafe
--- CR<: (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
+-- (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
 preserve-allsafe (allsafe-· (allsafe-cast safe allsafe-V) allsafe-W) (fun-cast {c = c} vV vW {x}) =
   -- Here we expect a proof that `labC c ≡ labC (dom c x)` , where `c` is a function cast.
   allsafe-cast (codSafe safe x) (allsafe-· allsafe-V (allsafe-cast (domSafe safe x) allsafe-W))

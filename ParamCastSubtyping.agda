@@ -108,7 +108,7 @@ data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wher
 
 
 {- NOTE:
-  Renaming (rebasing a type derivation) preserves `CR<:` . The statement of this lemma is similar to the
+  Renaming (rebasing a type derivation) preserves `allsafe` . The statement of this lemma is similar to the
   one about well-typedness in `Properties` chapter, PLFA.
 -}
 rename-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
@@ -136,10 +136,10 @@ rename-pres-allsafe ρ (allsafe-case allsafe-L allsafe-M allsafe-N) =
 rename-pres-allsafe ρ (allsafe-blame-diff-ℓ ℓ≢ℓ′) = allsafe-blame-diff-ℓ ℓ≢ℓ′
 
 {- NOTE:
-  Substitution preserves `CR<:` .
+  Substitution preserves `allsafe` .
 -}
 
--- What it means for a substitution to respect `CR<:` .
+-- What it means for a substitution to respect `allsafe` .
 CastsAllSafe-σ : ∀ {Γ Δ} → Subst Γ Δ → Label → Set
 CastsAllSafe-σ {Γ} {Δ} σ ℓ = ∀ {X} → (x : Γ ∋ X) → CastsAllSafe {A = X} (σ x) ℓ
 
@@ -155,7 +155,7 @@ subst-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
   → CastsAllSafe M ℓ → CastsAllSafe (subst σ M) ℓ
 subst-pres-allsafe allsafe-σ (allsafe-cast safe allsafe) = allsafe-cast safe (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-var {x = x}) = allsafe-σ x
--- Need to prove that `exts σ` satisfies `CR<:-σ` .
+-- Need to prove that `exts σ` satisfies `allsafe-σ` .
 subst-pres-allsafe allsafe-σ (allsafe-ƛ allsafe) = allsafe-ƛ (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-· allsafe-L allsafe-M) = allsafe-· (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe allsafe-σ allsafe-M)
 subst-pres-allsafe allsafe-σ allsafe-prim = allsafe-prim
