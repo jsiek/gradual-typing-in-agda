@@ -258,6 +258,10 @@ n  -}
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             }
+  pcss : PreCastStructWithSafety
+  pcss = record
+             { precast = pcs
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe
@@ -269,7 +273,7 @@ n  -}
 
   import ParamCastAux
   open ParamCastAux pcs
-  open import ParamCastSubtyping pcs
+  open import ParamCastSubtyping pcss
 
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A
   inert-ground c (I-inj g .c) = g
@@ -376,7 +380,7 @@ n  -}
 
   cs : CastStruct
   cs = record
-             { precast = pcs
+             { pcss = pcss
              ; applyCast = applyCast
              ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }

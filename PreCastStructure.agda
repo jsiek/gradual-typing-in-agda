@@ -10,7 +10,7 @@ module PreCastStructure where
 
 record PreCastStruct : Set₁ where
   field
-    Cast : Type → Set  
+    Cast : Type → Set
     Inert : ∀{A} → Cast A → Set
     Active : ∀{A} → Cast A → Set
     ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
@@ -34,6 +34,13 @@ record PreCastStruct : Set₁ where
     inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
     baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+
+
+record PreCastStructWithSafety : Set₁ where
+  field
+    precast : PreCastStruct
+  open PreCastStruct precast public
+  field
     {- The fields below are for blame-subtyping. -}
     Safe : ∀ {A} → Cast A → Label → Set
     domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
@@ -48,4 +55,3 @@ record PreCastStruct : Set₁ where
             → Safe (inlC c x) ℓ
     inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
             → Safe (inrC c x) ℓ
-

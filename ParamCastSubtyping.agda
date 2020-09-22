@@ -18,9 +18,9 @@ open import PreCastStructure
 
 
 -- Module definition - parameterized by `PreCastStruct` .
-module ParamCastSubtyping (pcs : PreCastStruct) where
+module ParamCastSubtyping (pcs : PreCastStructWithSafety) where
 
-open PreCastStruct pcs
+open PreCastStructWithSafety pcs
 
 import ParamCastCalculus
 open ParamCastCalculus Cast

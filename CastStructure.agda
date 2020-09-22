@@ -41,12 +41,11 @@ import EfficientParamCastAux
   
 record CastStruct : Set₁ where
   field
-    precast : PreCastStruct
-
-  open PreCastStruct precast public
+    pcss : PreCastStructWithSafety
+  open PreCastStructWithSafety pcss public
   open ParamCastCalculus Cast
   open ParamCastAux precast
-  open ParamCastSubtyping precast
+  open ParamCastSubtyping pcss
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
@@ -58,6 +57,7 @@ record CastStruct : Set₁ where
       → Safe c ℓ
       → CastsAllSafe V ℓ
       → CastsAllSafe (applyCast V vV c {a}) ℓ
+
 
 record EfficientCastStruct : Set₁ where
   field

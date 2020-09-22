@@ -182,6 +182,10 @@ module SimpleCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             }
+  pcss : PreCastStructWithSafety
+  pcss = record
+             { precast = pcs
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe
@@ -193,7 +197,7 @@ module SimpleCast where
 
   import ParamCastAux
   open ParamCastAux pcs
-  open import ParamCastSubtyping pcs
+  open import ParamCastSubtyping pcss
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
@@ -261,7 +265,7 @@ module SimpleCast where
 
   cs : CastStruct
   cs = record
-             { precast = pcs
+             { pcss = pcss
              ; applyCast = applyCast
              ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
