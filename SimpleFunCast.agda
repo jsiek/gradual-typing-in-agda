@@ -112,9 +112,68 @@ module SimpleFunCast where
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
-  
+
+  open import Subtyping using (_<:₁_)
+  open _<:₁_
+  infix 5 _<:_
+  _<:_ = _<:₁_
+
+  data Safe : ∀ {A} → Cast A → Label → Set where
+
+    safe-<: : ∀ {S T} {c~ : S ~ T} {ℓ}
+      → S <: T
+        ----------------------------
+      → Safe (cast S T ℓ {c~}) ℓ
+
+    safe-ℓ≢ : ∀ {S T} {c~ : S ~ T} {ℓ ℓ′}
+      → ℓ ≢̂ ℓ′
+        -----------------------------
+      → Safe (cast S T ℓ′ {c~}) ℓ
+
+  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (dom c x) ℓ
+  domSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ _ _ = safe-<: sub-dom
+  domSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ _ _ = safe-ℓ≢ ℓ≢
+
+  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (cod c x) ℓ
+  codSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  ... | fun~ _ _ = safe-<: sub-cod
+  codSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | fun~ _ _ = safe-ℓ≢ ℓ≢
+
+  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (fstC c x) ℓ
+  fstSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ _ _ = safe-<: sub-fst
+  fstSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ _ _ = safe-ℓ≢ ℓ≢
+
+  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (sndC c x) ℓ
+  sndSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  ... | pair~ _ _ = safe-<: sub-snd
+  sndSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | pair~ _ _ = safe-ℓ≢ ℓ≢
+
+  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inlC c x) ℓ
+  inlSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ _ _ = safe-<: sub-l
+  inlSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ _ _ = safe-ℓ≢ ℓ≢
+
+  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inrC c x) ℓ
+  inrSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  ... | sum~ _ _ = safe-<: sub-r
+  inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  ... | sum~ _ _ = safe-ℓ≢ ℓ≢
+
   open import PreCastStructure
-  
+
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -133,9 +192,21 @@ module SimpleFunCast where
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+  pcss : PreCastStructWithSafety
+  pcss = record
+             { precast = pcs
+             ; Safe = Safe
+             ; domSafe = domSafe
+             ; codSafe = codSafe
+             ; fstSafe = fstSafe
+             ; sndSafe = sndSafe
+             ; inlSafe = inlSafe
+             ; inrSafe = inrSafe
+             }
 
   import ParamCastAux
   open ParamCastAux pcs
+  open import ParamCastSubtyping pcss
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
@@ -146,14 +217,29 @@ module SimpleFunCast where
          rewrite meq
          with A' `~ B
   ...    | yes ap-b = M' ⟨ cast A' B ℓ {ap-b} ⟩
-  ...    | no ap-b = blame ℓ  
-  
+  ...    | no ap-b = blame ℓ
+
+  applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    → (a : Active c)
+    → Safe c ℓ
+    → CastsAllSafe V ℓ
+      --------------------------------------
+    → CastsAllSafe (applyCast V vV c {a}) ℓ
+  applyCast-pres-allsafe (activeId _) safe allsafe = allsafe
+  applyCast-pres-allsafe (activeProj (cast ⋆ .⋆ ℓ) ⋆≢⋆) (safe-<: T<:⋆) allsafe = contradiction refl ⋆≢⋆
+  applyCast-pres-allsafe {vV = vV} (activeProj (cast ⋆ B ℓ′) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe with canonical⋆ _ vV
+  ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
+  ...   | no _ = allsafe-blame-diff-ℓ ℓ≢
+  ...   | yes _ with allsafe
+  ...     | (allsafe-cast _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
+
   open import CastStructure
 
   cs : CastStruct
   cs = record
-             { precast = pcs
+             { pcss = pcss
              ; applyCast = applyCast
+             ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
 
   import ParamCastReduction
@@ -162,3 +248,5 @@ module SimpleFunCast where
   import GTLC2CC
   open GTLC2CC Cast (λ A B ℓ {c} → (cast A B ℓ {c})) public
 
+  -- Instantiate blame-subtyping theorem for `SimpleFunCast`.
+  open import ParamBlameSubtyping cs using (soundness-<:) public

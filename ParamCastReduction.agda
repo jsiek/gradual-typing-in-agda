@@ -3,13 +3,14 @@ open import PreCastStructure
 open import CastStructure
 open import Labels
 open import Data.Nat
-open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
+open import Data.Maybe
 open import Variables
-open import Relation.Nullary using (¬_)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app) renaming (subst to subst-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
 {-
@@ -328,3 +329,36 @@ module ParamCastReduction (cs : CastStruct) where
                 step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
 
+
+  -- There is no way to plug into a frame and get a blame.
+  plug-not-blame : ∀ {Γ A B} {M : Γ ⊢ A} {F : Frame {Γ} A B} {ℓ}
+    → plug M F ≢ blame ℓ
+  plug-not-blame {F = ParamCastAux.F-·₁ _} ()
+  plug-not-blame {F = ParamCastAux.F-·₂ _} ()
+  plug-not-blame {F = ParamCastAux.F-if _ _} ()
+  plug-not-blame {F = ParamCastAux.F-×₁ _} ()
+  plug-not-blame {F = ParamCastAux.F-×₂ _} ()
+  plug-not-blame {F = ParamCastAux.F-fst} ()
+  plug-not-blame {F = ParamCastAux.F-snd} ()
+  plug-not-blame {F = ParamCastAux.F-inl} ()
+  plug-not-blame {F = ParamCastAux.F-inr} ()
+  plug-not-blame {F = ParamCastAux.F-case _ _} ()
+  plug-not-blame {F = ParamCastAux.F-cast _} ()
+
+  private
+    blame⌿→-aux : ∀ {Γ A} {M′ M : Γ ⊢ A} {ℓ}
+      → M′ —→ M
+      → M′ ≡ blame ℓ
+      → Data.Empty.⊥
+    blame⌿→-aux (ξ rd) eq = plug-not-blame eq
+    blame⌿→-aux ξ-blame eq = plug-not-blame eq
+
+  -- Blame does not reduce.
+  blame⌿→ : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}
+    → ¬ (blame {Γ} {A} ℓ —→ M)
+  blame⌿→ rd = blame⌿→-aux rd refl
+
+  -- Values do not reduce.
+  -- V⌿→ : ∀ {Γ A} {M N : Γ ⊢ A}
+  --   → Value M
+  --   → ¬ (M —→ N)

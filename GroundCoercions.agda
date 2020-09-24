@@ -27,7 +27,7 @@ module GroundCoercions where
       using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
   {-
- 
+
   The following data type defines the syntax and type system of the
   Coercion Calculus. We omit the failure coercion because it is not
   needed. (It is needed in λS.)
@@ -74,7 +74,7 @@ module GroundCoercions where
 
   coerce-to-gnd : (A : Type) → (B : Type) → {g : Ground B} → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce-from-gnd : (A : Type) → (B : Type) → {g : Ground A} → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
-  
+
   coerce-to⋆ : (A : Type) → Label → Cast (A ⇒ ⋆)
   coerce-to⋆ A ℓ with eq-unk A
   ... | yes eq rewrite eq = id {⋆} {A-Unk}
@@ -89,7 +89,7 @@ module GroundCoercions where
   ... | no neq with ground? B
   ...     | yes g = proj B ℓ {g}
   ...     | no ng with ground B {neq}
-  ...        | ⟨ G , ⟨ g , c ⟩ ⟩ = cseq (proj G ℓ {g}) (coerce-from-gnd G B {g} {Sym~ c} ℓ) 
+  ...        | ⟨ G , ⟨ g , c ⟩ ⟩ = cseq (proj G ℓ {g}) (coerce-from-gnd G B {g} {Sym~ c} ℓ)
 
   coerce-to-gnd .⋆ B {gb} {unk~L} ℓ = proj B ℓ {gb}
   coerce-to-gnd A .⋆ {()} {unk~R} ℓ
@@ -120,7 +120,7 @@ module GroundCoercions where
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
     cpair (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =
-    csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)  
+    csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)
 
   {-
 
@@ -163,7 +163,7 @@ module GroundCoercions where
 
   -}
   data Cross : ∀ {A} → Cast A → Set where
-    C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)    
+    C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)
     C-pair : ∀{A B A' B' c d} → Cross (cpair {A}{B}{A'}{B'} c d)
     C-sum : ∀{A B A' B' c d} → Cross (csum {A}{B}{A'}{B'} c d)
 
@@ -198,7 +198,7 @@ module GroundCoercions where
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
   dom (cfun c d) C-fun = c
-  
+
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   cod (cfun c d) C-fun = d
@@ -206,7 +206,7 @@ module GroundCoercions where
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
   fstC (cpair c d) C-pair = c
-  
+
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   sndC (cpair c d) C-pair = d
@@ -214,17 +214,69 @@ module GroundCoercions where
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
   inlC (csum c d) C-sum = c
-  
+
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   inrC (csum c d) C-sum = d
-  
+
   {-
   Finally, we show that casts to base type are not inert.
   -}
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
+
+  data Safe : ∀ {A} → Cast A → Label → Set where
+
+    safe-id : ∀ {A} {a : Atomic A} {ℓ}
+      → Safe (id {A} {a}) ℓ
+
+    safe-inj : ∀ {A} {g : Ground A} {ℓ}
+      → Safe (inj A {g}) ℓ
+
+    safe-proj : ∀ {B} {g : Ground B} {ℓ ℓ′}
+      → ℓ ≢̂ ℓ′
+      → Safe (proj B ℓ′ {g}) ℓ
+
+    safe-cfun : ∀ {S₁ S₂ T₁ T₂} {c : Cast (T₁ ⇒ S₁)} {d : Cast (S₂ ⇒ T₂)} {ℓ}
+      → Safe c ℓ → Safe d ℓ
+      → Safe (cfun c d) ℓ
+
+    safe-cpair : ∀ {S₁ S₂ T₁ T₂} {c : Cast (S₁ ⇒ T₁)} {d : Cast (S₂ ⇒ T₂)} {ℓ}
+      → Safe c ℓ → Safe d ℓ
+      → Safe (cpair c d) ℓ
+
+    safe-csum : ∀ {S₁ S₂ T₁ T₂} {c : Cast (S₁ ⇒ T₁)} {d : Cast (S₂ ⇒ T₂)} {ℓ}
+      → Safe c ℓ → Safe d ℓ
+      → Safe (csum c d) ℓ
+
+    safe-cseq : ∀ {T₁ T₂ T₃} {c : Cast (T₁ ⇒ T₂)} {d : Cast (T₂ ⇒ T₃)} {ℓ}
+      → Safe c ℓ → Safe d ℓ
+      → Safe (cseq c d) ℓ
+
+  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (dom c x) ℓ
+  domSafe (safe-cfun safe-c safe-d) C-fun = safe-c
+
+  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (cod c x) ℓ
+  codSafe (safe-cfun safe-c safe-d) C-fun = safe-d
+
+  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (fstC c x) ℓ
+  fstSafe (safe-cpair safe-c safe-d) C-pair = safe-c
+
+  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (sndC c x) ℓ
+  sndSafe (safe-cpair safe-c safe-d) C-pair = safe-d
+
+  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inlC c x) ℓ
+  inlSafe (safe-csum safe-c safe-d) C-sum = safe-c
+
+  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
+            → Safe (inrC c x) ℓ
+  inrSafe (safe-csum safe-c safe-d) C-sum = safe-d
 
   {-
 
@@ -233,7 +285,7 @@ module GroundCoercions where
 
   -}
   open import PreCastStructure
-  
+
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -257,11 +309,23 @@ module GroundCoercions where
              ; inrC = inrC
              ; baseNotInert = baseNotInert
              }
+  pcss : PreCastStructWithSafety
+  pcss = record
+             { precast = pcs
+             ; Safe = Safe
+             ; domSafe = domSafe
+             ; codSafe = codSafe
+             ; fstSafe = fstSafe
+             ; sndSafe = sndSafe
+             ; inlSafe = inlSafe
+             ; inrSafe = inrSafe
+             }
 
   import ParamCastAux
   open ParamCastAux pcs
+  open import ParamCastSubtyping pcss
 
-  {- 
+  {-
 
   To instaniate the inner module that defines reduction and progress,
   we need to define a few more functions. The first is applyCast,
@@ -273,7 +337,7 @@ module GroundCoercions where
 
   -}
 
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B)) 
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
   {-
     V⟨id⟩    —→    V
@@ -300,21 +364,40 @@ module GroundCoercions where
   applyCast M v (cfun c d) {()}
   applyCast M v (inj A) {()}
 
+  applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+    → (a : Active c)
+    → Safe c ℓ
+    → CastsAllSafe V ℓ
+    → CastsAllSafe (applyCast V vV c {a}) ℓ
+  applyCast-pres-allsafe {vV = vV} {c = proj B ℓ′ {gB}} A-proj (safe-proj ℓ≢) allsafe with canonical⋆ _ vV
+  ... | ⟨ G , ⟨ V′ , ⟨ _ , ⟨ I-inj {G} {g} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {g} {gB}
+  ...   | no _ = allsafe-blame-diff-ℓ ℓ≢
+  ...   | yes refl with allsafe
+  ...     | allsafe-cast _ allsafe-V′ = allsafe-V′
+  applyCast-pres-allsafe A-pair (safe-cpair safe-c safe-d) allsafe =
+    allsafe-cons (allsafe-cast safe-c (allsafe-fst allsafe)) (allsafe-cast safe-d (allsafe-snd allsafe))
+  applyCast-pres-allsafe A-sum (safe-csum safe-c safe-d) allsafe =
+    allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast safe-c allsafe-var)))
+                         (allsafe-ƛ (allsafe-inr (allsafe-cast safe-d allsafe-var)))
+  applyCast-pres-allsafe A-id _ allsafe = allsafe
+  applyCast-pres-allsafe A-seq (safe-cseq safe-c safe-d) allsafe = allsafe-cast safe-d (allsafe-cast safe-c allsafe)
+
   {-
   We now instantiate the inner module of ParamCastReduction, thereby
-  proving type safety for λC. 
+  proving type safety for λC.
   -}
 
   open import CastStructure
 
   cs : CastStruct
   cs = record
-             { precast = pcs
+             { pcss = pcss
              ; applyCast = applyCast
+             ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
 
   import ParamCastReduction
   open ParamCastReduction cs public
 
-
-
+  -- Instantiate blame-subtyping theorem for `GroundCoercion`.
+  open import ParamBlameSubtyping cs using (soundness-<:) public

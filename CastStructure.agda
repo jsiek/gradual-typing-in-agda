@@ -5,6 +5,7 @@ open import PreCastStructure
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Binary.PropositionalEquality
    using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Relation.Nullary using (¬_)
@@ -13,6 +14,7 @@ module CastStructure where
 
 import ParamCastCalculus
 import ParamCastAux
+import ParamCastSubtyping
 import EfficientParamCastAux
 
   {-
@@ -39,14 +41,23 @@ import EfficientParamCastAux
   
 record CastStruct : Set₁ where
   field
-    precast : PreCastStruct
-
-  open PreCastStruct precast public
+    pcss : PreCastStructWithSafety
+  open PreCastStructWithSafety pcss public
   open ParamCastCalculus Cast
   open ParamCastAux precast
+  open ParamCastSubtyping pcss
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
+    {- NOTE:
+      The fields below are for blame-subtyping.
+    -}
+    applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
+      → (a : Active c)
+      → Safe c ℓ
+      → CastsAllSafe V ℓ
+      → CastsAllSafe (applyCast V vV c {a}) ℓ
+
 
 record EfficientCastStruct : Set₁ where
   field
