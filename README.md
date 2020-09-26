@@ -113,3 +113,20 @@ Inventory
 * [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
    forgetful contracts. (UNDER CONSTRUCTION)
 
+* [Subtyping](./Subtyping.agda): The module defines several subtyping 
+   relations used in the blame-subtyping theorem, since we cannot 
+   directly use traditional subtyping in UD. They are the same relations
+   as the ones in the _Exploring the Design Space_ paper.
+
+* [ParamCastSubtyping](./ParamCastSubtyping.agda): The module defines
+   what it means for a term `M` to contain only safe casts with the 
+   label `ℓ` (`CastsAllSafe`). We show that the data type `CastsAllSafe`
+   is preserved during reduction.
+
+* [ParamBlameSubtyping](./ParamBlameSubtyping.agda): A formalized
+   proof of the blame-subtyping theorem. The theorem statement says
+   that "if every cast labeled by `ℓ` is safe cast (respects subtyping,
+   or a recursive safety definition if is coercion-based) in a term `M`
+   then `M` cannot reduce to `blame ℓ`". It is slightly different,
+   but equivalent to, the theorem statement in the _Refined Criteria_
+   paper.
