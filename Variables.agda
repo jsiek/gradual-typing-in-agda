@@ -11,6 +11,17 @@ data Context : Set where
   ∅   : Context
   _,_ : Context → Type → Context
 
+infix 4 _⊑*_
+
+-- Typing context precision
+data _⊑*_ : Context → Context → Set where
+
+  ⊑*-∅ : ∅ ⊑* ∅
+
+  ⊑*-, : ∀ {A A′ Γ Γ′}
+    → A ⊑ A′
+    → Γ ⊑* Γ′
+    → Γ , A ⊑* Γ′ , A′
 
 infix  4 _∋_
 infix  9 S_

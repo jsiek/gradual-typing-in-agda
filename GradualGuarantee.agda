@@ -9,7 +9,7 @@ open import Data.Nat.Properties using (_≟_)
 open import Data.Empty using (⊥; ⊥-elim)
 
 -- We're using simple cast - at least for now.
-open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC)
+open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
 open import Types
 open import Variables
 open import Labels
@@ -194,3 +194,24 @@ _ = ⊑ᴳ-· (⊑ᴳ-ƛ unk⊑ (⊑ᴳ-var refl)) ⊑ᴳ-prim
 
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᴳ-var refl)
+
+-- Compilation from GTLC to CC preserves precision.
+{- We assume Γ ⊢ e ↝ f ⦂ A and Γ′ ⊢ e′ ↝ f′ ⦂ A′ . -}
+compile-pres-prec : ∀ {Γ Γ′ A A′} {e : Γ ⊢G A} {e′ : Γ′ ⊢G A′} {f : Γ ⊢ A} {f′ : Γ′ ⊢ A′}
+  → f ≡ compile {Γ} {A} e
+  → f′ ≡ compile {Γ′} {A′} e′
+  → Γ ⊑* Γ′
+  → Γ , Γ′ ⊢ e ⊑ᴳ e′
+    -------------------------------
+  → (A ⊑ A′) × (Γ , Γ′ ⊢ f ⊑ᶜ f′)
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-prim {A = A}) rewrite eq₁ | eq₂ = ⟨ Refl⊑ , ⊑ᶜ-prim ⟩
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-var x) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-ƛ x lpe) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-· lpe lpe₁) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-if lpe lpe₁ lpe₂) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-cons lpe lpe₁) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-fst lpe) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-snd lpe) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-inl x lpe) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-inr x lpe) = {!!}
+compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-case lpe lpe₁ lpe₂) = {!!}
