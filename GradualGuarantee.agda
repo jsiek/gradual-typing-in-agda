@@ -5,7 +5,7 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
-open import Data.Nat.Properties using (_≟_)
+open import Data.Nat.Properties using (_≟_; suc-injective)
 open import Data.Empty using (⊥; ⊥-elim)
 
 -- We're using simple cast - at least for now.
@@ -88,7 +88,7 @@ data _,_⊢_⊑ᴳ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢G A
     → A ⊑ A′
     → Γ , Γ′ ⊢ M ⊑ᴳ M′
       ------------------------------
-    → Γ , Γ′ ⊢ inr A M ⊑ᴳ inl A′ M′
+    → Γ , Γ′ ⊢ inr A M ⊑ᴳ inr A′ M′
 
   ⊑ᴳ-case : ∀ {Γ Γ′ A A′ A₁ A₁′ A₂ A₂′ B B′ B₁ B₁′ B₂ B₂′ C C′ C₁ C₁′ C₂ C₂′}
               {L : Γ ⊢G A} {L′ : Γ′ ⊢G A′} {M : Γ ⊢G B} {M′ : Γ′ ⊢G B′} {N : Γ ⊢G C} {N′ : Γ′ ⊢G C′} {ℓ ℓ′}
@@ -195,23 +195,140 @@ _ = ⊑ᴳ-· (⊑ᴳ-ƛ unk⊑ (⊑ᴳ-var refl)) ⊑ᴳ-prim
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᴳ-var refl)
 
+⊑*→⊑ : ∀ {Γ Γ′ A A′}
+  → (x : Γ ∋ A) → (x′ : Γ′ ∋ A′)
+  → Γ ⊑* Γ′
+  → ∋→ℕ x ≡ ∋→ℕ x′
+    -----------------
+  → A ⊑ A′
+⊑*→⊑ Z Z (⊑*-, lp lpc) refl = lp
+⊑*→⊑ (S x) (S x′) (⊑*-, _ lpc) eq = ⊑*→⊑ x x′ lpc (suc-injective eq)
+
+▹⇒-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+  → (m : A ▹ A₁ ⇒ A₂) → (m′ : A′ ▹ A₁′ ⇒ A₂′)
+  → A ⊑ A′
+    --------------------
+  → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+▹⇒-pres-prec match⇒⇒ match⇒⇒ (fun⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+▹⇒-pres-prec match⇒⇒ match⇒⋆ ()
+▹⇒-pres-prec match⇒⋆ match⇒⇒ lp = ⟨ unk⊑ , unk⊑ ⟩
+▹⇒-pres-prec match⇒⋆ match⇒⋆ lp = ⟨ unk⊑ , unk⊑ ⟩
+
+▹×-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+  → (m : A ▹ A₁ × A₂) → (m′ : A′ ▹ A₁′ × A₂′)
+  → A ⊑ A′
+  → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+▹×-pres-prec match×× match×× (pair⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+▹×-pres-prec match×× match×⋆ = λ ()
+▹×-pres-prec match×⋆ match×× lp = ⟨ unk⊑ , unk⊑ ⟩
+▹×-pres-prec match×⋆ match×⋆ lp = ⟨ lp , lp ⟩
+
+▹⊎-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+  → (m : A ▹ A₁ ⊎ A₂) (m′ : A′ ▹ A₁′ ⊎ A₂′)
+  → A ⊑ A′
+    --------------------
+  → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+▹⊎-pres-prec match⊎⊎ match⊎⊎ (sum⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+▹⊎-pres-prec match⊎⋆ match⊎⊎ lp = ⟨ unk⊑ , unk⊑ ⟩
+▹⊎-pres-prec match⊎⋆ match⊎⋆ lp = ⟨ lp , lp ⟩
+
+⨆-pres-prec : ∀ {A A′ B B′}
+  → (aa : A ~ A′) → (bb : B ~ B′)
+  → A ⊑ B
+  → A′ ⊑ B′
+    -------------
+  → ⨆ aa ⊑ ⨆ bb
+⨆-pres-prec unk~L unk~L unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L unk~R unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L base~ unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L (fun~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L (pair~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L (sum~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R unk~L unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R unk~R unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R base~ unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R (fun~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R (pair~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~R (sum~ _ _) unk⊑ unk⊑ = unk⊑
+⨆-pres-prec unk~L unk~L unk⊑ base⊑ = base⊑
+⨆-pres-prec unk~L base~ unk⊑ base⊑ = base⊑
+⨆-pres-prec unk~L unk~L unk⊑ (fun⊑ lp₁ lp₂) = fun⊑ lp₁ lp₂
+⨆-pres-prec unk~L (fun~ aa bb) unk⊑ (fun⊑ lp₁ lp₂) =
+  fun⊑ (⨆-pres-prec unk~R aa lp₁ unk⊑) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+⨆-pres-prec unk~L unk~L unk⊑ (pair⊑ lp₁ lp₂) = pair⊑ lp₁ lp₂
+⨆-pres-prec unk~L (pair~ aa bb) unk⊑ (pair⊑ lp₁ lp₂) =
+  pair⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+⨆-pres-prec unk~L unk~L unk⊑ (sum⊑ lp₁ lp₂) = sum⊑ lp₁ lp₂
+⨆-pres-prec unk~L (sum~ aa bb) unk⊑ (sum⊑ lp₁ lp₂) =
+  sum⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+⨆-pres-prec unk~R unk~R base⊑ unk⊑ = base⊑
+⨆-pres-prec unk~R base~ base⊑ unk⊑ = base⊑
+⨆-pres-prec base~ base~ base⊑ base⊑ = base⊑
+⨆-pres-prec unk~R unk~R (fun⊑ lp₁ lp₂) unk⊑ = fun⊑ lp₁ lp₂
+⨆-pres-prec unk~R (fun~ aa bb) (fun⊑ lp₁ lp₂) unk⊑ =
+  fun⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~R bb lp₂ unk⊑)
+⨆-pres-prec (fun~ aa₁ aa₂) (fun~ bb₁ bb₂) (fun⊑ lpa₁ lpa₂) (fun⊑ lpb₁ lpb₂) =
+  fun⊑ (⨆-pres-prec aa₁ bb₁ lpb₁ lpa₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+⨆-pres-prec unk~R unk~R (pair⊑ lp₁ lp₂) unk⊑ = pair⊑ lp₁ lp₂
+⨆-pres-prec unk~R (pair~ bb₁ bb₂) (pair⊑ lp₁ lp₂) unk⊑ =
+  pair⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+⨆-pres-prec (pair~ aa₁ aa₂) (pair~ bb₁ bb₂) (pair⊑ lpa₁ lpa₂) (pair⊑ lpb₁ lpb₂) =
+  pair⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+⨆-pres-prec unk~R unk~R (sum⊑ lp₁ lp₂) unk⊑ = sum⊑ lp₁ lp₂
+⨆-pres-prec unk~R (sum~ bb₁ bb₂) (sum⊑ lp₁ lp₂) unk⊑ =
+  sum⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+⨆-pres-prec (sum~ aa₁ aa₂) (sum~ bb₁ bb₂) (sum⊑ lpa₁ lpa₂) (sum⊑ lpb₁ lpb₂) =
+  sum⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+
 -- Compilation from GTLC to CC preserves precision.
 {- We assume Γ ⊢ e ↝ f ⦂ A and Γ′ ⊢ e′ ↝ f′ ⦂ A′ . -}
-compile-pres-prec : ∀ {Γ Γ′ A A′} {e : Γ ⊢G A} {e′ : Γ′ ⊢G A′} {f : Γ ⊢ A} {f′ : Γ′ ⊢ A′}
-  → f ≡ compile {Γ} {A} e
-  → f′ ≡ compile {Γ′} {A′} e′
+compile-pres-prec : ∀ {Γ Γ′ A A′} {e : Γ ⊢G A} {e′ : Γ′ ⊢G A′}
   → Γ ⊑* Γ′
   → Γ , Γ′ ⊢ e ⊑ᴳ e′
     -------------------------------
-  → (A ⊑ A′) × (Γ , Γ′ ⊢ f ⊑ᶜ f′)
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-prim {A = A}) rewrite eq₁ | eq₂ = ⟨ Refl⊑ , ⊑ᶜ-prim ⟩
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-var x) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-ƛ x lpe) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-· lpe lpe₁) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-if lpe lpe₁ lpe₂) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-cons lpe lpe₁) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-fst lpe) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-snd lpe) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-inl x lpe) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-inr x lpe) = {!!}
-compile-pres-prec eq₁ eq₂ lpc (⊑ᴳ-case lpe lpe₁ lpe₂) = {!!}
+  → (A ⊑ A′) × (Γ , Γ′ ⊢ compile {Γ} {A} e ⊑ᶜ compile {Γ′} {A′} e′)
+compile-pres-prec lpc (⊑ᴳ-prim {A = A}) = ⟨ Refl⊑ , ⊑ᶜ-prim ⟩
+compile-pres-prec lpc (⊑ᴳ-var {x = x} {x′} eq) = ⟨ ⊑*→⊑ x x′ lpc eq , ⊑ᴳ-var eq ⟩
+compile-pres-prec lpc (⊑ᴳ-ƛ lpA lpe) =
+  let ⟨ lpB , lpeN ⟩ = compile-pres-prec (⊑*-, lpA lpc) lpe in
+    ⟨ (fun⊑ lpA lpB) , ⊑ᶜ-ƛ lpA lpeN ⟩
+compile-pres-prec lpc (⊑ᴳ-· lpeL lpeM {m = m} {m′ = m′}) =
+  let ⟨ lpA , lpeL′ ⟩ = compile-pres-prec lpc lpeL in
+  let ⟨ lpB , lpeM′ ⟩ = compile-pres-prec lpc lpeM in
+  let ⟨ lpA₁ , lpA₂ ⟩ = ▹⇒-pres-prec m m′ lpA in
+    ⟨ lpA₂ , ⊑ᶜ-· (⊑ᶜ-cast lpA (fun⊑ lpA₁ lpA₂) lpeL′) (⊑ᶜ-cast lpB lpA₁ lpeM′) ⟩
+compile-pres-prec lpc (⊑ᴳ-if lpeL lpeM lpeN {aa = aa} {aa′}) =
+  let ⟨ lpB , lpeL′ ⟩ = compile-pres-prec lpc lpeL in
+  let ⟨ lpA₁ , lpeM′ ⟩ = compile-pres-prec lpc lpeM in
+  let ⟨ lpA₂ , lpeN′ ⟩ = compile-pres-prec lpc lpeN in
+  let lp⨆aa = ⨆-pres-prec aa aa′ lpA₁ lpA₂ in
+    ⟨ lp⨆aa , ⊑ᶜ-if (⊑ᶜ-cast lpB base⊑ lpeL′) (⊑ᶜ-cast lpA₁ lp⨆aa lpeM′) (⊑ᶜ-cast lpA₂ lp⨆aa lpeN′) ⟩
+compile-pres-prec lpc (⊑ᴳ-cons lpeM lpeN) =
+  let ⟨ lpA , lpeM′ ⟩ = compile-pres-prec lpc lpeM in
+  let ⟨ lpB , lpeN′ ⟩ = compile-pres-prec lpc lpeN in
+    ⟨ pair⊑ lpA lpB , ⊑ᶜ-cons lpeM′ lpeN′ ⟩
+compile-pres-prec lpc (⊑ᴳ-fst lpe {m} {m′}) =
+  let ⟨ lp , lpe′ ⟩ = compile-pres-prec lpc lpe in
+  let ⟨ lp₁ , lp₂ ⟩ = ▹×-pres-prec m m′ lp in
+    ⟨ lp₁ , ⊑ᶜ-fst (⊑ᶜ-cast lp (pair⊑ lp₁ lp₂) lpe′) ⟩
+compile-pres-prec lpc (⊑ᴳ-snd lpe {m} {m′}) =
+  let ⟨ lp , lpe′ ⟩ = compile-pres-prec lpc lpe in
+  let ⟨ lp₁ , lp₂ ⟩ = ▹×-pres-prec m m′ lp in
+    ⟨ lp₂ , ⊑ᶜ-snd (⊑ᶜ-cast lp (pair⊑ lp₁ lp₂) lpe′) ⟩
+compile-pres-prec lpc (⊑ᴳ-inl lpB lpe) =
+  let ⟨ lpA , lpe′ ⟩ = compile-pres-prec lpc lpe in
+    ⟨ sum⊑ lpA lpB , ⊑ᶜ-inl lpe′ ⟩
+compile-pres-prec lpc (⊑ᴳ-inr lpA lpe) =
+  let ⟨ lpB , lpe′ ⟩ = compile-pres-prec lpc lpe in
+    ⟨ sum⊑ lpA lpB , ⊑ᶜ-inr lpe′ ⟩
+compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc} {mc′} {bc = bc} {bc′}) =
+  let ⟨ lpA , lpeL′ ⟩ = compile-pres-prec lpc lpeL in
+  let ⟨ lpB , lpeM′ ⟩ = compile-pres-prec lpc lpeM in
+  let ⟨ lpC , lpeN′ ⟩ = compile-pres-prec lpc lpeN in
+  let ⟨ lpA₁ , lpA₂ ⟩ = ▹⊎-pres-prec ma ma′ lpA in
+  let ⟨ lpB₁ , lpB₂ ⟩ = ▹⇒-pres-prec mb mb′ lpB in
+  let ⟨ lpC₁ , lpC₂ ⟩ = ▹⇒-pres-prec mc mc′ lpC in
+  let lp⨆bc = ⨆-pres-prec bc bc′ lpB₂ lpC₂ in
+    ⟨ lp⨆bc , ⊑ᶜ-case (⊑ᶜ-cast (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpC₁) (⊑ᶜ-cast lpA (sum⊑ lpA₁ lpA₂) lpeL′))
+                       (⊑ᶜ-cast (fun⊑ lpB₁ lpB₂) (fun⊑ lpB₁ lp⨆bc) (⊑ᶜ-cast lpB (fun⊑ lpB₁ lpB₂) lpeM′))
+                       (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
