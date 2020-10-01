@@ -332,3 +332,10 @@ compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc}
     ⟨ lp⨆bc , ⊑ᶜ-case (⊑ᶜ-cast (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpC₁) (⊑ᶜ-cast lpA (sum⊑ lpA₁ lpA₂) lpeL′))
                        (⊑ᶜ-cast (fun⊑ lpB₁ lpB₂) (fun⊑ lpB₁ lp⨆bc) (⊑ᶜ-cast lpB (fun⊑ lpB₁ lpB₂) lpeM′))
                        (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
+
+-- Simulation
+gradual-guarantee : ∀ {A A′} {f₁ : ∅ ⊢ A} {f₁′ : ∅ ⊢ A′} {f₂ : ∅ ⊢ A}
+  → ∅ , ∅ ⊢ f₁ ⊑ᶜ f₁′
+  → f₁ —→ f₂
+    ------------------------------------------------
+  → ∃[ f₂′ ] ((f₁′ —↠ f₂′) × (∅ , ∅ ⊢ f₂ ⊑ᶜ f₂′))
