@@ -80,6 +80,14 @@ module LazyCoercions where
   ActiveOrInert (c `+ c₁) = inj₁ A-sum
   ActiveOrInert (⊥ A ⟨ ℓ ⟩ B) = inj₁ A-fail
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert A-proj ()
+  ActiveNotInert A-fun ()
+  ActiveNotInert A-pair ()
+  ActiveNotInert A-sum ()
+  ActiveNotInert A-id ()
+  ActiveNotInert A-fail ()
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B'}{c : Cast (B ⇒ A)}{d : Cast (A' ⇒ B')} → Cross (c ↣ d)    
     C-pair : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')} → Cross (c `× d)
@@ -184,6 +192,7 @@ module LazyCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

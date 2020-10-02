@@ -14,6 +14,7 @@ record PreCastStruct : Set₁ where
     Inert : ∀{A} → Cast A → Set
     Active : ∀{A} → Cast A → Set
     ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
+    ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
     Cross : ∀{A} → Cast A → Set
     Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂

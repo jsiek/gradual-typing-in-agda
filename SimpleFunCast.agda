@@ -50,6 +50,10 @@ module SimpleFunCast where
   ActiveOrInert (cast (A `⊎ B) (A' `⊎ B') ℓ {sum~ c c₁}) =
      inj₂ (inert-sum (cast (A `⊎ B) (A' `⊎ B') ℓ))
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (activeId c) (inert-inj neq .c) = neq refl
+  ActiveNotInert (activeProj c neq) (inert-inj _ .c) = neq refl
+
   funNotActive : ∀{A₁ A₂ B₁ B₂ ℓ c} → ¬ Active (cast (A₁ ⇒ A₂) (B₁ ⇒ B₂) ℓ {c})
   funNotActive (activeId {a = ()} .(cast (_ ⇒ _) (_ ⇒ _) _))
 
@@ -180,6 +184,7 @@ module SimpleFunCast where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

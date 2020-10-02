@@ -61,6 +61,11 @@ module LazyCast where
   ...    | sum⌣{A' = A'}{B' = B'} =
              inj₁ (activeSum (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ))
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (activeId c) (inert neq .c) = neq refl
+  ActiveNotInert (activeProj c neq) (inert _ .c) = neq refl
+  ActiveNotInert (activeErr c neq) (inert _ .c) = neq unk⌣R
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
     C-pair : ∀{A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
@@ -160,6 +165,7 @@ module LazyCast where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

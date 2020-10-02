@@ -306,6 +306,17 @@ module EfficientGroundCoercions where
   ... | inj₁ a = inj₁ (A-intmd a)
   ... | inj₂ j = inj₂ (I-intmd j)
 
+  ActiveNotInertGnd : ∀ {A} {c : gCast A} → ActivegCast c → InertgCast c → Bot
+  ActiveNotInertGnd A-cpair ()
+  ActiveNotInertGnd A-csum ()
+  ActiveNotInertGnd A-idι ()
+
+  ActiveNotInertiCast : ∀ {A} {c : iCast A} → ActiveiCast c → InertiCast c → Bot
+  ActiveNotInertiCast (A-gnd a) (I-gnd i) = ActiveNotInertGnd a i
+
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (A-intmd a) (I-intmd i) = ActiveNotInertiCast a i
+
 
   data Cross : ∀ {A} → Cast A → Set where
     C-cross : ∀{A B}{g : gCast (A ⇒ B)} → Cross (` ` g)
@@ -365,6 +376,7 @@ module EfficientGroundCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

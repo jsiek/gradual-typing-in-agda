@@ -195,6 +195,13 @@ module GroundCoercions where
   ActiveOrInert (csum c c₁) = inj₁ A-sum
   ActiveOrInert (cseq c c₁) = inj₁ A-seq
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert A-proj ()
+  ActiveNotInert A-pair ()
+  ActiveNotInert A-sum ()
+  ActiveNotInert A-id ()
+  ActiveNotInert A-seq ()
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
   dom (cfun c d) C-fun = c
@@ -292,6 +299,7 @@ module GroundCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

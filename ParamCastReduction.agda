@@ -345,6 +345,31 @@ module ParamCastReduction (cs : CastStruct) where
   plug-not-blame {F = ParamCastAux.F-case _ _} ()
   plug-not-blame {F = ParamCastAux.F-cast _} ()
 
+  plug-not-ƛ : ∀ {Γ A B C} {M : Γ ⊢ A} {F : Frame {Γ} A (C ⇒ B)} {N : Γ , C ⊢ B}
+    → plug M F ≢ ƛ N
+  plug-not-ƛ {F = ParamCastAux.F-·₁ _} ()
+  plug-not-ƛ {F = ParamCastAux.F-·₂ _} ()
+  plug-not-ƛ {F = ParamCastAux.F-if _ _} ()
+  plug-not-ƛ {F = ParamCastAux.F-fst} ()
+  plug-not-ƛ {F = ParamCastAux.F-snd} ()
+  plug-not-ƛ {F = ParamCastAux.F-case _ _} ()
+  plug-not-ƛ {F = ParamCastAux.F-cast _} ()
+
+  plug-not-const : ∀ {Γ A B} {M : Γ ⊢ A} {F : Frame {Γ} A B} {k : rep B} {f : Prim B}
+    → plug M F ≢ (($ k) {f})
+  plug-not-const {F = ParamCastAux.F-·₁ _} = λ ()
+  plug-not-const {F = ParamCastAux.F-·₂ _} = λ ()
+  plug-not-const {F = ParamCastAux.F-if _ _} = λ ()
+  plug-not-const {F = ParamCastAux.F-fst} = λ ()
+  plug-not-const {F = ParamCastAux.F-snd} = λ ()
+  plug-not-const {F = ParamCastAux.F-case _ _} = λ ()
+  plug-not-const {F = ParamCastAux.F-cast _} = λ ()
+
+  -- Blame is not a value.
+  blame-not-value : ∀ {Γ A} {ℓ}
+    → ¬ Value (blame {Γ} {A} ℓ)
+  blame-not-value ()
+
   private
     blame⌿→-aux : ∀ {Γ A} {M′ M : Γ ⊢ A} {ℓ}
       → M′ —→ M
@@ -359,6 +384,42 @@ module ParamCastReduction (cs : CastStruct) where
   blame⌿→ rd = blame⌿→-aux rd refl
 
   -- Values do not reduce.
-  -- V⌿→ : ∀ {Γ A} {M N : Γ ⊢ A}
-  --   → Value M
-  --   → ¬ (M —→ N)
+  V⌿→ : ∀ {Γ A} {M N : Γ ⊢ A}
+    → Value M
+    → ¬ (M —→ N)
+  private
+    V-pair⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B} {M′ M}
+      → M′ —→ M → M′ ≡ cons V W → Value M′ → Data.Empty.⊥
+    V-ƛ⌿→ : ∀ {Γ A B} {N : Γ , A ⊢ B} {M′ M}
+      → M′ —→ M → M′ ≡ ƛ N → Data.Empty.⊥
+    V-const⌿→ : ∀ {Γ A} {k : rep A} {f : Prim A} {M′ M : Γ ⊢ A}
+      → M′ —→ M → M′ ≡ (($ k) {f}) → Data.Empty.⊥
+    V-inl⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {M′ M : Γ ⊢ A `⊎ B}
+      → M′ —→ M → M′ ≡ inl V → Value M′ → Data.Empty.⊥
+    V-inr⌿→ : ∀ {Γ A B} {V : Γ ⊢ B} {M′ M : Γ ⊢ A `⊎ B}
+      → M′ —→ M → M′ ≡ inr V → Value M′ → Data.Empty.⊥
+    V-cast⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)} {M′ M}
+      → M′ —→ M → M′ ≡ V ⟨ c ⟩ → Value M′ → Data.Empty.⊥
+  V-pair⌿→ (ξ {F = F-×₁ _} rd) refl (V-pair vV vW) = V⌿→ vW rd
+  V-pair⌿→ (ξ {F = F-×₂ _} rd) refl (V-pair vV vW) = V⌿→ vV rd
+  V-pair⌿→ (ξ-blame {F = F-×₁ _}) refl (V-pair vV vW) = contradiction vW blame-not-value
+  V-pair⌿→ (ξ-blame {F = F-×₂ _}) refl (V-pair vV vW) = contradiction vV blame-not-value
+  V-ƛ⌿→ (ξ rd) eq = plug-not-ƛ eq
+  V-ƛ⌿→ ξ-blame eq = plug-not-ƛ eq
+  V-const⌿→ (ξ rd) eq = plug-not-const eq
+  V-const⌿→ ξ-blame eq = plug-not-const eq
+  V-inl⌿→ (ξ {F = F-inl} rd) refl (V-inl v) = V⌿→ v rd
+  V-inl⌿→ (ξ-blame {F = F-inl}) refl (V-inl v) = contradiction v blame-not-value
+  V-inr⌿→ (ξ {F = F-inr} rd) refl (V-inr v) = V⌿→ v rd
+  V-inr⌿→ (ξ-blame {F = F-inr}) refl (V-inr v) = contradiction v blame-not-value
+  V-cast⌿→ (ξ {F = F-cast _} rd) refl (V-cast v) = V⌿→ v rd
+  V-cast⌿→ (ξ-blame {F = F-cast _}) refl (V-cast v) = contradiction v blame-not-value
+  -- Here we need a proof that a cast cannot be both active and inert at the same time.
+  V-cast⌿→ (cast _ {a}) refl (V-cast {i = i} v) = ActiveNotInert a i
+
+  V⌿→ V-ƛ rd = V-ƛ⌿→ rd refl
+  V⌿→ V-const rd = V-const⌿→ rd refl
+  V⌿→ (V-pair vV vW) rd = V-pair⌿→ rd refl (V-pair vV vW)
+  V⌿→ (V-inl v) rd = V-inl⌿→ rd refl (V-inl v)
+  V⌿→ (V-inr v) rd = V-inr⌿→ rd refl (V-inr v)
+  V⌿→ (V-cast {i = i} v) rd = V-cast⌿→ rd refl (V-cast {i = i} v)

@@ -48,6 +48,10 @@ module SimpleCast where
   ActiveOrInert (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {sum~ c d}) =
       inj₁ (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → (a : Active c) → ¬ Inert c
+  ActiveNotInert (activeId c) (inert neq .c) = neq refl
+  ActiveNotInert (activeProj c neq) (inert _ .c) = neq refl
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
     C-pair : ∀{A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
@@ -171,6 +175,7 @@ module SimpleCast where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

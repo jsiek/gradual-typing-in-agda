@@ -339,3 +339,17 @@ gradual-guarantee : ∀ {A A′} {f₁ : ∅ ⊢ A} {f₁′ : ∅ ⊢ A′} {f�
   → f₁ —→ f₂
     ------------------------------------------------
   → ∃[ f₂′ ] ((f₁′ —↠ f₂′) × (∅ , ∅ ⊢ f₂ ⊑ᶜ f₂′))
+gradual-guarantee ⊑ᶜ-prim rd = {!!}
+gradual-guarantee (⊑ᶜ-ƛ x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
+gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
+gradual-guarantee (⊑ᶜ-cons lpf lpf₁) rd = {!!}
+gradual-guarantee (⊑ᶜ-fst lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-inl lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-inr lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
+gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-blame x) rd = {!!}

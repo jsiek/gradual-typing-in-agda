@@ -1232,6 +1232,10 @@ module AGT where
   ... | b=c rewrite b=c = inj₁ activeId
   ActiveOrInert {.(A ⇒ B)} (error A B) = inj₁ activeError
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (activeId {ι}) (inert ¬x _) = ¬x ⟨ ι , ⟨ refl , refl ⟩ ⟩
+  ActiveNotInert activeA⋆ (inert _ neq) = neq refl
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A₁ A₂ B₁ B₂ C₁ C₂ ab cb}
           → Cross (((A₁ ⇒ A₂) ⇒ (B₁ ⇒ B₂) ⇒ (C₁ ⇒ C₂)){ab}{cb})
@@ -1341,6 +1345,7 @@ module AGT where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

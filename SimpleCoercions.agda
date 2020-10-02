@@ -65,6 +65,13 @@ module SimpleCoercions where
   ActiveOrInert (cpair c c₁) = inj₁ A-pair
   ActiveOrInert (csum c c₁) = inj₁ A-sum
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert A-proj ()
+  ActiveNotInert A-fun ()
+  ActiveNotInert A-pair ()
+  ActiveNotInert A-sum ()
+  ActiveNotInert A-id ()
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)    
     C-pair : ∀{A B A' B' c d} → Cross (cpair {A}{B}{A'}{B'} c d)
@@ -166,6 +173,7 @@ module SimpleCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×

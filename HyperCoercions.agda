@@ -166,6 +166,14 @@ module HyperCoercions where
   ActiveOrInert {A ⇒ D} (𝜖 ↷ m , (cfail ℓ)) = inj₁ A-fail
   ActiveOrInert {.⋆ ⇒ D} ((?? x) ↷ m , i) = inj₁ A-proj
 
+  ActiveNotInertMiddle : ∀ {A} {c : Middle A} → ActiveMiddle c → InertMiddle c → Bot
+  ActiveNotInertMiddle A-cpair ()
+  ActiveNotInertMiddle A-csum ()
+  ActiveNotInertMiddle A-idι ()
+
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (A-mid a) (I-mid i) = ActiveNotInertMiddle a i
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B'}{c : Cast (B ⇒ A)}{d : Cast (A' ⇒ B')}
           → Cross (𝜖 ↷ (c ↣ d) , 𝜖)    
@@ -222,6 +230,7 @@ module HyperCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
