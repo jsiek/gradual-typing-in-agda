@@ -97,6 +97,7 @@ data _,_⊢_⊑ᴳ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢G A
     → Γ , Γ′ ⊢ N ⊑ᴳ N′
     → {ma : A ▹ A₁ ⊎ A₂} {ma′ : A′ ▹ A₁′ ⊎ A₂′} {mb : B ▹ B₁ ⇒ B₂} {mb′ : B′ ▹ B₁′ ⇒ B₂′} {mc : C ▹ C₁ ⇒ C₂} {mc′ : C′ ▹ C₁′ ⇒ C₂′}
     → {ab : A₁ ~ B₁} {ab′ : A₁′ ~ B₁′} {ac : A₂ ~ C₁} {ac′ : A₂′ ~ C₁′} {bc : B₂ ~ C₂} {bc′ : B₂′ ~ C₂′}
+      ------------------------------------------------------------------------------------------------------------
     → Γ , Γ′ ⊢ case L M N ℓ {ma} {mb} {mc} {ab} {ac} {bc} ⊑ᴳ case L′ M′ N′ ℓ′ {ma′} {mb′} {mc′} {ab′} {ac′} {bc′}
 
 
@@ -182,10 +183,10 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
       ------------------------
     → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟨ c′ ⟩
 
-  ⊑ᶜ-blame : ∀ {Γ Γ′ A A′} {M′ : Γ′ ⊢ A′} {ℓ}
+  ⊑ᶜ-blame : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {ℓ}
     → A ⊑ A′
       -------------------------------
-    → Γ , Γ′ ⊢ blame {Γ} {A} ℓ ⊑ᶜ M′
+    → Γ , Γ′ ⊢ M ⊑ᶜ blame {Γ′} {A′} ℓ
 
 
 -- Similar to the example in Fig. 5, Refined Criteria.
@@ -334,13 +335,13 @@ compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc}
                        (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
 
 -- Simulation
-gradual-guarantee : ∀ {A A′} {f₁ : ∅ ⊢ A} {f₁′ : ∅ ⊢ A′} {f₂ : ∅ ⊢ A}
+gradual-guarantee : ∀ {A A′} {f₁ f₂ : ∅ ⊢ A} {f₁′ : ∅ ⊢ A′}
   → ∅ , ∅ ⊢ f₁ ⊑ᶜ f₁′
   → f₁ —→ f₂
     ------------------------------------------------
   → ∃[ f₂′ ] ((f₁′ —↠ f₂′) × (∅ , ∅ ⊢ f₂ ⊑ᶜ f₂′))
-gradual-guarantee ⊑ᶜ-prim rd = {!!}
-gradual-guarantee (⊑ᶜ-ƛ x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
+gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
 gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
 gradual-guarantee (⊑ᶜ-cons lpf lpf₁) rd = {!!}
@@ -352,4 +353,4 @@ gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
 gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-blame x) rd = {!!}
+gradual-guarantee (⊑ᶜ-blame _) rd = {!!}
