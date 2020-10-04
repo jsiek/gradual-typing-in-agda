@@ -27,7 +27,7 @@ open Value
 infix 6 _,_⊢_⊑ᴳ_
 infix 6 _,_⊢_⊑ᶜ_
 
--- Term precision for GTLC.
+-- Term precision for GTLC - M₁ ⊑ᴳ M₂ means that M₂ is *more precise* than M₁ .
 data _,_⊢_⊑ᴳ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢G A → Γ′ ⊢G A′ → Set where
 
   ⊑ᴳ-prim : ∀ {Γ Γ′ A} {k : rep A} {i : Prim A}
@@ -335,11 +335,11 @@ compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc}
                        (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
 
 -- Simulation
-gradual-guarantee : ∀ {A A′} {f₁ f₂ : ∅ ⊢ A} {f₁′ : ∅ ⊢ A′}
-  → ∅ , ∅ ⊢ f₁ ⊑ᶜ f₁′
-  → f₁ —→ f₂
-    ------------------------------------------------
-  → ∃[ f₂′ ] ((f₁′ —↠ f₂′) × (∅ , ∅ ⊢ f₂ ⊑ᶜ f₂′))
+gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
 gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
@@ -353,4 +353,4 @@ gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
 gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-blame _) rd = {!!}
+gradual-guarantee (⊑ᶜ-blame _) rd = ⊥-elim (blame⌿→ rd)
