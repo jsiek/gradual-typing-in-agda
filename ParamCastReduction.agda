@@ -423,3 +423,10 @@ module ParamCastReduction (cs : CastStruct) where
   V⌿→ (V-inl v) rd = V-inl⌿→ rd refl (V-inl v)
   V⌿→ (V-inr v) rd = V-inr⌿→ rd refl (V-inr v)
   V⌿→ (V-cast {i = i} v) rd = V-cast⌿→ rd refl (V-cast {i = i} v)
+
+  plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
+    → (F : Frame C A)
+    → plug N F ≡ fst M
+      ----------------------------------------------------------
+    → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ A) eq F ≡ F-fst) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
+  plug-inv-fst F-fst refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩

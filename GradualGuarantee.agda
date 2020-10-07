@@ -23,6 +23,7 @@ import ParamCastReduction
 open ParamCastReduction cs
 
 open Value
+open Frame
 
 infix 6 _,_⊢_⊑ᴳ_
 infix 6 _,_⊢_⊑ᶜ_
@@ -334,18 +335,64 @@ compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc}
                        (⊑ᶜ-cast (fun⊑ lpB₁ lpB₂) (fun⊑ lpB₁ lp⨆bc) (⊑ᶜ-cast lpB (fun⊑ lpB₁ lpB₂) lpeM′))
                        (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
 
+-- M₁ —→⁺ M₂ implies plug M₁ F —→* plug M₂ F
+plug-mult : ∀ {Γ A B} {M₁ M₂ M₃ : Γ ⊢ A}
+  → (F : Frame {Γ} A B)
+  → M₁ —→ M₂ → M₂ —↠ M₃
+    --------------------------
+  → plug M₁ F —↠ plug M₃ F
+plug-mult {M₁ = M₁} F M₁→M₂ (M₂ ∎) = plug M₁ F —→⟨ ξ M₁→M₂ ⟩ _ ∎
+plug-mult {M₁ = M₁} F M₁→M₂ (M₂ —→⟨ M₂→M ⟩ M↠M₃) =
+  let plugM₂↠plugM₃ = plug-mult F M₂→M M↠M₃ in
+    plug M₁ F —→⟨ ξ M₁→M₂ ⟩ plugM₂↠plugM₃
+
+fst-pres-⊑blame : ∀ {Γ Γ′ A A′ B B′} {N : Γ ⊢ A `× B} {ℓ}
+  → Γ , Γ′ ⊢ N ⊑ᶜ blame {Γ′} {A′ `× B′} ℓ
+  → Γ , Γ′ ⊢ fst N ⊑ᶜ blame {Γ′} {A′} ℓ
+fst-pres-⊑blame (⊑ᶜ-castl _ (pair⊑ lp₁ lp₂) lpf) = ⊑ᶜ-blame lp₁
+fst-pres-⊑blame (⊑ᶜ-blame (pair⊑ lp₁ lp₂)) = ⊑ᶜ-blame lp₁
+
+-- Simulation of extracting the 1st member of a pair
+sim-fst : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+  → Value V → Value V′ → Value W′
+  → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
+  → Σ[ M ∈ ∅ ⊢ A ] (fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′)
+sim-fst vV vV′ VW′ (⊑ᶜ-cons lpf lpf₁) = {!!}
+-- Here we need a proof that a projection ⋆ ⇒ A × B cannot be inert.
+sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} unk⊑ lp2 lpf) = {!!}
+-- We cheat a little bit here. Since we're proving it for SimpleCast, cross cast c is active and thus not inert.
+sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} (pair⊑ lp1 lp3) lp2 lpf) =
+  ⊥-elim (SimpleCast.ActiveNotInert (Active.activePair c) i)
+
 -- Simulation
 gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
   → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
   → M₁′ —→ M₂′
     ---------------------------------------------
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+
+gradual-guarantee-fst : ∀ {A A′ B B′} {N₁ : ∅ ⊢ A `× B} {N₁′ : ∅ ⊢ A′ `× B′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
+    → ∅ , ∅ ⊢ N₁ ⊑ᶜ N₁′
+    → M₁ ≡ fst N₁ → M₁′ ≡ fst N₁′
+    → M₁′ —→ M₂′
+      -----------------------------------------------
+    → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+
+gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑N₁′ refl eq2 (ξ {M′ = N₂′} {F} N₁′→N₂′) with plug-inv-fst F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with gradual-guarantee N₁⊑N₁′ N₁′→N₂′
+...   | ⟨ N₂ , ⟨ N₁ ∎ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
+...   | ⟨ N₂ , ⟨ N₁ —→⟨ N₁→N ⟩ N↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-mult F-fst N₁→N N↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
+gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F}) with plug-inv-fst F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
+gradual-guarantee-fst {N₁ = N} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = {!!}
+gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
+
 gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
 gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
 gradual-guarantee (⊑ᶜ-cons lpf lpf₁) rd = {!!}
-gradual-guarantee (⊑ᶜ-fst lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-fst lpf) rd = gradual-guarantee-fst lpf refl refl rd
 gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-inl lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-inr lpf) rd = {!!}
