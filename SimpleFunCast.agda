@@ -117,6 +117,9 @@ module SimpleFunCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j c = ActiveNotInert (activeProj c j)
+
   open import Subtyping using (_<:₁_)
   open _<:₁_
   infix 5 _<:_
@@ -196,6 +199,7 @@ module SimpleFunCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record

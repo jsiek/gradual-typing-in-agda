@@ -1326,6 +1326,10 @@ module AGT where
   ... | inj₁ eq rewrite eq = x ⟨ ι , ⟨ refl , refl ⟩ ⟩
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
 
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j (.⋆ ⇒ B ⇒ C) = ActiveNotInert activeA⋆
+  projNotInert j (error .⋆ B) = ActiveNotInert activeError
+
 {-  
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
   baseNotInert ((A ⇒ B ⇒ (` ι)){ab}{cb}) A≢⋆ (inert p)
@@ -1357,6 +1361,7 @@ module AGT where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
 
   import EfficientParamCastAux

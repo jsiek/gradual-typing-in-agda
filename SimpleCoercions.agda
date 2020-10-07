@@ -5,6 +5,7 @@ module SimpleCoercions where
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
+  open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
@@ -116,6 +117,10 @@ module SimpleCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id = contradiction refl j
+  projNotInert j (inj .⋆) = contradiction refl j
+  projNotInert j (proj B x) = ActiveNotInert A-proj
 
   data Safe : ∀ {A} → Cast A → Label → Set where
 
@@ -185,6 +190,7 @@ module SimpleCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record

@@ -3,7 +3,7 @@ open import Labels
 open import Data.Sum using (_⊎_)
 open import Data.Product using (_×_; Σ; Σ-syntax)
 open import Data.Maybe using (Maybe)
-open import Relation.Binary.PropositionalEquality using (_≡_)
+open import Relation.Binary.PropositionalEquality using (_≡_; _≢_)
 open import Relation.Nullary using (¬_)
 
 module PreCastStructure where
@@ -35,6 +35,7 @@ record PreCastStruct : Set₁ where
     inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
     baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
+    projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
 
 
 record PreCastStructWithSafety : Set₁ where

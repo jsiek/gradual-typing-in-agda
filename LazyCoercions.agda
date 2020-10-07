@@ -5,6 +5,7 @@ module LazyCoercions where
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
+  open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
@@ -132,6 +133,12 @@ module LazyCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id = contradiction refl j
+  projNotInert j (.⋆ !!) = contradiction refl j
+  projNotInert j (B ?? x) = ActiveNotInert A-proj
+  projNotInert j (⊥ .⋆ ⟨ x ⟩ B) = ActiveNotInert A-fail
+
   data Safe : ∀ {A} → Cast A → Label → Set where
 
     safe-id : ∀ {A} {a : Atomic A} {ℓ}
@@ -204,6 +211,7 @@ module LazyCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record

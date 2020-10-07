@@ -208,7 +208,11 @@ module HyperCoercions where
   
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
-  
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id★ = contradiction refl j
+  projNotInert j (_ ↷ _ , _) (I-mid ())
+
   Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   Inert-Cross⇒ (𝜖 ↷ (c ↣ d) , 𝜖) (I-mid (I-cfun{A}{B}{A'}{B'})) =
@@ -242,6 +246,7 @@ module HyperCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
 
   open import ParamCastAux pcs using (eta×; eta⊎)

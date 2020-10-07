@@ -360,6 +360,11 @@ module EfficientGroundCoercions where
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id★ = contradiction refl j
+  projNotInert j (G ?? x ⨟ x₁) = ActiveNotInert A-proj
+  projNotInert j (` x) (I-intmd (I-gnd ()))
   
   {-
 
@@ -388,6 +393,7 @@ module EfficientGroundCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
 
   open import ParamCastAux pcs using (eta×; eta⊎)

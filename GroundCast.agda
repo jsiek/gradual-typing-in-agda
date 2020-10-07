@@ -182,6 +182,9 @@ n  -}
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j c = ActiveNotInert (A-proj c j)
+
   open import Subtyping using (_<:₃_)
   open _<:₃_
   infix 5 _<:_
@@ -265,6 +268,7 @@ n  -}
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record

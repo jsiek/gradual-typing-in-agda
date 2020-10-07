@@ -357,9 +357,10 @@ sim-fst : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ 
   → Value V → Value V′ → Value W′
   → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
   → Σ[ M ∈ ∅ ⊢ A ] (fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′)
-sim-fst vV vV′ VW′ (⊑ᶜ-cons lpf lpf₁) = {!!}
+sim-fst (V-pair vV vW) vV′ VW′ (⊑ᶜ-cons {M = V} {V′} {W} {W′} lpV lpW) =
+  ⟨ V , ⟨ fst (cons V W) —→⟨ β-fst vV vW ⟩ V ∎ , lpV ⟩ ⟩
 -- Here we need a proof that a projection ⋆ ⇒ A × B cannot be inert.
-sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} unk⊑ lp2 lpf) = {!!}
+sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} unk⊑ lp2 lpf) = ⊥-elim (SimpleCast.projNotInert (λ ()) c i)
 -- We cheat a little bit here. Since we're proving it for SimpleCast, cross cast c is active and thus not inert.
 sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} (pair⊑ lp1 lp3) lp2 lpf) =
   ⊥-elim (SimpleCast.ActiveNotInert (Active.activePair c) i)
@@ -372,11 +373,11 @@ gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
 
 gradual-guarantee-fst : ∀ {A A′ B B′} {N₁ : ∅ ⊢ A `× B} {N₁′ : ∅ ⊢ A′ `× B′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
-    → ∅ , ∅ ⊢ N₁ ⊑ᶜ N₁′
-    → M₁ ≡ fst N₁ → M₁′ ≡ fst N₁′
-    → M₁′ —→ M₂′
-      -----------------------------------------------
-    → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+  → ∅ , ∅ ⊢ N₁ ⊑ᶜ N₁′
+  → M₁ ≡ fst N₁ → M₁′ ≡ fst N₁′
+  → M₁′ —→ M₂′
+    -----------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
 
 gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑N₁′ refl eq2 (ξ {M′ = N₂′} {F} N₁′→N₂′) with plug-inv-fst F eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with gradual-guarantee N₁⊑N₁′ N₁′→N₂′
