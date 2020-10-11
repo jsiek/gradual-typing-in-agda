@@ -783,3 +783,28 @@ module Types where
   ⨆~ (fun~ aa bb) = fun~ (Sym~ (~⨆ aa)) (⨆~ bb)
   ⨆~ (pair~ aa bb) = pair~ (⨆~ aa) (⨆~ bb)
   ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
+
+  -- If two types are consistent then their less precise counterparts are consistent too.
+  lp-consist : ∀ {A A′ B B′}
+    → A′ ~ B′
+    → A ⊑ A′ → B ⊑ B′
+      -----------------
+    → A ~ B
+  lp-consist unk~L unk⊑ lpB = unk~L
+  lp-consist unk~R unk⊑ lpB = unk~L
+  lp-consist unk~R base⊑ unk⊑ = unk~R
+  lp-consist unk~R (fun⊑ _ _) unk⊑ = unk~R
+  lp-consist unk~R (pair⊑ _ _) unk⊑ = unk~R
+  lp-consist unk~R (sum⊑ _ _) unk⊑ = unk~R
+  lp-consist base~ unk⊑ lpB = unk~L
+  lp-consist base~ base⊑ unk⊑ = unk~R
+  lp-consist base~ base⊑ base⊑ = base~
+  lp-consist (fun~ c~ c~₁) unk⊑ lpB = unk~L
+  lp-consist (fun~ c~ c~₁) (fun⊑ lpA lpA₁) unk⊑ = unk~R
+  lp-consist (fun~ c~₁ c~₂) (fun⊑ lpA₁ lpA₂) (fun⊑ lpB₁ lpB₂) = fun~ (lp-consist c~₁ lpB₁ lpA₁) (lp-consist c~₂ lpA₂ lpB₂)
+  lp-consist (pair~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consist (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consist (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) (pair⊑ lpB₁ lpB₂) = pair~ (lp-consist c~₁ lpA₁ lpB₁) (lp-consist c~₂ lpA₂ lpB₂)
+  lp-consist (sum~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consist (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consist (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpB₂) = sum~ (lp-consist c~₁ lpA₁ lpB₁) (lp-consist c~₂ lpA₂ lpB₂)
