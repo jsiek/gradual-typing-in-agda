@@ -785,26 +785,36 @@ module Types where
   ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
 
   -- If two types are consistent then their less precise counterparts are consistent too.
-  lp-consist : ∀ {A A′ B B′}
+  lp-consis : ∀ {A A′ B B′}
     → A′ ~ B′
     → A ⊑ A′ → B ⊑ B′
       -----------------
     → A ~ B
-  lp-consist unk~L unk⊑ lpB = unk~L
-  lp-consist unk~R unk⊑ lpB = unk~L
-  lp-consist unk~R base⊑ unk⊑ = unk~R
-  lp-consist unk~R (fun⊑ _ _) unk⊑ = unk~R
-  lp-consist unk~R (pair⊑ _ _) unk⊑ = unk~R
-  lp-consist unk~R (sum⊑ _ _) unk⊑ = unk~R
-  lp-consist base~ unk⊑ lpB = unk~L
-  lp-consist base~ base⊑ unk⊑ = unk~R
-  lp-consist base~ base⊑ base⊑ = base~
-  lp-consist (fun~ c~ c~₁) unk⊑ lpB = unk~L
-  lp-consist (fun~ c~ c~₁) (fun⊑ lpA lpA₁) unk⊑ = unk~R
-  lp-consist (fun~ c~₁ c~₂) (fun⊑ lpA₁ lpA₂) (fun⊑ lpB₁ lpB₂) = fun~ (lp-consist c~₁ lpB₁ lpA₁) (lp-consist c~₂ lpA₂ lpB₂)
-  lp-consist (pair~ c~₁ c~₂) unk⊑ lpB = unk~L
-  lp-consist (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) unk⊑ = unk~R
-  lp-consist (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) (pair⊑ lpB₁ lpB₂) = pair~ (lp-consist c~₁ lpA₁ lpB₁) (lp-consist c~₂ lpA₂ lpB₂)
-  lp-consist (sum~ c~₁ c~₂) unk⊑ lpB = unk~L
-  lp-consist (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) unk⊑ = unk~R
-  lp-consist (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpB₂) = sum~ (lp-consist c~₁ lpA₁ lpB₁) (lp-consist c~₂ lpA₂ lpB₂)
+  lp-consis unk~L unk⊑ lpB = unk~L
+  lp-consis unk~R unk⊑ lpB = unk~L
+  lp-consis unk~R base⊑ unk⊑ = unk~R
+  lp-consis unk~R (fun⊑ _ _) unk⊑ = unk~R
+  lp-consis unk~R (pair⊑ _ _) unk⊑ = unk~R
+  lp-consis unk~R (sum⊑ _ _) unk⊑ = unk~R
+  lp-consis base~ unk⊑ lpB = unk~L
+  lp-consis base~ base⊑ unk⊑ = unk~R
+  lp-consis base~ base⊑ base⊑ = base~
+  lp-consis (fun~ c~ c~₁) unk⊑ lpB = unk~L
+  lp-consis (fun~ c~ c~₁) (fun⊑ lpA lpA₁) unk⊑ = unk~R
+  lp-consis (fun~ c~₁ c~₂) (fun⊑ lpA₁ lpA₂) (fun⊑ lpB₁ lpB₂) = fun~ (lp-consis c~₁ lpB₁ lpA₁) (lp-consis c~₂ lpA₂ lpB₂)
+  lp-consis (pair~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consis (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consis (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) (pair⊑ lpB₁ lpB₂) = pair~ (lp-consis c~₁ lpA₁ lpB₁) (lp-consis c~₂ lpA₂ lpB₂)
+  lp-consis (sum~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpB₂) = sum~ (lp-consis c~₁ lpA₁ lpB₁) (lp-consis c~₂ lpA₂ lpB₂)
+
+  lp-¬⋆ : ∀ {T T′}
+    → T ≢ ⋆ → T ⊑ T′
+      ---------------
+    → T′ ≢ ⋆
+  lp-¬⋆ nd unk⊑ = contradiction refl nd
+  lp-¬⋆ nd base⊑ = nd
+  lp-¬⋆ nd (fun⊑ lp lp₁) = λ ()
+  lp-¬⋆ nd (pair⊑ lp lp₁) = λ ()
+  lp-¬⋆ nd (sum⊑ lp lp₁) = λ ()

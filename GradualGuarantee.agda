@@ -1,10 +1,12 @@
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
+open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Nat.Properties using (_≟_; suc-injective)
 open import Data.Empty using (⊥; ⊥-elim)
 
@@ -335,16 +337,73 @@ compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc}
                        (⊑ᶜ-cast (fun⊑ lpB₁ lpB₂) (fun⊑ lpB₁ lp⨆bc) (⊑ᶜ-cast lpB (fun⊑ lpB₁ lpB₂) lpeM′))
                        (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
 
--- M₁ —→⁺ M₂ implies plug M₁ F —→* plug M₂ F
-plug-mult : ∀ {Γ A B} {M₁ M₂ M₃ : Γ ⊢ A}
-  → (F : Frame {Γ} A B)
-  → M₁ —→ M₂ → M₂ —↠ M₃
-    --------------------------
-  → plug M₁ F —↠ plug M₃ F
-plug-mult {M₁ = M₁} F M₁→M₂ (M₂ ∎) = plug M₁ F —→⟨ ξ M₁→M₂ ⟩ _ ∎
-plug-mult {M₁ = M₁} F M₁→M₂ (M₂ —→⟨ M₂→M ⟩ M↠M₃) =
-  let plugM₂↠plugM₃ = plug-mult F M₂→M M↠M₃ in
-    plug M₁ F —→⟨ ξ M₁→M₂ ⟩ plugM₂↠plugM₃
+cast-eq-inv : ∀ {Γ A A′ B} {M : Γ ⊢ A} {M′ : Γ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B)}
+  → M ⟨ c ⟩ ≡ M′ ⟨ c′ ⟩
+    --------------------
+  → Σ[ eq ∈ (A ≡ A′) ] ((subst-eq (λ □ → Γ ⊢ □) eq M) ≡ M′)
+cast-eq-inv refl = ⟨ refl , refl ⟩
+
+-- This is specific to SimpleCast.
+inert→T⋆ : ∀ {S T} {c : Cast (S ⇒ T)} → SimpleCast.Inert c → T ≡ ⋆
+inert→T⋆ (SimpleCast.inert x c) = refl
+
+-- NOTE: Need to parameterize this when proving it for other representations.
+applyCast-pres-⊑V : ∀ {Γ Γ′ S T T′} {V : Γ ⊢ S} {V′ : Γ′ ⊢ T′} {vV : Value V} {vV′ : Value V′} {c : Cast (S ⇒ T)}
+  → (a : Active c)
+  → S ⊑ T′ → T ⊑ T′
+  → Γ , Γ′ ⊢ V ⊑ᶜ V′
+    ------------------------------------
+  → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′
+applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-prim
+applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-cast lp1 lp2 lpV) = ⊑ᶜ-cast lp1 lp2 lpV
+applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-castl lp1 lp2 lpV) = ⊑ᶜ-castl lp1 lp2 lpV
+applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-castr lp1 lp2 lpV) = ⊑ᶜ-castr lp1 lp2 lpV
+applyCast-pres-⊑V {V = V} {vV = vV} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-cast {c = A Cast.⇒⟨ _ ⟩ ⋆} {(A′ Cast.⇒⟨ _ ⟩ B′) {c~′}} lp3 lp4 lpV)
+  with canonical⋆ V vV
+... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
+...   | ⟨ refl , refl ⟩ with A₁ `~ T
+...     | yes _ = ⊑ᶜ-cast lp3 lp2 lpV
+...     | no A₁≁T = contradiction (lp-consis c~′ lp3 lp2) A₁≁T
+applyCast-pres-⊑V {V = V} {vV = vV} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV)
+  with canonical⋆ V vV
+... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
+...   | ⟨ refl , refl ⟩ with A₁ `~ T
+...     | yes _ = ⊑ᶜ-castl lp3 lp2 lpV
+...     | no A₁≁T = contradiction (lp-consis Refl~ lp3 lp2) A₁≁T
+applyCast-pres-⊑V {V = V} {vV = vV} {V-cast {i = i} _} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV) =
+  let T′≢⋆ = lp-¬⋆ neq lp2 in
+  let T′≡⋆ = inert→T⋆ i   in
+    contradiction T′≡⋆ T′≢⋆
+applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 ⊑ᶜ-prim = {!!}
+applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-ƛ x₁ lpV) = {!!}
+applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-cast x₁ x₂ lpV) = {!!}
+applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-castl x₁ x₂ lpV) = {!!}
+applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-castr x₁ x₂ lpV) = {!!}
+applyCast-pres-⊑V (Active.activePair c) lp1 lp2 lpV = {!!}
+applyCast-pres-⊑V (Active.activeSum c) lp1 lp2 lpV = {!!}
+
+catchup : ∀ {T T′} {M : ∅ ⊢ T} {V′ : ∅ ⊢ T′}
+  → Value V′
+  → ∅ , ∅ ⊢ M ⊑ᶜ V′
+  → Σ[ V ∈ ∅ ⊢ T ] (Value V) × (M —↠ V) × (∅ , ∅ ⊢ V ⊑ᶜ V′)
+catchup (V-const {k = k} {f}) ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ $ k ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
+catchup V-ƛ (⊑ᶜ-ƛ {N = N} {N′} lp lpN) = ⟨ ƛ N , ⟨ V-ƛ , ⟨ ƛ N ∎ , (⊑ᶜ-ƛ lp lpN) ⟩ ⟩ ⟩
+catchup (V-pair vV′ vW′) (⊑ᶜ-cons {M = M} {N = N} lpM lpN) with catchup vV′ lpM
+... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ with catchup vW′ lpN
+...   | ⟨ Vₙ , ⟨ vVₙ , ⟨ N↠Vₙ , Vₙ⊑W′ ⟩ ⟩ ⟩ =
+  ⟨ cons Vₘ Vₙ , ⟨ V-pair vVₘ vVₙ , ⟨ ↠-trans (plug-cong (F-×₂ N) M↠Vₘ) (plug-cong (F-×₁ Vₘ) N↠Vₙ) , ⊑ᶜ-cons Vₘ⊑V′ Vₙ⊑W′ ⟩ ⟩ ⟩
+catchup (V-inl v) (⊑ᶜ-inl lpM) with catchup v lpM
+... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vVₘ , ⟨ plug-cong F-inl M↠Vₘ , ⊑ᶜ-inl Vₘ⊑V′ ⟩ ⟩ ⟩
+catchup (V-inr v) (⊑ᶜ-inr lpM) with catchup v lpM
+... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ = ⟨ inr Vₘ , ⟨ V-inr vVₘ , ⟨ plug-cong F-inr M↠Vₘ , ⊑ᶜ-inr Vₘ⊑V′ ⟩ ⟩ ⟩
+catchup v (⊑ᶜ-cast x x₁ lpf) = {!!}
+-- M ⟨ c ⟩ ⊑ V′
+catchup v (⊑ᶜ-castl {c = c} lp1 lp2 lpM) with catchup v lpM
+... | ⟨ V , ⟨ vV , ⟨ M↠V , V⊑V′ ⟩ ⟩ ⟩ with SimpleCast.ActiveOrInert c
+-- Here we need a lemma which says if V ⊑ V′ , applyCast c V ⊑ V′ where c : S ⇒ T , ⊢ V ⦂ T′, S ⊑ T′ and T ⊑ T′
+...   | inj₁ a = {!!}
+...   | inj₂ i = ⟨ V ⟨ c ⟩ , ⟨ V-cast {i = i} vV , ⟨ plug-cong (F-cast c) M↠V , ⊑ᶜ-castl lp1 lp2 V⊑V′ ⟩ ⟩ ⟩
+catchup v (⊑ᶜ-castr x x₁ lpf) = {!!}
 
 fst-pres-⊑blame : ∀ {Γ Γ′ A A′ B B′} {N : Γ ⊢ A `× B} {ℓ}
   → Γ , Γ′ ⊢ N ⊑ᶜ blame {Γ′} {A′ `× B′} ℓ
@@ -381,24 +440,23 @@ gradual-guarantee-fst : ∀ {A A′ B B′} {N₁ : ∅ ⊢ A `× B} {N₁′ : 
 
 gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑N₁′ refl eq2 (ξ {M′ = N₂′} {F} N₁′→N₂′) with plug-inv-fst F eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with gradual-guarantee N₁⊑N₁′ N₁′→N₂′
-...   | ⟨ N₂ , ⟨ N₁ ∎ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
-...   | ⟨ N₂ , ⟨ N₁ —→⟨ N₁→N ⟩ N↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-mult F-fst N₁→N N↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
+...   | ⟨ N₂ , ⟨ N₁↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-cong F-fst N₁↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
 gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F}) with plug-inv-fst F eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
 gradual-guarantee-fst {N₁ = N} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = {!!}
 gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
 
-gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
-gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
-gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
-gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
-gradual-guarantee (⊑ᶜ-cons lpf lpf₁) rd = {!!}
-gradual-guarantee (⊑ᶜ-fst lpf) rd = gradual-guarantee-fst lpf refl refl rd
-gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-inl lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-inr lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
-gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-blame _) rd = ⊥-elim (blame⌿→ rd)
+-- gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
+-- gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
+-- gradual-guarantee (⊑ᶜ-· lpf lpf₁) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-cons lpf lpf₁) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-fst lpf) rd = gradual-guarantee-fst lpf refl refl rd
+-- gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-inl lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-inr lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
+-- gradual-guarantee (⊑ᶜ-blame _) rd = ⊥-elim (blame⌿→ rd)
