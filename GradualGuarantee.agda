@@ -10,8 +10,8 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Nat.Properties using (_≟_; suc-injective)
 open import Data.Empty using (⊥; ⊥-elim)
 
--- We're using simple cast - at least for now.
-open import SimpleCast using (Cast; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
+-- We're using simple cast with inert cross cast - at least for now.
+open import SimpleFunCast using (Cast; cast; Inert; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
 open import Types
 open import Variables
 open import Labels
@@ -343,67 +343,6 @@ cast-eq-inv : ∀ {Γ A A′ B} {M : Γ ⊢ A} {M′ : Γ ⊢ A′} {c : Cast (A
   → Σ[ eq ∈ (A ≡ A′) ] ((subst-eq (λ □ → Γ ⊢ □) eq M) ≡ M′)
 cast-eq-inv refl = ⟨ refl , refl ⟩
 
--- This is specific to SimpleCast.
-inert→T⋆ : ∀ {S T} {c : Cast (S ⇒ T)} → SimpleCast.Inert c → T ≡ ⋆
-inert→T⋆ (SimpleCast.inert x c) = refl
-
--- NOTE: Need to parameterize this when proving it for other representations.
-applyCast-pres-⊑V : ∀ {Γ Γ′ S T T′} {V : Γ ⊢ S} {V′ : Γ′ ⊢ T′} {vV : Value V} {vV′ : Value V′} {c : Cast (S ⇒ T)}
-  → (a : Active c)
-  → S ⊑ T′ → T ⊑ T′
-  → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    ------------------------------------
-  → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′
-applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-prim
-applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-cast lp1 lp2 lpV) = ⊑ᶜ-cast lp1 lp2 lpV
-applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-castl lp1 lp2 lpV) = ⊑ᶜ-castl lp1 lp2 lpV
-applyCast-pres-⊑V (Active.activeId (A Cast.⇒⟨ _ ⟩ .A)) _ _ (⊑ᶜ-castr lp1 lp2 lpV) = ⊑ᶜ-castr lp1 lp2 lpV
-applyCast-pres-⊑V {V = V} {vV = vV} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-cast {c = A Cast.⇒⟨ _ ⟩ ⋆} {(A′ Cast.⇒⟨ _ ⟩ B′) {c~′}} lp3 lp4 lpV)
-  with canonical⋆ V vV
-... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
-...   | ⟨ refl , refl ⟩ with A₁ `~ T
-...     | yes _ = ⊑ᶜ-cast lp3 lp2 lpV
-...     | no A₁≁T = contradiction (lp-consis c~′ lp3 lp2) A₁≁T
-applyCast-pres-⊑V {V = V} {vV = vV} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV)
-  with canonical⋆ V vV
-... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
-...   | ⟨ refl , refl ⟩ with A₁ `~ T
-...     | yes _ = ⊑ᶜ-castl lp3 lp2 lpV
-...     | no A₁≁T = contradiction (lp-consis Refl~ lp3 lp2) A₁≁T
-applyCast-pres-⊑V {V = V} {vV = vV} {V-cast {i = i} _} (Active.activeProj (⋆ Cast.⇒⟨ _ ⟩ T) neq) lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV) =
-  let T′≢⋆ = lp-¬⋆ neq lp2 in
-  let T′≡⋆ = inert→T⋆ i   in
-    contradiction T′≡⋆ T′≢⋆
-applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 ⊑ᶜ-prim = {!!}
-applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-ƛ x₁ lpV) = {!!}
-applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-cast x₁ x₂ lpV) = {!!}
-applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-castl x₁ x₂ lpV) = {!!}
-applyCast-pres-⊑V (Active.activeFun (.(_ ⇒ _) Cast.⇒⟨ x ⟩ .(_ ⇒ _))) lp1 lp2 (⊑ᶜ-castr x₁ x₂ lpV) = {!!}
-applyCast-pres-⊑V (Active.activePair c) lp1 lp2 lpV = {!!}
-applyCast-pres-⊑V (Active.activeSum c) lp1 lp2 lpV = {!!}
-
-catchup : ∀ {T T′} {M : ∅ ⊢ T} {V′ : ∅ ⊢ T′}
-  → Value V′
-  → ∅ , ∅ ⊢ M ⊑ᶜ V′
-  → Σ[ V ∈ ∅ ⊢ T ] (Value V) × (M —↠ V) × (∅ , ∅ ⊢ V ⊑ᶜ V′)
-catchup (V-const {k = k} {f}) ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ $ k ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
-catchup V-ƛ (⊑ᶜ-ƛ {N = N} {N′} lp lpN) = ⟨ ƛ N , ⟨ V-ƛ , ⟨ ƛ N ∎ , (⊑ᶜ-ƛ lp lpN) ⟩ ⟩ ⟩
-catchup (V-pair vV′ vW′) (⊑ᶜ-cons {M = M} {N = N} lpM lpN) with catchup vV′ lpM
-... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ with catchup vW′ lpN
-...   | ⟨ Vₙ , ⟨ vVₙ , ⟨ N↠Vₙ , Vₙ⊑W′ ⟩ ⟩ ⟩ =
-  ⟨ cons Vₘ Vₙ , ⟨ V-pair vVₘ vVₙ , ⟨ ↠-trans (plug-cong (F-×₂ N) M↠Vₘ) (plug-cong (F-×₁ Vₘ) N↠Vₙ) , ⊑ᶜ-cons Vₘ⊑V′ Vₙ⊑W′ ⟩ ⟩ ⟩
-catchup (V-inl v) (⊑ᶜ-inl lpM) with catchup v lpM
-... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vVₘ , ⟨ plug-cong F-inl M↠Vₘ , ⊑ᶜ-inl Vₘ⊑V′ ⟩ ⟩ ⟩
-catchup (V-inr v) (⊑ᶜ-inr lpM) with catchup v lpM
-... | ⟨ Vₘ , ⟨ vVₘ , ⟨ M↠Vₘ , Vₘ⊑V′ ⟩ ⟩ ⟩ = ⟨ inr Vₘ , ⟨ V-inr vVₘ , ⟨ plug-cong F-inr M↠Vₘ , ⊑ᶜ-inr Vₘ⊑V′ ⟩ ⟩ ⟩
-catchup v (⊑ᶜ-cast x x₁ lpf) = {!!}
--- M ⟨ c ⟩ ⊑ V′
-catchup v (⊑ᶜ-castl {c = c} lp1 lp2 lpM) with catchup v lpM
-... | ⟨ V , ⟨ vV , ⟨ M↠V , V⊑V′ ⟩ ⟩ ⟩ with SimpleCast.ActiveOrInert c
--- Here we need a lemma which says if V ⊑ V′ , applyCast c V ⊑ V′ where c : S ⇒ T , ⊢ V ⦂ T′, S ⊑ T′ and T ⊑ T′
-...   | inj₁ a = {!!}
-...   | inj₂ i = ⟨ V ⟨ c ⟩ , ⟨ V-cast {i = i} vV , ⟨ plug-cong (F-cast c) M↠V , ⊑ᶜ-castl lp1 lp2 V⊑V′ ⟩ ⟩ ⟩
-catchup v (⊑ᶜ-castr x x₁ lpf) = {!!}
 
 fst-pres-⊑blame : ∀ {Γ Γ′ A A′ B B′} {N : Γ ⊢ A `× B} {ℓ}
   → Γ , Γ′ ⊢ N ⊑ᶜ blame {Γ′} {A′ `× B′} ℓ
@@ -419,10 +358,8 @@ sim-fst : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ 
 sim-fst (V-pair vV vW) vV′ VW′ (⊑ᶜ-cons {M = V} {V′} {W} {W′} lpV lpW) =
   ⟨ V , ⟨ fst (cons V W) —→⟨ β-fst vV vW ⟩ V ∎ , lpV ⟩ ⟩
 -- Here we need a proof that a projection ⋆ ⇒ A × B cannot be inert.
-sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} unk⊑ lp2 lpf) = ⊥-elim (SimpleCast.projNotInert (λ ()) c i)
--- We cheat a little bit here. Since we're proving it for SimpleCast, cross cast c is active and thus not inert.
-sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} (pair⊑ lp1 lp3) lp2 lpf) =
-  ⊥-elim (SimpleCast.ActiveNotInert (Active.activePair c) i)
+sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} unk⊑ lp2 lpf) = ⊥-elim (SimpleFunCast.projNotInert (λ ()) c i)
+sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} (pair⊑ lp1 lp3) lp2 lpf) = {!!}
 
 -- Simulation
 gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
