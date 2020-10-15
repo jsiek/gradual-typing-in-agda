@@ -361,6 +361,46 @@ sim-fst (V-pair vV vW) vV′ VW′ (⊑ᶜ-cons {M = V} {V′} {W} {W′} lpV lp
 sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} unk⊑ lp2 lpf) = ⊥-elim (SimpleFunCast.projNotInert (λ ()) c i)
 sim-fst (V-cast {i = i} vV) vV′ VW′ (⊑ᶜ-castl {M = N} {c = c} (pair⊑ lp1 lp3) lp2 lpf) = {!!}
 
+eq-—↠ : ∀ {Γ A} {M N : Γ ⊢ A}
+  → M ≡ N
+  → M —↠ N
+
+catchup-fst-inert : ∀ {T A A′ B B′} {V : ∅ ⊢ T} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′} {c : Cast (T ⇒ A `× B)}
+  → Value V
+  → (i : Inert c)
+  → T ⊑ A′ `× B′ → A `× B ⊑ A′ `× B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ cons M′ N′
+    ----------------------------------------------------
+  → ∃[ M ] ((fst (V ⟨ c ⟩) —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
+catchup-fst-inert (V-pair vM vN) (Inert.inert-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~})) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
+  with lp1 | lp2
+... | pair⊑ lp11 lp12 | pair⊑ lp21 lp22 =
+    ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~}) (Cross.C-pair _) ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
+  where
+  rd* =
+    _
+      —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair _} ⟩
+    _
+      —→⟨ ξ {F = F-cast _} (β-fst vM vN) ⟩
+    _ ∎
+catchup-fst-inert (V-cast {i = i₀} vM) (Inert.inert-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~})) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
+  with catchup-fst-inert vM i₀ lp3 lp1 lpM | lp2 | lp4
+... | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ | pair⊑ lp21 lp22 | pair⊑ lp41 lp42 =
+  ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~}) (Cross.C-pair _) ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
+  where
+  rd*′ =
+    _
+      —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair _} ⟩
+    -- By congruence of multi-step reduction.
+    plug-cong (F-cast _) rd*
+
+catchup-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′}
+  → ∅ , ∅ ⊢ N ⊑ᶜ cons M′ N′
+    ------------------------------------------
+  → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
+catchup-fst (⊑ᶜ-cons lpf lpf₁) = {!!}
+catchup-fst (⊑ᶜ-castl {A = T} {M = N₁} {c = c} lp1 lp2 lpf) = {!!}
+
 -- Simulation
 gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
   → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
@@ -380,7 +420,7 @@ gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑
 ...   | ⟨ N₂ , ⟨ N₁↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-cong F-fst N₁↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
 gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F}) with plug-inv-fst F eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
-gradual-guarantee-fst {N₁ = N} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = {!!}
+gradual-guarantee-fst {N₁ = N₁} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = catchup-fst lpf
 gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
 
 -- gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
