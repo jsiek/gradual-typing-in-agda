@@ -11,7 +11,7 @@ open import Data.Nat.Properties using (_≟_; suc-injective)
 open import Data.Empty using (⊥; ⊥-elim)
 
 -- We're using simple cast with inert cross cast - at least for now.
-open import SimpleFunCast using (Cast; cast; Inert; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
+open import GroundInertX using (Cast; cast; Inert; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
 open import Types
 open import Variables
 open import Labels
@@ -396,25 +396,25 @@ sim-fst-inert : ∀ {T A A′ B B′} {V : ∅ ⊢ T} {M′ : ∅ ⊢ A′} {N�
   → ∅ , ∅ ⊢ V ⊑ᶜ cons M′ N′
     ----------------------------------------------------
   → ∃[ M ] ((fst (V ⟨ c ⟩) —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
-sim-fst-inert (V-pair vM vN) (Inert.inert-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~})) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
+sim-fst-inert (V-pair vM vN) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
   with lp1 | lp2
 ... | pair⊑ lp11 lp12 | pair⊑ lp21 lp22 =
-    ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~}) (Cross.C-pair _) ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
+    ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
   where
   rd* =
     _
-      —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair _} ⟩
+      —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair} ⟩
     _
       —→⟨ ξ {F = F-cast _} (β-fst vM vN) ⟩
     _ ∎
-sim-fst-inert (V-cast {i = i₀} vM) (Inert.inert-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~})) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
+sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
   with sim-fst-inert vM i₀ lp3 lp1 lpM | lp2 | lp4
 ... | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ | pair⊑ lp21 lp22 | pair⊑ lp41 lp42 =
-  ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ {c~}) (Cross.C-pair _) ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
+  ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
   where
   rd*′ =
     _
-      —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair _} ⟩
+      —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair} ⟩
     -- By congruence of multi-step reduction.
     plug-cong (F-cast _) rd*
 
@@ -424,17 +424,22 @@ applyCast-castl : ∀ {Γ Γ′ A A′ B B′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ 
   → A ⊑ A′ → B ⊑ B′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
     -------------------------------------------
   → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′ ⟨ c′ ⟩
-applyCast-castl _ _ (Active.activeId c) (Inert.inert-inj x c₁) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-castr lp1 lp2 ⊑ᶜ-prim
+applyCast-castl _ _ (Active.A-id c) (Inert.I-inj x c₁) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-castr lp1 lp2 ⊑ᶜ-prim
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-ƛ x lpV) = {!!}
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-cons lpV lpV₁) = {!!}
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-inl lpV) = {!!}
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-inr lpV) = {!!}
-applyCast-castl vV vV′ (Active.activeId c) _ lp1 lp2 (⊑ᶜ-cast x x₁ lpV) = ⊑ᶜ-castr x₁ lp2 (⊑ᶜ-cast x x₁ lpV)
-applyCast-castl {c′ = cast _ _ _ {c~′}} vV vV′ (Active.activeProj (cast ⋆ B _) x₂) i lp1 lp2 (⊑ᶜ-cast x x₁ lpV)
-  with canonical⋆ _ vV
-... | ⟨ A₁ , ⟨ M₁ , ⟨ c₁ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A₁ `~ B
-...   | yes _ = {!!}
-...   | no nc~ = let c~ = lp-consis c~′ Refl⊑ lp2 in {!!}
+applyCast-castl vV vV′ (Active.A-id c) _ lp1 lp2 (⊑ᶜ-cast x x₁ lpV) = ⊑ᶜ-castr x₁ lp2 (⊑ᶜ-cast x x₁ lpV)
+applyCast-castl {c′ = cast _ _ _ c~′} vV vV′ (Active.A-proj (cast ⋆ B _ _) x₂) i lp1 lp2 (⊑ᶜ-cast x x₁ lpV)
+  with ground? B
+... | yes b-g with canonical⋆ _ vV
+...   | ⟨ G , ⟨ V₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G B {GroundInertX.inert-ground c₁ i₁} {b-g}
+...     | yes ap-b = {!!}
+...     | no  ap-b = {!!}
+applyCast-castl {c′ = cast _ _ _ c~′} vV vV′ (Active.A-proj (cast ⋆ B _ _) x₂) i lp1 lp2 (⊑ᶜ-cast x x₁ lpV)
+    | no b-ng = {!!}
+
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-castl x x₁ lpV) = {!!}
 applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-castr x x₁ lpV) = {!!}
 
@@ -448,7 +453,7 @@ catchup v (⊑ᶜ-cons lpM lpM₁) = {!!}
 catchup v (⊑ᶜ-inl lpM) = {!!}
 catchup v (⊑ᶜ-inr lpM) = {!!}
 catchup (ParamCastAux.V-cast v) (⊑ᶜ-cast {c = c} lp1 lp2 lpM) with catchup v lpM
-... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ with SimpleFunCast.ActiveOrInert c
+... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ with GroundInertX.ActiveOrInert c
 ...   | inj₁ a = ⟨ applyCast V vV c {a} , ⟨ {!!} , ⟨ rd*′ , {!!} ⟩ ⟩ ⟩
   where
   rd*′ = ↠-trans (plug-cong (F-cast c) rd*) ( _ —→⟨ _—→_.cast vV {a} ⟩ _ ∎)

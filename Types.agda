@@ -818,3 +818,36 @@ module Types where
   lp-¬⋆ nd (fun⊑ lp lp₁) = λ ()
   lp-¬⋆ nd (pair⊑ lp lp₁) = λ ()
   lp-¬⋆ nd (sum⊑ lp lp₁) = λ ()
+
+  {- Suppose B ≢ ⋆ (otherwise G₁ and G₂ may not be consistent), we have:
+    A  ~  B  ~  C
+    ⊔|          ⊔|
+    G₁    ≡     G₂
+  -}
+  lp-consis-ground-eq : ∀ {A B C G₁ G₂}
+    → Ground G₁ → Ground G₂
+    → A ~ B → B ~ C
+    → G₁ ⊑ A → G₂ ⊑ C
+    → B ≢ ⋆
+      -----------------
+    → G₁ ≡ G₂
+  lp-consis-ground-eq g1 g2 unk~R unk~L base⊑ base⊑ neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 base~ base~ base⊑ base⊑ neq = refl
+  lp-consis-ground-eq g1 g2 unk~R unk~L base⊑ (fun⊑ lp2 lp3) neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L base⊑ (pair⊑ lp2 lp3) neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L base⊑ (sum⊑ lp2 lp3) neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L (fun⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~R (fun⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-consis-ground-eq g1 () (fun~ c1 c3) unk~R (fun⊑ lp1 lp3) unk⊑ neq
+  lp-consis-ground-eq G-Fun G-Fun (fun~ c1 c3) (fun~ c2 c4) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) neq = refl
+  lp-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) base⊑ neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (fun⊑ lp2 lp4) neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) neq = contradiction refl neq
+  lp-consis-ground-eq G-Pair G-Pair (pair~ c1 c3) c2 (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) neq = refl
+  lp-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (sum⊑ lp2 lp4) neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~L (sum⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-consis-ground-eq g1 g2 unk~R unk~R (sum⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-consis-ground-eq g1 () (sum~ c1 c3) unk~R (sum⊑ lp1 lp3) unk⊑ neq
+  lp-consis-ground-eq G-Sum G-Sum (sum~ c1 c3) (sum~ c2 c4) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) neq = refl
+  lp-consis-ground-eq g1 () c1 unk~R base⊑ unk⊑ neq
+  lp-consis-ground-eq g1 g2 unk~R unk~R (pair⊑ _ _) lp2 neq = contradiction refl neq
