@@ -13,29 +13,6 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality
    using (_≡_; refl; trans; sym; cong; cong-app)
 
-data _▹_⇒_ : Type → Type → Type → Set where
-  match⇒⇒ : ∀{A B} → (A ⇒ B) ▹ A ⇒ B
-  match⇒⋆ : ⋆ ▹ ⋆ ⇒ ⋆
-
-▹⇒⊑ : ∀{C A B} → C ▹ A ⇒ B → C ⊑ A ⇒ B
-▹⇒⊑ match⇒⇒ = fun⊑ Refl⊑ Refl⊑
-▹⇒⊑ match⇒⋆ = unk⊑
-
-data _▹_×_ : Type → Type → Type → Set where
-  match×× : ∀{A B} → (A `× B) ▹ A × B
-  match×⋆ : ⋆ ▹ ⋆ × ⋆
-
-▹×⊑ : ∀{C A B} → C ▹ A × B → C ⊑ A `× B
-▹×⊑ match×× = pair⊑ Refl⊑ Refl⊑
-▹×⊑ match×⋆ = unk⊑
-
-data _▹_⊎_ : Type → Type → Type → Set where
-  match⊎⊎ : ∀{A B} → (A `⊎ B) ▹ A ⊎ B
-  match⊎⋆ : ⋆ ▹ ⋆ ⊎ ⋆
-
-▹⊎⊑ : ∀{C A B} → C ▹ A ⊎ B → C ⊑ A `⊎ B
-▹⊎⊑ match⊎⊎ = sum⊑ Refl⊑ Refl⊑
-▹⊎⊑ match⊎⋆ = unk⊑
 
 {-
 

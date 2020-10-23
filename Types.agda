@@ -784,6 +784,108 @@ module Types where
   ⨆~ (pair~ aa bb) = pair~ (⨆~ aa) (⨆~ bb)
   ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
 
+  {- Type matching -}
+  data _▹_⇒_ : Type → Type → Type → Set where
+    match⇒⇒ : ∀{A B} → (A ⇒ B) ▹ A ⇒ B
+    match⇒⋆ : ⋆ ▹ ⋆ ⇒ ⋆
+
+  data _▹_×_ : Type → Type → Type → Set where
+    match×× : ∀{A B} → (A `× B) ▹ A × B
+    match×⋆ : ⋆ ▹ ⋆ × ⋆
+
+  data _▹_⊎_ : Type → Type → Type → Set where
+    match⊎⊎ : ∀{A B} → (A `⊎ B) ▹ A ⊎ B
+    match⊎⋆ : ⋆ ▹ ⋆ ⊎ ⋆
+
+  ▹⇒⊑ : ∀{C A B} → C ▹ A ⇒ B → C ⊑ A ⇒ B
+  ▹⇒⊑ match⇒⇒ = fun⊑ Refl⊑ Refl⊑
+  ▹⇒⊑ match⇒⋆ = unk⊑
+
+  ▹×⊑ : ∀{C A B} → C ▹ A × B → C ⊑ A `× B
+  ▹×⊑ match×× = pair⊑ Refl⊑ Refl⊑
+  ▹×⊑ match×⋆ = unk⊑
+
+  ▹⊎⊑ : ∀{C A B} → C ▹ A ⊎ B → C ⊑ A `⊎ B
+  ▹⊎⊑ match⊎⊎ = sum⊑ Refl⊑ Refl⊑
+  ▹⊎⊑ match⊎⋆ = unk⊑
+
+  ▹⇒-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ ⇒ A₂) → (m′ : A′ ▹ A₁′ ⇒ A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹⇒-pres-prec match⇒⇒ match⇒⇒ (fun⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹⇒-pres-prec match⇒⇒ match⇒⋆ ()
+  ▹⇒-pres-prec match⇒⋆ match⇒⇒ lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹⇒-pres-prec match⇒⋆ match⇒⋆ lp = ⟨ unk⊑ , unk⊑ ⟩
+
+  ▹×-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ × A₂) → (m′ : A′ ▹ A₁′ × A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹×-pres-prec match×× match×× (pair⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹×-pres-prec match×× match×⋆ = λ ()
+  ▹×-pres-prec match×⋆ match×× lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹×-pres-prec match×⋆ match×⋆ lp = ⟨ lp , lp ⟩
+
+  ▹⊎-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ ⊎ A₂) (m′ : A′ ▹ A₁′ ⊎ A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹⊎-pres-prec match⊎⊎ match⊎⊎ (sum⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹⊎-pres-prec match⊎⋆ match⊎⊎ lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹⊎-pres-prec match⊎⋆ match⊎⋆ lp = ⟨ lp , lp ⟩
+
+  ⨆-pres-prec : ∀ {A A′ B B′}
+    → (aa : A ~ A′) → (bb : B ~ B′)
+    → A ⊑ B
+    → A′ ⊑ B′
+      -------------
+    → ⨆ aa ⊑ ⨆ bb
+  ⨆-pres-prec unk~L unk~L unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L unk~R unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L base~ unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (fun~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (pair~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (sum~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R unk~L unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R unk~R unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R base~ unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (fun~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (pair~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (sum~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L unk~L unk⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~L base~ unk⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~L unk~L unk⊑ (fun⊑ lp₁ lp₂) = fun⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (fun~ aa bb) unk⊑ (fun⊑ lp₁ lp₂) =
+    fun⊑ (⨆-pres-prec unk~R aa lp₁ unk⊑) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~L unk~L unk⊑ (pair⊑ lp₁ lp₂) = pair⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (pair~ aa bb) unk⊑ (pair⊑ lp₁ lp₂) =
+    pair⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~L unk~L unk⊑ (sum⊑ lp₁ lp₂) = sum⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (sum~ aa bb) unk⊑ (sum⊑ lp₁ lp₂) =
+    sum⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~R unk~R base⊑ unk⊑ = base⊑
+  ⨆-pres-prec unk~R base~ base⊑ unk⊑ = base⊑
+  ⨆-pres-prec base~ base~ base⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~R unk~R (fun⊑ lp₁ lp₂) unk⊑ = fun⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (fun~ aa bb) (fun⊑ lp₁ lp₂) unk⊑ =
+    fun⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~R bb lp₂ unk⊑)
+  ⨆-pres-prec (fun~ aa₁ aa₂) (fun~ bb₁ bb₂) (fun⊑ lpa₁ lpa₂) (fun⊑ lpb₁ lpb₂) =
+    fun⊑ (⨆-pres-prec aa₁ bb₁ lpb₁ lpa₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+  ⨆-pres-prec unk~R unk~R (pair⊑ lp₁ lp₂) unk⊑ = pair⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (pair~ bb₁ bb₂) (pair⊑ lp₁ lp₂) unk⊑ =
+    pair⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+  ⨆-pres-prec (pair~ aa₁ aa₂) (pair~ bb₁ bb₂) (pair⊑ lpa₁ lpa₂) (pair⊑ lpb₁ lpb₂) =
+    pair⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+  ⨆-pres-prec unk~R unk~R (sum⊑ lp₁ lp₂) unk⊑ = sum⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (sum~ bb₁ bb₂) (sum⊑ lp₁ lp₂) unk⊑ =
+    sum⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+  ⨆-pres-prec (sum~ aa₁ aa₂) (sum~ bb₁ bb₂) (sum⊑ lpa₁ lpa₂) (sum⊑ lpb₁ lpb₂) =
+    sum⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+
   -- If two types are consistent then their less precise counterparts are consistent too.
   lp-consis : ∀ {A A′ B B′}
     → A′ ~ B′
