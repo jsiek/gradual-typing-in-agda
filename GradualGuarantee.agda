@@ -162,30 +162,32 @@ sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `
     -- By congruence of multi-step reduction.
     plug-cong (F-cast _) rd*
 
+-- Relax on precision by using the ground type G instead of A, suppose G ~ A.
+⊑-ground-relax : ∀ {A B G}
+  → Ground G
+  → A ⊑ B → A ~ G → A ≢ ⋆
+    ------------------------
+  → G ⊑ B
+⊑-ground-relax _ unk⊑ unk~L nd = contradiction refl nd
+⊑-ground-relax _ base⊑ base~ nd = base⊑
+⊑-ground-relax G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
 applyCast-castl : ∀ {Γ Γ′ A A′ B B′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → (vV : Value V) → Value V′
   → (a : Active c) → Inert c′
   → A ⊑ A′ → B ⊑ B′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
     -------------------------------------------
   → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′ ⟨ c′ ⟩
-applyCast-castl _ _ (Active.A-id c) (Inert.I-inj x c₁) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-castr lp1 lp2 ⊑ᶜ-prim
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-ƛ x lpV) = {!!}
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-cons lpV lpV₁) = {!!}
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-inl lpV) = {!!}
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-inr lpV) = {!!}
-applyCast-castl vV vV′ (Active.A-id c) _ lp1 lp2 (⊑ᶜ-cast x x₁ lpV) = ⊑ᶜ-castr x₁ lp2 (⊑ᶜ-cast x x₁ lpV)
-applyCast-castl {c′ = cast _ _ _ c~′} vV vV′ (Active.A-proj (cast ⋆ B _ _) x₂) i lp1 lp2 (⊑ᶜ-cast x x₁ lpV)
-  with ground? B
-... | yes b-g with canonical⋆ _ vV
-...   | ⟨ G , ⟨ V₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
-  with gnd-eq? G B {GroundInertX.inert-ground c₁ i₁} {b-g}
-...     | yes ap-b = {!!}
-...     | no  ap-b = {!!}
-applyCast-castl {c′ = cast _ _ _ c~′} vV vV′ (Active.A-proj (cast ⋆ B _ _) x₂) i lp1 lp2 (⊑ᶜ-cast x x₁ lpV)
-    | no b-ng = {!!}
+applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-castr lp1 lp2 ⊑ᶜ-prim
+applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-cast lp3 lp4 lpV) = ⊑ᶜ-castr lp4 lp2 (⊑ᶜ-cast lp3 lp4 lpV)
+applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV) = ⊑ᶜ-cast lp3 lp2 lpV
+applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV) = ⊑ᶜ-castr lp4 lp2 (⊑ᶜ-castr lp3 lp4 lpV)
+applyCast-castl vV vV′ (Active.A-inj (cast A ⋆ ℓ _) ng nd) i lp1 lp2 lpV with ground A {nd}
+... | ⟨ G , ⟨ g , cn ⟩ ⟩ = ⊑ᶜ-cast (⊑-ground-relax g lp1 cn nd) lp2 (⊑ᶜ-castl lp1 (⊑-ground-relax g lp1 cn nd) lpV)
+applyCast-castl vV vV′ (Active.A-proj c x) i lp1 lp2 lpV = {!!}
 
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-castl x x₁ lpV) = {!!}
-applyCast-castl vV vV′ a i lp1 lp2 (⊑ᶜ-castr x x₁ lpV) = {!!}
 
 catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
   → Value V′
