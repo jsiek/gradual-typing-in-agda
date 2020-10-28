@@ -35,7 +35,7 @@ module GroundInertX where
    -}
 
   data Cast : Type → Set where
-    cast : (A : Type) → (B : Type) → Label → .(A ~ B) → Cast (A ⇒ B)
+    cast : (A : Type) → (B : Type) → Label → A ~ B → Cast (A ⇒ B)
 
   import ParamCastCalculus
   open ParamCastCalculus Cast public
@@ -123,9 +123,9 @@ n  -}
   ActiveNotInert (A-proj c neq) (I-inj _ .c) = neq refl
 
   data Cross : ∀ {A} → Cast A → Set where
-    C-fun : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A ⇒ B) (A' ⇒ B') ℓ cn)
-    C-pair : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A `× B) (A' `× B') ℓ cn)
-    C-sum : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A `⊎ B) (A' `⊎ B') ℓ cn)
+    C-fun : ∀{A B A' B' ℓ} {cn} → Cross (cast (A ⇒ B) (A' ⇒ B') ℓ cn)
+    C-pair : ∀{A B A' B' ℓ} {cn} → Cross (cast (A `× B) (A' `× B') ℓ cn)
+    C-sum : ∀{A B A' B' ℓ} {cn} → Cross (cast (A `⊎ B) (A' `⊎ B') ℓ cn)
 
   Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
@@ -342,15 +342,14 @@ n  -}
     → CastsAllSafe (applyCast V vV c {a}) ℓ
   applyCast-pres-allsafe (A-id _) safe allsafe = allsafe
   applyCast-pres-allsafe (A-inj (cast ⋆ .⋆ _ _) _ ⋆≢⋆) (safe-<: <:-⋆) allsafe = contradiction refl ⋆≢⋆
-  applyCast-pres-allsafe (A-inj (cast A .⋆ ℓ _) ¬gA A≢⋆) (safe-<: {c~ = c~} (<:-G A<:G gG)) allsafe with A | gG | ground A {A≢⋆}
-  ... | ` ι | G-Base | [ ` ι  , [ G-Base , base~ ] ] =
-    allsafe-cast (safe-<: {c~ = c~} (<:-G A<:G gG)) (allsafe-cast (safe-<: {c~ = base~} <:-B) allsafe)
+  applyCast-pres-allsafe (A-inj (cast A .⋆ ℓ _) ¬gA A≢⋆) (safe-<: (<:-G A<:G gG)) allsafe with A | gG | ground A {A≢⋆}
+  ... | ` ι | G-Base | [ ` ι  , [ G-Base , base~ ] ] = allsafe-cast (safe-<: (<:-G A<:G gG)) (allsafe-cast (safe-<: <:-B) allsafe)
   ... | (A₁ ⇒ A₂) | G-Fun | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
-    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⇒ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = fun~ unk~L unk~R} A<:G) allsafe)
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⇒ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: A<:G) allsafe)
   ... | (A₁ `× A₂) | G-Pair | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
-    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-× <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = pair~ unk~R unk~R} A<:G) allsafe)
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-× <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: A<:G) allsafe)
   ... | (A₁ `⊎ A₂) | G-Sum | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
-    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⊎ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: {c~ = sum~ unk~R unk~R} A<:G) allsafe)
+    allsafe-cast (safe-<: {c~ = unk~R} (<:-G (<:-⊎ <:-⋆ <:-⋆) gG)) (allsafe-cast (safe-<: A<:G) allsafe)
   applyCast-pres-allsafe (A-inj (cast A .⋆ ℓ′ _) _ A≢⋆) (safe-ℓ≢ ℓ≢) allsafe with ground A {A≢⋆}
   ... | [ ` ι  , [ G-Base , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)
   ... | [ ⋆ ⇒ ⋆ , [ G-Fun , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = unk~R} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = c~} ℓ≢) allsafe)

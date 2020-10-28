@@ -10,7 +10,8 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
 
 -- We're using simple cast with inert cross cast - at least for now.
-open import GroundInertX using (Cast; cast; Inert; Active; Cross; applyCast; pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile)
+open import GroundInertX using (Cast; cast; Inert; Active; Cross; applyCast;
+                                pcs; cs; dom; cod; fstC; sndC; inlC; inrC; compile; inert-ground)
 open import Types
 open import Variables
 open import Labels
@@ -174,6 +175,66 @@ sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `
 ⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
 ⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
 
+⊑-ground-consis : ∀ {G A B}
+  → Ground G
+  → G ⊑ A → A ~ B → B ≢ ⋆
+    ----------
+  → G ⊑ B
+⊑-ground-consis G-Base base⊑ unk~R nd = contradiction refl nd
+⊑-ground-consis G-Base base⊑ base~ nd = base⊑
+⊑-ground-consis G-Fun (fun⊑ lp1 lp2) unk~R nd = contradiction refl nd
+⊑-ground-consis G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+⊑-ground-consis G-Pair (pair⊑ lp1 lp2) unk~R nd = contradiction refl nd
+⊑-ground-consis G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
+⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
+inert-src-¬⋆ : ∀ {S T : Type} {c : Cast (S ⇒ T)}
+  → Inert c → T ≢ ⋆
+  → S ≢ ⋆
+inert-src-¬⋆ (Inert.I-inj x c) nd = contradiction refl nd
+inert-src-¬⋆ (Inert.I-fun c) nd = λ ()
+inert-src-¬⋆ (Inert.I-pair c) nd = λ ()
+inert-src-¬⋆ (Inert.I-sum c) nd = λ ()
+
+cast→~ : ∀ {S T} → Cast (S ⇒ T) → S ~ T
+cast→~ (cast A B ℓ c~) = c~
+
+castl-V-⊑ : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
+  → Value V → Value V′ → Inert c
+  → A′ ≢ ⋆
+  → Γ , Γ′ ⊢ V ⟨ c ⟩ ⊑ᶜ V′
+    ------------------------
+  → A ⊑ A′
+castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} v′) (Inert.I-inj a-g _) nd (⊑ᶜ-cast lp1 lp2 lpV) =
+  ⊑-ground-consis a-g lp1 (cast→~ c₁) nd
+castl-V-⊑ v v′ i nd (⊑ᶜ-castl lp1 lp2 lpVc) = lp1
+castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} {i = i₁} v′) i nd (⊑ᶜ-castr _ _ lpVc) with i
+... | Inert.I-inj a-g _ =
+  let iH = castl-V-⊑ v v′ i (inert-src-¬⋆ i₁ nd) lpVc in
+    ⊑-ground-consis a-g iH (cast→~ c₁) nd
+
+⊑-cast-switch-side : ∀ {Γ Γ′ G A′ B′} {V : Γ ⊢ G} {V′ : Γ′ ⊢ A′} {c : Cast (G ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → Value V′ → Inert c → Inert c′
+  → B′ ≢ ⋆
+  → G ⊑ B′ → Γ , Γ′ ⊢ V ⟨ c ⟩ ⊑ᶜ V′
+    ----------------------------------
+  → Γ , Γ′ ⊢ V ⊑ᶜ V′ ⟨ c′ ⟩
+⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-cast lp1 lp2 lpV) =
+  let x′ = (inert-src-¬⋆ i′ x) in
+  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+    ⊑ᶜ-castr lp3 lp (⊑ᶜ-castr lp1 lp3 lpV)
+⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-castl lp1 lp2 lpV) =
+  let x′ = (inert-src-¬⋆ i′ x) in
+  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+    ⊑ᶜ-castr lp3 lp lpV
+⊑-cast-switch-side {c′ = c′} v (V-cast {c = c′₁} {i = i′₁} v′) i i′ x lp (⊑ᶜ-castr lp1 lp2 lpVc) with i
+... | Inert.I-inj g-g c =
+  let x′ = (inert-src-¬⋆ i′ x) in
+  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+  let iH = ⊑-cast-switch-side {c′ = c′₁} v v′ i i′₁ x′ lp3 lpVc in
+    ⊑ᶜ-castr lp3 lp iH
+
 applyCast-castl : ∀ {Γ Γ′ A A′ B B′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → (vV : Value V) → Value V′
   → (a : Active c) → Inert c′
@@ -186,7 +247,19 @@ applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV) = 
 applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV) = ⊑ᶜ-castr lp4 lp2 (⊑ᶜ-castr lp3 lp4 lpV)
 applyCast-castl vV vV′ (Active.A-inj (cast A ⋆ ℓ _) ng nd) i lp1 lp2 lpV with ground A {nd}
 ... | ⟨ G , ⟨ g , cn ⟩ ⟩ = ⊑ᶜ-cast (⊑-ground-relax g lp1 cn nd) lp2 (⊑ᶜ-castl lp1 (⊑-ground-relax g lp1 cn nd) lpV)
-applyCast-castl vV vV′ (Active.A-proj c x) i lp1 lp2 lpV = {!!}
+applyCast-castl {c′ = c′} vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV
+  with ground? B
+... | yes b-g
+  with canonical⋆ _ vV
+...   | ⟨ G , ⟨ V₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {inert-ground c₁ i₁} {b-g} | vV
+...     | yes ap-b | V-cast vV₁ rewrite ap-b = ⊑-cast-switch-side vV₁ vV′ i₁ i (lp-¬⋆ x lp2) lp2 lpV
+...     | no neq | V-cast vV₁ with i₁
+...       | Inert.I-inj g-g .c₁ =
+  let x′ = lp-¬⋆ x lp2 in
+  let lp3 = castl-V-⊑ vV₁ vV′ i₁ (inert-src-¬⋆ i x′) lpV in
+    contradiction (lp-consis-ground-eq g-g b-g (cast→~ c′) lp3 lp2) neq
+applyCast-castl vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV | no b-ng with ground B {x}
+...   | ⟨ H , ⟨ h-g , c~ ⟩ ⟩ = ⊑ᶜ-castl (⊑-ground-relax h-g lp2 c~ x) lp2 (⊑ᶜ-cast lp1 (⊑-ground-relax h-g lp2 c~ x) lpV)
 
 
 catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
