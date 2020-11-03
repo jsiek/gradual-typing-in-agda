@@ -235,24 +235,36 @@ castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} {i = i₁} v′) i nd (⊑ᶜ-cast
   let iH = ⊑-cast-switch-side {c′ = c′₁} v v′ i i′₁ x′ lp3 lpVc in
     ⊑ᶜ-castr lp3 lp iH
 
+⊑G-nd-ground : ∀ {A G}
+  → Ground G → A ⊑ G  → A ≢ ⋆
+  → Ground A
+⊑G-nd-ground G-Base unk⊑ x = contradiction refl x
+⊑G-nd-ground G-Base base⊑ x = G-Base
+⊑G-nd-ground G-Fun unk⊑ x = contradiction refl x
+⊑G-nd-ground G-Fun (fun⊑ unk⊑ unk⊑) x = G-Fun
+⊑G-nd-ground G-Pair unk⊑ x = contradiction refl x
+⊑G-nd-ground G-Pair (pair⊑ unk⊑ unk⊑) x = G-Pair
+⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
+⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
+
 applyCast-castl : ∀ {Γ Γ′ A A′ B B′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → (vV : Value V) → Value V′
   → (a : Active c) → Inert c′
   → A ⊑ A′ → B ⊑ B′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
     -------------------------------------------
   → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′ ⟨ c′ ⟩
-applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-castr lp1 lp2 ⊑ᶜ-prim
-applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-cast lp3 lp4 lpV) = ⊑ᶜ-castr lp4 lp2 (⊑ᶜ-cast lp3 lp4 lpV)
-applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV) = ⊑ᶜ-cast lp3 lp2 lpV
-applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV) = ⊑ᶜ-castr lp4 lp2 (⊑ᶜ-castr lp3 lp4 lpV)
-applyCast-castl vV vV′ (Active.A-inj (cast A ⋆ ℓ _) ng nd) i lp1 lp2 lpV with ground A {nd}
-... | ⟨ G , ⟨ g , cn ⟩ ⟩ = ⊑ᶜ-cast (⊑-ground-relax g lp1 cn nd) lp2 (⊑ᶜ-castl lp1 (⊑-ground-relax g lp1 cn nd) lpV)
+applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 lpV = ⊑ᶜ-castr lp1 lp2 lpV
+applyCast-castl {A = A} {A′} {B} {B′} {c′ = c′} vV vV′ (Active.A-inj (cast A ⋆ ℓ _) ng nd) i lp1 lp2 lpV
+  with ground A {nd}
+... | ⟨ G , ⟨ g , cn ⟩ ⟩ =
+    ⊑ᶜ-cast (⊑-ground-relax g lp1 cn nd) lp2 (⊑ᶜ-castl lp1 (⊑-ground-relax g lp1 cn nd) lpV)
 applyCast-castl {c′ = c′} vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV
   with ground? B
 ... | yes b-g
   with canonical⋆ _ vV
 ...   | ⟨ G , ⟨ V₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {inert-ground c₁ i₁} {b-g} | vV
 ...     | yes ap-b | V-cast vV₁ rewrite ap-b = ⊑-cast-switch-side vV₁ vV′ i₁ i (lp-¬⋆ x lp2) lp2 lpV
+{- Note that the less precise side can never lead to an error. This case is ruled out by contradiction. -}
 ...     | no neq | V-cast vV₁ with i₁
 ...       | Inert.I-inj g-g .c₁ =
   let x′ = lp-¬⋆ x lp2 in
@@ -261,22 +273,34 @@ applyCast-castl {c′ = c′} vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp
 applyCast-castl vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV | no b-ng with ground B {x}
 ...   | ⟨ H , ⟨ h-g , c~ ⟩ ⟩ = ⊑ᶜ-castl (⊑-ground-relax h-g lp2 c~ x) lp2 (⊑ᶜ-cast lp1 (⊑-ground-relax h-g lp2 c~ x) lpV)
 
+-- cast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+--   → Value V → Value V′
+--   → A ⊑ A′ → B ⊑ A′
+--   → Γ , Γ′ ⊢ V ⊑ᶜ V′
+--   → ∃[ W ] ((Value W) × (V ⟨ c ⟩ —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
 
 catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
   → Value V′
   → Γ , Γ′ ⊢ M ⊑ᶜ V′
   → ∃[ V ] ((Value V) × (M —↠ V) × (Γ , Γ′ ⊢ V ⊑ᶜ V′))
 catchup {M = $ k} v ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ _ ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
-catchup v (⊑ᶜ-ƛ x lpM) = {!!}
-catchup v (⊑ᶜ-cons lpM lpM₁) = {!!}
-catchup v (⊑ᶜ-inl lpM) = {!!}
-catchup v (⊑ᶜ-inr lpM) = {!!}
-catchup (ParamCastAux.V-cast v) (⊑ᶜ-cast {c = c} lp1 lp2 lpM) with catchup v lpM
-... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ with GroundInertX.ActiveOrInert c
-...   | inj₁ a = ⟨ applyCast V vV c {a} , ⟨ {!!} , ⟨ rd*′ , {!!} ⟩ ⟩ ⟩
-  where
-  rd*′ = ↠-trans (plug-cong (F-cast c) rd*) ( _ —→⟨ _—→_.cast vV {a} ⟩ _ ∎)
-...   | inj₂ i = ⟨ V ⟨ c ⟩ , ⟨ ParamCastAux.V-cast {i = i} vV , ⟨ plug-cong (F-cast c) rd* , ⊑ᶜ-cast lp1 lp2 lpV ⟩ ⟩ ⟩
+catchup v (⊑ᶜ-ƛ lp lpM) = ⟨ ƛ _ , ⟨ V-ƛ , ⟨ (ƛ _) ∎ , ⊑ᶜ-ƛ lp lpM ⟩ ⟩ ⟩
+catchup (ParamCastAux.V-pair v₁ v₂) (⊑ᶜ-cons lpM₁ lpM₂) with catchup v₁ lpM₁ | catchup v₂ lpM₂
+... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ₘ , lpVₘ ⟩ ⟩ ⟩ | ⟨ Vₙ , ⟨ vₙ , ⟨ rd⋆ₙ , lpVₙ ⟩ ⟩ ⟩ =
+  ⟨ cons Vₘ Vₙ , ⟨ ParamCastAux.V-pair vₘ vₙ , ⟨ ↠-trans (plug-cong (F-×₂ _) rd⋆ₘ) (plug-cong (F-×₁ _) rd⋆ₙ) , ⊑ᶜ-cons lpVₘ lpVₙ ⟩ ⟩ ⟩
+catchup (ParamCastAux.V-inl v) (⊑ᶜ-inl lpM) with catchup v lpM
+... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ , lpVₘ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vₘ , ⟨ plug-cong F-inl rd⋆ , ⊑ᶜ-inl lpVₘ ⟩ ⟩ ⟩
+catchup (ParamCastAux.V-inr v) (⊑ᶜ-inr lpN) with catchup v lpN
+... | ⟨ Vₙ , ⟨ vₙ , ⟨ rd* , lpVₙ ⟩ ⟩ ⟩ = ⟨ inr Vₙ , ⟨ V-inr vₙ , ⟨ plug-cong F-inr rd* , ⊑ᶜ-inr lpVₙ ⟩ ⟩ ⟩
+catchup (ParamCastAux.V-cast {i = i′} v) (⊑ᶜ-cast {c = c} lp1 lp2 lpM) with catchup v lpM
+... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ = {!!}
+--   with GroundInertX.ActiveOrInert c
+-- ...   | inj₂ i = ⟨ V ⟨ c ⟩ , ⟨ ParamCastAux.V-cast {i = i} vV , ⟨ plug-cong (F-cast c) rd* , ⊑ᶜ-cast lp1 lp2 lpV ⟩ ⟩ ⟩
+-- ...   | inj₁ a = {!!}
+  -- ⟨ applyCast V vV c {a} , ⟨ {!!} , ⟨ rd*′ , applyCast-castl vV v a i lp1 lp2 lpV ⟩ ⟩ ⟩
+  -- where
+  -- rd*′ = ↠-trans (plug-cong (F-cast c) rd*) ( _ —→⟨ _—→_.cast vV {a} ⟩ _ ∎)
+
 catchup v (⊑ᶜ-castl x x₁ lpM) = {!!}
 catchup v (⊑ᶜ-castr x x₁ lpM) = {!!}
 
