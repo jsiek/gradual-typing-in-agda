@@ -2,7 +2,7 @@ open import Types
 open import PreCastStructure
 open import Labels
 open import Data.Nat
-open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Variables
@@ -25,7 +25,7 @@ module ParamCastAux (pcs : PreCastStruct) where
   open PreCastStruct pcs
   
   import ParamCastCalculus
-  open ParamCastCalculus Cast
+  open ParamCastCalculus Cast Inert
 
   {-
 
@@ -68,11 +68,11 @@ module ParamCastAux (pcs : PreCastStruct) where
         --------------------------
       → Value {Γ} {A `⊎ B} (inr V)
 
-    V-cast : ∀ {Γ : Context} {A B : Type} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
-        {i : Inert c}
-      → Value V
+    -- A normal cast like M ⟨ c ⟩ cannot be a value. Only a wrap V ⟨ i ⟩ is, when V is Value.
+    V-wrap : ∀ {Γ : Context} {A B : Type} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+      → Value V → (i : Inert c)
         ---------------
-      → Value (V ⟨ c ⟩)
+      → Value (V ⟪ i ⟫)
 
 
   {-
@@ -80,12 +80,12 @@ module ParamCastAux (pcs : PreCastStruct) where
   A value of type ⋆ must be of the form M ⟨ c ⟩ where c is inert cast.
 
   -}
-  canonical⋆ : ∀ {Γ} → (M : Γ ⊢ ⋆) → (Value M)
-             → Σ[ A ∈ Type ] Σ[ M' ∈ (Γ ⊢ A) ] Σ[ c ∈ (Cast (A ⇒ ⋆)) ]
-               Inert c × (M ≡ (M' ⟨ c ⟩))
-  canonical⋆ .($ _) (V-const {k = ()})  
-  canonical⋆ .(_ ⟨ _ ⟩) (V-cast{Γ}{A}{B}{V}{c}{i} v) =
-      ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ : ∀ {Γ}
+    → (V : Γ ⊢ ⋆) → (Value V)
+      --------------------------
+    → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (V ≡ (V′ ⟪ i ⟫)))
+  canonical⋆ _ (V-const {k = ()})
+  canonical⋆ _ (V-wrap {Γ} {A} {B} {V} {c} v i) = ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
 
   {-
 
@@ -138,6 +138,14 @@ module ParamCastAux (pcs : PreCastStruct) where
       → Cast (A ⇒ B)
       → Frame {Γ} A B
 
+    {-
+      In order to satisfy progress, we need to consider the case M ⟪ i ⟫
+      when M is not a Value.
+    -}
+    F-wrap : ∀ {Γ A B} {c : Cast (A ⇒ B)}
+      → (i : Inert c)
+      → Frame {Γ} A B
+
   {-
 
   The plug function inserts an expression into the hole of a frame.
@@ -156,6 +164,7 @@ module ParamCastAux (pcs : PreCastStruct) where
   plug M (F-inr)      = inr M
   plug L (F-case M N) = case L M N
   plug M (F-cast c) = M ⟨ c ⟩
+  plug M (F-wrap i) = M ⟪ i ⟫
 
   eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B) 
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))

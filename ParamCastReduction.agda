@@ -27,7 +27,7 @@ module ParamCastReduction (cs : CastStruct) where
   open CastStruct cs
   
   import ParamCastCalculus
-  open ParamCastCalculus Cast
+  open ParamCastCalculus Cast Inert
 
 
   import ParamCastAux
@@ -106,32 +106,42 @@ module ParamCastReduction (cs : CastStruct) where
         ------------------------------
       → V ⟨ c ⟩ —→ applyCast V v c {a}
 
+    wrap : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
+      → (v : Value V) → {i : Inert c}
+        ------------------------------
+      → V ⟨ c ⟩ —→ V ⟪ i ⟫
+
+    -- Fire the following rules when the cast is both cross and inert.
     fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
-        {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
-      → (v : Value V) → Value W → {x : Cross c}
+                                 {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))}
+      → (v : Value V) → Value W
+      → {x : Cross c} → {i : Inert c}
         --------------------------------------------------
-      → (V ⟨ c ⟩) · W —→ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
+      → (V ⟪ i ⟫) · W —→ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
 
     fst-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
-        {c : Cast ((A `× B) ⇒ (A' `× B'))}
-      → Value V → {x : Cross c}
+                               {c : Cast ((A `× B) ⇒ (A' `× B'))}
+      → Value V
+      → {x : Cross c} → {i : Inert c}
         -------------------------------------
-      → fst (V ⟨ c ⟩) —→ (fst V) ⟨ fstC c x ⟩
+      → fst (V ⟪ i ⟫) —→ (fst V) ⟨ fstC c x ⟩
 
     snd-cast : ∀ {Γ A B A' B'} {V : Γ ⊢ A `× B}
-        {c : Cast ((A `× B) ⇒ (A' `× B'))}
-      → Value V → {x : Cross c}
+                               {c : Cast ((A `× B) ⇒ (A' `× B'))}
+      → Value V
+      → {x : Cross c} → {i : Inert c}
         -------------------------------------
-      → snd (V ⟨ c ⟩) —→ (snd V) ⟨ sndC c x ⟩
+      → snd (V ⟪ i ⟫) —→ (snd V) ⟨ sndC c x ⟩
 
     case-cast : ∀ {Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
-        {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
-        {c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))}
-      → Value V → {x : Cross c}
+                                  {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
+                                  {c : Cast (A `⊎ B ⇒ A' `⊎ B')}
+      → Value V
+      → {x : Cross c} → {i : Inert c}
         --------------------------------------------
-      → case (V ⟨ c ⟩) W₁ W₂ —→
-        case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ )))
-               (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
+      → case (V ⟪ i ⟫) W₁ W₂ —→
+         case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ )))
+                (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_
@@ -156,12 +166,12 @@ module ParamCastReduction (cs : CastStruct) where
     O-blame : Label → Observe
 
   observe : ∀ {Γ A} → (V : Γ ⊢ A) → Value V → Observe
-  observe .(ƛ _) V-ƛ = O-fun
+  observe _ V-ƛ = O-fun
   observe {A = A} ($ k) V-const = O-const {A} k
-  observe .(cons _ _) (V-pair v v₁) = O-pair
-  observe .(inl _) (V-inl v) = O-sum
-  observe .(inr _) (V-inr v) = O-sum
-  observe (V ⟨ c ⟩) (V-cast v) = observe V v
+  observe _ (V-pair v v₁) = O-pair
+  observe _ (V-inl v) = O-sum
+  observe _ (V-inr v) = O-sum
+  observe (V ⟪ i ⟫) (V-wrap v .i) = observe V v
 
   data Eval : ∀ {Γ A} → (Γ ⊢ A) → Observe → Set where
     eval : ∀{Γ}{A}{M V : Γ ⊢ A}
@@ -247,7 +257,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...     | error E-blame = step (ξ-blame {F = (F-·₂ M₁){V₁}})
   ...     | done V₂ with V₁
   ...         | V-ƛ = step (β V₂)
-  ...         | V-cast {∅}{A = A'}{B = A ⇒ B}{V}{c}{i} v
+  ...         | V-wrap {∅}{A = A'}{B = A ⇒ B}{V}{c} v i
               with Inert-Cross⇒ c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
                   step (fun-cast v V₂ {x})
@@ -259,7 +269,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...             | V-pair v w = contradiction f₁ ¬P-Pair
   ...             | V-inl v = contradiction f₁ ¬P-Sum
   ...             | V-inr v = contradiction f₁ ¬P-Sum
-  ...             | V-cast {∅}{A'}{A}{W}{c}{i} w =
+  ...             | V-wrap {∅}{A'}{A}{W}{c} w i =
                      contradiction i (G f₁)
                      where G : Prim (A ⇒ B) → ¬ Inert c
                            G (P-Fun f₁) ic = baseNotInert c ic
@@ -269,7 +279,7 @@ module ParamCastReduction (cs : CastStruct) where
   ... | error E-blame = step (ξ-blame{F = F-if M N})
   ... | done (V-const {k = true}) = step β-if-true
   ... | done (V-const {k = false}) = step β-if-false
-  ... | done (V-cast {c = c} {i = i} v) =
+  ... | done (V-wrap {c = c} v i) =
           contradiction i (baseNotInert c)
 
   progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
@@ -277,7 +287,11 @@ module ParamCastReduction (cs : CastStruct) where
   ... | error E-blame = step (ξ-blame{F = F-cast c})
   ... | done v with ActiveOrInert c
   ...    | inj₁ a = step (cast v {a})
-  ...    | inj₂ i = done (V-cast {c = c} {i = i} v)
+  ...    | inj₂ i = step (wrap v {i})
+  progress (_⟪_⟫ {∅}{A}{B}{c} M i) with progress M
+  ... | step R = step (ξ {F = F-wrap i} R)
+  ... | error E-blame = step (ξ-blame {F = F-wrap i})
+  ... | done v = done (V-wrap v i)
   progress {C₁ `× C₂} (cons M₁ M₂) with progress M₁
   ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
   ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
@@ -292,7 +306,7 @@ module ParamCastReduction (cs : CastStruct) where
           with V
   ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₁} (β-fst v w)
   ...     | V-const {k = ()}
-  ...     | V-cast {c = c} {i = i} v
+  ...     | V-wrap {c = c} v i
               with Inert-Cross× c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
                 step (fst-cast {c = c} v {x})
@@ -302,7 +316,7 @@ module ParamCastReduction (cs : CastStruct) where
   ... | done V with V
   ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₂} (β-snd v w)
   ...     | V-const {k = ()}
-  ...     | V-cast {c = c} {i = i} v
+  ...     | V-wrap {c = c} v i
               with Inert-Cross× c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
                 step (snd-cast {c = c} v {x})
@@ -323,7 +337,7 @@ module ParamCastReduction (cs : CastStruct) where
   ...    | V-const {k = ()}
   ...    | V-inl v = step (β-caseL v)
   ...    | V-inr v = step (β-caseR v)
-  ...    | V-cast {c = c} {i = i} v
+  ...    | V-wrap {c = c} v i
               with Inert-Cross⊎ c i
   ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
                 step (case-cast {c = c} v {x})
@@ -344,6 +358,7 @@ module ParamCastReduction (cs : CastStruct) where
   plug-not-blame {F = ParamCastAux.F-inr} ()
   plug-not-blame {F = ParamCastAux.F-case _ _} ()
   plug-not-blame {F = ParamCastAux.F-cast _} ()
+  plug-not-blame {F = ParamCastAux.F-wrap _} ()
 
   plug-not-ƛ : ∀ {Γ A B C} {M : Γ ⊢ A} {F : Frame {Γ} A (C ⇒ B)} {N : Γ , C ⊢ B}
     → plug M F ≢ ƛ N
@@ -354,16 +369,18 @@ module ParamCastReduction (cs : CastStruct) where
   plug-not-ƛ {F = ParamCastAux.F-snd} ()
   plug-not-ƛ {F = ParamCastAux.F-case _ _} ()
   plug-not-ƛ {F = ParamCastAux.F-cast _} ()
+  plug-not-ƛ {F = ParamCastAux.F-wrap _} ()
 
   plug-not-const : ∀ {Γ A B} {M : Γ ⊢ A} {F : Frame {Γ} A B} {k : rep B} {f : Prim B}
     → plug M F ≢ (($ k) {f})
-  plug-not-const {F = ParamCastAux.F-·₁ _} = λ ()
-  plug-not-const {F = ParamCastAux.F-·₂ _} = λ ()
-  plug-not-const {F = ParamCastAux.F-if _ _} = λ ()
-  plug-not-const {F = ParamCastAux.F-fst} = λ ()
-  plug-not-const {F = ParamCastAux.F-snd} = λ ()
-  plug-not-const {F = ParamCastAux.F-case _ _} = λ ()
-  plug-not-const {F = ParamCastAux.F-cast _} = λ ()
+  plug-not-const {F = ParamCastAux.F-·₁ _} ()
+  plug-not-const {F = ParamCastAux.F-·₂ _} ()
+  plug-not-const {F = ParamCastAux.F-if _ _} ()
+  plug-not-const {F = ParamCastAux.F-fst} ()
+  plug-not-const {F = ParamCastAux.F-snd} ()
+  plug-not-const {F = ParamCastAux.F-case _ _} ()
+  plug-not-const {F = ParamCastAux.F-cast _} ()
+  plug-not-const {F = ParamCastAux.F-wrap _} ()
 
   -- Blame is not a value.
   blame-not-value : ∀ {Γ A} {ℓ}
@@ -398,8 +415,8 @@ module ParamCastReduction (cs : CastStruct) where
       → M′ —→ M → M′ ≡ inl V → Value M′ → Data.Empty.⊥
     V-inr⌿→ : ∀ {Γ A B} {V : Γ ⊢ B} {M′ M : Γ ⊢ A `⊎ B}
       → M′ —→ M → M′ ≡ inr V → Value M′ → Data.Empty.⊥
-    V-cast⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)} {M′ M}
-      → M′ —→ M → M′ ≡ V ⟨ c ⟩ → Value M′ → Data.Empty.⊥
+    V-wrap⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)} {i : Inert c} {M′ M}
+      → M′ —→ M → M′ ≡ V ⟪ i ⟫ → Value M′ → Data.Empty.⊥
   V-pair⌿→ (ξ {F = F-×₁ _} rd) refl (V-pair vV vW) = V⌿→ vW rd
   V-pair⌿→ (ξ {F = F-×₂ _} rd) refl (V-pair vV vW) = V⌿→ vV rd
   V-pair⌿→ (ξ-blame {F = F-×₁ _}) refl (V-pair vV vW) = contradiction vW blame-not-value
@@ -412,17 +429,15 @@ module ParamCastReduction (cs : CastStruct) where
   V-inl⌿→ (ξ-blame {F = F-inl}) refl (V-inl v) = contradiction v blame-not-value
   V-inr⌿→ (ξ {F = F-inr} rd) refl (V-inr v) = V⌿→ v rd
   V-inr⌿→ (ξ-blame {F = F-inr}) refl (V-inr v) = contradiction v blame-not-value
-  V-cast⌿→ (ξ {F = F-cast _} rd) refl (V-cast v) = V⌿→ v rd
-  V-cast⌿→ (ξ-blame {F = F-cast _}) refl (V-cast v) = contradiction v blame-not-value
-  -- Here we need a proof that a cast cannot be both active and inert at the same time.
-  V-cast⌿→ (cast _ {a}) refl (V-cast {i = i} v) = ActiveNotInert a i
+  V-wrap⌿→ (ξ {F = F-wrap _} rd) refl (V-wrap v i) = V⌿→ v rd
+  V-wrap⌿→ (ξ-blame {F = F-wrap _}) refl (V-wrap v i) = contradiction v blame-not-value
 
   V⌿→ V-ƛ rd = V-ƛ⌿→ rd refl
   V⌿→ V-const rd = V-const⌿→ rd refl
   V⌿→ (V-pair vV vW) rd = V-pair⌿→ rd refl (V-pair vV vW)
   V⌿→ (V-inl v) rd = V-inl⌿→ rd refl (V-inl v)
   V⌿→ (V-inr v) rd = V-inr⌿→ rd refl (V-inr v)
-  V⌿→ (V-cast {i = i} v) rd = V-cast⌿→ rd refl (V-cast {i = i} v)
+  V⌿→ (V-wrap v i) rd = V-wrap⌿→ rd refl (V-wrap v i)
 
   plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
     → (F : Frame C A)

@@ -24,7 +24,7 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
   open PreCastStruct pcs
 
   import ParamCastCalculus
-  open ParamCastCalculus Cast
+  open ParamCastCalculus Cast Inert
 
   {-
 

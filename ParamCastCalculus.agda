@@ -12,7 +12,7 @@ cast. However, in cast calculi with fancy types such as intersections,
 the type of a cast may not literally be a function type.
 
 -}
-module ParamCastCalculus (Cast : Type → Set) where
+module ParamCastCalculus (Cast : Type → Set) (Inert : ∀ {A} → Cast A → Set) where
 
 open import Variables
 open import Labels
@@ -101,7 +101,13 @@ data _⊢_ : Context → Type → Set where
   _⟨_⟩ : ∀ {Γ A B}
     → Γ ⊢ A
     → Cast (A ⇒ B)
-      ----------------------
+      --------------
+    → Γ ⊢ B
+
+  _⟪_⟫ : ∀ {Γ A B} {c : Cast (A ⇒ B)}
+    → Γ ⊢ A
+    → Inert c
+      --------
     → Γ ⊢ B
 
   blame : ∀ {Γ A} → Label → Γ ⊢ A
@@ -139,6 +145,7 @@ rename ρ (inl M)        = inl (rename ρ M)
 rename ρ (inr M)        = inr (rename ρ M)
 rename ρ (case L M N)   = case (rename ρ L) (rename ρ M) (rename ρ N)
 rename ρ (M ⟨ c ⟩)      =  ((rename ρ M) ⟨ c ⟩)
+rename ρ (M ⟪ c ⟫)      =  ((rename ρ M) ⟪ c ⟫)
 rename ρ (blame ℓ)      =  blame ℓ
 
 exts : ∀ {Γ Δ}
@@ -164,6 +171,7 @@ subst σ (inl M)     =  inl (subst σ M)
 subst σ (inr M)     =  inr (subst σ M)
 subst σ (case L M N)     =  case (subst σ L) (subst σ M) (subst σ N)
 subst σ (M ⟨ c ⟩)      =  (subst σ M) ⟨ c ⟩
+subst σ (M ⟪ c ⟫)      =  (subst σ M) ⟪ c ⟫
 subst σ (blame ℓ)      =  blame ℓ
 
 subst-zero : ∀ {Γ B} → (Γ ⊢ B) → ∀ {A} → (Γ , B ∋ A) → (Γ ⊢ A)

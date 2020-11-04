@@ -43,7 +43,7 @@ record CastStruct : Set₁ where
   field
     pcss : PreCastStructWithSafety
   open PreCastStructWithSafety pcss public
-  open ParamCastCalculus Cast
+  open ParamCastCalculus Cast Inert
   open ParamCastAux precast
   open ParamCastSubtyping pcss
   field
@@ -63,7 +63,7 @@ record EfficientCastStruct : Set₁ where
   field
     precast : PreCastStruct
   open PreCastStruct precast public
-  open ParamCastCalculus Cast
+  open ParamCastCalculus Cast Inert
   open EfficientParamCastAux precast
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))

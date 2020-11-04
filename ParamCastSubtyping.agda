@@ -23,7 +23,7 @@ module ParamCastSubtyping (pcs : PreCastStructWithSafety) where
 open PreCastStructWithSafety pcs
 
 import ParamCastCalculus
-open ParamCastCalculus Cast
+open ParamCastCalculus Cast Inert
 
 
 
