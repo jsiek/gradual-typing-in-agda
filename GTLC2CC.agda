@@ -5,11 +5,12 @@ open import Data.Nat using (ℕ; zero; suc)
 
 module GTLC2CC
   (Cast : Type → Set)
+  (Inert : ∀ {A} → Cast A → Set)
   (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
   where
 
   open import GTLC
-  open import ParamCastCalculus Cast
+  open import ParamCastCalculus Cast Inert
   
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)

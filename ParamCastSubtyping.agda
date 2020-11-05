@@ -36,6 +36,12 @@ data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wher
       -------------------------------------
     → CastsAllSafe (M ⟨ c ⟩) ℓ
 
+  allsafe-wrap : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {i : Inert c} {ℓ}
+    → Safe c ℓ
+    → CastsAllSafe M ℓ
+      -------------------------------------
+    → CastsAllSafe (M ⟪ i ⟫) ℓ
+
   allsafe-var : ∀ {Γ A} {x : Γ ∋ A} {ℓ}
       ------------------------------
     → CastsAllSafe (` x) ℓ
@@ -116,6 +122,7 @@ rename-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
     ----------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (rename ρ M) ℓ
 rename-pres-allsafe ρ (allsafe-cast safe allsafe) = allsafe-cast safe (rename-pres-allsafe ρ allsafe)
+rename-pres-allsafe ρ (allsafe-wrap safe allsafe) = allsafe-wrap safe (rename-pres-allsafe ρ allsafe)
 rename-pres-allsafe ρ allsafe-var = allsafe-var
 rename-pres-allsafe ρ (allsafe-ƛ allsafe) = allsafe-ƛ (rename-pres-allsafe (λ {X} → ext ρ) allsafe)
 rename-pres-allsafe ρ (allsafe-· allsafe-L allsafe-M) =
@@ -154,6 +161,7 @@ subst-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
     ---------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (subst σ M) ℓ
 subst-pres-allsafe allsafe-σ (allsafe-cast safe allsafe) = allsafe-cast safe (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-wrap safe allsafe) = allsafe-wrap safe (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-var {x = x}) = allsafe-σ x
 -- Need to prove that `exts σ` satisfies `allsafe-σ` .
 subst-pres-allsafe allsafe-σ (allsafe-ƛ allsafe) = allsafe-ƛ (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe)

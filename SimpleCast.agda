@@ -18,10 +18,6 @@ module SimpleCast where
   data Cast : Type → Set where
     _⇒⟨_⟩_ : (A : Type) → Label → (B : Type) → {c : A ~ B } → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
-
   data Inert : ∀ {A} → Cast A → Set where
     inert : ∀{A} → A ≢ ⋆ → (c : Cast (A ⇒ ⋆)) → Inert c
 
@@ -31,6 +27,10 @@ module SimpleCast where
     activeFun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Active c
     activePair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
     activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c    
+
+  import ParamCastCalculus
+  module CastCalc = ParamCastCalculus Cast Inert
+  open CastCalc
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert ((.⋆ ⇒⟨ ℓ ⟩ B) {unk~L}) with eq-unk B
@@ -244,7 +244,7 @@ module SimpleCast where
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
   ...   | no _  = allsafe-blame-diff-ℓ ℓ≢
   ...   | yes _ with allsafe
-  ...     | (allsafe-cast _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
+  ...     | (allsafe-wrap _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
   applyCast-pres-allsafe (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe
     with ~-relevant c~
   ... | fun~ _ _ = allsafe-ƛ (allsafe-cast (safe-<: sub-cod) (allsafe-· (rename-pres-allsafe S_ allsafe)
@@ -283,7 +283,7 @@ module SimpleCast where
   open ParamCastReduction cs public
 
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
 
   -- Instantiate blame-subtyping theorem for `SimpleCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public

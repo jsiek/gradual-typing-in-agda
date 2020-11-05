@@ -18,15 +18,12 @@ open import Labels
 
 open import GTLC
 import ParamCastCalculus
-open ParamCastCalculus Cast
+open ParamCastCalculus Cast Inert
 import ParamCastAux
-open ParamCastAux pcs using (Value; Frame; plug; canonical⋆)
+open ParamCastAux pcs
 import ParamCastReduction
 open ParamCastReduction cs
 open import TermPrecision
-
-open Value
-open Frame
 
 
 -- Compilation from GTLC to CC preserves precision.
@@ -92,13 +89,14 @@ fst-pres-⊑blame : ∀ {Γ Γ′ A A′ B B′} {N : Γ ⊢ A `× B} {ℓ}
   → Γ , Γ′ ⊢ N ⊑ᶜ blame {Γ′} {A′ `× B′} ℓ
   → Γ , Γ′ ⊢ fst N ⊑ᶜ blame {Γ′} {A′} ℓ
 fst-pres-⊑blame (⊑ᶜ-castl _ (pair⊑ lp₁ lp₂) lpf) = ⊑ᶜ-blame lp₁
+fst-pres-⊑blame (⊑ᶜ-wrapl _ (pair⊑ lp₁ lp₂) lpf) = ⊑ᶜ-blame lp₁
 fst-pres-⊑blame (⊑ᶜ-blame (pair⊑ lp₁ lp₂)) = ⊑ᶜ-blame lp₁
 
 blame⋢V : ∀ {Γ Γ′ A A′} {V : Γ′ ⊢ A′} {ℓ}
   → Value V
     ----------------------------------
   → ¬ (Γ , Γ′ ⊢ blame {Γ} {A} ℓ ⊑ᶜ V)
-blame⋢V (ParamCastAux.V-cast v) (⊑ᶜ-castr _ _ lp) = blame⋢V v lp
+blame⋢V (ParamCastAux.V-wrap v i) (⊑ᶜ-wrapr _ _ lp) = blame⋢V v lp
 
 eq-—↠ : ∀ {Γ A} {M N : Γ ⊢ A}
   → M ≡ N
@@ -106,62 +104,34 @@ eq-—↠ : ∀ {Γ A} {M N : Γ ⊢ A}
 eq-—↠ {M = M} {N} eq rewrite eq = N ∎
 
 
--- applyCast-pres-⊑V : ∀ {Γ Γ′ S T T′} {V : Γ ⊢ S} {V′ : Γ′ ⊢ T′} {vV : Value V} {c : Cast (S ⇒ T)}
---   → Value V′ → (a : Active c)
---   → S ⊑ T′ → T ⊑ T′
---   → Γ , Γ′ ⊢ V ⊑ᶜ V′
---     ------------------------------------
---   → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′
--- applyCast-pres-⊑V _ (Active.activeId (cast A .A _)) lp1 lp2 ⊑ᶜ-prim = ⊑ᶜ-prim
--- applyCast-pres-⊑V _ (Active.activeId (cast A .A _)) _ _ (⊑ᶜ-cast lp1 lp2 lpV) = ⊑ᶜ-cast lp1 lp2 lpV
--- applyCast-pres-⊑V _ (Active.activeId (cast A .A _)) _ _ (⊑ᶜ-castl lp1 lp2 lpV) = ⊑ᶜ-castl lp1 lp2 lpV
--- applyCast-pres-⊑V _ (Active.activeId (cast A .A _)) _ _ (⊑ᶜ-castr lp1 lp2 lpV) = ⊑ᶜ-castr lp1 lp2 lpV
--- applyCast-pres-⊑V {V = V} {vV = vV} _ (Active.activeProj (cast ⋆ T _) neq) lp1 lp2 (⊑ᶜ-cast {c = cast A ⋆ _} {cast A′ B′ _ {c~′}} lp3 lp4 lpV)
---   with canonical⋆ V vV
--- ... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
--- ...   | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with A₁ `~ T
--- ...     | yes _ = ⊑ᶜ-cast lp3 lp2 lpV
--- ...     | no A₁≁T = contradiction (lp-consis c~′ lp3 lp2) A₁≁T
--- applyCast-pres-⊑V {V = V} {vV = vV} _ (Active.activeProj (cast ⋆ T _) neq) lp1 lp2 (⊑ᶜ-castl lp3 lp4 lpV)
---   with canonical⋆ V vV
--- ... | ⟨ A₁ , ⟨ M₁ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with cast-eq-inv meq
--- ...   | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with A₁ `~ T
--- ...     | yes _ = ⊑ᶜ-castl lp3 lp2 lpV
--- ...     | no A₁≁T = contradiction (lp-consis Refl~ lp3 lp2) A₁≁T
--- applyCast-pres-⊑V {V = V} {vV = vV} (ParamCastAux.V-cast {i = i} v) (Active.activeProj (cast ⋆ T _) neq) lp1 lp2 (⊑ᶜ-castr lp3 lp4 lpV)
---   with canonical⋆ V vV
--- ... | ⟨ A₁ , ⟨ M₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A₁ `~ T
--- ...   | yes _ = {!!}
--- ...   | no _ = {!!}
-
-sim-fst-inert : ∀ {T A A′ B B′} {V : ∅ ⊢ T} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′} {c : Cast (T ⇒ A `× B)}
-  → Value V
-  → (i : Inert c)
-  → T ⊑ A′ `× B′ → A `× B ⊑ A′ `× B′
-  → ∅ , ∅ ⊢ V ⊑ᶜ cons M′ N′
-    ----------------------------------------------------
-  → ∃[ M ] ((fst (V ⟨ c ⟩) —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
-sim-fst-inert (V-pair vM vN) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
-  with lp1 | lp2
-... | pair⊑ lp11 lp12 | pair⊑ lp21 lp22 =
-    ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
-  where
-  rd* =
-    _
-      —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair} ⟩
-    _
-      —→⟨ ξ {F = F-cast _} (β-fst vM vN) ⟩
-    _ ∎
-sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
-  with sim-fst-inert vM i₀ lp3 lp1 lpM | lp2 | lp4
-... | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ | pair⊑ lp21 lp22 | pair⊑ lp41 lp42 =
-  ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
-  where
-  rd*′ =
-    _
-      —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair} ⟩
-    -- By congruence of multi-step reduction.
-    plug-cong (F-cast _) rd*
+-- sim-fst-inert : ∀ {T A A′ B B′} {V : ∅ ⊢ T} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′} {c : Cast (T ⇒ A `× B)}
+--   → Value V
+--   → (i : Inert c)
+--   → T ⊑ A′ `× B′ → A `× B ⊑ A′ `× B′
+--   → ∅ , ∅ ⊢ V ⊑ᶜ cons M′ N′
+--     ----------------------------------------------------
+--   → ∃[ M ] ((fst (V ⟨ c ⟩) —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
+-- sim-fst-inert (V-pair vM vN) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
+--   with lp1 | lp2
+-- ... | pair⊑ lp11 lp12 | pair⊑ lp21 lp22 =
+--     ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
+--   where
+--   rd* =
+--     _
+--       —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair} ⟩
+--     _
+--       —→⟨ ξ {F = F-cast _} (β-fst vM vN) ⟩
+--     _ ∎
+-- sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
+--   with sim-fst-inert vM i₀ lp3 lp1 lpM | lp2 | lp4
+-- ... | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ | pair⊑ lp21 lp22 | pair⊑ lp41 lp42 =
+--   ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
+--   where
+--   rd*′ =
+--     _
+--       —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair} ⟩
+--     -- By congruence of multi-step reduction.
+--     plug-cong (F-cast _) rd*
 
 -- Relax on precision by using the ground type G instead of A, suppose G ~ A.
 ⊑-ground-relax : ∀ {A B G}
@@ -200,40 +170,41 @@ inert-src-¬⋆ (Inert.I-sum c) nd = λ ()
 cast→~ : ∀ {S T} → Cast (S ⇒ T) → S ~ T
 cast→~ (cast A B ℓ c~) = c~
 
-castl-V-⊑ : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
+castl-V-⊑ : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
+                          {c : Cast (A ⇒ ⋆)} {i : Inert c}
   → Value V → Value V′ → Inert c
   → A′ ≢ ⋆
-  → Γ , Γ′ ⊢ V ⟨ c ⟩ ⊑ᶜ V′
+  → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
     ------------------------
   → A ⊑ A′
-castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} v′) (Inert.I-inj a-g _) nd (⊑ᶜ-cast lp1 lp2 lpV) =
+castl-V-⊑ v (V-wrap {c = c₁} v′ i′) (Inert.I-inj a-g _) nd (⊑ᶜ-wrap lp1 lp2 lpV) =
   ⊑-ground-consis a-g lp1 (cast→~ c₁) nd
-castl-V-⊑ v v′ i nd (⊑ᶜ-castl lp1 lp2 lpVc) = lp1
-castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} {i = i₁} v′) i nd (⊑ᶜ-castr _ _ lpVc) with i
+castl-V-⊑ v v′ i nd (⊑ᶜ-wrapl lp1 lp2 lpVc) = lp1
+castl-V-⊑ v (V-wrap {c = c₁} v′ i₁) i nd (⊑ᶜ-wrapr _ _ lpVc) with i
 ... | Inert.I-inj a-g _ =
   let iH = castl-V-⊑ v v′ i (inert-src-¬⋆ i₁ nd) lpVc in
     ⊑-ground-consis a-g iH (cast→~ c₁) nd
 
-⊑-cast-switch-side : ∀ {Γ Γ′ G A′ B′} {V : Γ ⊢ G} {V′ : Γ′ ⊢ A′} {c : Cast (G ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
-  → Value V → Value V′ → Inert c → Inert c′
-  → B′ ≢ ⋆
-  → G ⊑ B′ → Γ , Γ′ ⊢ V ⟨ c ⟩ ⊑ᶜ V′
-    ----------------------------------
-  → Γ , Γ′ ⊢ V ⊑ᶜ V′ ⟨ c′ ⟩
-⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-cast lp1 lp2 lpV) =
-  let x′ = (inert-src-¬⋆ i′ x) in
-  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
-    ⊑ᶜ-castr lp3 lp (⊑ᶜ-castr lp1 lp3 lpV)
-⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-castl lp1 lp2 lpV) =
-  let x′ = (inert-src-¬⋆ i′ x) in
-  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
-    ⊑ᶜ-castr lp3 lp lpV
-⊑-cast-switch-side {c′ = c′} v (V-cast {c = c′₁} {i = i′₁} v′) i i′ x lp (⊑ᶜ-castr lp1 lp2 lpVc) with i
-... | Inert.I-inj g-g c =
-  let x′ = (inert-src-¬⋆ i′ x) in
-  let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
-  let iH = ⊑-cast-switch-side {c′ = c′₁} v v′ i i′₁ x′ lp3 lpVc in
-    ⊑ᶜ-castr lp3 lp iH
+-- ⊑-cast-switch-side : ∀ {Γ Γ′ G A′ B′} {V : Γ ⊢ G} {V′ : Γ′ ⊢ A′} {c : Cast (G ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
+--   → Value V → Value V′ → Inert c → Inert c′
+--   → B′ ≢ ⋆
+--   → G ⊑ B′ → Γ , Γ′ ⊢ V ⟨ c ⟩ ⊑ᶜ V′
+--     ----------------------------------
+--   → Γ , Γ′ ⊢ V ⊑ᶜ V′ ⟨ c′ ⟩
+-- ⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-cast lp1 lp2 lpV) =
+--   let x′ = (inert-src-¬⋆ i′ x) in
+--   let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+--     ⊑ᶜ-castr lp3 lp (⊑ᶜ-castr lp1 lp3 lpV)
+-- ⊑-cast-switch-side {c′ = c′} v v′ (Inert.I-inj g-g c) i′ x lp (⊑ᶜ-castl lp1 lp2 lpV) =
+--   let x′ = (inert-src-¬⋆ i′ x) in
+--   let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+--     ⊑ᶜ-castr lp3 lp lpV
+-- ⊑-cast-switch-side {c′ = c′} v (V-cast {c = c′₁} {i = i′₁} v′) i i′ x lp (⊑ᶜ-castr lp1 lp2 lpVc) with i
+-- ... | Inert.I-inj g-g c =
+--   let x′ = (inert-src-¬⋆ i′ x) in
+--   let lp3 = (⊑-ground-consis g-g lp (Sym~ (cast→~ c′)) x′) in
+--   let iH = ⊑-cast-switch-side {c′ = c′₁} v v′ i i′₁ x′ lp3 lpVc in
+--     ⊑ᶜ-castr lp3 lp iH
 
 ⊑G-nd-ground : ∀ {A G}
   → Ground G → A ⊑ G  → A ≢ ⋆
@@ -247,41 +218,31 @@ castl-V-⊑ v (ParamCastAux.V-cast {c = c₁} {i = i₁} v′) i nd (⊑ᶜ-cast
 ⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
 ⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
 
-applyCast-castl : ∀ {Γ Γ′ A A′ B B′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+applyCast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+  → (a : Active c)
   → (vV : Value V) → Value V′
-  → (a : Active c) → Inert c′
-  → A ⊑ A′ → B ⊑ B′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    -------------------------------------------
-  → Γ , Γ′ ⊢ applyCast V vV c {a} ⊑ᶜ V′ ⟨ c′ ⟩
-applyCast-castl vV vV′ (Active.A-id c) i lp1 lp2 lpV = ⊑ᶜ-castr lp1 lp2 lpV
-applyCast-castl {A = A} {A′} {B} {B′} {c′ = c′} vV vV′ (Active.A-inj (cast A ⋆ ℓ _) ng nd) i lp1 lp2 lpV
-  with ground A {nd}
-... | ⟨ G , ⟨ g , cn ⟩ ⟩ =
-    ⊑ᶜ-cast (⊑-ground-relax g lp1 cn nd) lp2 (⊑ᶜ-castl lp1 (⊑-ground-relax g lp1 cn nd) lpV)
-applyCast-castl {c′ = c′} vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV
-  with ground? B
-... | yes b-g
-  with canonical⋆ _ vV
-...   | ⟨ G , ⟨ V₁ , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {inert-ground c₁ i₁} {b-g} | vV
-...     | yes ap-b | V-cast vV₁ rewrite ap-b = ⊑-cast-switch-side vV₁ vV′ i₁ i (lp-¬⋆ x lp2) lp2 lpV
-{- Note that the less precise side can never lead to an error. This case is ruled out by contradiction. -}
-...     | no neq | V-cast vV₁ with i₁
-...       | Inert.I-inj g-g .c₁ =
-  let x′ = lp-¬⋆ x lp2 in
-  let lp3 = castl-V-⊑ vV₁ vV′ i₁ (inert-src-¬⋆ i x′) lpV in
-    contradiction (lp-consis-ground-eq g-g b-g (cast→~ c′) lp3 lp2) neq
-applyCast-castl vV vV′ (Active.A-proj (cast ⋆ B ℓ _) x) i lp1 lp2 lpV | no b-ng with ground B {x}
-...   | ⟨ H , ⟨ h-g , c~ ⟩ ⟩ = ⊑ᶜ-castl (⊑-ground-relax h-g lp2 c~ x) lp2 (⊑ᶜ-cast lp1 (⊑-ground-relax h-g lp2 c~ x) lpV)
+  → A ⊑ A′ → B ⊑ A′
+  → Γ , Γ′ ⊢ V ⊑ᶜ V′
+    ----------------------------------------------------------
+  → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+applyCast-left (Active.A-id _) vV vV′ lp1 lp2 lpV = ⟨ _ , ⟨ vV , ⟨ _ ∎ , lpV ⟩ ⟩ ⟩
+applyCast-left (Active.A-inj _ x x₁) vV vV′ lp1 lp2 lpV = {!!}
+applyCast-left (Active.A-proj _ x) vV vV′ lp1 lp2 lpV = {!!}
 
--- cast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
---   → Value V → Value V′
---   → A ⊑ A′ → B ⊑ A′
---   → Γ , Γ′ ⊢ V ⊑ᶜ V′
---   → ∃[ W ] ((Value W) × (V ⟨ c ⟩ —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+cast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+  → Value V → Value V′
+  → A ⊑ A′ → B ⊑ A′
+  → Γ , Γ′ ⊢ V ⊑ᶜ V′
+    ----------------------------------------------------------
+  → ∃[ W ] ((Value W) × (V ⟨ c ⟩ —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV with GroundInertX.ActiveOrInert c
+... | inj₁ a = {!!}
+... | inj₂ i = ⟨ V ⟪ i ⟫ , ⟨ (V-wrap vV i) , ⟨ _ —→⟨ wrap vV {i} ⟩ _ ∎ , ⊑ᶜ-wrapl lp1 lp2 lpV ⟩ ⟩ ⟩
 
 catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
   → Value V′
   → Γ , Γ′ ⊢ M ⊑ᶜ V′
+    -----------------------------------------------------
   → ∃[ V ] ((Value V) × (M —↠ V) × (Γ , Γ′ ⊢ V ⊑ᶜ V′))
 catchup {M = $ k} v ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ _ ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
 catchup v (⊑ᶜ-ƛ lp lpM) = ⟨ ƛ _ , ⟨ V-ƛ , ⟨ (ƛ _) ∎ , ⊑ᶜ-ƛ lp lpM ⟩ ⟩ ⟩
@@ -292,17 +253,20 @@ catchup (ParamCastAux.V-inl v) (⊑ᶜ-inl lpM) with catchup v lpM
 ... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ , lpVₘ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vₘ , ⟨ plug-cong F-inl rd⋆ , ⊑ᶜ-inl lpVₘ ⟩ ⟩ ⟩
 catchup (ParamCastAux.V-inr v) (⊑ᶜ-inr lpN) with catchup v lpN
 ... | ⟨ Vₙ , ⟨ vₙ , ⟨ rd* , lpVₙ ⟩ ⟩ ⟩ = ⟨ inr Vₙ , ⟨ V-inr vₙ , ⟨ plug-cong F-inr rd* , ⊑ᶜ-inr lpVₙ ⟩ ⟩ ⟩
-catchup (ParamCastAux.V-cast {i = i′} v) (⊑ᶜ-cast {c = c} lp1 lp2 lpM) with catchup v lpM
-... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ = {!!}
---   with GroundInertX.ActiveOrInert c
--- ...   | inj₂ i = ⟨ V ⟨ c ⟩ , ⟨ ParamCastAux.V-cast {i = i} vV , ⟨ plug-cong (F-cast c) rd* , ⊑ᶜ-cast lp1 lp2 lpV ⟩ ⟩ ⟩
--- ...   | inj₁ a = {!!}
-  -- ⟨ applyCast V vV c {a} , ⟨ {!!} , ⟨ rd*′ , applyCast-castl vV v a i lp1 lp2 lpV ⟩ ⟩ ⟩
-  -- where
-  -- rd*′ = ↠-trans (plug-cong (F-cast c) rd*) ( _ —→⟨ _—→_.cast vV {a} ⟩ _ ∎)
+-- catchup (ParamCastAux.V-wrap v i′) (⊑ᶜ-wrap {c = c} lp1 lp2 lpM) with catchup v lpM
+-- ... | ⟨ V , ⟨ vV , ⟨ rd* , lpV ⟩ ⟩ ⟩ = {!!}
+-- catchup v (⊑ᶜ-wrapl x x₁ lpM) = {!!}
+-- catchup v (⊑ᶜ-wrapr x x₁ lpM) = {!!}
 
-catchup v (⊑ᶜ-castl x x₁ lpM) = {!!}
-catchup v (⊑ᶜ-castr x x₁ lpM) = {!!}
+catchup v (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
+  with catchup v lpM
+... | ⟨ V , ⟨ vV , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with cast-left {c = c} vV v lp1 lp2 lpV
+...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ =
+  ⟨ W , ⟨ vW , ⟨ (↠-trans (plug-cong (F-cast _) rd*₁) rd*₂) , lpW ⟩ ⟩ ⟩
+catchup v (⊑ᶜ-wrap x x₁ lpM) = {!!}
+catchup v (⊑ᶜ-wrapl x x₁ lpM) = {!!}
+catchup v (⊑ᶜ-wrapr x x₁ lpM) = {!!}
 
 sim-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′}
   → ∅ , ∅ ⊢ N ⊑ᶜ cons M′ N′

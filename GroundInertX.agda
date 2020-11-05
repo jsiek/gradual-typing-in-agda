@@ -37,12 +37,6 @@ module GroundInertX where
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → A ~ B → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast public
-
-  import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c) public
-
   {-
 
   We categorize casts into the inert ones (that form values) and
@@ -73,6 +67,12 @@ n  -}
     A-id : ∀{A} → {a : Atomic A} → (c : Cast (A ⇒ A)) → Active c
     A-inj : ∀{A} → (c : Cast (A ⇒ ⋆)) → ¬ Ground A → A ≢ ⋆ → Active c
     A-proj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
+
+  import ParamCastCalculus
+  open ParamCastCalculus Cast Inert public
+
+  import GTLC2CC
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
   {-
 
@@ -361,7 +361,7 @@ n  -}
   ... | yes gB with canonical⋆ _ vV
   ...   | [ G , [ V , [ c , [ i , meq ] ] ] ] rewrite meq with gnd-eq? G B {inert-ground c i} {gB}
   ...     | yes eq rewrite eq with allsafe
-  ...       | allsafe-cast _ allsafe-V = allsafe-V
+  ...       | allsafe-wrap _ allsafe-V = allsafe-V
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | yes gB | _ | no _ = allsafe-blame-diff-ℓ ℓ≢
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | no ¬gB with ground B {B≢⋆}
   ...   | [ H , [ gH , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = Sym~ c~} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = unk~L} ℓ≢) allsafe)

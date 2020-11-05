@@ -2,14 +2,14 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_; _≢_; refl)
 
 -- We're using simple cast with inert cross cast - at least for now.
-open import GroundInertX using (Cast)
+open import GroundInertX using (Cast; Active; Inert)
 open import Types
 open import Variables
 open import Labels
 
 open import GTLC
 import ParamCastCalculus
-open ParamCastCalculus Cast
+open ParamCastCalculus Cast Inert
 
 
 infix 6 _,_⊢_⊑ᴳ_
@@ -170,6 +170,30 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       ------------------------
     → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟨ c′ ⟩
+
+  {- The cases below are for wrapped inert casts. -}
+  ⊑ᶜ-wrap : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+              {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+              {i : Inert c} {i′ : Inert c′}
+    → A ⊑ A′ → B ⊑ B′
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+      ------------------------------
+    → Γ , Γ′ ⊢ M ⟪ i ⟫ ⊑ᶜ M′ ⟪ i′ ⟫
+
+  ⊑ᶜ-wrapl : ∀ {Γ Γ′ A A′ B} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+               {c : Cast (A ⇒ B)} {i : Inert c}
+    → A ⊑ A′ → B ⊑ A′
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    -- NOTE: Not sure if we need to require Value M′ here.
+      -----------------------
+    → Γ , Γ′ ⊢ M ⟪ i ⟫ ⊑ᶜ M′
+
+  ⊑ᶜ-wrapr : ∀ {Γ Γ′ A A′ B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+               {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑ A′ → A ⊑ B′
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+      ------------------------
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟪ i′ ⟫
 
   ⊑ᶜ-blame : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {ℓ}
     → A ⊑ A′
