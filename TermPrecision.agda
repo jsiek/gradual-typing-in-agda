@@ -1,3 +1,4 @@
+open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; _≢_; refl)
 
@@ -10,6 +11,95 @@ open import Labels
 open import GTLC
 import ParamCastCalculus
 open ParamCastCalculus Cast Inert
+
+
+infix 6 ⟪_⟫⊑⟪_⟫
+infix 6 ⟪_⟫⊑_
+infix 6 _⊑⟪_⟫
+
+data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                             → (i : Inert c) → (i′ : Inert c′) → Set where
+
+  -- Inert injections
+  lpii-inj : ∀ {G} {c : Cast (G ⇒ ⋆)} {c′ : Cast (G ⇒ ⋆)}
+    → (g : Ground G)
+    → ⟪ Inert.I-inj g c ⟫⊑⟪ Inert.I-inj g c′ ⟫
+
+  -- Inert cross casts
+  lpii-fun : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+     → A ⇒ B ⊑ A′ ⇒ B′
+     → C ⇒ D ⊑ C′ ⇒ D′
+       ----------------------------------------------------------------------
+     → ⟪ Inert.I-fun c ⟫⊑⟪ Inert.I-fun c′ ⟫
+
+  lpii-pair : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A `× B) ⇒ (C `× D))} {c′ : Cast ((A′ `× B′) ⇒ (C′ `× D′))}
+     → A `× B ⊑ A′ `× B′
+     → C `× D ⊑ C′ `× D′
+       ----------------------------------------------------------------------
+     → ⟪ Inert.I-pair c ⟫⊑⟪ Inert.I-pair c′ ⟫
+
+  lpii-sum : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A `⊎ B) ⇒ (C `⊎ D))} {c′ : Cast ((A′ `⊎ B′) ⇒ (C′ `⊎ D′))}
+     → A `⊎ B ⊑ A′ `⊎ B′
+     → C `⊎ D ⊑ C′ `⊎ D′
+       ----------------------------------------------------------------------
+     → ⟪ Inert.I-sum c ⟫⊑⟪ Inert.I-sum c′ ⟫
+
+{- Example : ⟨ ⋆ ⇛ ⋆ ⟩ ⋢ ⟨ A → B ⇛ C → D ⟩ -}
+
+private
+  id⋆⋢fun : ∀ {A B C D} {c : Cast (⋆ ⇒ ⋆)} {c′ : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
+    → (i : Inert c) → (i′ : Inert c′)
+    → ¬ (⟪ i ⟫⊑⟪ i′ ⟫)
+  id⋆⋢fun (Inert.I-inj _ _) (Inert.I-fun _) ()
+
+data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
+
+  -- Inert injections
+  lpit-inj : ∀ {G A′} {c : Cast (G ⇒ ⋆)}
+    → (g : Ground G)
+    → G ⊑ A′
+      -------------------------
+    → ⟪ Inert.I-inj g c ⟫⊑ A′
+
+  -- Inert cross casts
+  lpit-fun : ∀ {A A′ B B′ C D} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
+    → A ⇒ B ⊑ A′ ⇒ B′
+    → C ⇒ D ⊑ A′ ⇒ B′
+      ------------------------------------------
+    → ⟪ Inert.I-fun c ⟫⊑ A′ ⇒ B′
+
+  lpit-pair : ∀ {A A′ B B′ C D} {c : Cast ((A `× B) ⇒ (C `× D))}
+    → A `× B ⊑ A′ `× B′
+    → C `× D ⊑ A′ `× B′
+      ------------------------------------------
+    → ⟪ Inert.I-pair c ⟫⊑ A′ `× B′
+
+  lpit-sum : ∀ {A A′ B B′ C D} {c : Cast ((A `⊎ B) ⇒ (C `⊎ D))}
+    → A `⊎ B ⊑ A′ `⊎ B′
+    → C `⊎ D ⊑ A′ `⊎ B′
+      ------------------------------------------
+    → ⟪ Inert.I-sum c ⟫⊑ A′ `⊎ B′
+
+data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
+
+  -- Inert cross casts
+  lpti-fun : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+    → A ⇒ B ⊑ A′ ⇒ B′
+    → A ⇒ B ⊑ C′ ⇒ D′
+      ---------------------------------------------
+    → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
+
+  lpti-pair : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ `× B′) ⇒ (C′ `× D′))}
+    → A `× B ⊑ A′ `× B′
+    → A `× B ⊑ C′ `× D′
+      ----------------------------------------------
+    → A `× B ⊑⟪ Inert.I-pair c′ ⟫
+
+  lpti-sum : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ `⊎ B′) ⇒ (C′ `⊎ D′))}
+    → A `⊎ B ⊑ A′ `⊎ B′
+    → A `⊎ B ⊑ C′ `⊎ D′
+      ----------------------------------------------
+    → A `⊎ B ⊑⟪ Inert.I-sum c′ ⟫
 
 
 infix 6 _,_⊢_⊑ᴳ_
@@ -175,14 +265,14 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
   ⊑ᶜ-wrap : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
               {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
               {i : Inert c} {i′ : Inert c′}
-    → A ⊑ A′ → B ⊑ B′
+    → ⟪ i ⟫⊑⟪ i′ ⟫
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       ------------------------------
     → Γ , Γ′ ⊢ M ⟪ i ⟫ ⊑ᶜ M′ ⟪ i′ ⟫
 
   ⊑ᶜ-wrapl : ∀ {Γ Γ′ A A′ B} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
                {c : Cast (A ⇒ B)} {i : Inert c}
-    → A ⊑ A′ → B ⊑ A′
+    → ⟪ i ⟫⊑ A′
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
     -- NOTE: Not sure if we need to require Value M′ here.
       -----------------------
@@ -190,7 +280,7 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
 
   ⊑ᶜ-wrapr : ∀ {Γ Γ′ A A′ B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
                {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
-    → A ⊑ A′ → A ⊑ B′
+    → A ⊑⟪ i′ ⟫
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       ------------------------
     → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟪ i′ ⟫
@@ -207,3 +297,14 @@ _ = ⊑ᴳ-· (⊑ᴳ-ƛ unk⊑ (⊑ᴳ-var refl)) ⊑ᴳ-prim
 
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᴳ-var refl)
+
+-- Lemmas
+lp→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
+  → (i : Inert c)
+  → A ⊑ A′ → B ⊑ A′
+    ------------------
+  → ⟪ i ⟫⊑ A′
+lp→lpit (Inert.I-inj g _) lp1 lp2 = lpit-inj g lp1
+lp→lpit (Inert.I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
+lp→lpit (Inert.I-pair _) (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) = lpit-pair (pair⊑ lp1 lp3) (pair⊑ lp2 lp4)
+lp→lpit (Inert.I-sum _) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) = lpit-sum (sum⊑ lp1 lp3) (sum⊑ lp2 lp4)

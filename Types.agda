@@ -984,3 +984,22 @@ module Types where
   lp-double-consis-ground-eq () g2 unk~L (fun~ c2 c3) unk⊑ lp2 neq
   lp-double-consis-ground-eq () g2 unk~L (pair~ c2 c3) unk⊑ lp2 neq
   lp-double-consis-ground-eq () g2 unk~L (sum~ c2 c3) unk⊑ lp2 neq
+
+  -- The ground type ⋆ ⇒ ⋆ sits at the bottom of the precision lattice of all function types.
+  ground-fun-⊑ : ∀ {A B} → ⋆ ⇒ ⋆ ⊑ A ⇒ B
+  ground-fun-⊑ = fun⊑ unk⊑ unk⊑
+
+  ground-pair-⊑ : ∀ {A B} → ⋆ `× ⋆ ⊑ A `× B
+  ground-pair-⊑ = pair⊑ unk⊑ unk⊑
+
+  ground-sum-⊑ : ∀ {A B} → ⋆ `⊎ ⋆ ⊑ A `⊎ B
+  ground-sum-⊑ = sum⊑ unk⊑ unk⊑
+
+  nd⋢⋆ : ∀ {A} → A ≢ ⋆ → ¬ A ⊑ ⋆
+  nd⋢⋆ nd unk⊑ = contradiction refl nd
+
+  ground-nd : ∀ {G} → Ground G → G ≢ ⋆
+  ground-nd G-Base ()
+  ground-nd G-Fun ()
+  ground-nd G-Pair ()
+  ground-nd G-Sum ()
