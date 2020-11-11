@@ -157,9 +157,11 @@ applyCast-proj-g-left {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | yes b-g | ⟨
 ...       | ⊑ᶜ-wrap (lpii-inj _) _ = contradiction lp (nd⋢⋆ nd)
 applyCast-proj-g-left {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | no b-ng = contradiction g b-ng
 
-applyCast-proj-ng-left {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV with ground? B
+applyCast-proj-ng-left {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV
+  with ground? B
 ... | yes b-g = contradiction b-g ng
-... | no b-ng with ground B {nd}
+... | no b-ng
+  with ground B {nd}
 ...   | ⟨ H , ⟨ h-g , c~ ⟩ ⟩
   with applyCast-proj-g-left {c = cast ⋆ H ℓ unk~L} (ground-nd h-g) h-g v v′ (⊑-ground-relax h-g lp c~ nd) lpV
 ...     | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ =
@@ -171,7 +173,8 @@ applyCast-proj-ng-left {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV with ground? 
       ⟨ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {a} ⟩ rd*)) (_ —→⟨ wrap vW {i} ⟩ _ ∎) ,
         (⊑ᶜ-wrapl (lp→lpit i (⊑-ground-relax h-g lp c~ nd) lp) lpW) ⟩ ⟩ ⟩
 
-applyCast-proj-left {B = B} {c = c} nd v v′ lp lpV with ground? B
+applyCast-proj-left {B = B} {c = c} nd v v′ lp lpV
+  with ground? B
 ... | yes g = applyCast-proj-g-left {c = c} nd g v v′ lp lpV
 ... | no ng = applyCast-proj-ng-left {c = c} nd ng v v′ lp lpV
 
@@ -192,8 +195,10 @@ cast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : 
   → ∃[ W ] ((Value W) × (V ⟨ c ⟩ —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
 
 applyCast-left (Active.A-id _) vV vV′ lp1 lp2 lpV = ⟨ _ , ⟨ vV , ⟨ _ ∎ , lpV ⟩ ⟩ ⟩
-applyCast-left {A = A} {V = V} {c = cast A ⋆ ℓ _} (Active.A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV with ground A {a-nd}
-... | ⟨ G , ⟨ g , c~ ⟩ ⟩ with g | c~ | lp1
+applyCast-left {A = A} {V = V} {c = cast A ⋆ ℓ _} (Active.A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+  with ground A {a-nd}
+... | ⟨ G , ⟨ g , c~ ⟩ ⟩
+  with g | c~ | lp1
 ...   | G-Base | base~ | _ =
   let i = Inert.I-inj g (cast G ⋆ ℓ unk~R) in
     ⟨ V ⟪ i ⟫ , ⟨ V-wrap vV i , ⟨ _ —→⟨ ξ (cast vV {Active.A-id {a = A-Base} _}) ⟩ _ —→⟨ wrap vV {i} ⟩ _ ∎ , ⊑ᶜ-wrapl (lpit-inj g lp1) lpV ⟩ ⟩ ⟩
@@ -221,35 +226,46 @@ applyCast-left {A = A} {V = V} {c = cast A ⋆ ℓ _} (Active.A-inj c a-ng a-nd)
 ...   | G-Sum | unk~L | _ = contradiction refl a-nd
 applyCast-left (Active.A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-left {c = c} b-nd vV vV′ lp2 lpV
 
-cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV with GroundInertX.ActiveOrInert c
-... | inj₁ a with applyCast-left a vV vV′ lp1 lp2 lpV
+cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV
+  with GroundInertX.ActiveOrInert c
+... | inj₁ a
+  with applyCast-left a vV vV′ lp1 lp2 lpV
 ...   | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (_ —→⟨ cast vV {a} ⟩ rd*) , lpW ⟩ ⟩ ⟩
 cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV | inj₂ i =
   ⟨ V ⟪ i ⟫ , ⟨ (V-wrap vV i) , ⟨ _ —→⟨ wrap vV {i} ⟩ _ ∎ , ⊑ᶜ-wrapl (lp→lpit i lp1 lp2) lpV ⟩ ⟩ ⟩
 
--- catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
---   → Value V′
---   → Γ , Γ′ ⊢ M ⊑ᶜ V′
---     -----------------------------------------------------
---   → ∃[ V ] ((Value V) × (M —↠ V) × (Γ , Γ′ ⊢ V ⊑ᶜ V′))
--- catchup {M = $ k} v ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ _ ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
--- catchup v (⊑ᶜ-ƛ lp lpM) = ⟨ ƛ _ , ⟨ V-ƛ , ⟨ (ƛ _) ∎ , ⊑ᶜ-ƛ lp lpM ⟩ ⟩ ⟩
--- catchup (ParamCastAux.V-pair v₁ v₂) (⊑ᶜ-cons lpM₁ lpM₂) with catchup v₁ lpM₁ | catchup v₂ lpM₂
--- ... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ₘ , lpVₘ ⟩ ⟩ ⟩ | ⟨ Vₙ , ⟨ vₙ , ⟨ rd⋆ₙ , lpVₙ ⟩ ⟩ ⟩ =
---   ⟨ cons Vₘ Vₙ , ⟨ ParamCastAux.V-pair vₘ vₙ , ⟨ ↠-trans (plug-cong (F-×₂ _) rd⋆ₘ) (plug-cong (F-×₁ _) rd⋆ₙ) , ⊑ᶜ-cons lpVₘ lpVₙ ⟩ ⟩ ⟩
--- catchup (ParamCastAux.V-inl v) (⊑ᶜ-inl lpM) with catchup v lpM
--- ... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ , lpVₘ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vₘ , ⟨ plug-cong F-inl rd⋆ , ⊑ᶜ-inl lpVₘ ⟩ ⟩ ⟩
--- catchup (ParamCastAux.V-inr v) (⊑ᶜ-inr lpN) with catchup v lpN
--- ... | ⟨ Vₙ , ⟨ vₙ , ⟨ rd* , lpVₙ ⟩ ⟩ ⟩ = ⟨ inr Vₙ , ⟨ V-inr vₙ , ⟨ plug-cong F-inr rd* , ⊑ᶜ-inr lpVₙ ⟩ ⟩ ⟩
--- catchup v (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
---   with catchup v lpM
--- ... | ⟨ V , ⟨ vV , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
---   with cast-left {c = c} vV v lp1 lp2 lpV
--- ...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ =
---   ⟨ W , ⟨ vW , ⟨ (↠-trans (plug-cong (F-cast _) rd*₁) rd*₂) , lpW ⟩ ⟩ ⟩
--- catchup v (⊑ᶜ-wrap x x₁ lpM) = {!!}
--- catchup v (⊑ᶜ-wrapl x x₁ lpM) = {!!}
--- catchup v (⊑ᶜ-wrapr x x₁ lpM) = {!!}
+catchup : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
+  → Value V′
+  → Γ , Γ′ ⊢ M ⊑ᶜ V′
+    -----------------------------------------------------
+  → ∃[ V ] ((Value V) × (M —↠ V) × (Γ , Γ′ ⊢ V ⊑ᶜ V′))
+catchup {M = $ k} v′ ⊑ᶜ-prim = ⟨ $ k , ⟨ V-const , ⟨ _ ∎ , ⊑ᶜ-prim ⟩ ⟩ ⟩
+catchup v′ (⊑ᶜ-ƛ lp lpM) = ⟨ ƛ _ , ⟨ V-ƛ , ⟨ (ƛ _) ∎ , ⊑ᶜ-ƛ lp lpM ⟩ ⟩ ⟩
+catchup (V-pair v′₁ v′₂) (⊑ᶜ-cons lpM₁ lpM₂)
+  with catchup v′₁ lpM₁ | catchup v′₂ lpM₂
+... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ₘ , lpVₘ ⟩ ⟩ ⟩ | ⟨ Vₙ , ⟨ vₙ , ⟨ rd⋆ₙ , lpVₙ ⟩ ⟩ ⟩ =
+  ⟨ cons Vₘ Vₙ , ⟨ ParamCastAux.V-pair vₘ vₙ ,
+                   ⟨ ↠-trans (plug-cong (F-×₂ _) rd⋆ₘ) (plug-cong (F-×₁ _) rd⋆ₙ) , ⊑ᶜ-cons lpVₘ lpVₙ ⟩ ⟩ ⟩
+catchup (V-inl v′) (⊑ᶜ-inl lpM)
+  with catchup v′ lpM
+... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ , lpVₘ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vₘ , ⟨ plug-cong F-inl rd⋆ , ⊑ᶜ-inl lpVₘ ⟩ ⟩ ⟩
+catchup (V-inr v′) (⊑ᶜ-inr lpN)
+  with catchup v′ lpN
+... | ⟨ Vₙ , ⟨ vₙ , ⟨ rd* , lpVₙ ⟩ ⟩ ⟩ = ⟨ inr Vₙ , ⟨ V-inr vₙ , ⟨ plug-cong F-inr rd* , ⊑ᶜ-inr lpVₙ ⟩ ⟩ ⟩
+catchup v′ (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
+  with catchup v′ lpM
+... | ⟨ V , ⟨ vV , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with cast-left {c = c} vV v′ lp1 lp2 lpV  -- this is the more involved case
+...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (↠-trans (plug-cong (F-cast _) rd*₁) rd*₂) , lpW ⟩ ⟩ ⟩
+catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM)
+  with catchup v′ lpM  -- just recur in all 3 wrap cases
+... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrap lp lpW ⟩ ⟩ ⟩
+catchup v′ (⊑ᶜ-wrapl {i = i} lp lpM)
+  with catchup v′ lpM
+... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrapl lp lpW ⟩ ⟩ ⟩
+catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
+  with catchup v′ lpM
+... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW ⟩ ⟩ ⟩
 
 -- sim-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′}
 --   → ∅ , ∅ ⊢ N ⊑ᶜ cons M′ N′
