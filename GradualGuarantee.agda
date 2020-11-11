@@ -26,8 +26,11 @@ open ParamCastReduction cs
 open import TermPrecision
 
 
--- Compilation from GTLC to CC preserves precision.
-{- We assume Γ ⊢ e ↝ f ⦂ A and Γ′ ⊢ e′ ↝ f′ ⦂ A′ . -}
+
+{-
+  Compilation from GTLC to CC preserves precision.
+    - We assume Γ ⊢ e ↝ f ⦂ A and Γ′ ⊢ e′ ↝ f′ ⦂ A′ .
+-}
 compile-pres-prec : ∀ {Γ Γ′ A A′} {e : Γ ⊢G A} {e′ : Γ′ ⊢G A′}
   → Γ ⊑* Γ′
   → Γ , Γ′ ⊢ e ⊑ᴳ e′
@@ -92,99 +95,6 @@ fst-pres-⊑blame (⊑ᶜ-castl _ (pair⊑ lp₁ lp₂) lpf) = ⊑ᶜ-blame lp�
 fst-pres-⊑blame (⊑ᶜ-wrapl (lpit-pair lp₁ (pair⊑ lp₂ lp₃)) lpf) = ⊑ᶜ-blame lp₂
 fst-pres-⊑blame (⊑ᶜ-blame (pair⊑ lp₁ lp₂)) = ⊑ᶜ-blame lp₁
 
-blame⋢V : ∀ {Γ Γ′ A A′} {V : Γ′ ⊢ A′} {ℓ}
-  → Value V
-    ----------------------------------
-  → ¬ (Γ , Γ′ ⊢ blame {Γ} {A} ℓ ⊑ᶜ V)
-blame⋢V (ParamCastAux.V-wrap v i) (⊑ᶜ-wrapr _ lp) = blame⋢V v lp
-
-eq-—↠ : ∀ {Γ A} {M N : Γ ⊢ A}
-  → M ≡ N
-  → M —↠ N
-eq-—↠ {M = M} {N} eq rewrite eq = N ∎
-
-
--- sim-fst-inert : ∀ {T A A′ B B′} {V : ∅ ⊢ T} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′} {c : Cast (T ⇒ A `× B)}
---   → Value V
---   → (i : Inert c)
---   → T ⊑ A′ `× B′ → A `× B ⊑ A′ `× B′
---   → ∅ , ∅ ⊢ V ⊑ᶜ cons M′ N′
---     ----------------------------------------------------
---   → ∃[ M ] ((fst (V ⟨ c ⟩) —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
--- sim-fst-inert (V-pair vM vN) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-cons {M = M} {N = N} lpV _)
---   with lp1 | lp2
--- ... | pair⊑ lp11 lp12 | pair⊑ lp21 lp22 =
---     ⟨ M ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩ , ⟨ rd* , (⊑ᶜ-castl lp11 lp21 lpV) ⟩ ⟩
---   where
---   rd* =
---     _
---       —→⟨ fst-cast (V-pair vM vN) {Cross.C-pair} ⟩
---     _
---       —→⟨ ξ {F = F-cast _} (β-fst vM vN) ⟩
---     _ ∎
--- sim-fst-inert (V-cast {i = i₀} vM) (Inert.I-pair (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~)) lp1 lp2 (⊑ᶜ-castl {M = M} {c = c₀} lp3 lp4 lpM)
---   with sim-fst-inert vM i₀ lp3 lp1 lpM | lp2 | lp4
--- ... | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ | pair⊑ lp21 lp22 | pair⊑ lp41 lp42 =
---   ⟨ (M₁ ⟨ fstC (cast (A₁ `× B₁) (A₂ `× B₂) ℓ c~) Cross.C-pair ⟩) , ⟨ rd*′ , ⊑ᶜ-castl lp41 lp21 lpM₁ ⟩ ⟩
---   where
---   rd*′ =
---     _
---       —→⟨ fst-cast (V-cast {i = i₀} vM) {Cross.C-pair} ⟩
---     -- By congruence of multi-step reduction.
---     plug-cong (F-cast _) rd*
-
--- Relax on precision by using the ground type G instead of A, suppose G ~ A.
-⊑-ground-relax : ∀ {A B G}
-  → Ground G
-  → A ⊑ B → A ~ G → A ≢ ⋆
-    ------------------------
-  → G ⊑ B
-⊑-ground-relax _ unk⊑ unk~L nd = contradiction refl nd
-⊑-ground-relax _ base⊑ base~ nd = base⊑
-⊑-ground-relax G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
-⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
-⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
-
-⊑-ground-consis : ∀ {G A B}
-  → Ground G
-  → G ⊑ A → A ~ B → B ≢ ⋆
-    ----------
-  → G ⊑ B
-⊑-ground-consis G-Base base⊑ unk~R nd = contradiction refl nd
-⊑-ground-consis G-Base base⊑ base~ nd = base⊑
-⊑-ground-consis G-Fun (fun⊑ lp1 lp2) unk~R nd = contradiction refl nd
-⊑-ground-consis G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
-⊑-ground-consis G-Pair (pair⊑ lp1 lp2) unk~R nd = contradiction refl nd
-⊑-ground-consis G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
-⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
-⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
-
-inert-src-¬⋆ : ∀ {S T : Type} {c : Cast (S ⇒ T)}
-  → Inert c → T ≢ ⋆
-  → S ≢ ⋆
-inert-src-¬⋆ (Inert.I-inj x c) nd = contradiction refl nd
-inert-src-¬⋆ (Inert.I-fun c) nd = λ ()
-inert-src-¬⋆ (Inert.I-pair c) nd = λ ()
-inert-src-¬⋆ (Inert.I-sum c) nd = λ ()
-
-cast→~ : ∀ {S T} → Cast (S ⇒ T) → S ~ T
-cast→~ (cast A B ℓ c~) = c~
-
-castl-V-⊑ : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′}
-                          {c : Cast (A ⇒ ⋆)} {i : Inert c}
-  → Value V → Value V′ → Inert c
-  → A′ ≢ ⋆
-  → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
-    ------------------------
-  → A ⊑ A′
-castl-V-⊑ v (V-wrap {c = c₁} v′ i′) (Inert.I-inj a-g _) nd (⊑ᶜ-wrap (lpii-inj g) lpV) =
-  ⊑-ground-consis a-g Refl⊑ (cast→~ c₁) nd
-castl-V-⊑ v v′ i nd (⊑ᶜ-wrapl (lpit-inj g lp) lpVc) = lp
-castl-V-⊑ v (V-wrap {c = c₁} v′ i₁) i nd (⊑ᶜ-wrapr _ lpVc) with i
-... | Inert.I-inj a-g _ =
-  let iH = castl-V-⊑ v v′ i (inert-src-¬⋆ i₁ nd) lpVc in
-    ⊑-ground-consis a-g iH (cast→~ c₁) nd
-
 wrapV-⊑-inv : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
   → Value V → Value V′ → (i : Inert c) → A′ ≢ ⋆
   → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
@@ -192,24 +102,49 @@ wrapV-⊑-inv : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c 
 wrapV-⊑-inv v v' (Inert.I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
 wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
 
-⊑G-nd-ground : ∀ {A G}
-  → Ground G → A ⊑ G  → A ≢ ⋆
-  → Ground A
-⊑G-nd-ground G-Base unk⊑ x = contradiction refl x
-⊑G-nd-ground G-Base base⊑ x = G-Base
-⊑G-nd-ground G-Fun unk⊑ x = contradiction refl x
-⊑G-nd-ground G-Fun (fun⊑ unk⊑ unk⊑) x = G-Fun
-⊑G-nd-ground G-Pair unk⊑ x = contradiction refl x
-⊑G-nd-ground G-Pair (pair⊑ unk⊑ unk⊑) x = G-Pair
-⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
-⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
+ground-to-ndng-inert : ∀ {H B} {ℓ}
+  → (c~ : H ~ B)
+  → Ground H → B ≢ ⋆ → ¬ Ground B
+  → Inert (cast H B ℓ c~)
+ground-to-ndng-inert unk~R h-g b-nd b-ng = contradiction refl b-nd
+ground-to-ndng-inert base~ h-g b-nd b-ng = contradiction h-g b-ng
+ground-to-ndng-inert (fun~ c~ c~₁) h-g b-nd b-ng = Inert.I-fun _
+ground-to-ndng-inert (pair~ c~ c~₁) h-g b-nd b-ng = Inert.I-pair _
+ground-to-ndng-inert (sum~ c~ c~₁) h-g b-nd b-ng = Inert.I-sum _
 
-applyCast-proj-g-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
-  → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
-  → (vV : Value V) → Value V′
-  → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    ----------------------------------------------------------
-  → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+
+private
+  {-
+    We write them as separate lemmas to get around Agda's termination checker.
+    This is because the first, ground one does not make any recursive call and the
+    second, non-ground one calls into the first one, which serves as a base case.
+  -}
+  applyCast-proj-g-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+    → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
+    → (vV : Value V) → Value V′
+    → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+      ----------------------------------------------------------
+    → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+
+  applyCast-proj-ng-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+    → (nd : B ≢ ⋆) → ¬ Ground B
+    → (vV : Value V) → Value V′
+    → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+      ----------------------------------------------------------
+    → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+
+  {-
+    Finally, we case on whether the target type of the cast, B, is ground, for which
+    we've already proved both cases. As is mentioned above, we make it very sure that
+    the proof terminates - even if in the expansion case, the term grows bigger by one cast.
+  -}
+  applyCast-proj-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+    → (nd : B ≢ ⋆)
+    → (vV : Value V) → Value V′
+    → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+      ----------------------------------------------------------
+    → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+
 applyCast-proj-g-left {c = cast .⋆ B ℓ _} nd g v v′ lp lpV with ground? B
 ... | yes b-g
   with canonical⋆ _ v
@@ -222,22 +157,6 @@ applyCast-proj-g-left {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | yes b-g | ⟨
 ...       | ⊑ᶜ-wrap (lpii-inj _) _ = contradiction lp (nd⋢⋆ nd)
 applyCast-proj-g-left {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | no b-ng = contradiction g b-ng
 
-ground-to-ndng-inert : ∀ {H B} {ℓ}
-  → (c~ : H ~ B)
-  → Ground H → B ≢ ⋆ → ¬ Ground B
-  → Inert (cast H B ℓ c~)
-ground-to-ndng-inert unk~R h-g b-nd b-ng = contradiction refl b-nd
-ground-to-ndng-inert base~ h-g b-nd b-ng = contradiction h-g b-ng
-ground-to-ndng-inert (fun~ c~ c~₁) h-g b-nd b-ng = Inert.I-fun _
-ground-to-ndng-inert (pair~ c~ c~₁) h-g b-nd b-ng = Inert.I-pair _
-ground-to-ndng-inert (sum~ c~ c~₁) h-g b-nd b-ng = Inert.I-sum _
-
-applyCast-proj-ng-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
-  → (nd : B ≢ ⋆) → ¬ Ground B
-  → (vV : Value V) → Value V′
-  → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    ----------------------------------------------------------
-  → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
 applyCast-proj-ng-left {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV with ground? B
 ... | yes b-g = contradiction b-g ng
 ... | no b-ng with ground B {nd}
@@ -252,15 +171,10 @@ applyCast-proj-ng-left {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV with ground? 
       ⟨ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {a} ⟩ rd*)) (_ —→⟨ wrap vW {i} ⟩ _ ∎) ,
         (⊑ᶜ-wrapl (lp→lpit i (⊑-ground-relax h-g lp c~ nd) lp) lpW) ⟩ ⟩ ⟩
 
-applyCast-proj-left : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
-  → (nd : B ≢ ⋆)
-  → (vV : Value V) → Value V′
-  → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    ----------------------------------------------------------
-  → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
 applyCast-proj-left {B = B} {c = c} nd v v′ lp lpV with ground? B
 ... | yes g = applyCast-proj-g-left {c = c} nd g v v′ lp lpV
 ... | no ng = applyCast-proj-ng-left {c = c} nd ng v v′ lp lpV
+
 
 applyCast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
   → (a : Active c)

@@ -465,3 +465,11 @@ module ParamCastReduction (cs : CastStruct) where
   ↠-trans (L ∎) (.L —→⟨ M→ ⟩ ↠N) = L —→⟨ M→ ⟩ ↠N
   ↠-trans (L —→⟨ L→ ⟩ ↠M) (M ∎) = L —→⟨ L→ ⟩ ↠M
   ↠-trans (L —→⟨ L→ ⟩ ↠M) (M —→⟨ M→ ⟩ ↠N) = L —→⟨ L→ ⟩ ↠-trans ↠M (M —→⟨ M→ ⟩ ↠N)
+
+  ↠-eq : ∀ {Γ A} {M N : Γ ⊢ A}
+    → M ≡ N
+      ---------
+    → M —↠ N
+  ↠-eq {M = M} {N} eq rewrite eq = N ∎
+
+

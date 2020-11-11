@@ -995,11 +995,54 @@ module Types where
   ground-sum-⊑ : ∀ {A B} → ⋆ `⊎ ⋆ ⊑ A `⊎ B
   ground-sum-⊑ = sum⊑ unk⊑ unk⊑
 
+  -- A type that is less precise than a ground type and not ⋆ must also be ground.
+  ⊑G-nd-ground : ∀ {A G}
+    → Ground G → A ⊑ G  → A ≢ ⋆
+      -----------------------------
+    → Ground A
+  ⊑G-nd-ground G-Base unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Base base⊑ x = G-Base
+  ⊑G-nd-ground G-Fun unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Fun (fun⊑ unk⊑ unk⊑) x = G-Fun
+  ⊑G-nd-ground G-Pair unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Pair (pair⊑ unk⊑ unk⊑) x = G-Pair
+  ⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
+
   nd⋢⋆ : ∀ {A} → A ≢ ⋆ → ¬ A ⊑ ⋆
   nd⋢⋆ nd unk⊑ = contradiction refl nd
 
+  -- A ground type cannot be ⋆
   ground-nd : ∀ {G} → Ground G → G ≢ ⋆
   ground-nd G-Base ()
   ground-nd G-Fun ()
   ground-nd G-Pair ()
   ground-nd G-Sum ()
+
+  -- Relax on precision by using the ground type G instead of A, suppose G ~ A.
+  ⊑-ground-relax : ∀ {A B G}
+    → Ground G
+    → A ⊑ B → A ~ G → A ≢ ⋆
+      ------------------------
+    → G ⊑ B
+  ⊑-ground-relax _ unk⊑ unk~L nd = contradiction refl nd
+  ⊑-ground-relax _ base⊑ base~ nd = base⊑
+  ⊑-ground-relax G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+  ⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+  ⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
+  ⊑-ground-consis : ∀ {G A B}
+    → Ground G
+    → G ⊑ A → A ~ B → B ≢ ⋆
+      ------------------------
+    → G ⊑ B
+  ⊑-ground-consis G-Base base⊑ unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Base base⊑ base~ nd = base⊑
+  ⊑-ground-consis G-Fun (fun⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+  ⊑-ground-consis G-Pair (pair⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+  ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
+
