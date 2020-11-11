@@ -267,34 +267,57 @@ catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
   with catchup v′ lpM
 ... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW ⟩ ⟩ ⟩
 
--- sim-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {M′ : ∅ ⊢ A′} {N′ : ∅ ⊢ B′}
---   → ∅ , ∅ ⊢ N ⊑ᶜ cons M′ N′
---     ------------------------------------------
---   → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ M′))
--- sim-fst (⊑ᶜ-cons lpf lpf₁) = {!!}
--- sim-fst (⊑ᶜ-castl {A = T} {M = N₁} {c = c} lp1 lp2 lpf) = {!!}
--- sim-fst (⊑ᶜ-wrapl {A = T} {M = N₁} {c = c} lp1 lp2 lpf) = {!!}
+pair-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
+pair-cast-is-cross (cast (A `× B) (C `× D) ℓ _) = Cross.C-pair
 
--- gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
---   → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
---   → M₁′ —→ M₂′
---     ---------------------------------------------
---   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+sim-fst-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+  → Value V → Value V′ → Value W′
+  → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
+    ------------------------------------------
+  → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
+sim-fst-v v v′ w′ (⊑ᶜ-cons lpV lpV₁) = {!!}
+sim-fst-v (V-wrap {V = V} {c} v (Inert.I-pair _)) v′ w′ (⊑ᶜ-wrapl (lpit-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV)
+  with sim-fst-v v v′ w′ lpV
+... | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+  let x = pair-cast-is-cross c in
+    ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast (fstC c x)) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
 
--- gradual-guarantee-fst : ∀ {A A′ B B′} {N₁ : ∅ ⊢ A `× B} {N₁′ : ∅ ⊢ A′ `× B′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
---   → ∅ , ∅ ⊢ N₁ ⊑ᶜ N₁′
---   → M₁ ≡ fst N₁ → M₁′ ≡ fst N₁′
---   → M₁′ —→ M₂′
---     -----------------------------------------------
---   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+sim-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+  → Value V′ → Value W′
+  → ∅ , ∅ ⊢ N ⊑ᶜ cons V′ W′
+    ------------------------------------------
+  → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
+sim-fst v′ w′ lpN
+  -- first goes to fst V where V is value
+  with catchup (V-pair v′ w′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  -- then goes from there by `sim-fst-v`
+  with sim-fst-v v v′ w′ lpV
+...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
 
--- gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑N₁′ refl eq2 (ξ {M′ = N₂′} {F} N₁′→N₂′) with plug-inv-fst F eq2
--- ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ with gradual-guarantee N₁⊑N₁′ N₁′→N₂′
--- ...   | ⟨ N₂ , ⟨ N₁↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-cong F-fst N₁↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
--- gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F}) with plug-inv-fst F eq2
--- ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
--- gradual-guarantee-fst {N₁ = N₁} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = sim-fst lpf
--- gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
+gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+
+gradual-guarantee-fst : ∀ {A A′ B B′} {N₁ : ∅ ⊢ A `× B} {N₁′ : ∅ ⊢ A′ `× B′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ N₁ ⊑ᶜ N₁′
+  → M₁ ≡ fst N₁ → M₁′ ≡ fst N₁′
+  → M₁′ —→ M₂′
+    -----------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+
+gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑N₁′ refl eq2 (ξ {M′ = N₂′} {F} N₁′→N₂′)
+  with plug-inv-fst F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with gradual-guarantee N₁⊑N₁′ N₁′→N₂′
+...   | ⟨ N₂ , ⟨ N₁↠N₂ , N₂⊑N₂′ ⟩ ⟩ = ⟨ fst N₂ , ⟨ plug-cong F-fst N₁↠N₂ , ⊑ᶜ-fst N₂⊑N₂′ ⟩ ⟩
+gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F})
+  with plug-inv-fst F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
+gradual-guarantee-fst {N₁ = N₁} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = sim-fst vV′ vW′ lpf
+gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
 
 -- -- gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
 -- -- gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
