@@ -275,7 +275,7 @@ sim-fst-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W�
   → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
     ------------------------------------------
   → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
-sim-fst-v v v′ w′ (⊑ᶜ-cons lpV lpV₁) = {!!}
+sim-fst-v (V-pair {V = V} {W} v w) v′ w′ (⊑ᶜ-cons lpV lpW) = ⟨ V , ⟨ _ —→⟨ β-fst v w ⟩ _ ∎ , lpV ⟩ ⟩
 sim-fst-v (V-wrap {V = V} {c} v (Inert.I-pair _)) v′ w′ (⊑ᶜ-wrapl (lpit-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV)
   with sim-fst-v v v′ w′ lpV
 ... | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
