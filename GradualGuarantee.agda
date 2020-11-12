@@ -270,30 +270,57 @@ catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
 pair-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
 pair-cast-is-cross (cast (A `× B) (C `× D) ℓ _) = Cross.C-pair
 
-sim-fst-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+sim-fst-cons-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
   → Value V → Value V′ → Value W′
   → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
     ------------------------------------------
   → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
-sim-fst-v (V-pair {V = V} {W} v w) v′ w′ (⊑ᶜ-cons lpV lpW) = ⟨ V , ⟨ _ —→⟨ β-fst v w ⟩ _ ∎ , lpV ⟩ ⟩
-sim-fst-v (V-wrap {V = V} {c} v (Inert.I-pair _)) v′ w′ (⊑ᶜ-wrapl (lpit-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV)
-  with sim-fst-v v v′ w′ lpV
+sim-fst-cons-v (V-pair {V = V} {W} v w) v′ w′ (⊑ᶜ-cons lpV lpW) = ⟨ V , ⟨ _ —→⟨ β-fst v w ⟩ _ ∎ , lpV ⟩ ⟩
+sim-fst-cons-v (V-wrap {V = V} {c} v (Inert.I-pair _)) v′ w′ (⊑ᶜ-wrapl (lpit-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV)
+  with sim-fst-cons-v v v′ w′ lpV
 ... | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
   let x = pair-cast-is-cross c in
     ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast (fstC c x)) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
 
-sim-fst : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+sim-fst-cons : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
   → Value V′ → Value W′
   → ∅ , ∅ ⊢ N ⊑ᶜ cons V′ W′
     ------------------------------------------
   → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
-sim-fst v′ w′ lpN
+sim-fst-cons v′ w′ lpN
   -- first goes to fst V where V is value
   with catchup (V-pair v′ w′) lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
-  -- then goes from there by `sim-fst-v`
-  with sim-fst-v v v′ w′ lpV
+  -- then goes from there by `sim-fst-cons-v`
+  with sim-fst-cons-v v v′ w′ lpV
 ...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
+
+sim-fst-wrap-v : ∀ {A B A₁′ B₁′ A₂′ B₂′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → Value V → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+    ------------------------------------------------------------------
+  → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (fst V′) ⟨ fstC c′ x′ ⟩))
+sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap (lpii-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV) =
+  let x = pair-cast-is-cross c in
+    ⟨ (fst V) ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ _ ∎ , (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-fst lpV)) ⟩ ⟩
+sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrapl (lpit-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV)
+  with sim-fst-wrap-v v v′ i′ x′ lpV
+... | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+  let x = pair-cast-is-cross c in
+    ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
+sim-fst-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr (lpti-pair (pair⊑ lp₁₁ lp₁₂) (pair⊑ lp₂₁ lp₂₂)) lpV) =
+  ⟨ fst V , ⟨ fst V ∎ , ⊑ᶜ-castr lp₁₁ lp₂₁ (⊑ᶜ-fst lpV) ⟩ ⟩
+
+sim-fst-wrap : ∀ {A B A₁′ B₁′ A₂′ B₂′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫
+    ------------------------------------------------------------------
+  → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (fst V′) ⟨ fstC c′ x′ ⟩))
+sim-fst-wrap v′ i′ x′ lpN
+  with catchup (V-wrap v′ i′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-fst-wrap-v v v′ i′ x′ lpV
+... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
 
 gradual-guarantee : ∀ {A A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ A′}
   → ∅ , ∅ ⊢ M₁ ⊑ᶜ M₁′     -- Note M₁′ is more precise here.
@@ -316,8 +343,8 @@ gradual-guarantee-fst {N₁ = N₁} {N₁′} {M₁} {M₁′} {M₂′} N₁⊑
 gradual-guarantee-fst {N₁ = N₁} lpf refl eq2 (ξ-blame {F = F})
   with plug-inv-fst F eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ fst N₁ , ⟨ fst N₁ ∎ , fst-pres-⊑blame lpf ⟩ ⟩
-gradual-guarantee-fst {N₁ = N₁} lpf refl refl (β-fst {V = V′} {W = W′} vV′ vW′) = sim-fst vV′ vW′ lpf
-gradual-guarantee-fst lpf refl refl (fst-cast x) = {!!}
+gradual-guarantee-fst lpf refl refl (β-fst vV′ vW′) = sim-fst-cons vV′ vW′ lpf
+gradual-guarantee-fst lpf refl refl (fst-cast v′ {x′} {i′}) = sim-fst-wrap v′ i′ x′ lpf
 
 -- -- gradual-guarantee (⊑ᶜ-prim) rd = ⊥-elim (V⌿→ V-const rd)
 -- -- gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
