@@ -8,7 +8,7 @@ open import Data.Bool
 open import Variables
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app) renaming (subst to subst-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
 {-
@@ -188,3 +188,23 @@ module ParamCastAux (pcs : PreCastStruct) where
      let l = inl ((` Z) ⟨ inlC c x ⟩) in
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
      case M (ƛ l) (ƛ r)
+
+  {- Here are a few inversion lemmas for `plug` : -}
+  plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
+    → (F : Frame C A)
+    → plug N F ≡ fst M
+      ----------------------------------------------------------
+    → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ A) eq F ≡ F-fst) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
+  plug-inv-fst F-fst refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+
+  plug-inv-cons₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {L L′ : Γ ⊢ B}
+    → plug L (F-×₁ M) ≡ cons M′ L′
+      -----------------------------
+    → (L ≡ L′) × (M ≡ M′)
+  plug-inv-cons₁ refl = ⟨ refl , refl ⟩
+
+  plug-inv-cons₂ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {L L′ : Γ ⊢ B}
+    → plug M (F-×₂ L) ≡ cons M′ L′
+      -----------------------------
+    → (L ≡ L′) × (M ≡ M′)
+  plug-inv-cons₂ refl = ⟨ refl , refl ⟩

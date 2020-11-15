@@ -1,6 +1,7 @@
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
   using (_≡_; _≢_; refl)
+open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 
 -- We're using simple cast with inert cross cast - at least for now.
 open import GroundInertX using (Cast; Active; Inert)
@@ -227,11 +228,13 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
     → Γ , Γ′ ⊢ snd M ⊑ᶜ snd M′
 
   ⊑ᶜ-inl : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+    → B ⊑ B′
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       ------------------------------------------
     → Γ , Γ′ ⊢ inl {B = B} M ⊑ᶜ inl {B = B′} M′
 
   ⊑ᶜ-inr : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ B} {M′ : Γ′ ⊢ B′}
+    → A ⊑ A′
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       ------------------------------------------
     → Γ , Γ′ ⊢ inr {A = A} M ⊑ᶜ inr {A = A′} M′
@@ -299,12 +302,66 @@ _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᴳ-var refl)
 
 -- Lemmas
-lp→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
+⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
   → (i : Inert c)
   → A ⊑ A′ → B ⊑ A′
     ------------------
   → ⟪ i ⟫⊑ A′
-lp→lpit (Inert.I-inj g _) lp1 lp2 = lpit-inj g lp1
-lp→lpit (Inert.I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
-lp→lpit (Inert.I-pair _) (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) = lpit-pair (pair⊑ lp1 lp3) (pair⊑ lp2 lp4)
-lp→lpit (Inert.I-sum _) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) = lpit-sum (sum⊑ lp1 lp3) (sum⊑ lp2 lp4)
+⊑→lpit (Inert.I-inj g _) lp1 lp2 = lpit-inj g lp1
+⊑→lpit (Inert.I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
+⊑→lpit (Inert.I-pair _) (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) = lpit-pair (pair⊑ lp1 lp3) (pair⊑ lp2 lp4)
+⊑→lpit (Inert.I-sum _) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) = lpit-sum (sum⊑ lp1 lp3) (sum⊑ lp2 lp4)
+
+lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
+  → ⟪ i ⟫⊑⟪ i′ ⟫
+    --------------------
+  → (A ⊑ A′) × (B ⊑ B′)
+lpii→⊑ (lpii-inj g) = ⟨ Refl⊑ , unk⊑ ⟩
+lpii→⊑ (lpii-fun lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpii→⊑ (lpii-pair lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpii→⊑ (lpii-sum lp1 lp2) = ⟨ lp1 , lp2 ⟩
+
+lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
+  → ⟪ i ⟫⊑ A′
+    --------------------
+  → (A ⊑ A′) × (B ⊑ A′)
+lpit→⊑ (lpit-inj g lp) = ⟨ lp , unk⊑ ⟩
+lpit→⊑ (lpit-fun lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpit→⊑ (lpit-pair lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpit→⊑ (lpit-sum lp1 lp2) = ⟨ lp1 , lp2 ⟩
+
+lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+  → A ⊑⟪ i′ ⟫
+    --------------------
+  → (A ⊑ A′) × (A ⊑ B′)
+lpti→⊑ (lpti-fun lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpti→⊑ (lpti-pair lp1 lp2) = ⟨ lp1 , lp2 ⟩
+lpti→⊑ (lpti-sum lp1 lp2) = ⟨ lp1 , lp2 ⟩
+
+⊑ᶜ→⊑ : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+  → Γ ⊑* Γ′
+  → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    -----------------
+  → A ⊑ A′
+⊑ᶜ→⊑ lp* ⊑ᶜ-prim = Refl⊑
+⊑ᶜ→⊑ lp* (⊑ᴳ-var eq) = ⊑*→⊑ _ _ lp* eq
+⊑ᶜ→⊑ lp* (⊑ᶜ-ƛ lp lpN) = fun⊑ lp (⊑ᶜ→⊑ (⊑*-, lp lp*) lpN)
+⊑ᶜ→⊑ lp* (⊑ᶜ-· lpL lpM) with ⊑ᶜ→⊑ lp* lpL
+... | (fun⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-if lpL lpM lpN) = ⊑ᶜ→⊑ lp* lpN
+⊑ᶜ→⊑ lp* (⊑ᶜ-cons lpM lpN) = pair⊑ (⊑ᶜ→⊑ lp* lpM) (⊑ᶜ→⊑ lp* lpN)
+⊑ᶜ→⊑ lp* (⊑ᶜ-fst lpM) with ⊑ᶜ→⊑ lp* lpM
+... | (pair⊑ lp1 lp2) = lp1
+⊑ᶜ→⊑ lp* (⊑ᶜ-snd lpM) with ⊑ᶜ→⊑ lp* lpM
+... | (pair⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-inl lp lpM) = sum⊑ (⊑ᶜ→⊑ lp* lpM) lp
+⊑ᶜ→⊑ lp* (⊑ᶜ-inr lp lpM) = sum⊑ lp (⊑ᶜ→⊑ lp* lpM)
+⊑ᶜ→⊑ lp* (⊑ᶜ-case lpL lpM lpN) with ⊑ᶜ→⊑ lp* lpM
+... | (fun⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-cast lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-castl lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM) = proj₂ (lpii→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrapl lpi lpM) = proj₂ (lpit→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM) = proj₂ (lpti→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-blame lp) = lp

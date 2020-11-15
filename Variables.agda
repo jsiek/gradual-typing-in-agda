@@ -60,3 +60,11 @@ var-eq? (S x₁) (S x₂) with var-eq? x₁ x₂
   → A ⊑ A′
 ⊑*→⊑ Z Z (⊑*-, lp lpc) refl = lp
 ⊑*→⊑ (S x) (S x′) (⊑*-, _ lpc) eq = ⊑*→⊑ x x′ lpc (suc-injective eq)
+
+∋→ℕ-lookup-same : ∀ {Γ A B}
+  → (x : Γ ∋ A) → (y : Γ ∋ B)
+  → ∋→ℕ x ≡ ∋→ℕ y
+    ---------------------------
+  → A ≡ B
+∋→ℕ-lookup-same Z Z refl = refl
+∋→ℕ-lookup-same (S x) (S y) eq = ∋→ℕ-lookup-same x y (suc-injective eq)

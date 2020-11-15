@@ -439,13 +439,6 @@ module ParamCastReduction (cs : CastStruct) where
   V⌿→ (V-inr v) rd = V-inr⌿→ rd refl (V-inr v)
   V⌿→ (V-wrap v i) rd = V-wrap⌿→ rd refl (V-wrap v i)
 
-  plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
-    → (F : Frame C A)
-    → plug N F ≡ fst M
-      ----------------------------------------------------------
-    → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ A) eq F ≡ F-fst) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
-  plug-inv-fst F-fst refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
-
   -- Multi-step reduction is a congruence.
   plug-cong : ∀ {Γ A B} {M N : Γ ⊢ A}
     → (F : Frame {Γ} A B)
