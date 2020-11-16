@@ -208,3 +208,9 @@ module ParamCastAux (pcs : PreCastStruct) where
       -----------------------------
     → (L ≡ L′) × (M ≡ M′)
   plug-inv-cons₂ refl = ⟨ refl , refl ⟩
+
+  plug-inv-inl : ∀ {Γ A B} {M M′ : Γ ⊢ A}
+    → plug M F-inl ≡ inl {B = B} M′
+      ------------------------------
+    → M ≡ M′
+  plug-inv-inl refl = refl

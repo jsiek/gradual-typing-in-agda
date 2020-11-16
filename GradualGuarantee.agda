@@ -362,6 +362,21 @@ gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ-blame {F = F-×₂ _})
   with plug-inv-cons₂ eq2
 ... | ⟨ refl , refl ⟩ = ⟨ cons M N , ⟨ cons M N ∎ , ⊑ᶜ-blame (pair⊑ (⊑ᶜ→⊑ ⊑*-∅ lpM) (⊑ᶜ→⊑ ⊑*-∅ lpN)) ⟩ ⟩
 
+gradual-guarantee-inl : ∀ {A A′ B B′} {M : ∅ ⊢ A} {M′ : ∅ ⊢ A′} {M₁ : ∅ ⊢ A `⊎ B} {M₁′ M₂′ : ∅ ⊢ A′ `⊎ B′}
+  → B ⊑ B′ → ∅ , ∅ ⊢ M ⊑ᶜ M′
+  → M₁ ≡ inl {B = B} M → M₁′ ≡ inl {B = B′} M′
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+gradual-guarantee-inl lp lpM refl eq2 (ξ {F = F-inl} rd)
+  with plug-inv-inl eq2
+... | refl
+  with gradual-guarantee lpM rd
+...   | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ = ⟨ inl M₁ , ⟨ plug-cong F-inl rd* , ⊑ᶜ-inl lp lpM₁ ⟩ ⟩
+gradual-guarantee-inl {M = M} lp lpM refl eq2 (ξ-blame {F = F-inl})
+  with plug-inv-inl eq2
+... | refl = ⟨ inl M , ⟨ inl M ∎ , ⊑ᶜ-blame (sum⊑ (⊑ᶜ→⊑ ⊑*-∅ lpM) lp) ⟩ ⟩
+
 {-
   The term constructor `fst` is an eliminator for pairs. By casing on the reduction of the rhs,
   the β and cast cases are the interesting ones - we prove them in separate lemmas.
@@ -379,18 +394,18 @@ gradual-guarantee-fst lpf refl refl (fst-cast v′ {x′} {i′}) = sim-fst-wrap
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
--- gradual-guarantee (⊑ᶜ-· lpL lpM) rd = {!!}
--- gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
+gradual-guarantee (⊑ᶜ-· lpL lpM) rd = {!!}
+gradual-guarantee (⊑ᶜ-if lpf lpf₁ lpf₂) rd = {!!}
 gradual-guarantee (⊑ᶜ-cons lpM lpN) rd = gradual-guarantee-cons lpM lpN refl refl rd
 gradual-guarantee (⊑ᶜ-fst lpM) rd = gradual-guarantee-fst lpM refl refl rd
--- gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-inl lp lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-inr lp lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
--- gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-wrap x lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-wrapl x lpf) rd = {!!}
--- gradual-guarantee (⊑ᶜ-wrapr x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-snd lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-inl lp lpf) rd = gradual-guarantee-inl lp lpf refl refl rd
+gradual-guarantee (⊑ᶜ-inr lp lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
+gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-wrap x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-wrapl x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-wrapr x lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-blame _) rd = ⊥-elim (blame⌿→ rd)
