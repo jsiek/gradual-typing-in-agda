@@ -197,6 +197,13 @@ module ParamCastAux (pcs : PreCastStruct) where
     → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ A) eq F ≡ F-fst) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
   plug-inv-fst F-fst refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
 
+  plug-inv-snd : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
+    → (F : Frame C B)
+    → plug N F ≡ snd M
+      ----------------------------------------------------------
+    → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ B) eq F ≡ F-snd) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
+  plug-inv-snd F-snd refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+
   plug-inv-cons₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {L L′ : Γ ⊢ B}
     → plug L (F-×₁ M) ≡ cons M′ L′
       -----------------------------
@@ -214,3 +221,10 @@ module ParamCastAux (pcs : PreCastStruct) where
       ------------------------------
     → M ≡ M′
   plug-inv-inl refl = refl
+
+  plug-inv-inr : ∀ {Γ A B} {M M′ : Γ ⊢ B}
+    → plug M F-inr ≡ inr {A = A} M′
+      ------------------------------
+    → M ≡ M′
+  plug-inv-inr refl = refl
+
