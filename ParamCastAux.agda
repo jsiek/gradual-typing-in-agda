@@ -228,3 +228,8 @@ module ParamCastAux (pcs : PreCastStruct) where
     → M ≡ M′
   plug-inv-inr refl = refl
 
+  plug-inv-if : ∀ {Γ A} {L Lᵒ : Γ ⊢ ` 𝔹} {M Mᵒ N Nᵒ : Γ ⊢ A}
+    → plug L (F-if M N) ≡ if Lᵒ Mᵒ Nᵒ
+      --------------------------------
+    → (L ≡ Lᵒ) × (M ≡ Mᵒ) × (N ≡ Nᵒ)
+  plug-inv-if refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩

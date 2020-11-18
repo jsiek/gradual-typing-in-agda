@@ -32,6 +32,24 @@ open import GradualGuaranteeAux
 pair-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
 pair-cast-is-cross (cast (A `× B) (C `× D) ℓ _) = Cross.C-pair
 
+sim-if-true : ∀ {A A′} {L : ∅ ⊢ ` 𝔹} {M N : ∅ ⊢ A} {M′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ true) {P-Base} → ∅ , ∅ ⊢ M ⊑ᶜ M′
+    --------------------------------------------------
+  → ∃[ K ] ((if L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ M′))
+sim-if-true {M = M} {N} lpL lpM
+  with catchup V-const lpL
+... | ⟨ ($ true) {P-Base} , ⟨ V-const , ⟨ rd* , lpV ⟩ ⟩ ⟩ =
+  ⟨ M , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-true ⟩ _ ∎) , lpM ⟩ ⟩
+
+sim-if-false : ∀ {A A′} {L : ∅ ⊢ ` 𝔹} {M N : ∅ ⊢ A} {N′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ false) {P-Base} → ∅ , ∅ ⊢ N ⊑ᶜ N′
+    ---------------------------------------------------
+  → ∃[ K ] ((if L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ N′))
+sim-if-false {M = M} {N} lpL lpN
+  with catchup V-const lpL
+... | ⟨ ($ false) {P-Base} , ⟨ V-const , ⟨ rd* , lpV ⟩ ⟩ ⟩ =
+  ⟨ N , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-false ⟩ _ ∎) , lpN ⟩ ⟩
+
 sim-fst-cons-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
   → Value V → Value V′ → Value W′
   → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′

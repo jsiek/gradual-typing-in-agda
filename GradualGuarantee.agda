@@ -141,10 +141,16 @@ gradual-guarantee-if : ∀ {A A′} {L L′ : ∅ ⊢ ` 𝔹} {M : ∅ ⊢ A} {N
   → M₁′ —→ M₂′
     -----------------------------------------------
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
-gradual-guarantee-if lpL lpM lpN refl eq2 (ParamCastReduction.ξ rd) = {!!}
-gradual-guarantee-if {L = L} {L′} {M} {N} {M′} {N′} lpL lpM lpN refl eq2 (ParamCastReduction.ξ-blame {F = ParamCastAux.F-if x x₁}) = {!!}
-gradual-guarantee-if lpL lpM lpN eq1 eq2 β-if-true = {!!}
-gradual-guarantee-if lpL lpM lpN eq1 eq2 β-if-false = {!!}
+gradual-guarantee-if {L = L} {L′} {M} {N} {M′} {N′} lpL lpM lpN refl eq2 (ξ {F = F-if M′ᵒ N′ᵒ} rd)
+  with plug-inv-if eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with gradual-guarantee lpL rd
+... | ⟨ L₂ , ⟨ rd* , lpL₂ ⟩ ⟩ = ⟨ if L₂ M N , ⟨ plug-cong (F-if M N) rd* , ⊑ᶜ-if lpL₂ lpM lpN ⟩ ⟩
+gradual-guarantee-if {L = L} {L′} {M} {N} {M′} {N′} lpL lpM lpN refl eq2 (ξ-blame {F = F-if M′ᵒ N′ᵒ})
+  with plug-inv-if eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ if L M N , ⟨ if L M N ∎ , ⊑ᶜ-blame (⊑ᶜ→⊑ ⊑*-∅ lpM) ⟩ ⟩
+gradual-guarantee-if {L′ = .($ true)  {P-Base}} lpL lpM lpN refl refl β-if-true  = sim-if-true  lpL lpM
+gradual-guarantee-if {L′ = .($ false) {P-Base}} lpL lpM lpN refl refl β-if-false = sim-if-false lpL lpN
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
