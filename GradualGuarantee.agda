@@ -172,6 +172,26 @@ gradual-guarantee-wrap {M = M} {i = i} lpi lpM refl eq2 (ξ-blame {F = F-wrap _}
   with plug-inv-wrap-i eq2
 ...   | ⟨ refl , refl ⟩ = ⟨ M ⟪ i ⟫ , ⟨ M ⟪ i ⟫ ∎ , ⊑ᶜ-blame (proj₂ (lpii→⊑ lpi)) ⟩ ⟩
 
+gradual-guarantee-wrapr : ∀ {A A′ B′} {M′ : ∅ ⊢ A′} {M₁ : ∅ ⊢ A} {M₁′ M₂′ : ∅ ⊢ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+  → A ⊑⟪ i′ ⟫ → ∅ , ∅ ⊢ M₁ ⊑ᶜ M′
+  → M₁′ ≡ M′ ⟪ i′ ⟫
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+-- The proofs for both cases are practically the same as `wrap`.
+gradual-guarantee-wrapr lpi lpM₁ eq (ξ {F = F-wrap _} rd)
+  with plug-inv-wrap-M eq
+... | ⟨ refl , refl ⟩
+  with plug-inv-wrap-i eq
+...   | ⟨ refl , refl ⟩
+  with gradual-guarantee lpM₁ rd
+...     | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ , ⟨ rd* , ⊑ᶜ-wrapr lpi lpM₂ ⟩ ⟩
+gradual-guarantee-wrapr {M₁ = M₁} lpi lpM₁ eq (ξ-blame {F = F-wrap _})
+  with plug-inv-wrap-M eq
+... | ⟨ refl , refl ⟩
+  with plug-inv-wrap-i eq
+...   | ⟨ refl , refl ⟩ = ⟨ M₁ , ⟨ M₁ ∎ , ⊑ᶜ-blame (proj₂ (lpti→⊑ lpi)) ⟩ ⟩
+
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpL lpM) rd = {!!}
@@ -186,6 +206,8 @@ gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
 gradual-guarantee (⊑ᶜ-wrap lpi lpM) rd = gradual-guarantee-wrap lpi lpM refl refl rd
-gradual-guarantee (⊑ᶜ-wrapl x lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-wrapr x lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-wrapl {i = i} lpi lpM) rd
+  with gradual-guarantee lpM rd
+... | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟪ i ⟫ , ⟨ plug-cong (F-wrap i) rd* , ⊑ᶜ-wrapl lpi lpM₂ ⟩ ⟩
+gradual-guarantee (⊑ᶜ-wrapr lpi lpM) rd = gradual-guarantee-wrapr lpi lpM refl rd
 gradual-guarantee (⊑ᶜ-blame _) rd = ⊥-elim (blame⌿→ rd)
