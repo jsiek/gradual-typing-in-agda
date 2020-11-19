@@ -218,6 +218,18 @@ module ParamCastAux (pcs : PreCastStruct) where
     → (L ≡ L′) × (M ≡ M′)
   plug-inv-cons₂ refl = ⟨ refl , refl ⟩
 
+  plug-inv-app₁ : ∀ {Γ A Aᵒ B} {L : Γ ⊢ A ⇒ B} {Lᵒ : Γ ⊢ Aᵒ ⇒ B} {M : Γ ⊢ A} {Mᵒ : Γ ⊢ Aᵒ}
+    → plug L (F-·₁ M) ≡ Lᵒ · Mᵒ
+      --------------------------
+    → Σ[ eqA ∈ A ≡ Aᵒ ] (subst-eq (λ A → Γ ⊢ A ⇒ B) eqA L ≡ Lᵒ) × (subst-eq (λ A → Γ ⊢ A) eqA M ≡ Mᵒ)
+  plug-inv-app₁ refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+
+  plug-inv-app₂ : ∀ {Γ A Aᵒ B} {L : Γ ⊢ A ⇒ B} {Lᵒ : Γ ⊢ Aᵒ ⇒ B} {M : Γ ⊢ A} {Mᵒ : Γ ⊢ Aᵒ} {vL : Value L}
+    → plug M (F-·₂ L {vL}) ≡ Lᵒ · Mᵒ
+      --------------------------
+    → Σ[ eqA ∈ A ≡ Aᵒ ] (subst-eq (λ A → Γ ⊢ A ⇒ B) eqA L ≡ Lᵒ) × (subst-eq (λ A → Γ ⊢ A) eqA M ≡ Mᵒ)
+  plug-inv-app₂ refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+
   plug-inv-inl : ∀ {Γ A B} {M M′ : Γ ⊢ A}
     → plug M F-inl ≡ inl {B = B} M′
       ------------------------------

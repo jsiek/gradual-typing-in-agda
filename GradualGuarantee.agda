@@ -192,6 +192,34 @@ gradual-guarantee-wrapr {M₁ = M₁} lpi lpM₁ eq (ξ-blame {F = F-wrap _})
   with plug-inv-wrap-i eq
 ...   | ⟨ refl , refl ⟩ = ⟨ M₁ , ⟨ M₁ ∎ , ⊑ᶜ-blame (proj₂ (lpti→⊑ lpi)) ⟩ ⟩
 
+gradual-guarantee-app : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {L′ : ∅ ⊢ A′ ⇒ B′} {M : ∅ ⊢ A} {M′ : ∅ ⊢ A′} {M₁ : ∅ ⊢ B} {M₁′ M₂′ : ∅ ⊢ B′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ L′ → ∅ , ∅ ⊢ M ⊑ᶜ M′
+  → M₁ ≡ L · M → M₁′ ≡ L′ · M′
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+gradual-guarantee-app lpL lpM eq1 eq2 (ParamCastReduction.β x) = {!!}
+gradual-guarantee-app lpL lpM eq1 eq2 ParamCastReduction.δ = {!!}
+gradual-guarantee-app lpL lpM eq1 eq2 (ParamCastReduction.fun-cast v x) = {!!}
+gradual-guarantee-app {M = M} lpL lpM refl eq2 (ξ {F = F-·₁ _} rd)
+  with plug-inv-app₁ eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with gradual-guarantee lpL rd
+...   | ⟨ L₂ , ⟨ rd* , lpL₂ ⟩ ⟩ = ⟨ L₂ · M , ⟨ plug-cong (F-·₁ _) rd* , ⊑ᶜ-· lpL₂ lpM ⟩ ⟩
+gradual-guarantee-app {L = L} lpL lpM refl eq2 (ξ {F = F-·₂ _ {v}} rd)
+  with plug-inv-app₂ {vL = v} eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ?
+gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ-blame {F = F-·₁ _})
+  with plug-inv-app₁ eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with ⊑ᶜ→⊑ ⊑*-∅ lpL
+...   | fun⊑ lpA lpB = ⟨ L · M , ⟨ L · M ∎ , ⊑ᶜ-blame lpB ⟩ ⟩
+gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ-blame {F = F-·₂ _ {v}})
+  with plug-inv-app₂ {vL = v} eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with ⊑ᶜ→⊑ ⊑*-∅ lpL
+...   | fun⊑ lpA lpB = ⟨ L · M , ⟨ L · M ∎ , ⊑ᶜ-blame lpB ⟩ ⟩
+
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpL lpM) rd = {!!}
