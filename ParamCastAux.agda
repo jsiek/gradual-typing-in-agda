@@ -8,7 +8,9 @@ open import Data.Bool
 open import Variables
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app) renaming (subst to subst-eq)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
 {-
@@ -233,3 +235,19 @@ module ParamCastAux (pcs : PreCastStruct) where
       --------------------------------
     → (L ≡ Lᵒ) × (M ≡ Mᵒ) × (N ≡ Nᵒ)
   plug-inv-if refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+
+  {-
+    Note that in the first lemma the source type can be different (A might not be the same as Aᵒ).
+    When used, first perform inversion by the 1st lemma using with-abstraction and then the 2nd.
+  -}
+  plug-inv-wrap-M : ∀ {Γ A Aᵒ B} {M : Γ ⊢ A} {Mᵒ : Γ ⊢ Aᵒ} {c : Cast (A ⇒ B)} {cᵒ : Cast (Aᵒ ⇒ B)} {i : Inert c} {iᵒ : Inert cᵒ}
+    → plug M (F-wrap i) ≡ Mᵒ ⟪ iᵒ ⟫
+      -----------------------------------------------------
+    → Σ[ eqA ∈ A ≡ Aᵒ ] subst-eq (λ A → Γ ⊢ A) eqA M ≡ Mᵒ
+  plug-inv-wrap-M refl = ⟨ refl , refl ⟩
+
+  plug-inv-wrap-i : ∀ {Γ A B} {M Mᵒ : Γ ⊢ A} {c cᵒ : Cast (A ⇒ B)} {i : Inert c} {iᵒ : Inert cᵒ}
+    → plug M (F-wrap i) ≡ Mᵒ ⟪ iᵒ ⟫
+      -------------------------------------------------------
+    → Σ[ eqc ∈ c ≡ cᵒ ] subst-eq (λ c → Inert c) eqc i ≡ iᵒ
+  plug-inv-wrap-i refl = ⟨ refl , refl ⟩
