@@ -206,9 +206,14 @@ gradual-guarantee-app {M = M} lpL lpM refl eq2 (ξ {F = F-·₁ _} rd)
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
   with gradual-guarantee lpL rd
 ...   | ⟨ L₂ , ⟨ rd* , lpL₂ ⟩ ⟩ = ⟨ L₂ · M , ⟨ plug-cong (F-·₁ _) rd* , ⊑ᶜ-· lpL₂ lpM ⟩ ⟩
-gradual-guarantee-app {L = L} lpL lpM refl eq2 (ξ {F = F-·₂ _ {v}} rd)
+gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ {F = F-·₂ _ {v}} rd)
   with plug-inv-app₂ {vL = v} eq2
-... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ?
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with catchup v lpL
+... | ⟨ L₂ , ⟨ vL₂ , ⟨ rd*₁ , lpL₂ ⟩ ⟩ ⟩
+  with gradual-guarantee lpM rd
+... | ⟨ M₂ , ⟨ rd*₂ , lpM₂ ⟩ ⟩ =
+  ⟨ L₂ · M₂ , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (plug-cong (F-·₂ _ {vL₂}) rd*₂) , ⊑ᶜ-· lpL₂ lpM₂ ⟩ ⟩
 gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ-blame {F = F-·₁ _})
   with plug-inv-app₁ eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
