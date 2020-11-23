@@ -32,6 +32,9 @@ open import GradualGuaranteeAux
 pair-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
 pair-cast-is-cross (cast (A `× B) (C `× D) ℓ _) = Cross.C-pair
 
+fun-cast-is-cross : ∀ {A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
+fun-cast-is-cross (cast (A ⇒ B) (C ⇒ D) ℓ _) = Cross.C-fun
+
 sim-if-true : ∀ {A A′} {L : ∅ ⊢ ` 𝔹} {M N : ∅ ⊢ A} {M′ : ∅ ⊢ A′}
   → ∅ , ∅ ⊢ L ⊑ᶜ ($ true) {P-Base} → ∅ , ∅ ⊢ M ⊑ᶜ M′
     --------------------------------------------------
@@ -151,3 +154,47 @@ sim-snd-wrap v′ i′ x′ lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-snd-wrap-v v v′ i′ x′ lpV
 ... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-snd rd*₁) rd*₂) , lpM ⟩ ⟩
+
+sim-app-δ : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {f : rep A′ → rep B′} {k : rep A′}
+              {ab : Prim (A′ ⇒ B′)} {a : Prim A′} {b : Prim B′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ f) {ab}
+  → ∅ , ∅ ⊢ M ⊑ᶜ ($ k) {a}
+    ----------------------------------------
+  → ∃[ N ] ((L · M —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ ($ f k) {b}))
+sim-app-δ-v : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {f : rep A′ → rep B′} {k : rep A′}
+                {ab : Prim (A′ ⇒ B′)} {a : Prim A′} {b : Prim B′}
+  → Value L → Value M
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ f) {ab}
+  → ∅ , ∅ ⊢ M ⊑ᶜ ($ k) {a}
+    ----------------------------------------
+  → ∃[ N ] ((L · M —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ ($ f k) {b}))
+
+sim-app-δ-v {f = f} {k} V-const V-const ⊑ᶜ-prim ⊑ᶜ-prim =
+  ⟨ $ f k , ⟨ _ —→⟨ δ ⟩ _ ∎ , ⊑ᶜ-prim ⟩ ⟩
+
+sim-app-δ-v {ab = ()} V-const (V-wrap vM (Inert.I-inj _ _)) ⊑ᶜ-prim (⊑ᶜ-wrapl lpi lpM)
+sim-app-δ-v {ab = ()} V-const (V-wrap vM (Inert.I-fun _))   ⊑ᶜ-prim (⊑ᶜ-wrapl lpi lpM)
+sim-app-δ-v {ab = ()} V-const (V-wrap vM (Inert.I-pair _))  ⊑ᶜ-prim (⊑ᶜ-wrapl lpi lpM)
+sim-app-δ-v {ab = ()} V-const (V-wrap vM (Inert.I-sum _))   ⊑ᶜ-prim (⊑ᶜ-wrapl lpi lpM)
+
+sim-app-δ-v {b = b} (V-wrap vV (Inert.I-fun c)) vM (⊑ᶜ-wrapl (lpit-fun (fun⊑ lp₁₁ lp₁₂) (fun⊑ lp₂₁ lp₂₂)) lpV) lpM =
+  {-
+    Starting from V ⟪ c ⟫ · M, first we go to (V · (M ⟨ dom c ⟩)) ⟨ cod c ⟩ by `fun-cast`.
+    Then we proceed on M ⟨ dom c ⟩ by `catchup` and step to a value W there.
+    At this point we have (V · W) ⟨ cod c ⟩ so we make recursive call on V, W and use congruence.
+  -}
+  let x = fun-cast-is-cross c
+      ⟨ W , ⟨ vW , ⟨ rd*₁ , lpW ⟩ ⟩ ⟩ = catchup V-const (⊑ᶜ-castl {c = dom c x} lp₂₁ lp₁₁ lpM)
+      ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = sim-app-δ-v {b = b} vV vW lpV lpW in
+    ⟨ N ⟨ cod c x ⟩ ,
+      ⟨ _ —→⟨ fun-cast vV vM {x} ⟩ ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ {vV}) rd*₁)) (plug-cong (F-cast _) rd*₂) ,
+        ⊑ᶜ-castl lp₁₂ lp₂₂ lpN ⟩ ⟩
+
+sim-app-δ {f = f} {k} {ab} {a} {b} lpL lpM
+  with catchup (V-const {k = f}) lpL
+... | ⟨ V₁ , ⟨ v₁ , ⟨ rd*₁ , lpV₁ ⟩ ⟩ ⟩
+  with catchup (V-const {k = k}) lpM
+...   | ⟨ V₂ , ⟨ v₂ , ⟨ rd*₂ , lpV₂ ⟩ ⟩ ⟩
+  with sim-app-δ-v {b = b} v₁ v₂ lpV₁ lpV₂
+...     | ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ =
+  ⟨ N , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v₁}) rd*₂) rd*₃) , lpN ⟩ ⟩

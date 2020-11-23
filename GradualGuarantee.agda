@@ -198,9 +198,6 @@ gradual-guarantee-app : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {L′ : ∅ �
   → M₁′ —→ M₂′
     ---------------------------------------------
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
-gradual-guarantee-app lpL lpM eq1 eq2 (ParamCastReduction.β x) = {!!}
-gradual-guarantee-app lpL lpM eq1 eq2 ParamCastReduction.δ = {!!}
-gradual-guarantee-app lpL lpM eq1 eq2 (ParamCastReduction.fun-cast v x) = {!!}
 gradual-guarantee-app {M = M} lpL lpM refl eq2 (ξ {F = F-·₁ _} rd)
   with plug-inv-app₁ eq2
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
@@ -224,6 +221,10 @@ gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ-blame {F = F-·₂ _ 
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
   with ⊑ᶜ→⊑ ⊑*-∅ lpL
 ...   | fun⊑ lpA lpB = ⟨ L · M , ⟨ L · M ∎ , ⊑ᶜ-blame lpB ⟩ ⟩
+gradual-guarantee-app lpL lpM refl refl (β v) = {!!}
+gradual-guarantee-app lpL lpM refl refl δ = sim-app-δ lpL lpM
+gradual-guarantee-app lpL lpM refl refl (fun-cast v w) = {!!}
+
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
