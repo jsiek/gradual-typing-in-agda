@@ -1,11 +1,12 @@
 module GradualGuaranteeAux where
 
 open import Data.Nat using (ℕ; zero; suc)
+open import Data.Nat.Properties using (suc-injective)
 open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
+  using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -260,3 +261,45 @@ catchup v′ (⊑ᶜ-wrapl {i = i} lp lpM)
 catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
   with catchup v′ lpM
 ... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW ⟩ ⟩ ⟩
+
+
+private
+  blame-subst : ∀ {Γ A B} {ℓ}
+    → (M : Γ ⊢ A)
+      ----------------------------------------------
+    → (blame {Γ , A} {B} ℓ) [ M ] ≡ blame {Γ} {B} ℓ
+  blame-subst M = refl
+
+{-
+  Single substitution preserves term precision.
+-}
+subst-pres-prec : ∀ {Γ Γ′ A A′ B B′} {N : Γ , A ⊢ B} {N′ : Γ′ , A′ ⊢ B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+  → (Γ , A) , (Γ′ , A′) ⊢ N ⊑ᶜ N′
+  → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    ------------------------------
+  → Γ , Γ′ ⊢ N [ M ] ⊑ᶜ N′ [ M′ ]
+subst-pres-prec ⊑ᶜ-prim lpM = ⊑ᶜ-prim
+subst-pres-prec (⊑ᴳ-var {x = x} {x′} eq) lpM with x | x′
+... | Z | Z = lpM
+... | (S k) | (S k′) = ⊑ᴳ-var (suc-injective eq)
+subst-pres-prec (⊑ᶜ-ƛ lp lpN) lpM = ⊑ᶜ-ƛ lp {!!}
+subst-pres-prec (⊑ᶜ-· lpN lpN₁) lpM =
+  ⊑ᶜ-· (subst-pres-prec lpN lpM) (subst-pres-prec lpN₁ lpM)
+subst-pres-prec (⊑ᶜ-if lpL lpN₁ lpN₂) lpM =
+  ⊑ᶜ-if (subst-pres-prec lpL lpM) (subst-pres-prec lpN₁ lpM) (subst-pres-prec lpN₂ lpM)
+subst-pres-prec (⊑ᶜ-cons lpL lpN) lpM =
+  ⊑ᶜ-cons (subst-pres-prec lpL lpM) (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-fst lpN) lpM = ⊑ᶜ-fst (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-snd lpN) lpM = ⊑ᶜ-snd (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-inl x lpN) lpM = ⊑ᶜ-inl x (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-inr x lpN) lpM = ⊑ᶜ-inr x (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-case lpL lpN₁ lpN₂) lpM =
+  ⊑ᶜ-case (subst-pres-prec lpL lpM) (subst-pres-prec lpN₁ lpM) (subst-pres-prec lpN₂ lpM)
+subst-pres-prec (⊑ᶜ-cast lp1 lp2 lpN) lpM = ⊑ᶜ-cast lp1 lp2 (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-castl lp1 lp2 lpN) lpM = ⊑ᶜ-castl lp1 lp2 (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-castr lp1 lp2 lpN) lpM = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-wrap lpi lpN) lpM = ⊑ᶜ-wrap lpi (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-wrapl lpi lpN) lpM = ⊑ᶜ-wrapl lpi (subst-pres-prec lpN lpM)
+subst-pres-prec (⊑ᶜ-wrapr lpi lpN) lpM = ⊑ᶜ-wrapr lpi (subst-pres-prec lpN lpM)
+subst-pres-prec {B′ = B′} {M′ = M′} (⊑ᶜ-blame {ℓ = ℓ} lp) lpM
+  rewrite sym (blame-subst {B = B′} {ℓ} M′) = ⊑ᶜ-blame lp
