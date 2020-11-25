@@ -39,7 +39,7 @@ compile-pres-prec : ∀ {Γ Γ′ A A′} {e : Γ ⊢G A} {e′ : Γ′ ⊢G A�
     -------------------------------
   → (A ⊑ A′) × (Γ , Γ′ ⊢ compile {Γ} {A} e ⊑ᶜ compile {Γ′} {A′} e′)
 compile-pres-prec lpc (⊑ᴳ-prim {A = A}) = ⟨ Refl⊑ , ⊑ᶜ-prim ⟩
-compile-pres-prec lpc (⊑ᴳ-var {x = x} {x′} eq) = ⟨ ⊑*→⊑ x x′ lpc eq , ⊑ᴳ-var eq ⟩
+compile-pres-prec lpc (⊑ᴳ-var {x = x} {x′} eq) = ⟨ ⊑*→⊑ x x′ lpc eq , ⊑ᶜ-var eq ⟩
 compile-pres-prec lpc (⊑ᴳ-ƛ lpA lpe) =
   let ⟨ lpB , lpeN ⟩ = compile-pres-prec (⊑*-, lpA lpc) lpe in
     ⟨ (fun⊑ lpA lpB) , ⊑ᶜ-ƛ lpA lpeN ⟩
@@ -263,43 +263,107 @@ catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
 ... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW ⟩ ⟩ ⟩
 
 
-private
-  blame-subst : ∀ {Γ A B} {ℓ}
-    → (M : Γ ⊢ A)
-      ----------------------------------------------
-    → (blame {Γ , A} {B} ℓ) [ M ] ≡ blame {Γ} {B} ℓ
-  blame-subst M = refl
+
+
+infix 6 _,_,_,_⊢_⊑ˢ_
+
+data _,_,_,_⊢_⊑ˢ_ : (Γ Δ Γ′ Δ′ : Context) → Subst Γ Δ → Subst Γ′ Δ′ → Set where
+
+  ⊑ˢ-σ₀ : ∀ {Δ Δ′ A A′} {M : Δ ⊢ A} {M′ : Δ′ ⊢ A′}
+    → Δ , Δ′ ⊢ M ⊑ᶜ M′
+      ------------------------------------------
+    → (Δ , A) , Δ , (Δ′ , A′) , Δ′ ⊢ (subst-zero M) ⊑ˢ (subst-zero M′)
+
+  ⊑ˢ-exts : ∀ {Γ Γ′ Δ Δ′ B B′} {σ : Subst Γ Δ} {σ′ : Subst Γ′ Δ′}
+    → Γ , Δ , Γ′ , Δ′ ⊢ σ ⊑ˢ σ′
+      -------------------------------------------------------------------
+    → (Γ ,  B) , (Δ , B) , (Γ′ , B′) , (Δ′ , B′) ⊢ (exts σ) ⊑ˢ (exts σ′)
+
+ρ-Cong : ∀ {Γ Γ′ Δ Δ′} → (ρ : Rename Γ Δ) → (ω : Rename Γ′ Δ′) → Set
+ρ-Cong {Γ} {Γ′} {Δ} {Δ′} ρ ω =
+  ∀ {A B} {x : Γ ∋ A} {y : Γ′ ∋ B} → ∋→ℕ x ≡ ∋→ℕ y → ∋→ℕ (ρ x) ≡ ∋→ℕ (ω y)
+
+S-Cong : ∀ {Γ Γ′ A A′} → ρ-Cong {Γ} {Γ′} {Γ , A} {Γ′ , A′} S_ S_
+S-Cong eq = cong suc eq
+
+ext-pres-ρ-Cong : ∀ {Γ Γ′ Δ Δ′} {B B′} {ρ : Rename Γ Δ} {ω : Rename Γ′ Δ′}
+  → ρ-Cong ρ ω
+  → ρ-Cong {Γ , B} {Γ′ , B′} {Δ , B}  {Δ′ , B′} (ext ρ) (ext ω)
+ext-pres-ρ-Cong f {x = Z} {Z} eq = refl
+ext-pres-ρ-Cong f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in cong suc ρx≡ωy
+
+rename-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {ρ : Rename Γ Δ} {ρ′ : Rename Γ′ Δ′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+  → ρ-Cong ρ ρ′
+  → Γ , Γ′ ⊢ M ⊑ᶜ M′
+  → Δ , Δ′ ⊢ rename ρ M ⊑ᶜ rename ρ′ M′
+rename-pres-prec f ⊑ᶜ-prim = ⊑ᶜ-prim
+rename-pres-prec f (⊑ᶜ-var x) = ⊑ᶜ-var (f x)
+rename-pres-prec f (⊑ᶜ-ƛ x lpM) = ⊑ᶜ-ƛ x (rename-pres-prec (ext-pres-ρ-Cong f) lpM)
+rename-pres-prec f (⊑ᶜ-· lpM lpM₁) = ⊑ᶜ-· (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
+rename-pres-prec f (⊑ᶜ-if lpM lpM₁ lpM₂) = ⊑ᶜ-if (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
+                                           (rename-pres-prec f lpM₂)
+rename-pres-prec f (⊑ᶜ-cons lpM lpM₁) = ⊑ᶜ-cons (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
+rename-pres-prec f (⊑ᶜ-fst lpM) = ⊑ᶜ-fst (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-snd lpM) = ⊑ᶜ-snd (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-inl x lpM) = ⊑ᶜ-inl x (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-inr x lpM) = ⊑ᶜ-inr x (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-case lpM lpM₁ lpM₂) = ⊑ᶜ-case (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
+                                             (rename-pres-prec f lpM₂)
+rename-pres-prec f (⊑ᶜ-cast x x₁ lpM) = ⊑ᶜ-cast x x₁ (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-castl x x₁ lpM) = ⊑ᶜ-castl x x₁ (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-castr x x₁ lpM) = ⊑ᶜ-castr x x₁ (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrap x lpM) = ⊑ᶜ-wrap x (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrapl x lpM) = ⊑ᶜ-wrapl x (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrapr x lpM) = ⊑ᶜ-wrapr x (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-blame x) = ⊑ᶜ-blame x
+
+
+S-pres-prec : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ B} {M′ : Γ′ ⊢ B′}
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    → (Γ , A) , (Γ′ , A′) ⊢ rename S_ M ⊑ᶜ rename S_ M′
+S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-Cong {A = A} {A′}) lpM
+
+{-
+  Here we need to prove a lemma : σ ⊑ σ′ → σ x ⊑ σ y if x ≡ y
+-}
+⊑ˢ→⊑ᶜ : ∀ {Γ Γ′ Δ Δ′ A A′} {σ : Subst Γ Δ} {σ′ : Subst Γ′ Δ′} {x : Γ ∋ A} {y : Γ′ ∋ A′}
+  → Γ , Δ , Γ′ , Δ′ ⊢ σ ⊑ˢ σ′
+  → ∋→ℕ x ≡ ∋→ℕ y
+    --------------------------
+  → Δ , Δ′ ⊢ σ x ⊑ᶜ σ′ y
+⊑ˢ→⊑ᶜ {x = Z} {Z} (⊑ˢ-σ₀ lpM) eq = lpM
+⊑ˢ→⊑ᶜ {x = Z} {Z} (⊑ˢ-exts lps) eq = ⊑ᶜ-var refl
+⊑ˢ→⊑ᶜ {x = S x} {S y} (⊑ˢ-σ₀ x₁) eq = ⊑ᶜ-var (suc-injective eq)
+⊑ˢ→⊑ᶜ {x = S x} {S y} (⊑ˢ-exts lps) eq = S-pres-prec (⊑ˢ→⊑ᶜ lps (suc-injective eq))
 
 {-
   Single substitution preserves term precision.
 -}
-subst-pres-prec : ∀ {Γ Γ′ A A′ B B′} {N : Γ , A ⊢ B} {N′ : Γ′ , A′ ⊢ B′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
-  → (Γ , A) , (Γ′ , A′) ⊢ N ⊑ᶜ N′
-  → Γ , Γ′ ⊢ M ⊑ᶜ M′
+subst-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {σ : Subst Γ Δ} {σ′ : Subst Γ′ Δ′} {N : Γ ⊢ A} {N′ : Γ′ ⊢ A′}
+  → Γ , Δ , Γ′ , Δ′ ⊢ σ ⊑ˢ σ′
+  → Γ , Γ′ ⊢ N ⊑ᶜ N′
     ------------------------------
-  → Γ , Γ′ ⊢ N [ M ] ⊑ᶜ N′ [ M′ ]
-subst-pres-prec ⊑ᶜ-prim lpM = ⊑ᶜ-prim
-subst-pres-prec (⊑ᴳ-var {x = x} {x′} eq) lpM with x | x′
-... | Z | Z = lpM
-... | (S k) | (S k′) = ⊑ᴳ-var (suc-injective eq)
-subst-pres-prec (⊑ᶜ-ƛ lp lpN) lpM = ⊑ᶜ-ƛ lp {!!}
-subst-pres-prec (⊑ᶜ-· lpN lpN₁) lpM =
-  ⊑ᶜ-· (subst-pres-prec lpN lpM) (subst-pres-prec lpN₁ lpM)
-subst-pres-prec (⊑ᶜ-if lpL lpN₁ lpN₂) lpM =
-  ⊑ᶜ-if (subst-pres-prec lpL lpM) (subst-pres-prec lpN₁ lpM) (subst-pres-prec lpN₂ lpM)
-subst-pres-prec (⊑ᶜ-cons lpL lpN) lpM =
-  ⊑ᶜ-cons (subst-pres-prec lpL lpM) (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-fst lpN) lpM = ⊑ᶜ-fst (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-snd lpN) lpM = ⊑ᶜ-snd (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-inl x lpN) lpM = ⊑ᶜ-inl x (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-inr x lpN) lpM = ⊑ᶜ-inr x (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-case lpL lpN₁ lpN₂) lpM =
-  ⊑ᶜ-case (subst-pres-prec lpL lpM) (subst-pres-prec lpN₁ lpM) (subst-pres-prec lpN₂ lpM)
-subst-pres-prec (⊑ᶜ-cast lp1 lp2 lpN) lpM = ⊑ᶜ-cast lp1 lp2 (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-castl lp1 lp2 lpN) lpM = ⊑ᶜ-castl lp1 lp2 (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-castr lp1 lp2 lpN) lpM = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-wrap lpi lpN) lpM = ⊑ᶜ-wrap lpi (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-wrapl lpi lpN) lpM = ⊑ᶜ-wrapl lpi (subst-pres-prec lpN lpM)
-subst-pres-prec (⊑ᶜ-wrapr lpi lpN) lpM = ⊑ᶜ-wrapr lpi (subst-pres-prec lpN lpM)
-subst-pres-prec {B′ = B′} {M′ = M′} (⊑ᶜ-blame {ℓ = ℓ} lp) lpM
-  rewrite sym (blame-subst {B = B′} {ℓ} M′) = ⊑ᶜ-blame lp
+  → Δ , Δ′ ⊢ subst σ N ⊑ᶜ subst σ′ N′
+subst-pres-prec lps ⊑ᶜ-prim = ⊑ᶜ-prim
+subst-pres-prec (⊑ˢ-σ₀ lpM) (⊑ᶜ-var {x = Z} {Z} eq) = lpM
+subst-pres-prec (⊑ˢ-σ₀ lpM) (⊑ᶜ-var {x = S x} {S y} eq) = ⊑ᶜ-var (suc-injective eq)
+subst-pres-prec (⊑ˢ-exts lps) (⊑ᶜ-var {x = Z} {Z} eq) = ⊑ᶜ-var refl
+subst-pres-prec (⊑ˢ-exts lps) (⊑ᶜ-var {x = S x} {S y} eq) = S-pres-prec (⊑ˢ→⊑ᶜ lps (suc-injective eq))
+subst-pres-prec lps (⊑ᶜ-ƛ lp lpN) = ⊑ᶜ-ƛ lp (subst-pres-prec (⊑ˢ-exts lps) lpN)
+subst-pres-prec lps (⊑ᶜ-· lpN lpN₁) = ⊑ᶜ-· (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
+subst-pres-prec lps (⊑ᶜ-if lpN lpN₁ lpN₂) = ⊑ᶜ-if (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
+                                              (subst-pres-prec lps lpN₂)
+subst-pres-prec lps (⊑ᶜ-cons lpN lpN₁) = ⊑ᶜ-cons (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
+subst-pres-prec lps (⊑ᶜ-fst lpN) = ⊑ᶜ-fst (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-snd lpN) = ⊑ᶜ-snd (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-inl x lpN) = ⊑ᶜ-inl x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-inr x lpN) = ⊑ᶜ-inr x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-case lpN lpN₁ lpN₂) = ⊑ᶜ-case (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
+                                                (subst-pres-prec lps lpN₂)
+subst-pres-prec lps (⊑ᶜ-cast x x₁ lpN) = ⊑ᶜ-cast x x₁ (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-castl x x₁ lpN) = ⊑ᶜ-castl x x₁ (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-castr x x₁ lpN) = ⊑ᶜ-castr x x₁ (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrap x lpN) = ⊑ᶜ-wrap x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrapl x lpN) = ⊑ᶜ-wrapl x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrapr x lpN) = ⊑ᶜ-wrapr x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp

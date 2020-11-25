@@ -5,7 +5,7 @@ open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; trans; sym; cong; cong₂; inspect; [_])
+  using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -198,3 +198,27 @@ sim-app-δ {f = f} {k} {ab} {a} {b} lpL lpM
   with sim-app-δ-v {b = b} v₁ v₂ lpV₁ lpV₂
 ...     | ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ =
   ⟨ N , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v₁}) rd*₂) rd*₃) , lpN ⟩ ⟩
+
+sim-app-β-v : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {N′ : ∅ , A′ ⊢ B′} {M′ : ∅ ⊢ A′}
+  → Value L → Value M → Value M′
+  → ∅ , ∅ ⊢ L ⊑ᶜ (ƛ N′) → ∅ , ∅ ⊢ M ⊑ᶜ M′
+    ------------------------------------------------------
+  → ∃[ M₂ ] ((L · M —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ N′ [ M′ ]))
+-- Here we need to prove subst preserves precision.
+sim-app-β-v {M = M} (V-ƛ {N = N}) vM vM′ (⊑ᶜ-ƛ lp lpN) lpM =
+  ⟨ N [ M ] , ⟨  _ —→⟨ β vM ⟩ _ ∎ , (subst-pres-prec (⊑ˢ-σ₀ lpM) lpN) ⟩ ⟩
+sim-app-β-v (V-wrap vL i) vM vM′ (⊑ᶜ-wrapl x lpL) lpM = {!!}
+
+sim-app-β : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {N′ : ∅ , A′ ⊢ B′} {M′ : ∅ ⊢ A′}
+  → Value M′
+  → ∅ , ∅ ⊢ L ⊑ᶜ (ƛ N′) → ∅ , ∅ ⊢ M ⊑ᶜ M′
+    ------------------------------------------------------
+  → ∃[ M₂ ] ((L · M —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ N′ [ M′ ]))
+sim-app-β v lpL lpM
+  with catchup V-ƛ lpL
+... | ⟨ V₁ , ⟨ v₁ , ⟨ rd*₁ , lpV₁ ⟩ ⟩ ⟩
+  with catchup v lpM
+...   | ⟨ V₂ , ⟨ v₂ , ⟨ rd*₂ , lpV₂ ⟩ ⟩ ⟩
+  with sim-app-β-v v₁ v₂ v lpV₁ lpV₂
+...     | ⟨ M₂ , ⟨ rd*₃ , lpM₂ ⟩ ⟩ =
+  ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v₁}) rd*₂) rd*₃) , lpM₂ ⟩ ⟩

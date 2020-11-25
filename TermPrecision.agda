@@ -187,7 +187,7 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
       ------------------------------
     → Γ , Γ′ ⊢ $_ {Γ} k {i} ⊑ᶜ $_ {Γ′} k {i}
 
-  ⊑ᴳ-var : ∀ {Γ Γ′ A A′} {x : Γ ∋ A} {x′ : Γ′ ∋ A′}
+  ⊑ᶜ-var : ∀ {Γ Γ′ A A′} {x : Γ ∋ A} {x′ : Γ′ ∋ A′}
     → ∋→ℕ x ≡ ∋→ℕ x′
       -----------------
     → Γ , Γ′ ⊢ ` x ⊑ᶜ ` x′
@@ -299,7 +299,7 @@ _ : ∅ , ∅ ⊢ ((ƛ ⋆ ˙ (` Z)) · ($_ 42 {P-Base}) at pos 0) {match⇒⇒}
 _ = ⊑ᴳ-· (⊑ᴳ-ƛ unk⊑ (⊑ᴳ-var refl)) ⊑ᴳ-prim
 
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
-_ = ⊑ᶜ-ƛ unk⊑ (⊑ᴳ-var refl)
+_ = ⊑ᶜ-ƛ unk⊑ (⊑ᶜ-var refl)
 
 -- Lemmas
 ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
@@ -344,7 +344,7 @@ lpti→⊑ (lpti-sum lp1 lp2) = ⟨ lp1 , lp2 ⟩
     -----------------
   → A ⊑ A′
 ⊑ᶜ→⊑ lp* ⊑ᶜ-prim = Refl⊑
-⊑ᶜ→⊑ lp* (⊑ᴳ-var eq) = ⊑*→⊑ _ _ lp* eq
+⊑ᶜ→⊑ lp* (⊑ᶜ-var eq) = ⊑*→⊑ _ _ lp* eq
 ⊑ᶜ→⊑ lp* (⊑ᶜ-ƛ lp lpN) = fun⊑ lp (⊑ᶜ→⊑ (⊑*-, lp lp*) lpN)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-· lpL lpM) with ⊑ᶜ→⊑ lp* lpL
 ... | (fun⊑ lp1 lp2) = lp2
