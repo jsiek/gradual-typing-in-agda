@@ -221,14 +221,14 @@ gradual-guarantee-app {L = L} {M = M} lpL lpM refl eq2 (ξ-blame {F = F-·₂ _ 
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
   with ⊑ᶜ→⊑ ⊑*-∅ lpL
 ...   | fun⊑ lpA lpB = ⟨ L · M , ⟨ L · M ∎ , ⊑ᶜ-blame lpB ⟩ ⟩
-gradual-guarantee-app lpL lpM refl refl (β v) = {!!}
+gradual-guarantee-app lpL lpM refl refl (β v) = sim-app-β v lpL lpM
 gradual-guarantee-app lpL lpM refl refl δ = sim-app-δ lpL lpM
 gradual-guarantee-app lpL lpM refl refl (fun-cast v w) = {!!}
 
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
-gradual-guarantee (⊑ᶜ-· lpL lpM) rd = {!!}
+gradual-guarantee (⊑ᶜ-· lpL lpM) rd = gradual-guarantee-app lpL lpM refl refl rd
 gradual-guarantee (⊑ᶜ-if lpL lpM lpN) rd = gradual-guarantee-if lpL lpM lpN refl refl rd
 gradual-guarantee (⊑ᶜ-cons lpM lpN) rd = gradual-guarantee-cons lpM lpN refl refl rd
 gradual-guarantee (⊑ᶜ-fst lpM) rd = gradual-guarantee-fst lpM refl refl rd

@@ -204,10 +204,23 @@ sim-app-β-v : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {N′ :
   → ∅ , ∅ ⊢ L ⊑ᶜ (ƛ N′) → ∅ , ∅ ⊢ M ⊑ᶜ M′
     ------------------------------------------------------
   → ∃[ M₂ ] ((L · M —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ N′ [ M′ ]))
--- Here we need to prove subst preserves precision.
+-- ƛ N ⊑ ƛ N′ . Here we need to prove subst preserves precision.
 sim-app-β-v {M = M} (V-ƛ {N = N}) vM vM′ (⊑ᶜ-ƛ lp lpN) lpM =
   ⟨ N [ M ] , ⟨  _ —→⟨ β vM ⟩ _ ∎ , (subst-pres-prec (⊑ˢ-σ₀ lpM) lpN) ⟩ ⟩
-sim-app-β-v (V-wrap vL i) vM vM′ (⊑ᶜ-wrapl x lpL) lpM = {!!}
+-- V ⟪ i ⟫ ⊑ ƛ N′
+sim-app-β-v {M = M} (V-wrap {V = V} v (Inert.I-fun c)) vM vM′ (⊑ᶜ-wrapl (lpit-fun (fun⊑ lp₁₁ lp₁₂) (fun⊑ lp₂₁ lp₂₂)) lpV) lpM =
+  {- The reduction sequence:
+    V ⟪ i ⟫ · M —↠ V ⟪ i ⟫ · W —→ (V · W ⟨ dom c ⟩) ⟨ cod c ⟩ —↠ (V · W₁) ⟨ cod c ⟩ —↠ N ⟨ cod c ⟩
+  -}
+  let x = fun-cast-is-cross c
+      ⟨ W , ⟨ w , ⟨ rd*₁ , lpW ⟩ ⟩ ⟩ = catchup vM′ lpM
+      ⟨ W₁ , ⟨ w₁ , ⟨ rd*₂ , lpW₁ ⟩ ⟩ ⟩ = catchup vM′ (⊑ᶜ-castl {c = dom c x} lp₂₁ lp₁₁ lpW)
+      ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ = sim-app-β-v v w₁ vM′ lpV lpW₁ in
+    ⟨ N ⟨ cod c x ⟩ ,
+      ⟨ ↠-trans (plug-cong (F-·₂ _ {V-wrap v _}) rd*₁)
+                 (_ —→⟨ fun-cast v w {x} ⟩ ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ {v}) rd*₂))
+                                                      (plug-cong (F-cast _) rd*₃)) ,
+        ⊑ᶜ-castl lp₁₂ lp₂₂ lpN ⟩ ⟩
 
 sim-app-β : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {N′ : ∅ , A′ ⊢ B′} {M′ : ∅ ⊢ A′}
   → Value M′

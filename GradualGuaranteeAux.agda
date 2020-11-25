@@ -288,6 +288,7 @@ S-Cong eq = cong suc eq
 
 ext-pres-ρ-Cong : ∀ {Γ Γ′ Δ Δ′} {B B′} {ρ : Rename Γ Δ} {ω : Rename Γ′ Δ′}
   → ρ-Cong ρ ω
+    -----------------------------------------------------------
   → ρ-Cong {Γ , B} {Γ′ , B′} {Δ , B}  {Δ′ , B′} (ext ρ) (ext ω)
 ext-pres-ρ-Cong f {x = Z} {Z} eq = refl
 ext-pres-ρ-Cong f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in cong suc ρx≡ωy
@@ -295,31 +296,33 @@ ext-pres-ρ-Cong f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in 
 rename-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {ρ : Rename Γ Δ} {ρ′ : Rename Γ′ Δ′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
   → ρ-Cong ρ ρ′
   → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    ------------------------------------
   → Δ , Δ′ ⊢ rename ρ M ⊑ᶜ rename ρ′ M′
 rename-pres-prec f ⊑ᶜ-prim = ⊑ᶜ-prim
-rename-pres-prec f (⊑ᶜ-var x) = ⊑ᶜ-var (f x)
-rename-pres-prec f (⊑ᶜ-ƛ x lpM) = ⊑ᶜ-ƛ x (rename-pres-prec (ext-pres-ρ-Cong f) lpM)
-rename-pres-prec f (⊑ᶜ-· lpM lpM₁) = ⊑ᶜ-· (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
-rename-pres-prec f (⊑ᶜ-if lpM lpM₁ lpM₂) = ⊑ᶜ-if (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
-                                           (rename-pres-prec f lpM₂)
-rename-pres-prec f (⊑ᶜ-cons lpM lpM₁) = ⊑ᶜ-cons (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
-rename-pres-prec f (⊑ᶜ-fst lpM) = ⊑ᶜ-fst (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-snd lpM) = ⊑ᶜ-snd (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-inl x lpM) = ⊑ᶜ-inl x (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-inr x lpM) = ⊑ᶜ-inr x (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-case lpM lpM₁ lpM₂) = ⊑ᶜ-case (rename-pres-prec f lpM) (rename-pres-prec f lpM₁)
-                                             (rename-pres-prec f lpM₂)
-rename-pres-prec f (⊑ᶜ-cast x x₁ lpM) = ⊑ᶜ-cast x x₁ (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-castl x x₁ lpM) = ⊑ᶜ-castl x x₁ (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-castr x x₁ lpM) = ⊑ᶜ-castr x x₁ (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-wrap x lpM) = ⊑ᶜ-wrap x (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-wrapl x lpM) = ⊑ᶜ-wrapl x (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-wrapr x lpM) = ⊑ᶜ-wrapr x (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-blame x) = ⊑ᶜ-blame x
-
+rename-pres-prec f (⊑ᶜ-var eq) = ⊑ᶜ-var (f eq)
+rename-pres-prec f (⊑ᶜ-ƛ lp lpM) = ⊑ᶜ-ƛ lp (rename-pres-prec (ext-pres-ρ-Cong f) lpM)
+rename-pres-prec f (⊑ᶜ-· lpL lpM) = ⊑ᶜ-· (rename-pres-prec f lpL) (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-if lpL lpM lpN) =
+  ⊑ᶜ-if (rename-pres-prec f lpL) (rename-pres-prec f lpM) (rename-pres-prec f lpN)
+rename-pres-prec f (⊑ᶜ-cons lpM lpN) =
+  ⊑ᶜ-cons (rename-pres-prec f lpM) (rename-pres-prec f lpN)
+rename-pres-prec f (⊑ᶜ-fst lpM)    = ⊑ᶜ-fst (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-snd lpM)    = ⊑ᶜ-snd (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-inl lp lpM) = ⊑ᶜ-inl lp (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-inr lp lpM) = ⊑ᶜ-inr lp (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-case lpL lpM lpN) =
+  ⊑ᶜ-case (rename-pres-prec f lpL) (rename-pres-prec f lpM) (rename-pres-prec f lpN)
+rename-pres-prec f (⊑ᶜ-cast lp1 lp2 lpM)  = ⊑ᶜ-cast  lp1 lp2 (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-castl lp1 lp2 lpM) = ⊑ᶜ-castl lp1 lp2 (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-castr lp1 lp2 lpM) = ⊑ᶜ-castr lp1 lp2 (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrap lpi lpM)  = ⊑ᶜ-wrap  lpi (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrapl lpi lpM) = ⊑ᶜ-wrapl lpi (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrapr lpi lpM) = ⊑ᶜ-wrapr lpi (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
 
 S-pres-prec : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ B} {M′ : Γ′ ⊢ B′}
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
+      --------------------------------------------------
     → (Γ , A) , (Γ′ , A′) ⊢ rename S_ M ⊑ᶜ rename S_ M′
 S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-Cong {A = A} {A′}) lpM
 
@@ -337,7 +340,7 @@ S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-Cong {A = A} {A′}) lpM
 ⊑ˢ→⊑ᶜ {x = S x} {S y} (⊑ˢ-exts lps) eq = S-pres-prec (⊑ˢ→⊑ᶜ lps (suc-injective eq))
 
 {-
-  Single substitution preserves term precision.
+  Substitution (σ on the left and σ′ on the right hand side) preserves term precision.
 -}
 subst-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {σ : Subst Γ Δ} {σ′ : Subst Γ′ Δ′} {N : Γ ⊢ A} {N′ : Γ′ ⊢ A′}
   → Γ , Δ , Γ′ , Δ′ ⊢ σ ⊑ˢ σ′
@@ -350,20 +353,22 @@ subst-pres-prec (⊑ˢ-σ₀ lpM) (⊑ᶜ-var {x = S x} {S y} eq) = ⊑ᶜ-var (
 subst-pres-prec (⊑ˢ-exts lps) (⊑ᶜ-var {x = Z} {Z} eq) = ⊑ᶜ-var refl
 subst-pres-prec (⊑ˢ-exts lps) (⊑ᶜ-var {x = S x} {S y} eq) = S-pres-prec (⊑ˢ→⊑ᶜ lps (suc-injective eq))
 subst-pres-prec lps (⊑ᶜ-ƛ lp lpN) = ⊑ᶜ-ƛ lp (subst-pres-prec (⊑ˢ-exts lps) lpN)
-subst-pres-prec lps (⊑ᶜ-· lpN lpN₁) = ⊑ᶜ-· (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
-subst-pres-prec lps (⊑ᶜ-if lpN lpN₁ lpN₂) = ⊑ᶜ-if (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
-                                              (subst-pres-prec lps lpN₂)
-subst-pres-prec lps (⊑ᶜ-cons lpN lpN₁) = ⊑ᶜ-cons (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
+subst-pres-prec lps (⊑ᶜ-· lpL lpM) =
+  ⊑ᶜ-· (subst-pres-prec lps lpL) (subst-pres-prec lps lpM)
+subst-pres-prec lps (⊑ᶜ-if lpL lpM lpN) =
+  ⊑ᶜ-if (subst-pres-prec lps lpL) (subst-pres-prec lps lpM) (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-cons lpM lpN) =
+  ⊑ᶜ-cons (subst-pres-prec lps lpM) (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-fst lpN) = ⊑ᶜ-fst (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-snd lpN) = ⊑ᶜ-snd (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-inl x lpN) = ⊑ᶜ-inl x (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-inr x lpN) = ⊑ᶜ-inr x (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-case lpN lpN₁ lpN₂) = ⊑ᶜ-case (subst-pres-prec lps lpN) (subst-pres-prec lps lpN₁)
-                                                (subst-pres-prec lps lpN₂)
-subst-pres-prec lps (⊑ᶜ-cast x x₁ lpN) = ⊑ᶜ-cast x x₁ (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-castl x x₁ lpN) = ⊑ᶜ-castl x x₁ (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-castr x x₁ lpN) = ⊑ᶜ-castr x x₁ (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-wrap x lpN) = ⊑ᶜ-wrap x (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-wrapl x lpN) = ⊑ᶜ-wrapl x (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-wrapr x lpN) = ⊑ᶜ-wrapr x (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-inl lp lpN) = ⊑ᶜ-inl lp (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-inr lp lpN) = ⊑ᶜ-inr lp (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-case lpL lpM lpN) =
+  ⊑ᶜ-case (subst-pres-prec lps lpL) (subst-pres-prec lps lpM) (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-cast lp1 lp2 lpN)  = ⊑ᶜ-cast  lp1 lp2 (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-castl lp1 lp2 lpN) = ⊑ᶜ-castl lp1 lp2 (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-castr lp1 lp2 lpN) = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrap lpi lpN)  = ⊑ᶜ-wrap  lpi (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrapl lpi lpN) = ⊑ᶜ-wrapl lpi (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrapr lpi lpN) = ⊑ᶜ-wrapr lpi (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
