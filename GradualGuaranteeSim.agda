@@ -235,3 +235,37 @@ sim-app-β v lpL lpM
   with sim-app-β-v v₁ v₂ v lpV₁ lpV₂
 ...     | ⟨ M₂ , ⟨ rd*₃ , lpM₂ ⟩ ⟩ =
   ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v₁}) rd*₂) rd*₃) , lpM₂ ⟩ ⟩
+
+sim-app-wrap-v : ∀ {A A′ B B′ C′ D′} {V : ∅ ⊢ A ⇒ B} {W : ∅ ⊢ A} {V′ : ∅ ⊢ A′ ⇒ B′} {W′ : ∅ ⊢ C′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+  → Value V → Value W → Value V′ → Value W′
+  → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ W ⊑ᶜ W′
+    ----------------------------------------------------------------------------------
+  → ∃[ N ] ((V · W —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩))
+sim-app-wrap-v {W = W} (V-wrap v i) w v′ w′ i′ x′ (⊑ᶜ-wrap {M = V} {i = Inert.I-fun c} (lpii-fun (fun⊑ lp₁₁ lp₁₂) (fun⊑ lp₂₁ lp₂₂)) lpV) lpW =
+  let x = fun-cast-is-cross c in
+    ⟨ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩ , ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ , ⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-· lpV (⊑ᶜ-cast lp₂₁ lp₁₁ lpW)) ⟩ ⟩
+sim-app-wrap-v {W = W} (V-wrap v (Inert.I-fun c)) w v′ w′ i′ x′ (⊑ᶜ-wrapl {M = V} (lpit-fun (fun⊑ lp₁₁ lp₁₂) (fun⊑ lp₂₁ lp₂₂)) lpV) lpW =
+  let x = fun-cast-is-cross c
+      ⟨ W₁ , ⟨ w₁ , ⟨ rd*₁ , lpW₁ ⟩ ⟩ ⟩ = catchup w′ (⊑ᶜ-castl {c = dom c x} lp₂₁ lp₁₁ lpW)
+      ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = sim-app-wrap-v v w₁ v′ w′ i′ x′ lpV lpW₁ in
+    ⟨ N ⟨ cod c x ⟩ ,
+      ⟨ _ —→⟨ fun-cast v w {x} ⟩ ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ {v}) rd*₁)) (plug-cong (F-cast _) rd*₂) ,
+        ⊑ᶜ-castl lp₁₂ lp₂₂ lpN ⟩ ⟩
+sim-app-wrap-v {V = V} {W} v w v′ w′ i′ x′ (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp₁₁ lp₁₂) (fun⊑ lp₂₁ lp₂₂)) lpV) lpW =
+  ⟨ V · W , ⟨ V · W ∎ , ⊑ᶜ-castr lp₁₂ lp₂₂ (⊑ᶜ-· lpV (⊑ᶜ-castr lp₂₁ lp₁₁ lpW)) ⟩ ⟩
+
+sim-app-wrap : ∀ {A A′ B B′ C′ D′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {V′ : ∅ ⊢ A′ ⇒ B′} {W′ : ∅ ⊢ C′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+  → Value V′ → Value W′
+  → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ L ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ M ⊑ᶜ W′
+    ------------------------------------------------------------------------------------
+  → ∃[ N ] ((L · M —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩))
+sim-app-wrap v′ w′ i′ x′ lpL lpM
+  with catchup (V-wrap v′ i′) lpL
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with catchup w′ lpM
+...   | ⟨ W , ⟨ w , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩
+  with sim-app-wrap-v v w v′ w′ i′ x′ lpV lpW
+...     | ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ = ⟨ N , ⟨ (↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v}) rd*₂) rd*₃)) , lpN ⟩ ⟩
+
