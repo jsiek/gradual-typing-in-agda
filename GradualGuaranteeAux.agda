@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module GradualGuaranteeAux where
 
 open import Data.Nat using (ℕ; zero; suc)
@@ -372,3 +374,89 @@ subst-pres-prec lps (⊑ᶜ-wrap lpi lpN)  = ⊑ᶜ-wrap  lpi (subst-pres-prec l
 subst-pres-prec lps (⊑ᶜ-wrapl lpi lpN) = ⊑ᶜ-wrapl lpi (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-wrapr lpi lpN) = ⊑ᶜ-wrapr lpi (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
+
+wrap-⊑-apply : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → (v′ : Value V′)
+  → (i : Inert c) → (a′ : Active c′)
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -------------------------------------------
+  → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ applyCast V′ v′ c′ {a′}
+wrap-⊑-apply v v′ i (Active.A-id _) lp1 lp2 lpV = ⊑ᶜ-wrapl (⊑→lpit i lp1 lp2) lpV
+wrap-⊑-apply v v′ i (Active.A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+  with ground _ {nd}  -- A′ ⇒ G′
+{- Prove V ⟪ A ⇒ B ⟫ ⊑ V′ ⟨ A′ ⇒ G′ ⟩ ⟨ G′ ⇒ ⋆ ⟩ -}
+... | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-wrapl (⊑→lpit i lp1 unk⊑) lpV))
+wrap-⊑-apply v v′ (Inert.I-inj () _) (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+
+value-⊑-wrap-inv : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ ⋆)} {i′ : Inert c′}
+  → Value V → Value (V′ ⟪ i′ ⟫)
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+    -----------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+value-⊑-wrap-inv v (ParamCastAux.V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrap lpii lpW)
+  with lpii→⊑ lpii
+... | ⟨ lp , unk⊑ ⟩ = ⊑ᶜ-wrapl (⊑→lpit _ lp unk⊑) lpW
+value-⊑-wrap-inv (V-wrap v i) (ParamCastAux.V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrapl lpit lpV)
+  with lpit→⊑ lpit
+... | ⟨ unk⊑ , unk⊑ ⟩ with i
+...   | Inert.I-inj () _
+
+apply-⊑-apply : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → (v : Value V) → (v′ : Value V′)
+  → (a : Active c) → (a′ : Active c′)
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    ------------------------------------------------------
+  → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ applyCast V′ v′ c′ {a′}
+apply-⊑-apply v v′ (Active.A-id _) (Active.A-id _) lp1 lp2 lpV = lpV
+apply-⊑-apply v v′ (Active.A-id _) (Active.A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+  with ground A′ {nd}
+  -- V ⊑ V′ ⟨ A′ ⇒ G′ ⟩ ⟨ G′ ⇒ ⋆ ⟩
+... | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr lp1 unk⊑ lpV)
+apply-⊑-apply v v′ (Active.A-id _) (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+  with ground? B′
+... | yes g
+  with canonical⋆ _ v′
+...   | ⟨ G′ , ⟨ W′ , ⟨ d′ , ⟨ i′ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G′ B′ {inert-ground d′ i′} {g}
+...     | no  ap = ⊑ᶜ-blame lp2
+...     | yes ap rewrite ap = value-⊑-wrap-inv v v′ lpV
+apply-⊑-apply v v′ (Active.A-id _) (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV | no ng
+  with ground B′ {nd}
+... | ⟨ H′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV)
+apply-⊑-apply v v′ (Active.A-inj (cast A ⋆ _ _) ng nd) (Active.A-id (cast A′ .A′ _ _)) lp1 unk⊑ lpV
+  with ground A {nd}
+... | ⟨ G , ⟨ g , c~ ⟩ ⟩ = ⊑ᶜ-castl lp unk⊑ (⊑ᶜ-castl lp1 lp lpV)
+  where
+  lp : G ⊑ A′
+  lp = ⊑-ground-relax g lp1 c~ nd
+apply-⊑-apply v v′ (Active.A-inj (cast A ⋆ _ _) ng nd) (Active.A-inj (cast A′ ⋆ _ _) ng′ nd′) lp1 unk⊑ lpV
+  with ground A {nd} | ground A′ {nd′}
+... | ⟨ G , ⟨ g , c~ ⟩ ⟩ | ⟨ G′ , ⟨ g′ , c~′ ⟩ ⟩ = ⊑ᶜ-cast lp unk⊑ (⊑ᶜ-cast lp1 lp lpV)
+  where
+  lp : G ⊑ G′
+  lp = ⊑-ground-monotone nd nd′ ng ng′ g g′ c~ c~′ lp1
+apply-⊑-apply v v′ (Active.A-inj _ _ x) (Active.A-proj _ _) unk⊑ unk⊑ lpV = contradiction refl x
+apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV
+  with ground? B
+... | yes g
+  with canonical⋆ _ v
+...   | ⟨ G , ⟨ W , ⟨ c , ⟨ i , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G B {inert-ground c i} {g}
+...     | yes ap rewrite ap = {!!}
+...     | no  ap with lpV | i
+...       | ⊑ᶜ-wrap {c′ = cast _ _ _ c~} lpi lpW | Inert.I-inj gg _ = contradiction eq ap
+  where
+  lp = proj₁ (lpii→⊑ lpi)
+  eq : G ≡ B
+  eq = lp-consis-ground-eq gg g c~ lp lp2
+...       | ⊑ᶜ-wrapr () lpW | _
+...       | ⊑ᶜ-wrapl lpi lpW | Inert.I-inj gg _ = contradiction eq ap
+  where
+  lp = proj₁ (lpit→⊑ lpi)
+  eq : G ≡ B
+  eq = lp-consis-ground-eq gg g Refl~ lp lp2
+apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) x) (Active.A-id _) unk⊑ lp2 lpV | no ng = {!!}
+apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-inj _ _ _) unk⊑ unk⊑ lpV = contradiction refl x
+apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-proj _ x₁) unk⊑ lp2 lpV = {!!}

@@ -263,3 +263,10 @@ module ParamCastAux (pcs : PreCastStruct) where
       -------------------------------------------------------
     → Σ[ eqc ∈ c ≡ cᵒ ] subst-eq (λ c → Inert c) eqc i ≡ iᵒ
   plug-inv-wrap-i refl = ⟨ refl , refl ⟩
+
+  plug-inv-cast : ∀ {Γ A Aᵒ B} {M : Γ ⊢ A} {Mᵒ : Γ ⊢ Aᵒ} {cᵒ : Cast (Aᵒ ⇒ B)}
+    → (F : Frame A B)
+    → plug M F ≡ Mᵒ ⟨ cᵒ ⟩
+      -----------------------------------------------------------------------------------------------------
+    → Σ[ eq ∈ A ≡ Aᵒ ] ((subst-eq (λ A → Γ ⊢ A) eq M ≡ Mᵒ) × (subst-eq (λ A → Frame A B) eq F ≡ F-cast cᵒ))
+  plug-inv-cast (F-cast c) refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩

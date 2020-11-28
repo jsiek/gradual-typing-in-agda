@@ -225,6 +225,28 @@ gradual-guarantee-app lpL lpM refl refl (β v) = sim-app-β v lpL lpM
 gradual-guarantee-app lpL lpM refl refl δ = sim-app-δ lpL lpM
 gradual-guarantee-app lpL lpM refl refl (fun-cast v w {x} {i}) = sim-app-wrap v w i x lpL lpM
 
+gradual-guarantee-cast : ∀ {A A′ B B′} {M : ∅ ⊢ A} {M′ : ∅ ⊢ A′} {M₁ : ∅ ⊢ B} {M₁′ M₂′ : ∅ ⊢ B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → A ⊑ A′ → B ⊑ B′ → ∅ , ∅ ⊢ M ⊑ᶜ M′
+  → M₁ ≡ M ⟨ c ⟩ → M₁′ ≡ M′ ⟨ c′ ⟩
+  → M₁′ —→ M₂′
+    ---------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+gradual-guarantee-cast {c = c} lp1 lp2 lpM refl eq2 (ξ {F = F} rd)
+  with plug-inv-cast F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with gradual-guarantee lpM rd
+...   | ⟨ N , ⟨ rd* , lpN ⟩ ⟩ = ⟨ N ⟨ c ⟩ , ⟨ plug-cong (F-cast _) rd* , ⊑ᶜ-cast lp1 lp2 lpN ⟩ ⟩
+gradual-guarantee-cast {M = M} {c = c} lp1 lp2 lpM refl eq2 (ξ-blame {F = F})
+  with plug-inv-cast F eq2
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ M ⟨ c ⟩ , ⟨ M ⟨ c ⟩ ∎ , ⊑ᶜ-blame lp2 ⟩ ⟩
+gradual-guarantee-cast {c = c} lp1 lp2 lpM refl refl (cast vM′ {a′})
+  with catchup vM′ lpM
+... | ⟨ V , ⟨ v , ⟨ rd* , lpV ⟩ ⟩ ⟩
+  with GroundInertX.ActiveOrInert c
+...   | inj₁ a = ⟨ applyCast _ v _ {a} , ⟨ ↠-trans (plug-cong (F-cast _) rd*) (_ —→⟨ cast v {a} ⟩ _ ∎) , {!!} ⟩ ⟩
+...   | inj₂ i = ⟨ V ⟪ i ⟫ , ⟨ ↠-trans (plug-cong (F-cast _) rd*) (_ —→⟨ wrap v ⟩ _ ∎) , wrap-⊑-apply v vM′ i a′ lp1 lp2 lpV ⟩ ⟩
+
+gradual-guarantee-cast lp1 lp2 lpM refl refl (wrap v) = {!!}
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
@@ -235,10 +257,10 @@ gradual-guarantee (⊑ᶜ-fst lpM) rd = gradual-guarantee-fst lpM refl refl rd
 gradual-guarantee (⊑ᶜ-snd lpM) rd = gradual-guarantee-snd lpM refl refl rd
 gradual-guarantee (⊑ᶜ-inl lp lpf) rd = gradual-guarantee-inl lp lpf refl refl rd
 gradual-guarantee (⊑ᶜ-inr lp lpf) rd = gradual-guarantee-inr lp lpf refl refl rd
-gradual-guarantee (⊑ᶜ-case lpf lpf₁ lpf₂) rd = {!!}
-gradual-guarantee (⊑ᶜ-cast x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-castl x x₁ lpf) rd = {!!}
-gradual-guarantee (⊑ᶜ-castr x x₁ lpf) rd = {!!}
+gradual-guarantee (⊑ᶜ-case lpL lpM lpN) rd = {!!}
+gradual-guarantee (⊑ᶜ-cast lp1 lp2 lpM) rd = gradual-guarantee-cast lp1 lp2 lpM refl refl rd
+gradual-guarantee (⊑ᶜ-castl lp1 lp2 lpM) rd = {!!}
+gradual-guarantee (⊑ᶜ-castr lp1 lp2 lpM) rd = {!!}
 gradual-guarantee (⊑ᶜ-wrap lpi lpM) rd = gradual-guarantee-wrap lpi lpM refl refl rd
 gradual-guarantee (⊑ᶜ-wrapl {i = i} lpi lpM) rd
   with gradual-guarantee lpM rd

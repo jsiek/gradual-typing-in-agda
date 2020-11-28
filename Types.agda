@@ -1045,4 +1045,16 @@ module Types where
   ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
   ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
 
-
+  -- Suppose G ≡ ground A and H ≡ ground B
+  ⊑-ground-monotone : ∀ {A B G H}
+    → A ≢ ⋆ → B ≢ ⋆ → ¬ Ground A → ¬ Ground B
+    → Ground G → Ground H
+    → A ~ G → B ~ H
+    → A ⊑ B
+      ---------
+    → G ⊑ H
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng g h c1 c2 unk⊑ = contradiction refl a-nd
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng g h c1 c2 base⊑ = contradiction G-Base a-ng
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Fun G-Fun _ _ (fun⊑ lp1 lp2) = fun⊑ unk⊑ unk⊑
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Pair G-Pair _ _ (pair⊑ lp1 lp2) = pair⊑ unk⊑ unk⊑
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Sum G-Sum _ _ (sum⊑ lp1 lp2) = sum⊑ unk⊑ unk⊑
