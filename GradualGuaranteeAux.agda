@@ -468,6 +468,10 @@ apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk�
   lp = proj₁ (lpit→⊑ lpi)
   eq : G ≡ B
   eq = lp-consis-ground-eq gg g Refl~ lp lp2
-apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) x) (Active.A-id _) unk⊑ lp2 lpV | no ng = {!!}
+apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV | no ng
+  with ground B {nd}
+... | ⟨ G , ⟨ g , c~ ⟩ ⟩ = ⊑ᶜ-castl lp lp2 (⊑ᶜ-castl unk⊑ lp lpV)
+  where
+  lp = ⊑-ground-relax g lp2 c~ nd
 apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-inj _ _ _) unk⊑ unk⊑ lpV = contradiction refl x
 apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-proj _ x₁) unk⊑ lp2 lpV = {!!}
