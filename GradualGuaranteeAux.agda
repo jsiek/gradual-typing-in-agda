@@ -1,5 +1,3 @@
-{-# OPTIONS --allow-unsolved-metas #-}
-
 module GradualGuaranteeAux where
 
 open import Data.Nat using (ℕ; zero; suc)
@@ -394,13 +392,21 @@ value-⊑-wrap-inv : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : 
   → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
     -----------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-value-⊑-wrap-inv v (ParamCastAux.V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrap lpii lpW)
+value-⊑-wrap-inv v (V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrap lpii lpW)
   with lpii→⊑ lpii
 ... | ⟨ lp , unk⊑ ⟩ = ⊑ᶜ-wrapl (⊑→lpit _ lp unk⊑) lpW
-value-⊑-wrap-inv (V-wrap v i) (ParamCastAux.V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrapl lpit lpV)
+value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrapl lpit lpV)
   with lpit→⊑ lpit
 ... | ⟨ unk⊑ , unk⊑ ⟩ with i
 ...   | Inert.I-inj () _
+
+-- Different from the lemma above, where the wrap is on the rhs, we require that the rhs has an atomic type.
+value-wrap-⊑-inv : ∀ {A ι} {V : ∅ ⊢ A} {V′ : ∅ ⊢ ` ι} {c : Cast (A ⇒ ⋆)} {i : Inert c}
+  → Value (V ⟪ i ⟫) → Value V′
+  → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
+    ----------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+value-wrap-⊑-inv (V-wrap v _) v′ (⊑ᶜ-wrapl _ lpV) = lpV
 
 apply-⊑-apply : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → (v : Value V) → (v′ : Value V′)
@@ -438,14 +444,19 @@ apply-⊑-apply v v′ (Active.A-inj (cast A ⋆ _ _) ng nd) (Active.A-inj (cast
   lp : G ⊑ G′
   lp = ⊑-ground-monotone nd nd′ ng ng′ g g′ c~ c~′ lp1
 apply-⊑-apply v v′ (Active.A-inj _ _ x) (Active.A-proj _ _) unk⊑ unk⊑ lpV = contradiction refl x
-apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV
+apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id {a = 𝑎} _) unk⊑ lp2 lpV
   with ground? B
 ... | yes g
   with canonical⋆ _ v
 ...   | ⟨ G , ⟨ W , ⟨ c , ⟨ i , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
   with gnd-eq? G B {inert-ground c i} {g}
-...     | yes ap rewrite ap = {!!}
-...     | no  ap with lpV | i
+...     | yes ap rewrite ap with 𝑎
+...       | A-Unk = contradiction lp2 (nd⋢⋆ nd)
+...       | A-Base = value-wrap-⊑-inv v v′ lpV
+apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV
+    | yes g | ⟨ G , ⟨ W , ⟨ c , ⟨ i , _ ⟩ ⟩ ⟩ ⟩
+        | no ap
+  with lpV | i
 ...       | ⊑ᶜ-wrap {c′ = cast _ _ _ c~} lpi lpW | Inert.I-inj gg _ = contradiction eq ap
   where
   lp = proj₁ (lpii→⊑ lpi)
