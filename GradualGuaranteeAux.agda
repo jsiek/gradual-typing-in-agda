@@ -401,77 +401,30 @@ value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrapl
 ...   | Inert.I-inj () _
 
 -- Different from the lemma above, where the wrap is on the rhs, we require that the rhs has an atomic type.
-value-wrap-⊑-inv : ∀ {A ι} {V : ∅ ⊢ A} {V′ : ∅ ⊢ ` ι} {c : Cast (A ⇒ ⋆)} {i : Inert c}
+wrap-⊑-value-inv : ∀ {A ι} {V : ∅ ⊢ A} {V′ : ∅ ⊢ ` ι} {c : Cast (A ⇒ ⋆)} {i : Inert c}
   → Value (V ⟪ i ⟫) → Value V′
   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
     ----------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-value-wrap-⊑-inv (V-wrap v _) v′ (⊑ᶜ-wrapl _ lpV) = lpV
+wrap-⊑-value-inv (V-wrap v _) v′ (⊑ᶜ-wrapl _ lpV) = lpV
+-- In fact we can have a more general one:
+-- wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
+--   → Ground A′
+--   → Value (V ⟪ i ⟫) → Value V′
+--   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
+--     ----------------------
+--   → ∅ , ∅ ⊢ V ⊑ᶜ V′
+-- wrap-⊑-value-inv G-Base v w (⊑ᶜ-wrap {i′ = ()} lpi lpV)
+-- wrap-⊑-value-inv G-Fun v w (⊑ᶜ-wrap {i′ = Inert.I-fun _} () lpV)
+-- wrap-⊑-value-inv G-Pair v w (⊑ᶜ-wrap {i′ = Inert.I-pair _} () lpV)
+-- wrap-⊑-value-inv G-Sum v w (⊑ᶜ-wrap {i′ = Inert.I-sum _} () lpV)
+-- wrap-⊑-value-inv g v w (⊑ᶜ-wrapl lpi lpV) = lpV
 
-apply-⊑-apply : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
-  → (v : Value V) → (v′ : Value V′)
-  → (a : Active c) → (a′ : Active c′)
-  → A ⊑ A′ → B ⊑ B′
+wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
+                    {i : Inert c} {i′ : Inert c′}
+  → Value (V ⟪ i ⟫) → Value (V′ ⟪ i′ ⟫)
+  → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
+    -----------------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-    ------------------------------------------------------
-  → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ applyCast V′ v′ c′ {a′}
-apply-⊑-apply v v′ (Active.A-id _) (Active.A-id _) lp1 lp2 lpV = lpV
-apply-⊑-apply v v′ (Active.A-id _) (Active.A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
-  with ground A′ {nd}
-  -- V ⊑ V′ ⟨ A′ ⇒ G′ ⟩ ⟨ G′ ⇒ ⋆ ⟩
-... | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr lp1 unk⊑ lpV)
-apply-⊑-apply v v′ (Active.A-id _) (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
-  with ground? B′
-... | yes g
-  with canonical⋆ _ v′
-...   | ⟨ G′ , ⟨ W′ , ⟨ d′ , ⟨ i′ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
-  with gnd-eq? G′ B′ {inert-ground d′ i′} {g}
-...     | no  ap = ⊑ᶜ-blame lp2
-...     | yes ap rewrite ap = value-⊑-wrap-inv v v′ lpV
-apply-⊑-apply v v′ (Active.A-id _) (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV | no ng
-  with ground B′ {nd}
-... | ⟨ H′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV)
-apply-⊑-apply v v′ (Active.A-inj (cast A ⋆ _ _) ng nd) (Active.A-id (cast A′ .A′ _ _)) lp1 unk⊑ lpV
-  with ground A {nd}
-... | ⟨ G , ⟨ g , c~ ⟩ ⟩ = ⊑ᶜ-castl lp unk⊑ (⊑ᶜ-castl lp1 lp lpV)
-  where
-  lp : G ⊑ A′
-  lp = ⊑-ground-relax g lp1 c~ nd
-apply-⊑-apply v v′ (Active.A-inj (cast A ⋆ _ _) ng nd) (Active.A-inj (cast A′ ⋆ _ _) ng′ nd′) lp1 unk⊑ lpV
-  with ground A {nd} | ground A′ {nd′}
-... | ⟨ G , ⟨ g , c~ ⟩ ⟩ | ⟨ G′ , ⟨ g′ , c~′ ⟩ ⟩ = ⊑ᶜ-cast lp unk⊑ (⊑ᶜ-cast lp1 lp lpV)
-  where
-  lp : G ⊑ G′
-  lp = ⊑-ground-monotone nd nd′ ng ng′ g g′ c~ c~′ lp1
-apply-⊑-apply v v′ (Active.A-inj _ _ x) (Active.A-proj _ _) unk⊑ unk⊑ lpV = contradiction refl x
-apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id {a = 𝑎} _) unk⊑ lp2 lpV
-  with ground? B
-... | yes g
-  with canonical⋆ _ v
-...   | ⟨ G , ⟨ W , ⟨ c , ⟨ i , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
-  with gnd-eq? G B {inert-ground c i} {g}
-...     | yes ap rewrite ap with 𝑎
-...       | A-Unk = contradiction lp2 (nd⋢⋆ nd)
-...       | A-Base = value-wrap-⊑-inv v v′ lpV
-apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV
-    | yes g | ⟨ G , ⟨ W , ⟨ c , ⟨ i , _ ⟩ ⟩ ⟩ ⟩
-        | no ap
-  with lpV | i
-...       | ⊑ᶜ-wrap {c′ = cast _ _ _ c~} lpi lpW | Inert.I-inj gg _ = contradiction eq ap
-  where
-  lp = proj₁ (lpii→⊑ lpi)
-  eq : G ≡ B
-  eq = lp-consis-ground-eq gg g c~ lp lp2
-...       | ⊑ᶜ-wrapr () lpW | _
-...       | ⊑ᶜ-wrapl lpi lpW | Inert.I-inj gg _ = contradiction eq ap
-  where
-  lp = proj₁ (lpit→⊑ lpi)
-  eq : G ≡ B
-  eq = lp-consis-ground-eq gg g Refl~ lp lp2
-apply-⊑-apply v v′ (Active.A-proj (cast ⋆ B _ _) nd) (Active.A-id _) unk⊑ lp2 lpV | no ng
-  with ground B {nd}
-... | ⟨ G , ⟨ g , c~ ⟩ ⟩ = ⊑ᶜ-castl lp lp2 (⊑ᶜ-castl unk⊑ lp lpV)
-  where
-  lp = ⊑-ground-relax g lp2 c~ nd
-apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-inj _ _ _) unk⊑ unk⊑ lpV = contradiction refl x
-apply-⊑-apply v v′ (Active.A-proj _ x) (Active.A-proj _ x₁) unk⊑ lp2 lpV = {!!}
+wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrap _ lpV) = lpV
+wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl (lpit-inj () unk⊑) lpV)

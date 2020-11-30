@@ -1058,3 +1058,13 @@ module Types where
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Fun G-Fun _ _ (fun⊑ lp1 lp2) = fun⊑ unk⊑ unk⊑
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Pair G-Pair _ _ (pair⊑ lp1 lp2) = pair⊑ unk⊑ unk⊑
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Sum G-Sum _ _ (sum⊑ lp1 lp2) = sum⊑ unk⊑ unk⊑
+
+  ground-⊑-eq : ∀ {G H}
+    → Ground G → Ground H
+    → G ⊑ H
+      ------
+    → G ≡ H
+  ground-⊑-eq G-Base G-Base base⊑ = refl
+  ground-⊑-eq G-Fun G-Fun (fun⊑ _ _) = refl
+  ground-⊑-eq G-Pair G-Pair (pair⊑ _ _) = refl
+  ground-⊑-eq G-Sum G-Sum (sum⊑ _ _) = refl

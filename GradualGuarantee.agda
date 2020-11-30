@@ -241,10 +241,9 @@ gradual-guarantee-cast {M = M} {c = c} lp1 lp2 lpM refl eq2 (ξ-blame {F = F})
 ... | ⟨ refl , ⟨ refl , refl ⟩ ⟩ = ⟨ M ⟨ c ⟩ , ⟨ M ⟨ c ⟩ ∎ , ⊑ᶜ-blame lp2 ⟩ ⟩
 gradual-guarantee-cast {c = c} lp1 lp2 lpM refl refl (cast vM′ {a′})
   with catchup vM′ lpM
-... | ⟨ V , ⟨ v , ⟨ rd* , lpV ⟩ ⟩ ⟩
-  with GroundInertX.ActiveOrInert c
-...   | inj₁ a = ⟨ applyCast _ v _ {a} , ⟨ ↠-trans (plug-cong (F-cast _) rd*) (_ —→⟨ cast v {a} ⟩ _ ∎) , {!!} ⟩ ⟩
-...   | inj₂ i = ⟨ V ⟪ i ⟫ , ⟨ ↠-trans (plug-cong (F-cast _) rd*) (_ —→⟨ wrap v ⟩ _ ∎) , wrap-⊑-apply v vM′ i a′ lp1 lp2 lpV ⟩ ⟩
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-cast {c = c} v vM′ a′ lp1 lp2 lpV
+...   | ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = ⟨ N , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpN ⟩ ⟩
 
 gradual-guarantee-cast lp1 lp2 lpM refl refl (wrap v) = {!!}
 

@@ -269,3 +269,27 @@ sim-app-wrap v′ w′ i′ x′ lpL lpM
   with sim-app-wrap-v v w v′ w′ i′ x′ lpV lpW
 ...     | ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ = ⟨ N , ⟨ (↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v}) rd*₂) rd*₃)) , lpN ⟩ ⟩
 
+
+
+sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → (v′ : Value V′)
+  → (a′ : Active c′)
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    ------------------------------------------------------------
+  → ∃[ N ] ((V ⟨ c ⟩ —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ applyCast V′ v′ c′ {a′}))
+sim-cast v v′ (Active.A-id _) lp1 lp2 lpV = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castl lp1 lp2 lpV ⟩ ⟩
+sim-cast v v′ (Active.A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+  with ground A′ {nd}
+... | ⟨ G′ , _ ⟩ = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-cast lp1 unk⊑ lpV) ⟩ ⟩
+sim-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+  with ground? B′
+... | yes b′-g
+  with canonical⋆ _ v′
+...   | ⟨ G′ , ⟨ W′ , ⟨ c′ , ⟨ i′ , meq′ ⟩ ⟩ ⟩ ⟩ rewrite meq′
+  with gnd-eq? G′ B′ {inert-ground _ i′} {b′-g}
+...     | yes ap rewrite ap = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (value-⊑-wrap-inv v v′ lpV) ⟩ ⟩
+...     | no  ap = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (⊑ᶜ-blame unk⊑) ⟩ ⟩
+sim-cast v w (Active.A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
+  with ground B′ {nd}
+...   | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-cast unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV) ⟩ ⟩
