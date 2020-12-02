@@ -400,25 +400,15 @@ value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ (Inert.I-inj g′ _)) (⊑ᶜ-wrapl
 ... | ⟨ unk⊑ , unk⊑ ⟩ with i
 ...   | Inert.I-inj () _
 
--- Different from the lemma above, where the wrap is on the rhs, we require that the rhs has an atomic type.
-wrap-⊑-value-inv : ∀ {A ι} {V : ∅ ⊢ A} {V′ : ∅ ⊢ ` ι} {c : Cast (A ⇒ ⋆)} {i : Inert c}
+-- Different from the lemma above, where the wrap is on the rhs, we require that the rhs has a type that is not ⋆.
+wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
+  → A′ ≢ ⋆
   → Value (V ⟪ i ⟫) → Value V′
   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
     ----------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-wrap-⊑-value-inv (V-wrap v _) v′ (⊑ᶜ-wrapl _ lpV) = lpV
--- In fact we can have a more general one:
--- wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
---   → Ground A′
---   → Value (V ⟪ i ⟫) → Value V′
---   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
---     ----------------------
---   → ∅ , ∅ ⊢ V ⊑ᶜ V′
--- wrap-⊑-value-inv G-Base v w (⊑ᶜ-wrap {i′ = ()} lpi lpV)
--- wrap-⊑-value-inv G-Fun v w (⊑ᶜ-wrap {i′ = Inert.I-fun _} () lpV)
--- wrap-⊑-value-inv G-Pair v w (⊑ᶜ-wrap {i′ = Inert.I-pair _} () lpV)
--- wrap-⊑-value-inv G-Sum v w (⊑ᶜ-wrap {i′ = Inert.I-sum _} () lpV)
--- wrap-⊑-value-inv g v w (⊑ᶜ-wrapl lpi lpV) = lpV
+wrap-⊑-value-inv nd v w (⊑ᶜ-wrap (lpii-inj _) lpV) = contradiction refl nd
+wrap-⊑-value-inv nd v w (⊑ᶜ-wrapl lpi lpV) = lpV
 
 wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
                     {i : Inert c} {i′ : Inert c′}

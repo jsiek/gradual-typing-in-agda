@@ -305,16 +305,6 @@ inert-inj-⊑-inert-inj g g′ lp with ground-⊑-eq g g′ lp | g | g′
 ... | refl | G-Pair | G-Pair = lpii-inj G-Pair
 ... | refl | G-Sum  | G-Sum  = lpii-inj G-Sum
 
-dyn-value-⊑-inj-wrap : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ ⋆)}
-  → Value V → Value V′
-  → (i′ : Inert c′)
-  → ∅ , ∅ ⊢ V ⊑ᶜ V′
-    -----------------------
-  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
-dyn-value-⊑-inj-wrap v v′ (Inert.I-inj () (cast .⋆ .⋆ _ _)) (⊑ᶜ-wrap (lpii-inj g) lpV)
-dyn-value-⊑-inj-wrap v v′ (Inert.I-inj g′ (cast A′ .⋆ _ _)) (⊑ᶜ-wrapl (lpit-inj g lp) lpV) with ground-⊑-eq g g′ lp
-... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV
-
 dyn-value-⊑-wrap : ∀ {A′ B′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
   → Value V → Value V′
   → (i′ : Inert c′)
@@ -331,6 +321,81 @@ dyn-value-⊑-wrap v v′ (Inert.I-pair (cast .(_ `× _) .(_ `× _) _ _)) (⊑�
   ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) lpV)
 dyn-value-⊑-wrap v v′ (Inert.I-sum (cast .(_ `⊎ _) .(_ `⊎ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpV) =
   ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) lpV)
+
+apply-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → (v : Value V) → Value V′
+  → (a : Active c) → (i′ : Inert c′)
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -----------------------------------------
+  → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ V′ ⟪ i′ ⟫
+apply-⊑-wrap v v′ (Active.A-id _) i′ lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ i′ lpV
+
+apply-⊑-wrap v v′ (Active.A-inj (cast .⋆ .⋆ _ _) ng nd) (Inert.I-inj g′ _) unk⊑ _ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-inj (cast .(` _) .⋆ _ _) ng nd) (Inert.I-inj G-Base _) base⊑ _ lpV = contradiction G-Base ng
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (Inert.I-inj G-Fun _) (fun⊑ unk⊑ unk⊑) _ lpV = contradiction G-Fun ng
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (Inert.I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) _ lpV = contradiction G-Pair ng
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (Inert.I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) _ lpV = contradiction G-Sum ng
+apply-⊑-wrap v v′ (Active.A-inj (cast .⋆ .⋆ _ _) ng nd) (Inert.I-fun _) unk⊑ _ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (Inert.I-fun _) (fun⊑ lp1 lp2) _ lpV
+  with ground _ {nd}
+... | ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV))
+apply-⊑-wrap v v′ (Active.A-inj (cast .⋆ .⋆ _ _) ng nd) (Inert.I-pair _) unk⊑ _ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (Inert.I-pair _) (pair⊑ lp1 lp2) _ lpV
+  with ground _ {nd}
+... | ⟨ ⋆ `× ⋆ , ⟨ G-Pair , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-castl (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑) lpV))
+apply-⊑-wrap v v′ (Active.A-inj (cast .⋆ .⋆ _ _) ng nd) (Inert.I-sum _) unk⊑ _ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (Inert.I-sum _) (sum⊑ lp1 lp2) _ lpV
+  with ground _ {nd}
+... | ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-castl (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑) lpV))
+
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ B _ _) nd) (Inert.I-inj x _) _ unk⊑ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ .⋆ _ _) nd) (Inert.I-fun _) _ unk⊑ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A ⇒ B) _ _) _) (Inert.I-fun _) _ (fun⊑ lp1 lp2) lpV
+  with ground? (A ⇒ B)
+... | yes G-Fun
+  with canonical⋆ _ v
+...   | ⟨ G , ⟨ W , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G (A ⇒ B) {inert-ground _ i₁} {G-Fun}
+...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+...     | no  ap with lpV
+...       | ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpW = contradiction refl ap
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A ⇒ B) _ _) nd) (Inert.I-fun _) _ (fun⊑ lp1 lp2) lpV | no ng
+  with ground _ {nd}
+... | ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV))
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ .⋆ _ _) nd) (Inert.I-pair _) _ unk⊑ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A `× B) _ _) _) (Inert.I-pair _) _ (pair⊑ lp1 lp2) lpV
+  with ground? (A `× B)
+... | yes G-Pair
+  with canonical⋆ _ v
+...   | ⟨ G , ⟨ W , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G (A `× B) {inert-ground _ i₁} {G-Pair}
+...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+...     | no  ap with lpV
+...       | ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ _ _)) lpW = contradiction refl ap
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A `× B) _ _) nd) (Inert.I-pair _) _ (pair⊑ lp1 lp2) lpV | no ng
+  with ground _ {nd}
+... | ⟨ ⋆ `× ⋆ , ⟨ G-Pair , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-castl unk⊑ (pair⊑ unk⊑ unk⊑) lpV))
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ .⋆ _ _) nd) (Inert.I-sum _) _ unk⊑ lpV = contradiction refl nd
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A `⊎ B) _ _) _) (Inert.I-sum _) _ (sum⊑ lp1 lp2) lpV
+  with ground? (A `⊎ B)
+... | yes G-Sum
+  with canonical⋆ _ v
+...   | ⟨ G , ⟨ W , ⟨ c₁ , ⟨ i₁ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq
+  with gnd-eq? G (A `⊎ B) {inert-ground _ i₁} {G-Sum}
+...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+...     | no  ap with lpV
+...       | ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpW = contradiction refl ap
+apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A `⊎ B) _ _) nd) (Inert.I-sum _) _ (sum⊑ lp1 lp2) lpV | no ng
+  with ground _ {nd}
+... | ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , _ ⟩ ⟩ =
+  ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-castl unk⊑ (sum⊑ unk⊑ unk⊑) lpV))
+
 
 sim-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → Value V → (v′ : Value V′)
@@ -355,17 +420,47 @@ sim-wrap v v′ (Inert.I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑ lpV =
 sim-wrap v v′ (Inert.I-fun _) unk⊑ unk⊑ lpV =
   ⟨ _ , ⟨ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-fun _) lpV ⟩ ⟩
 -- c : ⋆ ⇒ (A → B) is an active projection
-sim-wrap {V = V} {c = c} v v′ (Inert.I-fun _) unk⊑ (fun⊑ lp1 lp2) lpV =
-  {!!}
+sim-wrap v v′ (Inert.I-fun _) unk⊑ (fun⊑ lp1 lp2) lpV =
+  let a = Active.A-proj _ (λ ()) in
+    ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-fun _) unk⊑ (fun⊑ lp1 lp2) lpV ⟩ ⟩
 -- c : (A → B) ⇒ ⋆ can be either active or inert
 sim-wrap {c = c} v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) unk⊑ lpV
   with GroundInertX.ActiveOrInert c
-... | inj₁ a = {!!}
+... | inj₁ a = ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-fun _) (fun⊑ lp1 lp2) unk⊑ lpV ⟩ ⟩
 ... | inj₂ (Inert.I-inj G-Fun _) =
   ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Fun c} ⟩ _ ∎ ,
           ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV) ⟩ ⟩
 sim-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
   ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV ⟩ ⟩
 
-sim-wrap v v′ (Inert.I-pair _) lp1 lp2 lpV = {!!}
-sim-wrap v v′ (Inert.I-sum _) lp1 lp2 lpV = {!!}
+sim-wrap v v′ (Inert.I-pair _) unk⊑ unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-pair _) lpV ⟩ ⟩
+-- c : ⋆ ⇒ (A → B) is an active projection
+sim-wrap v v′ (Inert.I-pair _) unk⊑ (pair⊑ lp1 lp2) lpV =
+  let a = Active.A-proj _ (λ ()) in
+    ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-pair _) unk⊑ (pair⊑ lp1 lp2) lpV ⟩ ⟩
+-- c : (A → B) ⇒ ⋆ can be either active or inert
+sim-wrap {c = c} v v′ (Inert.I-pair _) (pair⊑ lp1 lp2) unk⊑ lpV
+  with GroundInertX.ActiveOrInert c
+... | inj₁ a = ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-pair _) (pair⊑ lp1 lp2) unk⊑ lpV ⟩ ⟩
+... | inj₂ (Inert.I-inj G-Pair _) =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Pair c} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑)) lpV) ⟩ ⟩
+sim-wrap v v′ (Inert.I-pair _) (pair⊑ lp1 lp2) (pair⊑ lp3 lp4) lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV ⟩ ⟩
+
+sim-wrap v v′ (Inert.I-sum _) unk⊑ unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-sum _) lpV ⟩ ⟩
+-- c : ⋆ ⇒ (A → B) is an active projection
+sim-wrap v v′ (Inert.I-sum _) unk⊑ (sum⊑ lp1 lp2) lpV =
+  let a = Active.A-proj _ (λ ()) in
+    ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-sum _) unk⊑ (sum⊑ lp1 lp2) lpV ⟩ ⟩
+-- c : (A → B) ⇒ ⋆ can be either active or inert
+sim-wrap {c = c} v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) unk⊑ lpV
+  with GroundInertX.ActiveOrInert c
+... | inj₁ a = ⟨ _ , ⟨ _ —→⟨ cast v {a} ⟩ _ ∎ , apply-⊑-wrap v v′ a (Inert.I-sum _) (sum⊑ lp1 lp2) unk⊑ lpV ⟩ ⟩
+... | inj₂ (Inert.I-inj G-Sum _) =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Sum c} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑)) lpV) ⟩ ⟩
+sim-wrap v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) (sum⊑ lp3 lp4) lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV ⟩ ⟩
