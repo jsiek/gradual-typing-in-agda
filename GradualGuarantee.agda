@@ -250,6 +250,25 @@ gradual-guarantee-cast {c = c} lp1 lp2 lpM refl refl (wrap vM′ {i′})
   with sim-wrap {c = c} v vM′ i′ lp1 lp2 lpV
 ...   | ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = ⟨ N , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpN ⟩ ⟩
 
+gradual-guarantee-castr : ∀ {A A′ B′} {M′ : ∅ ⊢ A′} {M : ∅ ⊢ A} {M₁′ N′ : ∅ ⊢ B′} {c′ : Cast (A′ ⇒ B′)}
+  → A ⊑ A′ → A ⊑ B′ → ∅ , ∅ ⊢ M ⊑ᶜ M′
+  → M₁′ ≡ plug M′ (F-cast c′)
+  → M₁′ —→ N′
+    ---------------------------------------------
+  → ∃[ N ] ((M —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ N′))
+gradual-guarantee-castr lp1 lp2 lpM eq (ξ {F = F} rd)
+  with plug-inv-cast F eq
+... | ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  with gradual-guarantee lpM rd
+...   | ⟨ N , ⟨ rd* , lpN ⟩ ⟩ = ⟨ N , ⟨ rd* , ⊑ᶜ-castr lp1 lp2 lpN ⟩ ⟩
+gradual-guarantee-castr lp1 lp2 lpM eq ξ-blame = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-blame lp2 ⟩ ⟩
+gradual-guarantee-castr lp1 lp2 lpM refl (cast vM′ {a′})
+  with catchup vM′ lpM
+... | ⟨ V , ⟨ v , ⟨ rd* , lpV ⟩ ⟩ ⟩ = ⟨ V , ⟨ rd* , castr-cast v vM′ a′ lp1 lp2 lpV ⟩ ⟩
+gradual-guarantee-castr lp1 lp2 lpM refl (wrap vM′ {i′})
+  with catchup vM′ lpM
+... | ⟨ V , ⟨ v , ⟨ rd* , lpV ⟩ ⟩ ⟩ = ⟨ V , ⟨ rd* , castr-wrap v vM′ i′ lp1 lp2 lpV ⟩ ⟩
+
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpL lpM) rd = gradual-guarantee-app lpL lpM refl refl rd
@@ -264,7 +283,7 @@ gradual-guarantee (⊑ᶜ-cast lp1 lp2 lpM) rd = gradual-guarantee-cast lp1 lp2 
 gradual-guarantee (⊑ᶜ-castl {c = c} lp1 lp2 lpM) rd
   with gradual-guarantee lpM rd
 ... | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp1 lp2 lpM₂ ⟩ ⟩
-gradual-guarantee (⊑ᶜ-castr lp1 lp2 lpM) rd = {!!}
+gradual-guarantee (⊑ᶜ-castr lp1 lp2 lpM) rd = gradual-guarantee-castr lp1 lp2 lpM refl rd
 gradual-guarantee (⊑ᶜ-wrap lpi lpM) rd = gradual-guarantee-wrap lpi lpM refl refl rd
 gradual-guarantee (⊑ᶜ-wrapl {i = i} lpi lpM) rd
   with gradual-guarantee lpM rd

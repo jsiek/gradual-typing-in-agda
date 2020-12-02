@@ -290,11 +290,9 @@ sim-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
   with gnd-eq? G′ B′ {inert-ground _ i′} {b′-g}
 ...     | yes ap rewrite ap = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (value-⊑-wrap-inv v v′ lpV) ⟩ ⟩
 ...     | no  ap = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (⊑ᶜ-blame unk⊑) ⟩ ⟩
-sim-cast v w (Active.A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
+sim-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
   with ground B′ {nd}
 ...   | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-cast unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV) ⟩ ⟩
-
-
 
 sim-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
   → Value V → (v′ : Value V′)
@@ -363,3 +361,46 @@ sim-wrap {c = c} v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) unk⊑ lpV
           ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑)) lpV) ⟩ ⟩
 sim-wrap v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) (sum⊑ lp3 lp4) lpV =
   ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV ⟩ ⟩
+
+
+
+castr-cast : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → (v′ : Value V′)
+  → (a′ : Active c′)
+  → A ⊑ A′ → A ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    ------------------------------------------------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ applyCast V′ v′ c′ {a′}
+castr-cast v v′ (Active.A-id _) lp1 lp2 lpV = lpV
+castr-cast v v′ (Active.A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+  with ground A′ {nd}
+... | ⟨ G′ , _ ⟩ = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)
+castr-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+  with ground? B′
+... | yes b′-g
+  with canonical⋆ _ v′
+...   | ⟨ G′ , ⟨ W′ , ⟨ c′ , ⟨ i′ , meq′ ⟩ ⟩ ⟩ ⟩ rewrite meq′
+  with gnd-eq? G′ B′ {inert-ground _ i′} {b′-g}
+...     | yes ap rewrite ap = value-⊑-wrap-inv v v′ lpV
+...     | no  ap = ⊑ᶜ-blame unk⊑
+castr-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
+  with ground B′ {nd}
+...   | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)
+
+castr-wrap : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → (v′ : Value V′)
+  → (i′ : Inert c′)
+  → A ⊑ A′ → A ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -----------------------------------------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+castr-wrap v v′ (Inert.I-inj g′ _) lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-inj g′ _) lpV
+castr-wrap v v′ (Inert.I-fun _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-fun _) lpV
+castr-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
+  ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV
+castr-wrap v v′ (Inert.I-pair _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-pair _) lpV
+castr-wrap v v′ (Inert.I-pair _) (pair⊑ lp1 lp2) (pair⊑ lp3 lp4) lpV =
+  ⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV
+castr-wrap v v′ (Inert.I-sum _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-sum _) lpV
+castr-wrap v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) (sum⊑ lp3 lp4) lpV =
+  ⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV
