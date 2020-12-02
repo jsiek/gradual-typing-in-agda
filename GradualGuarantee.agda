@@ -261,7 +261,9 @@ gradual-guarantee (⊑ᶜ-inl lp lpf) rd = gradual-guarantee-inl lp lpf refl ref
 gradual-guarantee (⊑ᶜ-inr lp lpf) rd = gradual-guarantee-inr lp lpf refl refl rd
 gradual-guarantee (⊑ᶜ-case lpL lpM lpN) rd = {!!}
 gradual-guarantee (⊑ᶜ-cast lp1 lp2 lpM) rd = gradual-guarantee-cast lp1 lp2 lpM refl refl rd
-gradual-guarantee (⊑ᶜ-castl lp1 lp2 lpM) rd = {!!}
+gradual-guarantee (⊑ᶜ-castl {c = c} lp1 lp2 lpM) rd
+  with gradual-guarantee lpM rd
+... | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp1 lp2 lpM₂ ⟩ ⟩
 gradual-guarantee (⊑ᶜ-castr lp1 lp2 lpM) rd = {!!}
 gradual-guarantee (⊑ᶜ-wrap lpi lpM) rd = gradual-guarantee-wrap lpi lpM refl refl rd
 gradual-guarantee (⊑ᶜ-wrapl {i = i} lpi lpM) rd
