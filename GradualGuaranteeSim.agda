@@ -293,3 +293,79 @@ sim-cast v v′ (Active.A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
 sim-cast v w (Active.A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
   with ground B′ {nd}
 ...   | ⟨ G′ , ⟨ g′ , _ ⟩ ⟩ = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-cast unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV) ⟩ ⟩
+
+inert-inj-⊑-inert-inj : ∀ {G G′} → {c : Cast (G ⇒ ⋆)} → {c′ : Cast (G′ ⇒ ⋆)}
+  → (g : Ground G) → (g′ : Ground G′)
+  → G ⊑ G′
+    ------------------------------------------
+  → ⟪ Inert.I-inj g c ⟫⊑⟪ Inert.I-inj g′ c′ ⟫
+inert-inj-⊑-inert-inj g g′ lp with ground-⊑-eq g g′ lp | g | g′
+... | refl | G-Base | G-Base = lpii-inj G-Base
+... | refl | G-Fun  | G-Fun  = lpii-inj G-Fun
+... | refl | G-Pair | G-Pair = lpii-inj G-Pair
+... | refl | G-Sum  | G-Sum  = lpii-inj G-Sum
+
+dyn-value-⊑-inj-wrap : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ ⋆)}
+  → Value V → Value V′
+  → (i′ : Inert c′)
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -----------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+dyn-value-⊑-inj-wrap v v′ (Inert.I-inj () (cast .⋆ .⋆ _ _)) (⊑ᶜ-wrap (lpii-inj g) lpV)
+dyn-value-⊑-inj-wrap v v′ (Inert.I-inj g′ (cast A′ .⋆ _ _)) (⊑ᶜ-wrapl (lpit-inj g lp) lpV) with ground-⊑-eq g g′ lp
+... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV
+
+dyn-value-⊑-wrap : ∀ {A′ B′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → Value V′
+  → (i′ : Inert c′)
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -----------------------
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+dyn-value-⊑-wrap v v′ (Inert.I-inj () (cast .⋆ .⋆ _ _)) (⊑ᶜ-wrap (lpii-inj g) lpV)
+dyn-value-⊑-wrap v v′ (Inert.I-inj g′ (cast A′ .⋆ _ _)) (⊑ᶜ-wrapl (lpit-inj g lp) lpV)
+  with ground-⊑-eq g g′ lp
+... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV
+dyn-value-⊑-wrap v v′ (Inert.I-fun (cast .(_ ⇒ _) .(_ ⇒ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpV) =
+  ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) lpV)
+dyn-value-⊑-wrap v v′ (Inert.I-pair (cast .(_ `× _) .(_ `× _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ _ _)) lpV) =
+  ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) lpV)
+dyn-value-⊑-wrap v v′ (Inert.I-sum (cast .(_ `⊎ _) .(_ `⊎ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpV) =
+  ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) lpV)
+
+sim-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  → Value V → (v′ : Value V′)
+  → (i′ : Inert c′)
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ V ⊑ᶜ V′
+    -----------------------------------------------------
+  → ∃[ N ] ((V ⟨ c ⟩ —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫))
+-- In this case, A is less than a ground type A′, so it can either be ⋆ or ground.
+-- This is the only case where the cast ⟨ ⋆ ⇒ ⋆ ⟩ is actually active!
+sim-wrap v v′ (Inert.I-inj g′ _) unk⊑ unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-inj g′ _) lpV ⟩ ⟩
+sim-wrap v v′ (Inert.I-inj g′ _) base⊑ unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj g′ _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj g′) lpV ⟩ ⟩
+sim-wrap v v′ (Inert.I-inj G-Fun _) (fun⊑ unk⊑ unk⊑) unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Fun) lpV ⟩ ⟩
+sim-wrap v v′ (Inert.I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Pair) lpV ⟩ ⟩
+sim-wrap v v′ (Inert.I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Sum) lpV ⟩ ⟩
+
+sim-wrap v v′ (Inert.I-fun _) unk⊑ unk⊑ lpV =
+  ⟨ _ , ⟨ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-fun _) lpV ⟩ ⟩
+-- c : ⋆ ⇒ (A → B) is an active projection
+sim-wrap {V = V} {c = c} v v′ (Inert.I-fun _) unk⊑ (fun⊑ lp1 lp2) lpV =
+  {!!}
+-- c : (A → B) ⇒ ⋆ can be either active or inert
+sim-wrap {c = c} v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) unk⊑ lpV
+  with GroundInertX.ActiveOrInert c
+... | inj₁ a = {!!}
+... | inj₂ (Inert.I-inj G-Fun _) =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-inj G-Fun c} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV) ⟩ ⟩
+sim-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
+  ⟨ _ , ⟨ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV ⟩ ⟩
+
+sim-wrap v v′ (Inert.I-pair _) lp1 lp2 lpV = {!!}
+sim-wrap v v′ (Inert.I-sum _) lp1 lp2 lpV = {!!}
