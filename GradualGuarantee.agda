@@ -244,8 +244,11 @@ gradual-guarantee-cast {c = c} lp1 lp2 lpM refl refl (cast vM′ {a′})
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-cast {c = c} v vM′ a′ lp1 lp2 lpV
 ...   | ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = ⟨ N , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpN ⟩ ⟩
-
-gradual-guarantee-cast lp1 lp2 lpM refl refl (wrap v) = {!!}
+gradual-guarantee-cast {c = c} lp1 lp2 lpM refl refl (wrap vM′ {i′})
+  with catchup vM′ lpM
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-wrap {c = c} v vM′ i′ lp1 lp2 lpV
+...   | ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = ⟨ N , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpN ⟩ ⟩
 
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
