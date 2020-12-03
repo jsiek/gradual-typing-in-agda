@@ -269,6 +269,28 @@ gradual-guarantee-castr lp1 lp2 lpM refl (wrap vM′ {i′})
   with catchup vM′ lpM
 ... | ⟨ V , ⟨ v , ⟨ rd* , lpV ⟩ ⟩ ⟩ = ⟨ V , ⟨ rd* , castr-wrap v vM′ i′ lp1 lp2 lpV ⟩ ⟩
 
+gradual-guarantee-case : ∀ {A A′ B B′ C C′}
+                           {L : ∅ ⊢ A `⊎ B} {M : ∅ ⊢ A ⇒ C} {N : ∅ ⊢ B ⇒ C} {L′ : ∅ ⊢ A′ `⊎ B′} {M′ : ∅ ⊢ A′ ⇒ C′} {N′ : ∅ ⊢ B′ ⇒ C′}
+                           {M₁ : ∅ ⊢ C} {M₁′ M₂′ : ∅ ⊢ C′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ L′ → ∅ , ∅ ⊢ M ⊑ᶜ M′ → ∅ , ∅ ⊢ N ⊑ᶜ N′
+  → M₁ ≡ case L M N → M₁′ ≡ case L′ M′ N′
+  → M₁′ —→ M₂′
+    -----------------------------------------------
+  → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
+gradual-guarantee-case {L = L} {M} {N} {L′} {M′} {N′} lpL lpM lpN refl eq2 (ξ {F = F-case _ _} rd)
+  with plug-inv-case eq2
+... | ⟨ refl , ⟨ refl , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩ ⟩
+  with gradual-guarantee lpL rd
+...   | ⟨ L₂ , ⟨ rd* , lpL₂ ⟩ ⟩ = ⟨ case L₂ M N , ⟨ plug-cong (F-case M N) rd* , ⊑ᶜ-case lpL₂ lpM lpN ⟩ ⟩
+gradual-guarantee-case lpL lpM lpN refl eq2 (ξ-blame {F = F-case _ _})
+  with plug-inv-case eq2
+... | ⟨ refl , ⟨ refl , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩ ⟩
+  with ⊑ᶜ→⊑ ⊑*-∅ lpM
+...   | fun⊑ lpA lpC = ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-blame lpC ⟩ ⟩
+gradual-guarantee-case lpL lpM lpN refl refl (β-caseL v) = {!!}
+gradual-guarantee-case lpL lpM lpN refl refl (β-caseR v) = {!!}
+gradual-guarantee-case lpL lpM lpN refl refl (case-cast v) = {!!}
+
 gradual-guarantee ⊑ᶜ-prim rd = ⊥-elim (V⌿→ V-const rd)
 gradual-guarantee (⊑ᶜ-ƛ _ _) rd = ⊥-elim (V⌿→ V-ƛ rd)
 gradual-guarantee (⊑ᶜ-· lpL lpM) rd = gradual-guarantee-app lpL lpM refl refl rd
@@ -278,7 +300,7 @@ gradual-guarantee (⊑ᶜ-fst lpM) rd = gradual-guarantee-fst lpM refl refl rd
 gradual-guarantee (⊑ᶜ-snd lpM) rd = gradual-guarantee-snd lpM refl refl rd
 gradual-guarantee (⊑ᶜ-inl lp lpf) rd = gradual-guarantee-inl lp lpf refl refl rd
 gradual-guarantee (⊑ᶜ-inr lp lpf) rd = gradual-guarantee-inr lp lpf refl refl rd
-gradual-guarantee (⊑ᶜ-case lpL lpM lpN) rd = {!!}
+gradual-guarantee (⊑ᶜ-case lpL lpM lpN) rd = gradual-guarantee-case lpL lpM lpN refl refl rd
 gradual-guarantee (⊑ᶜ-cast lp1 lp2 lpM) rd = gradual-guarantee-cast lp1 lp2 lpM refl refl rd
 gradual-guarantee (⊑ᶜ-castl {c = c} lp1 lp2 lpM) rd
   with gradual-guarantee lpM rd
