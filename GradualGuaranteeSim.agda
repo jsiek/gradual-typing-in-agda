@@ -29,6 +29,9 @@ open import TermPrecision
 open import GradualGuaranteeAux
 
 
+sum-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D))) → Cross c
+sum-cast-is-cross (cast (A `⊎ B) (C `⊎ D) ℓ _) = Cross.C-sum
+
 pair-cast-is-cross : ∀ {A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
 pair-cast-is-cross (cast (A `× B) (C `× D) ℓ _) = Cross.C-pair
 
@@ -154,6 +157,31 @@ sim-snd-wrap v′ i′ x′ lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-snd-wrap-v v v′ i′ x′ lpV
 ... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-snd rd*₁) rd*₂) , lpM ⟩ ⟩
+
+-- sim-case-wrap-v : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
+--                   {V : ∅ ⊢ A `⊎ B} {M : ∅ ⊢ A ⇒ C} {N : ∅ ⊢ B ⇒ C}
+--                   {V′ : ∅ ⊢ A₁′ `⊎ B₁′} {M′ : ∅ ⊢ A₂′ ⇒ C′} {N′ : ∅ ⊢ B₂′ ⇒ C′} {c′ : Cast ((A₁′ `⊎ B₁′) ⇒ (A₂′ `⊎ B₂′))}
+--   → Value V → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+--   → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ M ⊑ᶜ M′ → ∅ , ∅ ⊢ N ⊑ᶜ N′
+--     ----------------------------------------
+--   → ∃[ K ] ((case V M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ case V′ (ƛ ((rename S_ M′) · (` Z ⟨ inlC c′ x′ ⟩))) (ƛ ((rename S_ N′) · (` Z ⟨ inrC c′ x′ ⟩)))M′ ))
+-- sim-case-wrap-v (V-wrap v i) v′ i′ x′ (⊑ᶜ-wrap (lpii-sum (sum⊑ lp₁₁ lp₁₂) (sum⊑ lp₂₁ lp₂₂)) lpV) lpM lpN =
+--   ⟨ _ , ⟨ _ —→⟨ case-cast v {sum-cast-is-cross _} ⟩ _ ∎ ,
+--           ⊑ᶜ-case lpV (⊑ᶜ-ƛ lp₁₁ (⊑ᶜ-· (S-pres-prec lpM) (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-var refl))))
+--                       (⊑ᶜ-ƛ lp₁₂ (⊑ᶜ-· (S-pres-prec lpN) (⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-var refl)))) ⟩ ⟩
+-- sim-case-wrap-v (V-wrap v i) v′ i′ x′ (⊑ᶜ-wrapl (lpit-sum lp1 lp2) lpV) lpM lpN
+--   with sim-case-wrap-v v v′ i′ x′ lpV {!!} {!!}
+-- ... | ⟨ K , ⟨ rd* , lpK ⟩ ⟩ = ⟨ K , ⟨ (_ —→⟨ case-cast v {sum-cast-is-cross _} ⟩ rd*) , lpK ⟩ ⟩
+-- sim-case-wrap-v v v′ i′ x′ (⊑ᶜ-wrapr x lpV) lpM lpN = {!!}
+
+-- sim-case-wrap : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
+--                   {L : ∅ ⊢ A `⊎ B} {M : ∅ ⊢ A ⇒ C} {N : ∅ ⊢ B ⇒ C}
+--                   {V′ : ∅ ⊢ A₁′ `⊎ B₁′} {M′ : ∅ ⊢ A₂′ ⇒ C′} {N′ : ∅ ⊢ B₂′ ⇒ C′} {c′ : Cast ((A₁′ `⊎ B₁′) ⇒ (A₂′ `⊎ B₂′))}
+--   → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+--   → ∅ , ∅ ⊢ L ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ M ⊑ᶜ M′ → ∅ , ∅ ⊢ N ⊑ᶜ N′
+--     ----------------------------------------
+--   → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ case V′ (ƛ ((rename S_ M′) · ((` Z) ⟨ inlC c′ x′ ⟩ ))) (ƛ ((rename S_ N′) · ((` Z) ⟨ inrC c′ x′ ⟩ ))) ))
+-- sim-case-wrap v′ i′ x′ lpL lpM lpN = {!!}
 
 sim-app-δ : ∀ {A A′ B B′} {L : ∅ ⊢ A ⇒ B} {M : ∅ ⊢ A} {f : rep A′ → rep B′} {k : rep A′}
               {ab : Prim (A′ ⇒ B′)} {a : Prim A′} {b : Prim B′}
