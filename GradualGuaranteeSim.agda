@@ -167,9 +167,12 @@ sim-case-wrap-v : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
     ----------------------------------------
   → ∃[ K ] ((case V M N —↠ K) ×
              (∅ , ∅ ⊢ K ⊑ᶜ case V′ (rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ]) (rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ])))
-sim-case-wrap-v (V-wrap v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrap (lpii-sum (sum⊑ lp₁₁ lp₁₂) (sum⊑ lp₂₁ lp₂₂)) lpV) lpM lpN =
+sim-case-wrap-v {A₂′ = A₂′} {B₂′} (V-wrap {A = A₁ `⊎ B₁} v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrap (lpii-sum (sum⊑ lp₁₁ lp₁₂) (sum⊑ lp₂₁ lp₂₂)) lpV) lpM lpN =
   ⟨ _ , ⟨ _ —→⟨ case-cast v {sum-cast-is-cross _} ⟩ _ ∎ ,
-          {!!} ⟩ ⟩
+          ⊑ᶜ-case lpV lp₁₁ lp₁₂ (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-var refl)))
+                                                 (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = A₁} {A′ = A₂′})) lpM))
+                                (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-var refl)))
+                                                 (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B₁} {A′ = B₂′})) lpN)) ⟩ ⟩
 sim-case-wrap-v {A₂} {B₂} {A₂′ = A₂′} {B₂′} {M = M} {N} {M′ = M′} {N′} (V-wrap {A = A₁ `⊎ B₁} {c = c} v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapl (lpit-sum (sum⊑ lp3 lp4) _) lpV) lpM lpN =
   let ⟨ K , ⟨ rd* , lpK ⟩ ⟩ = sim-case-wrap-v v v′ i′ x′ lp3 lp4 lpV lpM† lpN† in
     ⟨ K , ⟨ (_ —→⟨ case-cast v {sum-cast-is-cross _} ⟩ rd*) , lpK ⟩ ⟩
