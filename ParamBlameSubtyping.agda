@@ -80,8 +80,8 @@ preserve-allsafe (allsafe-if _ allsafe-M _) β-if-true = allsafe-M
 preserve-allsafe (allsafe-if _ _ allsafe-M′) β-if-false = allsafe-M′
 preserve-allsafe (allsafe-fst (allsafe-cons allsafe-M _)) (β-fst _ _) = allsafe-M
 preserve-allsafe (allsafe-snd (allsafe-cons _ allsafe-N)) (β-snd _ _) = allsafe-N
-preserve-allsafe (allsafe-case (allsafe-inl allsafe) allsafe-M _) (β-caseL x) = allsafe-· allsafe-M allsafe
-preserve-allsafe (allsafe-case (allsafe-inr allsafe) _ allsafe-N) (β-caseR x) = allsafe-· allsafe-N allsafe
+preserve-allsafe (allsafe-case (allsafe-inl allsafe) allsafe-M _) (β-caseL x) = substitution-allsafe allsafe-M allsafe
+preserve-allsafe (allsafe-case (allsafe-inr allsafe) _ allsafe-N) (β-caseR x) = substitution-allsafe allsafe-N allsafe
 preserve-allsafe (allsafe-cast safe allsafe) (cast v {a}) = applyCast-pres-allsafe a safe allsafe
 preserve-allsafe (allsafe-cast safe allsafe) (wrap v {i}) = allsafe-wrap safe allsafe
 -- (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
@@ -92,9 +92,9 @@ preserve-allsafe (allsafe-fst (allsafe-wrap safe allsafe-V)) (fst-cast {c = c} v
   allsafe-cast (fstSafe safe x) (allsafe-fst allsafe-V)
 preserve-allsafe (allsafe-snd (allsafe-wrap safe allsafe-V)) (snd-cast {c = c} vV {x}) =
   allsafe-cast (sndSafe safe x) (allsafe-snd allsafe-V)
-preserve-allsafe (allsafe-case (allsafe-wrap safe allsafe-V) allsafe-W₁ allsafe-W₂) (case-cast {c = c} vV {x}) =
-  allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁) (allsafe-cast (inlSafe safe x) allsafe-var)))
-                         (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂) (allsafe-cast (inrSafe safe x) allsafe-var)))
+preserve-allsafe (allsafe-case (allsafe-wrap safe allsafe-V) allsafe-M allsafe-N) (case-cast {c = c} vV {x}) =
+  allsafe-case allsafe-V (substitution-allsafe (rename-pres-allsafe _ allsafe-M) (allsafe-cast (inlSafe safe x) allsafe-var))
+                         (substitution-allsafe (rename-pres-allsafe _ allsafe-N) (allsafe-cast (inrSafe safe x) allsafe-var))
 
 
 -- There is no way to plug a `blame ℓ` in a frame and produce a term where every cast with label ℓ respects <: .
@@ -161,10 +161,10 @@ soundness-<: (allsafe-fst (allsafe-cons allsafe-V allsafe-W)) ( .(fst (cons _ _)
 soundness-<: (allsafe-snd (allsafe-cons allsafe-V allsafe-W)) ( .(snd (cons _ _)) —→⟨ β-snd vV vW ⟩ W↠blame ) =
     soundness-<: allsafe-W W↠blame
 -- Case
-soundness-<: (allsafe-case (allsafe-inl allsafe-V) allsafe-L _) ( .(case (inl _) _ _) —→⟨ β-caseL vV ⟩ L·V↠blame ) =
-    soundness-<: (allsafe-· allsafe-L allsafe-V) L·V↠blame
-soundness-<: (allsafe-case (allsafe-inr allsafe-V) _ allsafe-M) ( .(case (inr _) _ _) —→⟨ β-caseR vV ⟩ M·V↠blame ) =
-    soundness-<: (allsafe-· allsafe-M allsafe-V) M·V↠blame
+soundness-<: (allsafe-case (allsafe-inl allsafe-V) allsafe-M _) ( .(case (inl _) _ _) —→⟨ β-caseL vV ⟩ L·V↠blame ) =
+    soundness-<: (substitution-allsafe allsafe-M allsafe-V) L·V↠blame
+soundness-<: (allsafe-case (allsafe-inr allsafe-V) _ allsafe-N) ( .(case (inr _) _ _) —→⟨ β-caseR vV ⟩ M·V↠blame ) =
+    soundness-<: (substitution-allsafe allsafe-N allsafe-V) M·V↠blame
 -- Cast
 soundness-<: (allsafe-cast safe allsafe-V) ((V ⟨ c ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
   soundness-<: (applyCast-pres-allsafe a safe allsafe-V) applyCastVc↠blame
@@ -180,11 +180,11 @@ soundness-<: (allsafe-fst (allsafe-wrap safe allsafe-V)) ( (fst (V ⟪ i ⟫)) �
 soundness-<: (allsafe-snd (allsafe-wrap safe allsafe-V)) ( (snd (V ⟪ i ⟫)) —→⟨ snd-cast _ {x} ⟩ sndV⟨sndc⟩↠blame ) =
     soundness-<: (allsafe-cast (sndSafe safe x) (allsafe-snd allsafe-V)) sndV⟨sndc⟩↠blame
 -- Case-cast
-soundness-<: (allsafe-case (allsafe-wrap safe allsafe-V) allsafe-W₁ allsafe-W₂) ( (case (V ⟪ i ⟫) W₁ W₂) —→⟨ case-cast vV {x} ⟩ ↠blame ) =
-    soundness-<: (allsafe-case allsafe-V (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₁)
-                                                               (allsafe-cast (inlSafe safe x) allsafe-var)))
-                                         (allsafe-ƛ (allsafe-· (rename-pres-allsafe S_ allsafe-W₂)
-                                                               (allsafe-cast (inrSafe safe x) allsafe-var)))) ↠blame
+soundness-<: (allsafe-case (allsafe-wrap safe allsafe-V) allsafe-M allsafe-N) ( case (V ⟪ i ⟫) M N —→⟨ case-cast vV {x} ⟩ ↠blame ) =
+    soundness-<: (allsafe-case allsafe-V (substitution-allsafe (rename-pres-allsafe (ext S_) allsafe-M)
+                                                               (allsafe-cast (inlSafe safe x) allsafe-var))
+                                         (substitution-allsafe (rename-pres-allsafe (ext S_) allsafe-N)
+                                                               (allsafe-cast (inrSafe safe x) allsafe-var))) ↠blame
 -- Blame
 soundness-<: (allsafe-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ ≡̂-refl
 

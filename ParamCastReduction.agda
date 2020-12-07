@@ -91,15 +91,15 @@ module ParamCastReduction (cs : CastStruct) where
         --------------------
       → snd (cons V W) —→ W
 
-    β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+    β-caseL : ∀ {Γ A B C} {V : Γ ⊢ A} {L : Γ , A ⊢ C} {M : Γ , B ⊢ C}
       → Value V
         --------------------------
-      → case (inl V) L M —→ L · V
+      → case (inl V) L M —→ L [ V ]
 
-    β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ ⊢ A ⇒ C} {M : Γ ⊢ B ⇒ C}
+    β-caseR : ∀ {Γ A B C} {V : Γ ⊢ B} {L : Γ , A ⊢ C} {M : Γ , B ⊢ C}
       → Value V
         --------------------------
-      → case (inr V) L M —→ M · V
+      → case (inr V) L M —→ M [ V ]
 
     cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
       → (v : Value V) → {a : Active c}
@@ -134,14 +134,14 @@ module ParamCastReduction (cs : CastStruct) where
       → snd (V ⟪ i ⟫) —→ (snd V) ⟨ sndC c x ⟩
 
     case-cast : ∀ {Γ A B A' B' C} {V : Γ ⊢ A `⊎ B}
-                                  {W₁ : Γ ⊢ A' ⇒ C } {W₂ : Γ ⊢ B' ⇒ C}
+                                  {M : Γ , A' ⊢ C } {N : Γ , B' ⊢ C}
                                   {c : Cast (A `⊎ B ⇒ A' `⊎ B')}
       → Value V
       → {x : Cross c} → {i : Inert c}
         --------------------------------------------
-      → case (V ⟪ i ⟫) W₁ W₂ —→
-         case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ )))
-                (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
+      → case (V ⟪ i ⟫) M N —→
+         case V (rename (ext S_) M [ ` Z ⟨ inlC c x ⟩ ]) (rename (ext S_) N [ ` Z ⟨ inrC c x ⟩ ])
+         -- case V (ƛ ((rename S_ W₁) · ((` Z) ⟨ inlC c x ⟩ ))) (ƛ ((rename S_ W₂) · ((` Z) ⟨ inrC c x ⟩ )))
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_

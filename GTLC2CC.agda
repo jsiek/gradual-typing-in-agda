@@ -44,20 +44,13 @@ module GTLC2CC
      snd M'
   compile (inl B M) = inl (compile M)
   compile (inr A M) = inr (compile M)
-  compile (case {Γ}{A}{A₁}{A₂}{B}{B₁}{B₂}{C}{C₁}{C₂} L M N ℓ
-            {ma}{mb}{mc}{ab}{ac}{bc}) =
+  compile (case {Γ}{A}{A₁}{A₂}{B₁}{B₂}{C₁}{C₂} L M N ℓ
+            {ma}{ab}{ac}{bc}) =
         let L' = (compile L) ⟨ cast A (A₁ `⊎ A₂) ℓ {consis (▹⊎⊑ ma) Refl⊑} ⟩
-                  ⟨ cast (A₁ `⊎ A₂) (B₁ `⊎ C₁) ℓ {sum~ ab ac} ⟩ in
-        let M' = (compile M) ⟨ cast B (B₁ ⇒ B₂) ℓ {consis (▹⇒⊑ mb) Refl⊑} ⟩
-                  ⟨ cast (B₁ ⇒ B₂) (B₁ ⇒ ⨆ bc) ℓ {c1} ⟩ in
-        let N' = (compile N) ⟨ cast C (C₁ ⇒ C₂) ℓ {consis (▹⇒⊑ mc) Refl⊑} ⟩
-                  ⟨ cast (C₁ ⇒ C₂) (C₁ ⇒ ⨆ bc) ℓ {c2} ⟩ in
-        case L' M' N'
-        where
-        c1 : (B₁ ⇒ B₂) ~ (B₁ ⇒ ⨆ bc)
-        c1 = fun~ Refl~ (~⨆ bc)
-        c2 : (C₁ ⇒ C₂) ~ (C₁ ⇒ ⨆ bc)
-        c2 = fun~ Refl~ (⨆~ bc)
+                             ⟨ cast (A₁ `⊎ A₂) (B₁ `⊎ C₁) ℓ {sum~ ab ac} ⟩ in
+        let M' = (compile M) ⟨ cast B₂ (⨆ bc) ℓ {~⨆ bc} ⟩ in
+        let N' = (compile N) ⟨ cast C₂ (⨆ bc) ℓ {⨆~ bc} ⟩ in
+          case L' M' N'
 
 
 {-

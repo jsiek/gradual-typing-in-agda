@@ -90,14 +90,12 @@ data _⊢G_ : Context → Type → Set where
       -----------------------
     → Γ ⊢G A `⊎ B
 
-  case : ∀{Γ A A₁ A₂ B B₁ B₂ C C₁ C₂}
+  case : ∀{Γ A A₁ A₂ B₁ B₂ C₁ C₂}
     → Γ ⊢G A
-    → Γ ⊢G B
-    → Γ ⊢G C
+    → Γ , B₁ ⊢G B₂
+    → Γ , C₁ ⊢G C₂
     → Label
     → {ma : A ▹ A₁ ⊎ A₂ }
-    → {mb : B ▹ B₁ ⇒ B₂ }
-    → {mc : C ▹ C₁ ⇒ C₂ }
     → {ab : A₁ ~ B₁}
     → {ac : A₂ ~ C₁}
     → {bc : B₂ ~ C₂}

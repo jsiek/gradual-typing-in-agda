@@ -132,8 +132,8 @@ module ParamCastAux (pcs : PreCastStruct) where
       → Frame {Γ} B (A `⊎ B)
 
     F-case : ∀ {Γ A B C}
-      → Γ ⊢ A ⇒ C
-      → Γ ⊢ B ⇒ C
+      → Γ , A ⊢ C
+      → Γ , B ⊢ C
       → Frame {Γ} (A `⊎ B) C
 
     F-cast : ∀ {Γ A B}
@@ -189,7 +189,7 @@ module ParamCastAux (pcs : PreCastStruct) where
   eta⊎ M c x =
      let l = inl ((` Z) ⟨ inlC c x ⟩) in
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
-     case M (ƛ l) (ƛ r)
+       case M l r
 
   {- Here are a few inversion lemmas for `plug` : -}
   plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
@@ -249,13 +249,13 @@ module ParamCastAux (pcs : PreCastStruct) where
   plug-inv-if refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
 
   plug-inv-case : ∀ {Γ A A† B B† C} {L : Γ ⊢ A `⊎ B} {L† : Γ ⊢ A† `⊎ B†}
-                                    {M : Γ ⊢ A ⇒ C} {M† : Γ ⊢ A† ⇒ C}
-                                    {N : Γ ⊢ B ⇒ C} {N† : Γ ⊢ B† ⇒ C}
+                                    {M : Γ , A ⊢ C} {M† : Γ , A† ⊢ C}
+                                    {N : Γ , B ⊢ C} {N† : Γ , B† ⊢ C}
     → plug L (F-case M N) ≡ case L† M† N†
       ----------------------------------
     → Σ[ eqA ∈ A ≡ A† ] Σ[ eqB ∈ B ≡ B† ] (subst₂-eq (λ A B → Γ ⊢ A `⊎ B) eqA eqB L ≡ L†) ×
-                                           (subst-eq (λ A → Γ ⊢ A ⇒ C) eqA M ≡ M†) ×
-                                           (subst-eq (λ B → Γ ⊢ B ⇒ C) eqB N ≡ N†)
+                                           (subst-eq (λ A → Γ , A ⊢ C) eqA M ≡ M†) ×
+                                           (subst-eq (λ B → Γ , B ⊢ C) eqB N ≡ N†)
   plug-inv-case refl = ⟨ refl , ⟨ refl , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩ ⟩
 
   {-

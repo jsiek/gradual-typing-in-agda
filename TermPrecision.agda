@@ -169,15 +169,16 @@ data _,_⊢_⊑ᴳ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢G A
       ------------------------------
     → Γ , Γ′ ⊢ inr A M ⊑ᴳ inr A′ M′
 
-  ⊑ᴳ-case : ∀ {Γ Γ′ A A′ A₁ A₁′ A₂ A₂′ B B′ B₁ B₁′ B₂ B₂′ C C′ C₁ C₁′ C₂ C₂′}
-              {L : Γ ⊢G A} {L′ : Γ′ ⊢G A′} {M : Γ ⊢G B} {M′ : Γ′ ⊢G B′} {N : Γ ⊢G C} {N′ : Γ′ ⊢G C′} {ℓ ℓ′}
+  ⊑ᴳ-case : ∀ {Γ Γ′ A A′ A₁ A₁′ A₂ A₂′ B₁ B₁′ B₂ B₂′ C₁ C₁′ C₂ C₂′}
+              {L : Γ ⊢G A} {L′ : Γ′ ⊢G A′} {M : Γ , B₁ ⊢G B₂} {M′ : Γ′ , B₁′ ⊢G B₂′} {N : Γ , C₁ ⊢G C₂} {N′ : Γ′ , C₁′ ⊢G C₂′} {ℓ ℓ′}
     → Γ , Γ′ ⊢ L ⊑ᴳ L′
-    → Γ , Γ′ ⊢ M ⊑ᴳ M′
-    → Γ , Γ′ ⊢ N ⊑ᴳ N′
-    → {ma : A ▹ A₁ ⊎ A₂} {ma′ : A′ ▹ A₁′ ⊎ A₂′} {mb : B ▹ B₁ ⇒ B₂} {mb′ : B′ ▹ B₁′ ⇒ B₂′} {mc : C ▹ C₁ ⇒ C₂} {mc′ : C′ ▹ C₁′ ⇒ C₂′}
+    → B₁ ⊑ B₁′ → C₁ ⊑ C₁′
+    → (Γ , B₁) , (Γ′ , B₁′) ⊢ M ⊑ᴳ M′
+    → (Γ , C₁) , (Γ′ , C₁′) ⊢ N ⊑ᴳ N′
+    → {ma : A ▹ A₁ ⊎ A₂} {ma′ : A′ ▹ A₁′ ⊎ A₂′}
     → {ab : A₁ ~ B₁} {ab′ : A₁′ ~ B₁′} {ac : A₂ ~ C₁} {ac′ : A₂′ ~ C₁′} {bc : B₂ ~ C₂} {bc′ : B₂′ ~ C₂′}
       ------------------------------------------------------------------------------------------------------------
-    → Γ , Γ′ ⊢ case L M N ℓ {ma} {mb} {mc} {ab} {ac} {bc} ⊑ᴳ case L′ M′ N′ ℓ′ {ma′} {mb′} {mc′} {ab′} {ac′} {bc′}
+    → Γ , Γ′ ⊢ case L M N ℓ {ma} {ab} {ac} {bc} ⊑ᴳ case L′ M′ N′ ℓ′ {ma′} {ab′} {ac′} {bc′}
 
 
 -- Term precision of CC.
@@ -239,10 +240,11 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
       ------------------------------------------
     → Γ , Γ′ ⊢ inr {A = A} M ⊑ᶜ inr {A = A′} M′
 
-  ⊑ᶜ-case : ∀ {Γ Γ′ A A′ B B′ C C′} {L : Γ ⊢ A `⊎ B} {L′ : Γ′ ⊢ A′ `⊎ B′} {M : Γ ⊢ A ⇒ C} {M′ : Γ′ ⊢ A′ ⇒ C′} {N : Γ ⊢ B ⇒ C} {N′ : Γ′ ⊢ B′ ⇒ C′}
+  ⊑ᶜ-case : ∀ {Γ Γ′ A A′ B B′ C C′} {L : Γ ⊢ A `⊎ B} {L′ : Γ′ ⊢ A′ `⊎ B′} {M : Γ , A ⊢ C} {M′ : Γ′ , A′ ⊢ C′} {N : Γ , B ⊢ C} {N′ : Γ′ , B′ ⊢ C′}
     → Γ , Γ′ ⊢ L ⊑ᶜ L′
-    → Γ , Γ′ ⊢ M ⊑ᶜ M′
-    → Γ , Γ′ ⊢ N ⊑ᶜ N′
+    → A ⊑ A′ → B ⊑ B′
+    → (Γ , A) , (Γ′ , A′) ⊢ M ⊑ᶜ M′
+    → (Γ , B) , (Γ′ , B′) ⊢ N ⊑ᶜ N′
       -------------------------------------
     → Γ , Γ′ ⊢ case L M N ⊑ᶜ case L′ M′ N′
 
@@ -356,8 +358,7 @@ lpti→⊑ (lpti-sum lp1 lp2) = ⟨ lp1 , lp2 ⟩
 ... | (pair⊑ lp1 lp2) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-inl lp lpM) = sum⊑ (⊑ᶜ→⊑ lp* lpM) lp
 ⊑ᶜ→⊑ lp* (⊑ᶜ-inr lp lpM) = sum⊑ lp (⊑ᶜ→⊑ lp* lpM)
-⊑ᶜ→⊑ lp* (⊑ᶜ-case lpL lpM lpN) with ⊑ᶜ→⊑ lp* lpM
-... | (fun⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-case lpL lp1 lp2 lpM lpN) = ⊑ᶜ→⊑ (⊑*-, lp1 lp*) lpM
 ⊑ᶜ→⊑ lp* (⊑ᶜ-cast lp1 lp2 lpM) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-castl lp1 lp2 lpM) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2

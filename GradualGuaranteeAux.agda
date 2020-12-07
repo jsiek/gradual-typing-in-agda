@@ -72,17 +72,16 @@ compile-pres-prec lpc (⊑ᴳ-inl lpB lpe) =
 compile-pres-prec lpc (⊑ᴳ-inr lpA lpe) =
   let ⟨ lpB , lpe′ ⟩ = compile-pres-prec lpc lpe in
     ⟨ sum⊑ lpA lpB , ⊑ᶜ-inr lpA lpe′ ⟩
-compile-pres-prec lpc (⊑ᴳ-case lpeL lpeM lpeN {ma} {ma′} {mb} {mb′} {mc} {mc′} {bc = bc} {bc′}) =
+compile-pres-prec lpc (⊑ᴳ-case lpeL lp1 lp2 lpeM lpeN {ma} {ma′} {bc = bc} {bc′}) =
   let ⟨ lpA , lpeL′ ⟩ = compile-pres-prec lpc lpeL in
-  let ⟨ lpB , lpeM′ ⟩ = compile-pres-prec lpc lpeM in
-  let ⟨ lpC , lpeN′ ⟩ = compile-pres-prec lpc lpeN in
+  let ⟨ lpB , lpeM′ ⟩ = compile-pres-prec (⊑*-, lp1 lpc) lpeM in
+  let ⟨ lpC , lpeN′ ⟩ = compile-pres-prec (⊑*-, lp2 lpc) lpeN in
   let ⟨ lpA₁ , lpA₂ ⟩ = ▹⊎-pres-prec ma ma′ lpA in
-  let ⟨ lpB₁ , lpB₂ ⟩ = ▹⇒-pres-prec mb mb′ lpB in
-  let ⟨ lpC₁ , lpC₂ ⟩ = ▹⇒-pres-prec mc mc′ lpC in
-  let lp⨆bc = ⨆-pres-prec bc bc′ lpB₂ lpC₂ in
-    ⟨ lp⨆bc , ⊑ᶜ-case (⊑ᶜ-cast (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpC₁) (⊑ᶜ-cast lpA (sum⊑ lpA₁ lpA₂) lpeL′))
-                       (⊑ᶜ-cast (fun⊑ lpB₁ lpB₂) (fun⊑ lpB₁ lp⨆bc) (⊑ᶜ-cast lpB (fun⊑ lpB₁ lpB₂) lpeM′))
-                       (⊑ᶜ-cast (fun⊑ lpC₁ lpC₂) (fun⊑ lpC₁ lp⨆bc) (⊑ᶜ-cast lpC (fun⊑ lpC₁ lpC₂) lpeN′)) ⟩
+  let lp⨆bc = ⨆-pres-prec bc bc′ lpB lpC in
+    ⟨ lp⨆bc , ⊑ᶜ-case (⊑ᶜ-cast (sum⊑ lpA₁ lpA₂) (sum⊑ lp1 lp2) (⊑ᶜ-cast lpA (sum⊑ lpA₁ lpA₂) lpeL′))
+                       lp1 lp2
+                       (⊑ᶜ-cast lpB lp⨆bc lpeM′)
+                       (⊑ᶜ-cast lpC lp⨆bc lpeN′) ⟩
 
 cast-eq-inv : ∀ {Γ A A′ B} {M : Γ ⊢ A} {M′ : Γ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B)}
   → M ⟨ c ⟩ ≡ M′ ⟨ c′ ⟩
@@ -310,8 +309,8 @@ rename-pres-prec f (⊑ᶜ-fst lpM)    = ⊑ᶜ-fst (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-snd lpM)    = ⊑ᶜ-snd (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-inl lp lpM) = ⊑ᶜ-inl lp (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-inr lp lpM) = ⊑ᶜ-inr lp (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-case lpL lpM lpN) =
-  ⊑ᶜ-case (rename-pres-prec f lpL) (rename-pres-prec f lpM) (rename-pres-prec f lpN)
+rename-pres-prec f (⊑ᶜ-case lpL lp1 lp2 lpM lpN) =
+  ⊑ᶜ-case (rename-pres-prec f lpL) lp1 lp2 (rename-pres-prec (ext-pres-ρ-Cong f) lpM) (rename-pres-prec (ext-pres-ρ-Cong f) lpN)
 rename-pres-prec f (⊑ᶜ-cast lp1 lp2 lpM)  = ⊑ᶜ-cast  lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castl lp1 lp2 lpM) = ⊑ᶜ-castl lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castr lp1 lp2 lpM) = ⊑ᶜ-castr lp1 lp2 (rename-pres-prec f lpM)
@@ -363,8 +362,8 @@ subst-pres-prec lps (⊑ᶜ-fst lpN) = ⊑ᶜ-fst (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-snd lpN) = ⊑ᶜ-snd (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-inl lp lpN) = ⊑ᶜ-inl lp (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-inr lp lpN) = ⊑ᶜ-inr lp (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-case lpL lpM lpN) =
-  ⊑ᶜ-case (subst-pres-prec lps lpL) (subst-pres-prec lps lpM) (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-case lpL lp1 lp2 lpM lpN) =
+  ⊑ᶜ-case (subst-pres-prec lps lpL) lp1 lp2 (subst-pres-prec (⊑ˢ-exts lps) lpM) (subst-pres-prec (⊑ˢ-exts lps) lpN)
 subst-pres-prec lps (⊑ᶜ-cast lp1 lp2 lpN)  = ⊑ᶜ-cast  lp1 lp2 (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-castl lp1 lp2 lpN) = ⊑ᶜ-castl lp1 lp2 (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-castr lp1 lp2 lpN) = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lps lpN)
