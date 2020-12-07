@@ -189,7 +189,22 @@ sim-case-wrap-v {A₂} {B₂} {A₂′ = A₂′} {B₂′} {M = M} {N} {M′ = 
   lpN†-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castl lp4 lp2 (⊑ᶜ-var refl))) (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B₁} {A′ = B₂′})) lpN)
   lpN† : (∅ , B₁) , (∅ , B₂′) ⊢ rename (ext S_) N [ ` Z ⟨ inrC c (sum-cast-is-cross c) ⟩ ] ⊑ᶜ N′
   lpN† = subst-eq (λ □ → _ , _ ⊢ _ ⊑ᶜ □) eqN lpN†-rename
-sim-case-wrap-v v v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapr x lpV) lpM lpN = {!!}
+sim-case-wrap-v {A = A} {B} {A₁′ = A₁′} {B₁′} {M = M} {N} {M′ = M′} {N′} {c′} v v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapr (lpti-sum (sum⊑ lp₁₁ lp₁₂) (sum⊑ lp₂₁ lp₂₂)) lpV) lpM lpN =
+  ⟨ _ , ⟨ (_ ∎) , ⊑ᶜ-case lpV lp₁₁ lp₁₂ lpM† lpN† ⟩ ⟩
+  where
+  eqM : rename (ext S_) M [ ` Z ] ≡ M
+  eqM = sym (substitution-Z-eq M)
+  lpM†-rename : (∅ , A) , (∅ , A₁′) ⊢ rename (ext S_) M [ ` Z ] ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ]
+  lpM†-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castr lp₁₁ lp₂₁ (⊑ᶜ-var refl))) (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = A} {A′ = A₁′})) lpM)
+  lpM† : (∅ , A) , (∅ , A₁′) ⊢ M ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ]
+  lpM† = subst-eq (λ □ → _ , _ ⊢ □ ⊑ᶜ _) eqM lpM†-rename
+  eqN : rename (ext S_) N [ ` Z ] ≡ N
+  eqN = sym (substitution-Z-eq N)
+  lpN†-rename : (∅ , B) , (∅ , B₁′) ⊢ rename (ext S_) N [ ` Z ] ⊑ᶜ rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ]
+  lpN†-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castr lp₁₂ lp₂₂ (⊑ᶜ-var refl))) (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B} {A′ = B₁′})) lpN)
+  lpN† : (∅ , B) , (∅ , B₁′) ⊢ N ⊑ᶜ rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ]
+  lpN† = subst-eq (λ □ → _ , _ ⊢ □ ⊑ᶜ _) eqN lpN†-rename
+
 
 -- sim-case-wrap : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
 --                   {L : ∅ ⊢ A `⊎ B} {M : ∅ ⊢ A ⇒ C} {N : ∅ ⊢ B ⇒ C}
