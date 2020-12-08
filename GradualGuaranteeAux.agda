@@ -523,3 +523,29 @@ apply-⊑-wrap v v′ (Active.A-proj (cast .⋆ (A `⊎ B) _ _) nd) (Inert.I-sum
   with ground _ {nd}
 ... | ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , _ ⟩ ⟩ =
   ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-castl unk⊑ (sum⊑ unk⊑ unk⊑) lpV))
+
+cast-Z-⊑ : ∀ {A B A′ X X′} {M : ∅ , A ⊢ X} {M′ : ∅ , A′ ⊢ X′} {c : Cast (B ⇒ A)}
+  → A ⊑ A′ → B ⊑ A′
+  → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′
+    ------------------------------
+  → (∅ , B) , (∅ , A′) ⊢ rename (ext S_) M [ ` Z ⟨ c ⟩ ] ⊑ᶜ M′
+cast-Z-⊑ {A} {B} {A′} {M = M} {M′} {c} lp1 lp2 lpM = subst-eq (λ □ → _ , _ ⊢ _ ⊑ᶜ □) eq lp-rename
+  where
+  lp-rename : (∅ , B) , (∅ , A′) ⊢ rename (ext S_) M [ ` Z ⟨ c ⟩ ] ⊑ᶜ rename (ext S_) M′ [ ` Z ]
+  lp-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castl lp2 lp1 (⊑ᶜ-var refl)))
+                              (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B} {A′ = A′})) lpM)
+  eq : rename (ext S_) M′ [ ` Z ] ≡ M′
+  eq = sym (substitution-Z-eq M′)
+
+⊑-cast-Z : ∀ {A A′ B′ X X′} {M : ∅ , A ⊢ X} {M′ : ∅ , A′ ⊢ X′} {c′ : Cast (B′ ⇒ A′)}
+  → A ⊑ A′ → A ⊑ B′
+  → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′
+    ------------------------------
+  → (∅ , A) , (∅ , B′) ⊢ M ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ c′ ⟩ ]
+⊑-cast-Z {A} {A′} {B′} {M = M} {M′} {c′} lp1 lp2 lpM = subst-eq (λ □ → _ , _ ⊢ □ ⊑ᶜ _) eq lp-rename
+  where
+  lp-rename : (∅ , A) , (∅ , B′) ⊢ rename (ext S_) M [ ` Z ] ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ c′ ⟩ ]
+  lp-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castr lp2 lp1 (⊑ᶜ-var refl)))
+                              (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = A} {A′ = B′})) lpM)
+  eq : rename (ext S_) M [ ` Z ] ≡ M
+  eq = sym (substitution-Z-eq M)
