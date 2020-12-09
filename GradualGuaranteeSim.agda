@@ -230,9 +230,9 @@ sim-case-wrap-v {A₂′ = A₂′} {B₂′} (V-wrap {A = A₁ `⊎ B₁} v i) 
                 (⊑ᶜ-wrap (lpii-sum (sum⊑ lp₁₁ lp₁₂) (sum⊑ lp₂₁ lp₂₂)) lpV) lpM lpN =
   ⟨ _ , ⟨ _ —→⟨ case-cast v {sum-cast-is-cross _} ⟩ _ ∎ ,
           ⊑ᶜ-case lpV lp₁₁ lp₁₂ (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-var refl)))
-                                                 (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = A₁} {A′ = A₂′})) lpM))
+                                                 (rename-pres-prec (ext-pres-RenameIso (S-iso {A = A₁} {A′ = A₂′})) lpM))
                                 (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-var refl)))
-                                                 (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B₁} {A′ = B₂′})) lpN)) ⟩ ⟩
+                                                 (rename-pres-prec (ext-pres-RenameIso (S-iso {A = B₁} {A′ = B₂′})) lpN)) ⟩ ⟩
 sim-case-wrap-v {A₂} {B₂} {A₂′ = A₂′} {B₂′} {M = M} {N} {M′ = M′} {N′}
                 (V-wrap {A = A₁ `⊎ B₁} {c = c} v i) v′ i′ x′ lp1 lp2
                 (⊑ᶜ-wrapl (lpit-sum (sum⊑ lp3 lp4) _) lpV) lpM lpN =

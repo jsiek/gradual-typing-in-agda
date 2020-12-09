@@ -278,28 +278,31 @@ data _,_,_,_⊢_⊑ˢ_ : (Γ Δ Γ′ Δ′ : Context) → Subst Γ Δ → Subst
       -------------------------------------------------------------------
     → (Γ ,  B) , (Δ , B) , (Γ′ , B′) , (Δ′ , B′) ⊢ (exts σ) ⊑ˢ (exts σ′)
 
-ρ-Cong : ∀ {Γ Γ′ Δ Δ′} → (ρ : Rename Γ Δ) → (ω : Rename Γ′ Δ′) → Set
-ρ-Cong {Γ} {Γ′} {Δ} {Δ′} ρ ω =
+-- If two renamings ρ , ω satisfy `RenameIso`, two isomorphic DeBruijn indices after renaming are also isomorphic.
+RenameIso : ∀ {Γ Γ′ Δ Δ′} → (ρ : Rename Γ Δ) → (ω : Rename Γ′ Δ′) → Set
+RenameIso {Γ} {Γ′} {Δ} {Δ′} ρ ω =
   ∀ {A B} {x : Γ ∋ A} {y : Γ′ ∋ B} → ∋→ℕ x ≡ ∋→ℕ y → ∋→ℕ (ρ x) ≡ ∋→ℕ (ω y)
 
-S-Cong : ∀ {Γ Γ′ A A′} → ρ-Cong {Γ} {Γ′} {Γ , A} {Γ′ , A′} S_ S_
-S-Cong eq = cong suc eq
+S-iso : ∀ {Γ Γ′ A A′}
+  → RenameIso {Γ} {Γ′} {Γ , A} {Γ′ , A′} S_ S_
+S-iso eq = cong suc eq
 
-ext-pres-ρ-Cong : ∀ {Γ Γ′ Δ Δ′} {B B′} {ρ : Rename Γ Δ} {ω : Rename Γ′ Δ′}
-  → ρ-Cong ρ ω
+-- Extending two related renamings ρ , ω preserves `RenameIso`.
+ext-pres-RenameIso : ∀ {Γ Γ′ Δ Δ′} {B B′} {ρ : Rename Γ Δ} {ω : Rename Γ′ Δ′}
+  → RenameIso ρ ω
     -----------------------------------------------------------
-  → ρ-Cong {Γ , B} {Γ′ , B′} {Δ , B}  {Δ′ , B′} (ext ρ) (ext ω)
-ext-pres-ρ-Cong f {x = Z} {Z} eq = refl
-ext-pres-ρ-Cong f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in cong suc ρx≡ωy
+  → RenameIso {Γ , B} {Γ′ , B′} {Δ , B}  {Δ′ , B′} (ext ρ) (ext ω)
+ext-pres-RenameIso f {x = Z} {Z} eq = refl
+ext-pres-RenameIso f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in cong suc ρx≡ωy
 
 rename-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {ρ : Rename Γ Δ} {ρ′ : Rename Γ′ Δ′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
-  → ρ-Cong ρ ρ′
+  → RenameIso ρ ρ′
   → Γ , Γ′ ⊢ M ⊑ᶜ M′
     ------------------------------------
   → Δ , Δ′ ⊢ rename ρ M ⊑ᶜ rename ρ′ M′
 rename-pres-prec f ⊑ᶜ-prim = ⊑ᶜ-prim
 rename-pres-prec f (⊑ᶜ-var eq) = ⊑ᶜ-var (f eq)
-rename-pres-prec f (⊑ᶜ-ƛ lp lpM) = ⊑ᶜ-ƛ lp (rename-pres-prec (ext-pres-ρ-Cong f) lpM)
+rename-pres-prec f (⊑ᶜ-ƛ lp lpM) = ⊑ᶜ-ƛ lp (rename-pres-prec (ext-pres-RenameIso f) lpM)
 rename-pres-prec f (⊑ᶜ-· lpL lpM) = ⊑ᶜ-· (rename-pres-prec f lpL) (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-if lpL lpM lpN) =
   ⊑ᶜ-if (rename-pres-prec f lpL) (rename-pres-prec f lpM) (rename-pres-prec f lpN)
@@ -310,7 +313,7 @@ rename-pres-prec f (⊑ᶜ-snd lpM)    = ⊑ᶜ-snd (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-inl lp lpM) = ⊑ᶜ-inl lp (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-inr lp lpM) = ⊑ᶜ-inr lp (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-case lpL lp1 lp2 lpM lpN) =
-  ⊑ᶜ-case (rename-pres-prec f lpL) lp1 lp2 (rename-pres-prec (ext-pres-ρ-Cong f) lpM) (rename-pres-prec (ext-pres-ρ-Cong f) lpN)
+  ⊑ᶜ-case (rename-pres-prec f lpL) lp1 lp2 (rename-pres-prec (ext-pres-RenameIso f) lpM) (rename-pres-prec (ext-pres-RenameIso f) lpN)
 rename-pres-prec f (⊑ᶜ-cast lp1 lp2 lpM)  = ⊑ᶜ-cast  lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castl lp1 lp2 lpM) = ⊑ᶜ-castl lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castr lp1 lp2 lpM) = ⊑ᶜ-castr lp1 lp2 (rename-pres-prec f lpM)
@@ -323,7 +326,7 @@ S-pres-prec : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ B} {M′ : Γ′ ⊢ B′
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       --------------------------------------------------
     → (Γ , A) , (Γ′ , A′) ⊢ rename S_ M ⊑ᶜ rename S_ M′
-S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-Cong {A = A} {A′}) lpM
+S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-iso {A = A} {A′}) lpM
 
 {-
   Here we need to prove a lemma : σ ⊑ σ′ → σ x ⊑ σ y if x ≡ y
@@ -533,7 +536,7 @@ cast-Z-⊑ {A} {B} {A′} {M = M} {M′} {c} lp1 lp2 lpM = subst-eq (λ □ → 
   where
   lp-rename : (∅ , B) , (∅ , A′) ⊢ rename (ext S_) M [ ` Z ⟨ c ⟩ ] ⊑ᶜ rename (ext S_) M′ [ ` Z ]
   lp-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castl lp2 lp1 (⊑ᶜ-var refl)))
-                              (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = B} {A′ = A′})) lpM)
+                              (rename-pres-prec (ext-pres-RenameIso (S-iso {A = B} {A′ = A′})) lpM)
   eq : rename (ext S_) M′ [ ` Z ] ≡ M′
   eq = sym (substitution-Z-eq M′)
 
@@ -546,6 +549,6 @@ cast-Z-⊑ {A} {B} {A′} {M = M} {M′} {c} lp1 lp2 lpM = subst-eq (λ □ → 
   where
   lp-rename : (∅ , A) , (∅ , B′) ⊢ rename (ext S_) M [ ` Z ] ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ c′ ⟩ ]
   lp-rename = subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-castr lp2 lp1 (⊑ᶜ-var refl)))
-                              (rename-pres-prec (ext-pres-ρ-Cong (S-Cong {A = A} {A′ = B′})) lpM)
+                              (rename-pres-prec (ext-pres-RenameIso (S-iso {A = A} {A′ = B′})) lpM)
   eq : rename (ext S_) M [ ` Z ] ≡ M
   eq = sym (substitution-Z-eq M)
