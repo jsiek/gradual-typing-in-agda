@@ -17,12 +17,12 @@
 
 module EfficientGroundCoercions where
 
-  open import Agda.Primitive
+  open import Agda.Primitive using ()
   open import Data.Nat
   open import Data.Nat.Properties
-  open ≤-Reasoning
+  {-open ≤-Reasoning-}
      {- renaming (begin_ to start_; _∎ to _□; _≡⟨_⟩_ to _≡⟨_⟩'_) -}
-  open import Types
+  open import Types hiding (_⊔_) {- using (Type; ⋆; _⇒_; _`×_; _`⊎_; Ground; Base; _~_; eq-unk; ground?; ground; Sym~) -}
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -32,9 +32,11 @@ module EfficientGroundCoercions where
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
-  open import Relation.Binary.PropositionalEquality
-     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  
+  import Relation.Binary.PropositionalEquality as Eq
+  open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open Eq.≡-Reasoning
+
+
   data iCast : Type → Set
   data gCast : Type → Set
   data Cast : Type → Set
@@ -581,7 +583,7 @@ module EfficientGroundCoercions where
 
   assoc-iss (g ⨟!) id★ s₃ = refl
   assoc-iss (_⨟! {G = G} g₁ {gg}) ((H ?? p ⨟ i₂){hg}) s₃
-    with gnd-eq? G H {gg}{hg}
+      with gnd-eq? G H {gg}{hg}
   ... | yes refl = assoc-gis g₁ i₂ s₃
   ... | no neq = refl
   assoc-iss (g₁ ⨟!) (` i₂) s₃ = contradiction refl (intmd-nd i₂)
@@ -590,7 +592,7 @@ module EfficientGroundCoercions where
 
   assoc-gis g₁ (g₂ ⨟!) id★ = refl
   assoc-gis g₁ ((_⨟!{G = G} g₂){gg}) ((H ?? p ⨟ i₃){hg})
-    with gnd-eq? G H {gg}{hg}
+      with gnd-eq? G H {gg}{hg}
   ... | yes refl = assoc-ggi g₁ g₂ i₃
   ... | no neq = refl
   assoc-gis g₁ (g₂ ⨟!) (` i₃) = contradiction refl (intmd-nd i₃)
@@ -608,3 +610,102 @@ module EfficientGroundCoercions where
      cong₂ _×'_ (assoc c c₁ c₂) (assoc d d₁ d₂)
   assoc-ggg (c +' d) (c₁ +' d₁) (c₂ +' d₂) =
      cong₂ _+'_ (assoc c c₁ c₂) (assoc d d₁ d₂)
+
+  height-i : ∀{A B} → iCast (A ⇒ B) → ℕ
+  height-g : ∀{A B} → gCast (A ⇒ B) → ℕ
+  
+  height : ∀{A B} → Cast (A ⇒ B) → ℕ
+  height id★ = 0
+  height (G ?? p ⨟ i) = height-i i
+  height (` i) = height-i i
+
+  height-i (g ⨟!) = height-g g
+  height-i (` g) = height-g g
+  height-i (cfail G H p) = 0
+
+  height-g idι = 0
+  height-g (c ↣ d) = suc ((height c) ⊔ (height d))
+  height-g (c ×' d) = suc ((height c) ⊔ (height d))
+  height-g (c +' d) = suc ((height c) ⊔ (height d))
+
+  compose-height-is : ∀ {A B C} → (i : iCast (A ⇒ B)) (s : Cast (B ⇒ C))
+     → height-i (i i⨟s s) ≤ (height-i i) ⊔ (height s)
+
+  compose-height-gi : ∀ {A B C} → (g : gCast (A ⇒ B)) (i : iCast (B ⇒ C))
+    → height-i (g g⨟i i) ≤ height-g g ⊔ height-i i
+
+  compose-height-gg : ∀ {A B C} → (g : gCast (A ⇒ B)) (h : gCast (B ⇒ C))
+    → height-g (g g⨟g h) ≤ height-g g ⊔ height-g h
+
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (s ⨟ t) ≤ _⊔_ (height s) (height t)
+  compose-height {.⋆} {.⋆} {C} id★ t = ≤-refl
+  compose-height {.⋆} {B} {C} (G ?? p ⨟ i) t = compose-height-is i t
+  compose-height {A} {B} {C} (` i) t = compose-height-is i t
+
+  compose-height-is (g ⨟!) id★ = ≤-reflexive (sym (⊔-identityʳ (height-g g)))
+  compose-height-is (_⨟! {G = G} g {gg}) ((H ?? p ⨟ i){hg})
+      with gnd-eq? G H {gg}{hg}
+  ... | yes refl = compose-height-gi g i
+  ... | no neq = z≤n
+  compose-height-is (g ⨟!) (` i) = contradiction refl (intmd-nd i)
+  compose-height-is (` g) (` i) = compose-height-gi g i
+  compose-height-is (cfail G H p) s = z≤n
+
+  compose-height-gi g (h ⨟!) = compose-height-gg g h
+  compose-height-gi g (` h) = compose-height-gg g h
+  compose-height-gi g (cfail G H p) = z≤n
+
+  compose-height-gg idι idι = z≤n
+  compose-height-gg (c ↣ d) (c₁ ↣ d₁) =
+    let x = compose-height c₁ c in
+    let y = compose-height d d₁ in
+     s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive
+       (begin
+       height c₁ ⊔ height c ⊔ (height d ⊔ height d₁)
+       ≡⟨ (⊔-assoc (height c₁) _ _) ⟩
+       height c₁ ⊔ (height c ⊔ (height d ⊔ height d₁))
+       ≡⟨ cong (λ c → height c₁ ⊔ c) (sym (⊔-assoc (height c)_ _)) ⟩
+       height c₁ ⊔ (height c ⊔ height d ⊔ height d₁)
+       ≡⟨ sym (⊔-assoc (height c₁) ((height c) ⊔ (height d)) (height d₁)) ⟩ 
+       (height c₁ ⊔ (height c ⊔ height d)) ⊔ height d₁
+       ≡⟨ (cong₂ _⊔_ (⊔-comm (height c₁) (height c ⊔ height d)) refl) ⟩
+       ((height c ⊔ height d) ⊔ height c₁) ⊔ height d₁
+       ≡⟨ ⊔-assoc (height c ⊔ height d) (height c₁) (height d₁) ⟩
+       height c ⊔ height d ⊔ (height c₁ ⊔ height d₁)
+       ∎)))
+  compose-height-gg (c ×' d) (c₁ ×' d₁) =
+    let x = compose-height c c₁ in
+    let y = compose-height d d₁ in
+      s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive
+      (begin
+      height c ⊔ height c₁ ⊔ (height d ⊔ height d₁)
+      ≡⟨ ⊔-assoc (height c) (height c₁) (height d ⊔ height d₁) ⟩
+      height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁))
+      ≡⟨ cong (λ d → height c ⊔ d) (sym (⊔-assoc (height c₁) _ _)) ⟩
+      height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁)
+      ≡⟨ cong (λ e → height c ⊔ (e ⊔ height d₁)) (⊔-comm (height c₁) _) ⟩
+      height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁)
+      ≡⟨ cong (λ e → height c ⊔ e) (⊔-assoc (height d) _ _) ⟩
+      height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁))
+      ≡⟨ sym (⊔-assoc (height c) _ _) ⟩
+      (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      ∎)))
+  compose-height-gg (c +' d) (c₁ +' d₁) =
+    let x = compose-height c c₁ in
+    let y = compose-height d d₁ in
+      s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive 
+      (begin
+      height c ⊔ height c₁ ⊔ (height d ⊔ height d₁)
+      ≡⟨ ⊔-assoc (height c) (height c₁) (height d ⊔ height d₁) ⟩
+      height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁))
+      ≡⟨ cong (λ d → height c ⊔ d) (sym (⊔-assoc (height c₁) _ _)) ⟩
+      height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁)
+      ≡⟨ cong (λ e → height c ⊔ (e ⊔ height d₁)) (⊔-comm (height c₁) _) ⟩
+      height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁)
+      ≡⟨ cong (λ e → height c ⊔ e) (⊔-assoc (height d) _ _) ⟩
+      height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁))
+      ≡⟨ sym (⊔-assoc (height c) _ _) ⟩
+      (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      ∎)))
+
