@@ -28,6 +28,7 @@ module EfficientGroundCoercions where
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Data.Empty.Irrelevant renaming (⊥-elim to ⊥-elimi)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
@@ -75,7 +76,7 @@ module EfficientGroundCoercions where
     `_ : ∀{A B}
        → (g : gCast (A ⇒ B))
        → iCast (A ⇒ B)
-    cfail : ∀{A B} (G : Type) → (H : Type) → Label → {a : A ≢ ⋆}
+    cfail : ∀{A B} (G : Type) → (H : Type) → Label → .{a : A ≢ ⋆}
        → iCast (A ⇒ B)
 
   data gCast where
@@ -297,7 +298,8 @@ module EfficientGroundCoercions where
   ActiveOrInertiCast (` g) with ActiveOrInertGnd g
   ... | inj₁ a = inj₁ (A-gnd a)
   ... | inj₂ i = inj₂ (I-gnd i)
-  ActiveOrInertiCast (cfail G H x) = inj₁ A-cfail
+  ActiveOrInertiCast (cfail G H p {nd}) =
+     inj₁ (A-cfail {nd = eq-unk-relevant nd})
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert id★ = inj₁ A-id★
@@ -398,7 +400,7 @@ module EfficientGroundCoercions where
   intmd-nd : ∀{A B} → (i : iCast (A ⇒ B)) → A ≢ ⋆
   intmd-nd{A}{B} (g ⨟!) A≡⋆ = contradiction A≡⋆ (gnd-src-nd g)
   intmd-nd{A}{B} (` g) A≡⋆ = contradiction A≡⋆ (gnd-src-nd g)
-  intmd-nd{A}{B} (cfail G H p {A≢⋆}) A≡⋆ = contradiction A≡⋆ A≢⋆
+  intmd-nd{A}{B} (cfail G H p {A≢⋆}) A≡⋆ = eq-unk-relevant A≢⋆ A≡⋆
 
   {- 
 
@@ -553,3 +555,56 @@ module EfficientGroundCoercions where
              
   import EfficientParamCasts
   open EfficientParamCasts ecs public
+
+  assoc-iss : ∀{A B C D} (i₁ : iCast (A ⇒ B)) → (s₂ : Cast (B ⇒ C))
+        → (s₃ : Cast (C ⇒ D))
+        → (i₁ i⨟s s₂) i⨟s s₃ ≡ i₁ i⨟s (s₂ ⨟ s₃)
+
+  assoc-gis : ∀{A B C D} (g₁ : gCast (A ⇒ B)) → (i₂ : iCast (B ⇒ C))
+        → (s₃ : Cast (C ⇒ D))
+        → (g₁ g⨟i i₂) i⨟s s₃ ≡ g₁ g⨟i (i₂ i⨟s s₃)
+
+  assoc-ggi : ∀{A B C D} (g₁ : gCast (A ⇒ B)) → (g₂ : gCast (B ⇒ C))
+        → (i₃ : iCast (C ⇒ D))
+        → (g₁ g⨟g g₂) g⨟i i₃ ≡ g₁ g⨟i (g₂ g⨟i i₃)
+
+  assoc-ggg : ∀{A B C D} (g₁ : gCast (A ⇒ B)) → (g₂ : gCast (B ⇒ C))
+        → (g₃ : gCast (C ⇒ D))
+        → (g₁ g⨟g g₂) g⨟g g₃ ≡ g₁ g⨟g (g₂ g⨟g g₃)
+
+  assoc : ∀{A B C D} (s₁ : Cast (A ⇒ B)) → (s₂ : Cast (B ⇒ C))
+        → (s₃ : Cast (C ⇒ D))
+        → (s₁ ⨟ s₂) ⨟ s₃ ≡ s₁ ⨟ (s₂ ⨟ s₃)
+  assoc id★ s₂ s₃ = refl
+  assoc (G ?? p ⨟ i₁) s₂ s₃ = cong (λ c → G ?? p ⨟ c) (assoc-iss i₁ s₂ s₃)
+  assoc (` i₁) s₂ s₃ = cong `_ (assoc-iss i₁ s₂ s₃)
+
+  assoc-iss (g ⨟!) id★ s₃ = refl
+  assoc-iss (_⨟! {G = G} g₁ {gg}) ((H ?? p ⨟ i₂){hg}) s₃
+    with gnd-eq? G H {gg}{hg}
+  ... | yes refl = assoc-gis g₁ i₂ s₃
+  ... | no neq = refl
+  assoc-iss (g₁ ⨟!) (` i₂) s₃ = contradiction refl (intmd-nd i₂)
+  assoc-iss (` g₁) (` i₂) s₃ = assoc-gis g₁ i₂ s₃
+  assoc-iss (cfail G H p) s₂ s₃ = refl
+
+  assoc-gis g₁ (g₂ ⨟!) id★ = refl
+  assoc-gis g₁ ((_⨟!{G = G} g₂){gg}) ((H ?? p ⨟ i₃){hg})
+    with gnd-eq? G H {gg}{hg}
+  ... | yes refl = assoc-ggi g₁ g₂ i₃
+  ... | no neq = refl
+  assoc-gis g₁ (g₂ ⨟!) (` i₃) = contradiction refl (intmd-nd i₃)
+  assoc-gis g₁ (` g₂) (` i₃) = assoc-ggi g₁ g₂ i₃
+  assoc-gis g₁ (cfail G H x) s₃ = refl
+
+  assoc-ggi g₁ g₂ (g₃ ⨟!) = cong (λ g → g ⨟!) (assoc-ggg g₁ g₂ g₃)
+  assoc-ggi g₁ g₂ (` g₃) = cong `_ (assoc-ggg g₁ g₂ g₃)
+  assoc-ggi g₁ g₂ (cfail G H p) = refl
+
+  assoc-ggg idι idι idι = refl
+  assoc-ggg (c ↣ d) (c₁ ↣ d₁) (c₂ ↣ d₂) =
+     cong₂ _↣_ (sym (assoc c₂ c₁ c)) (assoc d d₁ d₂)
+  assoc-ggg (c ×' d) (c₁ ×' d₁) (c₂ ×' d₂) =
+     cong₂ _×'_ (assoc c c₁ c₂) (assoc d d₁ d₂)
+  assoc-ggg (c +' d) (c₁ +' d₁) (c₂ +' d₂) =
+     cong₂ _+'_ (assoc c c₁ c₂) (assoc d d₁ d₂)

@@ -553,6 +553,13 @@ module Types where
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
 
+  eq-unk-relevant : ∀{A} → .(A ≢ ⋆) → (A ≢ ⋆)
+  eq-unk-relevant {A} A≢⋆
+      with eq-unk A
+  ... | yes A≡⋆ = ⊥-elim (A≢⋆ A≡⋆)
+  ... | no neq = neq
+  
+
 {-
   ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'
   ~⇒L {A}{B}{A'}{B'} c
