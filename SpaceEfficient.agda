@@ -1,7 +1,10 @@
 open import Types hiding (_⊔_)
+open import Variables
 open import CastStructure
 import EfficientParamCasts
-open import Data.Nat using (ℕ; _≤_; _⊔_)
+open import Data.Nat using (ℕ; _≤_; _⊔_; z≤n; s≤s)
+open import Data.Nat.Properties
+open Data.Nat.Properties.≤-Reasoning
 
 {-
 
@@ -33,20 +36,37 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   c-height (M ⟨ c ⟩) = c-height M ⊔ height c
   c-height (blame ℓ) = 0
 
+  plug-height : ∀ {Γ A B} (M : Γ ⊢ A) (M′ : Γ ⊢ A) (F : Frame A B)
+      → c-height M′ ≤ c-height M
+      → c-height (plug M′ F) ≤ c-height (plug M F)
+  plug-height M M′ F M′≤M  = {!!}
+
+  subst-height : ∀ {Γ A B} (N : Γ , A ⊢ B) (W : Γ ⊢ A)
+      → c-height (N [ W ]) ≤ c-height N ⊔ c-height W
+  subst-height N W = {!!}
+
   preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
        → ctx / M —→ M′ → c-height M′ ≤ c-height M
-  preserve-height (ξ M—→M′) = {!!}
-  preserve-height (ξ-cast M—→M′) = {!!}
-  preserve-height ξ-blame = {!!}
-  preserve-height ξ-cast-blame = {!!}
-  preserve-height (β x) = {!!}
-  preserve-height δ = {!!}
-  preserve-height β-if-true = {!!}
-  preserve-height β-if-false = {!!}
-  preserve-height (β-fst x x₁) = {!!}
-  preserve-height (β-snd x x₁) = {!!}
-  preserve-height (β-caseL x) = {!!}
-  preserve-height (β-caseR x) = {!!}
+  preserve-height (ξ {M = M₁}{M₁′}{F} M₁—→M₁′) =
+    let IH = preserve-height M₁—→M₁′ in plug-height M₁ M₁′ F IH
+  preserve-height (ξ-cast {M = M₁}{M₁′} M₁—→M₁′) =
+    let IH = preserve-height M₁—→M₁′ in ⊔-mono-≤ IH ≤-refl
+  preserve-height ξ-blame = z≤n
+  preserve-height ξ-cast-blame = z≤n
+  preserve-height (β{N = N}{W = W} vW) = subst-height N W
+  preserve-height δ = z≤n
+  preserve-height β-if-true = m≤m⊔n _ _
+  preserve-height β-if-false = n≤m⊔n _ _
+  preserve-height (β-fst vV vW) = m≤m⊔n _ _
+  preserve-height (β-snd vV vW) = n≤m⊔n _ _
+  preserve-height (β-caseL {V = V}{L}{M} vV) =
+    begin
+      c-height L ⊔ c-height V               ≤⟨ ≤-reflexive (⊔-comm _ _) ⟩ 
+      c-height V ⊔ c-height L               ≤⟨ {!!} ⟩ 
+      c-height V ⊔ c-height L ⊔ c-height M
+    ∎ 
+    
+  preserve-height (β-caseR vV) = {!!}
   preserve-height (cast v) = {!!}
   preserve-height (fun-cast v x) = {!!}
   preserve-height (fst-cast v) = {!!}
