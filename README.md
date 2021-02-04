@@ -57,7 +57,9 @@ Inventory
    calculus. This module requires a compose function for casts, so it
    is parameterized over `EfficientCastStruct`.  This module includes
    a proof of progress.
-   
+
+* [SpaceEfficient.agda]()
+
 * [GTLC2CC.agda](./GTLC2CC.agda): Compilation of the GTLC to the
    Parameterized Cast Calculus.  The compilation is type preserving.
    
@@ -113,10 +115,9 @@ Inventory
 * [ForgetfulCast](./ForgetfulCast.agda): Inspired by Greenberg's
    forgetful contracts. (UNDER CONSTRUCTION)
 
-* [Subtyping](./Subtyping.agda): The module defines several subtyping 
-   relations used in the blame-subtyping theorem, since we cannot 
-   directly use traditional subtyping in UD. They are the same relations
-   as the ones in the _Exploring the Design Space_ paper.
+* [Subtyping](./Subtyping.agda): The module defines several subtyping
+   relations used in the blame-subtyping theorem. They are the same
+   relations as the ones in the _Exploring the Design Space_ paper.
 
 * [ParamCastSubtyping](./ParamCastSubtyping.agda): The module defines
    what it means for a term `M` to contain only safe casts with the 

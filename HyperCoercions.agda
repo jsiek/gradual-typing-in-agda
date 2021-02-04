@@ -14,6 +14,10 @@
 module HyperCoercions where
 
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Data.Nat using (ℕ; suc; _≤_; _⊔_; s≤s)
+  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive;
+       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n)
+  open Data.Nat.Properties.≤-Reasoning
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -22,7 +26,7 @@ module HyperCoercions where
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
      
-  open import Types
+  open import Types hiding (_⊔_)
   open import Variables
   open import Labels
 
@@ -61,6 +65,17 @@ module HyperCoercions where
     !! : ∀ {G} {g : Ground G} → Inj (G ⇒ ⋆)
     cfail : ∀{A B} → Label → Inj (A ⇒ B)
 
+
+  height-m : ∀{A B} → (c : Middle (A ⇒ B)) → ℕ
+  
+  height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+  height id★ = 0
+  height (p ↷ m , i) = height-m m
+
+  height-m (id ι) = 0
+  height-m (c ↣ d) = suc ((height c) ⊔ (height d))
+  height-m (c ×' d) = suc ((height c) ⊔ (height d))
+  height-m (c +' d) = suc ((height c) ⊔ (height d))
 
   import ParamCastCalculus
   module CastCalc = ParamCastCalculus Cast
@@ -307,6 +322,79 @@ module HyperCoercions where
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M v (𝜖 ↷ (c ↣ d) , 𝜖) {I-mid I-cfun} N = (M · N ⟨ c ⟩) ⟨ d ⟩
   
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (s ⨟ t) ≤ (height s) ⊔ (height t)
+
+  compose-height-m : ∀ {A B C} → (m₁ : Middle (A ⇒ B)) (m₂ : Middle (B ⇒ C))
+          → height-m (m₁ `⨟ m₂) ≤ height-m m₁ ⊔ height-m m₂
+
+  compose-height s id★ rewrite ⊔-identityʳ (height s) = ≤-refl
+  compose-height id★ (p ↷ m , i) = ≤-refl
+  compose-height (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , i₂) = compose-height-m m₁ m₂
+  compose-height (p₁ ↷ m₁ , !!{G = C}{g = gC})
+                 ((?? ℓ){H = D}{g = gD} ↷ m₂ , i₂)
+      with gnd-eq? C D {gC}{gD}
+  ... | no C≢D = m≤m⊔n (height-m m₁) _
+  ... | yes C≡D rewrite C≡D = compose-height-m m₁ m₂
+  compose-height (p₁ ↷ m₁ , cfail ℓ) (p₂ ↷ m₂ , i₂) = m≤m⊔n (height-m m₁) _
+
+  compose-height-⊔ : ∀{A B C D E F}(c : Cast (A ⇒ B))(c₁ : Cast (B ⇒ C))
+      (d : Cast (D ⇒ E))(d₁ : Cast (E ⇒ F))
+    → (IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁)
+    → (IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁)
+    → height (c ⨟ c₁) ⊔ height (d ⨟ d₁) ≤
+               (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+  compose-height-⊔ c c₁ d d₁ IH1 IH2 =
+     begin
+          height (c ⨟ c₁) ⊔ height (d ⨟ d₁)             ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+          (height c ⊔ height c₁) ⊔ (height d ⊔ height d₁) ≤⟨ ≤-reflexive (⊔-assoc (height c) (height c₁) (height d ⊔ height d₁)) ⟩
+          height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁)) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (sym (⊔-assoc (height c₁) _ _))) ⟩
+          height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height d))) ≤-refl) ⟩
+          height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (⊔-assoc (height d) _ _)) ⟩
+          height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁)) ≤⟨ ≤-reflexive (sym (⊔-assoc (height c) _ _)) ⟩
+          (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+     ∎
+
+  compose-height-m (id ι) (id .ι) = ≤-refl
+  compose-height-m (c ↣ d) (c₁ ↣ d₁) =
+      s≤s G
+      where
+      IH1 : height (c₁ ⨟ c) ≤ height c₁ ⊔ height c
+      IH1 = compose-height c₁ c
+      
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁
+      
+      G : height (c₁ ⨟ c) ⊔ height (d ⨟ d₁) ≤
+                (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      G =
+        begin
+          height (c₁ ⨟ c) ⊔ height (d ⨟ d₁)             ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+          (height c₁ ⊔ height c) ⊔ (height d ⊔ height d₁) ≤⟨ ⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height c))) ≤-refl ⟩
+          (height c ⊔ height c₁) ⊔ (height d ⊔ height d₁) ≤⟨ ≤-reflexive (⊔-assoc (height c) (height c₁) (height d ⊔ height d₁)) ⟩
+          height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁)) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (sym (⊔-assoc (height c₁) _ _))) ⟩
+          height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height d))) ≤-refl) ⟩
+          height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (⊔-assoc (height d) _ _)) ⟩
+          height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁)) ≤⟨ ≤-reflexive (sym (⊔-assoc (height c) _ _)) ⟩
+          (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+          ∎
+
+  compose-height-m (c ×' d) (c₁ ×' d₁) =
+      s≤s (compose-height-⊔ c c₁ d d₁ IH1 IH2)
+      where
+      IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁
+      IH1 = compose-height c c₁
+      
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁  
+  compose-height-m (c +' d) (c₁ +' d₁) =
+      s≤s (compose-height-⊔ c c₁ d d₁ IH1 IH2)
+      where
+      IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁
+      IH1 = compose-height c c₁
+      
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁
 
   open import CastStructure
 
@@ -315,6 +403,8 @@ module HyperCoercions where
              { precast = pcs
              ; applyCast = applyCast
              ; compose = _⨟_
+             ; height = height
+             ; compose-height = compose-height
              }
              
   import EfficientParamCasts

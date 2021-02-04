@@ -1,7 +1,8 @@
-open import Types
+open import Types hiding (_⊔_)
 open import Variables
 open import PreCastStructure
 
+open import Data.Nat using (ℕ; _≤_; _⊔_)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -69,3 +70,6 @@ record EfficientCastStruct : Set₁ where
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
     compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C)
+    height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+    compose-height : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
+                   → height (compose c d) ≤ (height c) ⊔ (height d)

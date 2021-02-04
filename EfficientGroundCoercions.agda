@@ -545,6 +545,25 @@ module EfficientGroundCoercions where
           → Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   sumSrc .(` (` _)) (I-intmd (I-gnd ())) M vM
 
+  height-i : ∀{A B} → iCast (A ⇒ B) → ℕ
+  height-g : ∀{A B} → gCast (A ⇒ B) → ℕ
+  
+  height : ∀{A B} → Cast (A ⇒ B) → ℕ
+  height id★ = 0
+  height (G ?? p ⨟ i) = height-i i
+  height (` i) = height-i i
+
+  height-i (g ⨟!) = height-g g
+  height-i (` g) = height-g g
+  height-i (cfail G H p) = 0
+
+  height-g idι = 0
+  height-g (c ↣ d) = suc ((height c) ⊔ (height d))
+  height-g (c ×' d) = suc ((height c) ⊔ (height d))
+  height-g (c +' d) = suc ((height c) ⊔ (height d))
+
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (s ⨟ t) ≤ (height s) ⊔ (height t)
 
   open import CastStructure
 
@@ -553,6 +572,8 @@ module EfficientGroundCoercions where
              { precast = pcs
              ; applyCast = applyCast
              ; compose = _⨟_
+             ; height = height
+             ; compose-height = compose-height
              }
              
   import EfficientParamCasts
@@ -611,23 +632,6 @@ module EfficientGroundCoercions where
   assoc-ggg (c +' d) (c₁ +' d₁) (c₂ +' d₂) =
      cong₂ _+'_ (assoc c c₁ c₂) (assoc d d₁ d₂)
 
-  height-i : ∀{A B} → iCast (A ⇒ B) → ℕ
-  height-g : ∀{A B} → gCast (A ⇒ B) → ℕ
-  
-  height : ∀{A B} → Cast (A ⇒ B) → ℕ
-  height id★ = 0
-  height (G ?? p ⨟ i) = height-i i
-  height (` i) = height-i i
-
-  height-i (g ⨟!) = height-g g
-  height-i (` g) = height-g g
-  height-i (cfail G H p) = 0
-
-  height-g idι = 0
-  height-g (c ↣ d) = suc ((height c) ⊔ (height d))
-  height-g (c ×' d) = suc ((height c) ⊔ (height d))
-  height-g (c +' d) = suc ((height c) ⊔ (height d))
-
   compose-height-is : ∀ {A B C} → (i : iCast (A ⇒ B)) (s : Cast (B ⇒ C))
      → height-i (i i⨟s s) ≤ (height-i i) ⊔ (height s)
 
@@ -637,8 +641,6 @@ module EfficientGroundCoercions where
   compose-height-gg : ∀ {A B C} → (g : gCast (A ⇒ B)) (h : gCast (B ⇒ C))
     → height-g (g g⨟g h) ≤ height-g g ⊔ height-g h
 
-  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
-     → height (s ⨟ t) ≤ _⊔_ (height s) (height t)
   compose-height {.⋆} {.⋆} {C} id★ t = ≤-refl
   compose-height {.⋆} {B} {C} (G ?? p ⨟ i) t = compose-height-is i t
   compose-height {A} {B} {C} (` i) t = compose-height-is i t
