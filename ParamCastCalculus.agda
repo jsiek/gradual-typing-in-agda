@@ -186,3 +186,34 @@ Rename Γ Δ = ∀ {X} → Γ ∋ X → Δ ∋ X
 
 Subst : Context → Context → Set
 Subst Γ Δ = ∀ {X} → Γ ∋ X → Δ ⊢ X
+
+size : ∀{Γ A} → Γ ⊢ A → ℕ
+size (` x) = 1
+size (ƛ M) = suc (size M)
+size (L · M) = suc (size L + size M)
+size ($ x) = 1
+size (if L M N) = suc (size L + size M + size N)
+size (cons M N) = suc (size M + size N)
+size (fst M) = suc (size M)
+size (snd M) = suc (size M)
+size (inl M) = suc (size M)
+size (inr M) = suc (size M)
+size (case L M N) = suc (size L + size M + size N)
+size (M ⟨ c ⟩) = suc (size M)
+size (blame ℓ) = 1
+
+ideal-size : ∀{Γ A} → Γ ⊢ A → ℕ
+ideal-size (` x) = 1
+ideal-size (ƛ M) = suc (ideal-size M)
+ideal-size (L · M) = suc (ideal-size L + ideal-size M)
+ideal-size ($ x) = 1
+ideal-size (if L M N) = suc (ideal-size L + ideal-size M + ideal-size N)
+ideal-size (cons M N) = suc (ideal-size M + ideal-size N)
+ideal-size (fst M) = suc (ideal-size M)
+ideal-size (snd M) = suc (ideal-size M)
+ideal-size (inl M) = suc (ideal-size M)
+ideal-size (inr M) = suc (ideal-size M)
+ideal-size (case L M N) = suc (ideal-size L + ideal-size M + ideal-size N)
+ideal-size (M ⟨ c ⟩) = ideal-size M
+ideal-size (blame ℓ) = 1
+

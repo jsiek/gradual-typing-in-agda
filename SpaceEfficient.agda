@@ -1,9 +1,11 @@
 open import Types hiding (_⊔_)
+open import Labels
 open import Variables
 open import CastStructure
 import EfficientParamCasts
-open import Data.Nat using (ℕ; _≤_; _⊔_; z≤n; s≤s)
+open import Data.Nat {-using (ℕ; _≤_; _⊔_; z≤n; s≤s)-}
 open import Data.Nat.Properties
+open import Data.Nat.Solver
 open Data.Nat.Properties.≤-Reasoning
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
@@ -15,7 +17,8 @@ open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
 -}
 
-module SpaceEfficient (ecs : EfficientCastStruct) where
+module SpaceEfficient (ecs : EfficientCastStruct)
+  where
 
   open EfficientCastStruct ecs
   open EfficientParamCasts ecs
@@ -23,7 +26,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   import ParamCastCalculus
   open ParamCastCalculus Cast
   open import EfficientParamCastAux precast
-  
+
   c-height : ∀{Γ A} (M : Γ ⊢ A) → ℕ
   c-height (` x) = 0
   c-height (ƛ M) = c-height M
@@ -173,3 +176,128 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
         c-height M ⊔ (height c ⊔ height d) ≤⟨ ≤-reflexive (sym (⊔-assoc(c-height M) _ _)) ⟩
         (c-height M ⊔ height c) ⊔ height d
       ∎
+
+  module EfficientCompile
+    (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
+    where
+
+    open import GTLC
+    open import GTLC2CC Cast cast
+
+    compile-efficient : ∀{Γ A} (M : Γ ⊢G A) → size (compile M) ≤ 7 * ideal-size (compile M)
+    compile-efficient (` x) = s≤s z≤n
+    compile-efficient (ƛ A ˙ M) =
+      let IH = compile-efficient M in
+      begin
+        suc (size (compile M))
+        ≤⟨ s≤s (≤-step (≤-step (≤-step (≤-step (≤-step (≤-step IH)))))) ⟩
+        7 + (7 * (ideal-size (compile M)))
+        ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _ )) ⟩
+        7 * (suc (ideal-size (compile M)))
+      ∎
+    compile-efficient (_·_at_ {Γ}{A}{A₁}{A₂}{B} L M ℓ {m}{cn}) =
+      let IH1 = compile-efficient L in
+      let IH2 = compile-efficient M in
+      begin
+        size (compile (_·_at_ {Γ}{A}{A₁}{A₂}{B} L M ℓ {m}{cn}))
+        ≤⟨ ≤-refl ⟩
+        suc (suc (size (compile L)) + suc (size (compile M)))
+        ≤⟨ ≤-step (≤-step (≤-step (≤-step (≤-reflexive (cong suc (cong suc (+-suc _ _))))))) ⟩
+        7 + (size (compile L) + size (compile M))
+        ≤⟨ +-monoʳ-≤ 7 (+-mono-≤ IH1 IH2) ⟩
+        7 + (7 * ideal-size (compile L) + 7 * ideal-size (compile M))
+        ≤⟨ +-monoʳ-≤ 7 (≤-reflexive (sym (*-distribˡ-+ 7 (ideal-size (compile L)) _))) ⟩        
+        7 + (7 * (ideal-size (compile L) + ideal-size (compile M)))
+        ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩
+        7 * suc (ideal-size (compile L) + ideal-size (compile M))
+        ≤⟨ ≤-refl ⟩
+        7 * ideal-size (compile (_·_at_ {Γ}{A}{A₁}{A₂}{B} L M ℓ {m}{cn}))
+      ∎
+    compile-efficient ($ x) = s≤s z≤n
+    compile-efficient (if L M N ℓ) =
+      let IH1 = compile-efficient L in
+      let IH2 = compile-efficient M in
+      let IH3 = compile-efficient N in
+      begin
+        suc ((suc (size (compile L)) + suc (size (compile M))) + suc (size (compile N)))
+            ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ ((con 1 :+ x) :+ (con 1 :+ y)) :+ (con 1 :+ z)
+                                 := con 4 :+ ((x :+ y) :+ z))
+                            refl (size (compile L)) (size (compile M)) (size (compile N))) ⟩
+        4 + (size (compile L) + size (compile M) + size (compile N))
+            ≤⟨ +-mono-≤ {4}{7} (s≤s (s≤s (s≤s (s≤s z≤n)))) ≤-refl ⟩
+        7 + (size (compile L) + size (compile M) + size (compile N))   ≤⟨ +-monoʳ-≤ 7 (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
+        7 + (7 * ideal-size (compile L) + 7 * ideal-size (compile M) + 7 * ideal-size (compile N))
+            ≤⟨ ≤-reflexive (cong (λ x → 7 + (x + 7 * ideal-size (compile N)))
+                   (sym (*-distribˡ-+ 7 (ideal-size (compile L)) _))) ⟩ 
+        7 + (7 * (ideal-size (compile L) + ideal-size (compile M)) + 7 * ideal-size (compile N))
+            ≤⟨ +-monoʳ-≤ 7 (≤-reflexive (sym (*-distribˡ-+ 7 (ideal-size (compile L) + ideal-size (compile M)) _))) ⟩ 
+        7 + (7 * ((ideal-size (compile L) + ideal-size (compile M)) + ideal-size (compile N)))
+            ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩
+        7 * (suc (ideal-size (compile L) + ideal-size (compile M) + ideal-size (compile N)))
+      ∎
+      where open +-*-Solver
+    compile-efficient (cons M N) =
+      let IH1 = compile-efficient M in
+      let IH2 = compile-efficient N in
+      begin
+        1 + (size (compile M) + size (compile N))                     ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
+        1 + (7 * ideal-size (compile M) + 7 * ideal-size (compile N)) ≤⟨ +-mono-≤ {1}{7} (s≤s z≤n) ≤-refl ⟩
+        7 + (7 * ideal-size (compile M) + 7 * ideal-size (compile N))
+                    ≤⟨ +-monoʳ-≤ 7 (≤-reflexive (sym (*-distribˡ-+ 7 (ideal-size (compile M)) _))) ⟩
+        7 + (7 * (ideal-size (compile M) + ideal-size (compile N)))  ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩
+        7 * (suc (ideal-size (compile M) + ideal-size (compile N)))
+      ∎
+    compile-efficient (fst {Γ}{A}{A₁}{A₂} M ℓ {m}) =
+      let IH = compile-efficient M in
+      begin
+        2 + (size (compile M))               ≤⟨ s≤s (s≤s IH) ⟩
+        2 + (7 * ideal-size (compile M))     ≤⟨ +-mono-≤ {2}{7} (s≤s (s≤s z≤n)) ≤-refl ⟩
+        7 + (7 * (ideal-size (compile M)))   ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩        
+        7 * (suc (ideal-size (compile M)))
+      ∎
+    compile-efficient (snd M ℓ) =
+      let IH = compile-efficient M in
+      begin
+        2 + size (compile M)                  ≤⟨ s≤s (s≤s IH) ⟩
+        2 + (7 * (ideal-size (compile M)))    ≤⟨ +-mono-≤ {2}{7} (s≤s (s≤s z≤n)) ≤-refl ⟩
+        7 + (7 * (ideal-size (compile M)))    ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩        
+        7 * (suc (ideal-size (compile M)))
+      ∎
+    compile-efficient (inl B M) =
+      let IH = compile-efficient M in
+      begin
+        1 + (size (compile M))                ≤⟨ s≤s IH ⟩        
+        1 + (7 * (ideal-size (compile M)))    ≤⟨ +-mono-≤ {1}{7} (s≤s z≤n) ≤-refl ⟩
+        7 + (7 * (ideal-size (compile M)))    ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩        
+        7 * (suc (ideal-size (compile M)))
+      ∎
+    compile-efficient (inr A M) =
+      let IH = compile-efficient M in
+      begin
+        1 + (size (compile M))                ≤⟨ s≤s IH ⟩        
+        1 + (7 * (ideal-size (compile M)))    ≤⟨ +-mono-≤ {1}{7} (s≤s z≤n) ≤-refl ⟩
+        7 + (7 * (ideal-size (compile M)))    ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩
+        7 * (suc (ideal-size (compile M)))
+      ∎
+    compile-efficient (case L M N ℓ) =
+      let IH1 = compile-efficient L in
+      let IH2 = compile-efficient M in
+      let IH3 = compile-efficient N in
+      begin
+        suc (suc (suc (size (compile L))) + suc (suc (size (compile M))) + suc (suc (size (compile N))))
+        ≤⟨ ≤-reflexive (solve 3
+                 (λ x y z → con 1 :+ ((con 2 :+ x) :+ (con 2 :+ y) :+ (con 2 :+ z)) := con 7 :+ (x :+ y :+ z))
+                 refl (size (compile L)) (size (compile M)) (size (compile N))) ⟩
+        7 + (size (compile L) + size (compile M) + size (compile N))
+        ≤⟨ +-monoʳ-≤ 7 (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
+        7 + (7 * ideal-size (compile L) + 7 * ideal-size (compile M) + 7 * ideal-size (compile N))
+        ≤⟨ +-monoʳ-≤ 7 (+-mono-≤ (≤-reflexive (sym
+                  (*-distribˡ-+ 7 (ideal-size (compile L)) (ideal-size (compile M))))) ≤-refl) ⟩
+        7 + (7 * (ideal-size (compile L) + ideal-size (compile M)) + 7 * ideal-size (compile N))
+        ≤⟨ +-monoʳ-≤ 7 (≤-reflexive (sym (*-distribˡ-+ 7 (ideal-size (compile L) + ideal-size (compile M))
+                (ideal-size (compile N))))) ⟩
+        7 + (7 * ((ideal-size (compile L) + ideal-size (compile M)) + ideal-size (compile N)))
+        ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 7 1 _)) ⟩
+        7 * (suc (ideal-size (compile L) + ideal-size (compile M) + ideal-size (compile N)))
+      ∎
+      where open +-*-Solver
