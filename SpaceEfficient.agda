@@ -301,3 +301,26 @@ module SpaceEfficient (ecs : EfficientCastStruct)
         7 * (suc (ideal-size (compile L) + ideal-size (compile M) + ideal-size (compile N)))
       ∎
       where open +-*-Solver
+
+  preserve-size : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+         → ctx / M —→ M′
+         → size M ≤ 7 * ideal-size M
+         → size M′ ≤ 7 * ideal-size M′
+  preserve-size (ξ M—→M′) szM≤7iszM = {!!}
+  preserve-size (ξ-cast M—→M′) szM≤7iszM = {!!}
+  preserve-size ξ-blame szM≤7iszM = {!!}
+  preserve-size ξ-cast-blame szM≤7iszM = {!!}
+  preserve-size (β x) szM≤7iszM = {!!}
+  preserve-size δ szM≤7iszM = {!!}
+  preserve-size β-if-true szM≤7iszM = {!!}
+  preserve-size β-if-false szM≤7iszM = {!!}
+  preserve-size (β-fst x x₁) szM≤7iszM = {!!}
+  preserve-size (β-snd x x₁) szM≤7iszM = {!!}
+  preserve-size (β-caseL x) szM≤7iszM = {!!}
+  preserve-size (β-caseR x) szM≤7iszM = {!!}
+  preserve-size (cast v) szM≤7iszM = {!!}
+  preserve-size (fun-cast v x) szM≤7iszM = {!!}
+  preserve-size (fst-cast v) szM≤7iszM = {!!}
+  preserve-size (snd-cast v) szM≤7iszM = {!!}
+  preserve-size (case-cast v) szM≤7iszM = {!!}
+  preserve-size compose-casts szM≤7iszM = {!!}
