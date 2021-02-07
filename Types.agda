@@ -185,7 +185,7 @@ module Types where
 
   ⊑LBase : ∀{A ι} → A ⊑ ` ι →  A ≡ (` ι) ⊎ A ≡ ⋆
   ⊑LBase {⋆} {ι} unk⊑ = inj₂ refl
-  ⊑LBase {` ι} {ι} base⊑ = inj₁ refl
+  ⊑LBase {` ι₁} {ι₂} base⊑ = inj₁ refl
 
   ⊑L⇒ : ∀{A B₁ B₂} → A ⊑ (B₁ ⇒ B₂)
         → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
