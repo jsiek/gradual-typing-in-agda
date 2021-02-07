@@ -17,8 +17,7 @@ open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
 -}
 
-module SpaceEfficient (ecs : EfficientCastStruct)
-  where
+module SpaceEfficient (ecs : EfficientCastStruct) where
 
   open EfficientCastStruct ecs
   open EfficientParamCasts ecs
@@ -302,25 +301,42 @@ module SpaceEfficient (ecs : EfficientCastStruct)
       ∎
       where open +-*-Solver
 
-  preserve-size : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+  plug-size : ∀{Γ}{A B}{k : ℕ} → (M : Γ ⊢ A) → (F : Frame A B)
+            → (kp : 0 < k) → size (plug M F) ≤ k * ideal-size (plug M F)
+  plug-size {Γ}{A} M F kp = {!!}
+
+  preserve-size : ∀ {Γ A}{M M′ : Γ ⊢ A} {ctx : ReductionCtx}{k : ℕ}
          → ctx / M —→ M′
-         → size M ≤ 7 * ideal-size M
-         → size M′ ≤ 7 * ideal-size M′
-  preserve-size (ξ M—→M′) szM≤7iszM = {!!}
-  preserve-size (ξ-cast M—→M′) szM≤7iszM = {!!}
-  preserve-size ξ-blame szM≤7iszM = {!!}
-  preserve-size ξ-cast-blame szM≤7iszM = {!!}
-  preserve-size (β x) szM≤7iszM = {!!}
-  preserve-size δ szM≤7iszM = {!!}
-  preserve-size β-if-true szM≤7iszM = {!!}
-  preserve-size β-if-false szM≤7iszM = {!!}
-  preserve-size (β-fst x x₁) szM≤7iszM = {!!}
-  preserve-size (β-snd x x₁) szM≤7iszM = {!!}
-  preserve-size (β-caseL x) szM≤7iszM = {!!}
-  preserve-size (β-caseR x) szM≤7iszM = {!!}
-  preserve-size (cast v) szM≤7iszM = {!!}
-  preserve-size (fun-cast v x) szM≤7iszM = {!!}
-  preserve-size (fst-cast v) szM≤7iszM = {!!}
-  preserve-size (snd-cast v) szM≤7iszM = {!!}
-  preserve-size (case-cast v) szM≤7iszM = {!!}
-  preserve-size compose-casts szM≤7iszM = {!!}
+         → size M ≤ k * ideal-size M → (kp : 0 < k)
+         → size M′ ≤ k * ideal-size M′
+  preserve-size (ξ {M′ = M′}{F = F} M—→M′) szM≤7iszM kp = plug-size M′ F kp 
+  preserve-size {k = k}(ξ-cast {c = c}{M = M}{M′} M—→M′) szM≤7iszM kp = H
+    where
+    G : size M ≤ k * ideal-size M
+    G = begin
+          size M              ≤⟨ n≤1+n _ ⟩
+          suc (size M)        ≤⟨ szM≤7iszM ⟩
+          k * ideal-size M
+        ∎
+    IH : size M′ ≤ k * ideal-size M′
+    IH = preserve-size M—→M′ G kp
+    H : suc (size M′) ≤ k * ideal-size M′
+    H = {!!}
+      
+
+  preserve-size ξ-blame szM≤7iszM kp = {!!}
+  preserve-size ξ-cast-blame szM≤7iszM kp = {!!}
+  preserve-size (β x) szM≤7iszM kp = {!!}
+  preserve-size δ szM≤7iszM kp = {!!}
+  preserve-size β-if-true szM≤7iszM kp = {!!}
+  preserve-size β-if-false szM≤7iszM kp = {!!}
+  preserve-size (β-fst x x₁) szM≤7iszM kp = {!!}
+  preserve-size (β-snd x x₁) szM≤7iszM kp = {!!}
+  preserve-size (β-caseL x) szM≤7iszM kp = {!!}
+  preserve-size (β-caseR x) szM≤7iszM kp = {!!}
+  preserve-size (cast v) szM≤7iszM kp = {!!}
+  preserve-size (fun-cast v x) szM≤7iszM kp = {!!}
+  preserve-size (fst-cast v) szM≤7iszM kp = {!!}
+  preserve-size (snd-cast v) szM≤7iszM kp = {!!}
+  preserve-size (case-cast v) szM≤7iszM kp = {!!}
+  preserve-size compose-casts szM≤7iszM kp = {!!}
