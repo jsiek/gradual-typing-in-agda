@@ -176,6 +176,116 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
         (c-height M ⊔ height c) ⊔ height d
       ∎
 
+  data NotCast : ∀{Γ A} → Γ ⊢ A → Set
+  
+  data MaybeCast : ∀{Γ A} → Γ ⊢ A → Set where
+    notCast : ∀{Γ A}{M : Γ ⊢ A} → NotCast M → MaybeCast M
+    isCast : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)} → NotCast M → MaybeCast (M ⟨ c ⟩)
+
+  data NotCast where
+    ncvar : ∀{Γ A}{∋x : Γ ∋ A} → NotCast (` ∋x)
+    nclam : ∀{Γ B A}{N : Γ , A ⊢ B} → MaybeCast N → NotCast (ƛ N)
+    ncapp : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A} → MaybeCast L → MaybeCast M → NotCast (L · M)
+    nclit : ∀{Γ : Context}{A}{r : rep A}{p : Prim A} → NotCast {Γ} ($_ r {p})
+    ncif : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A} → MaybeCast L → MaybeCast M → MaybeCast N → NotCast (if L M N)
+    nccons : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B} → NotCast M → NotCast N → NotCast (cons M N)
+    ncfst : ∀{Γ A B}{M : Γ ⊢ A `× B} → MaybeCast M → NotCast (fst M)
+    ncsnd : ∀{Γ A B}{M : Γ ⊢ A `× B} → MaybeCast M → NotCast (snd M)
+    ncinl : ∀{Γ A B}{M : Γ ⊢ A} → NotCast {Γ}{A `⊎ B} (inl M)
+    ncinr : ∀{Γ A B}{M : Γ ⊢ B} → NotCast {Γ}{A `⊎ B} (inr M)
+    nccase : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}
+      → MaybeCast L → NotCast M → NotCast N → NotCast (case L M N)
+
+  maybecast-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M → size M ≤ 1 + 4 * ideal-size M
+
+  nocast-size : ∀{Γ A} (M : Γ ⊢ A) → NotCast M → size M ≤ 4 * ideal-size M
+  nocast-size (` ∋x) ncvar = s≤s z≤n
+  nocast-size (ƛ N) (nclam mcN) =
+    let IH = maybecast-size N mcN in
+    begin
+      suc (size N)
+      ≤⟨ s≤s IH ⟩
+      suc (1 + 4 * (ideal-size N))
+      ≤⟨ s≤s (s≤s (≤-step (≤-step ≤-refl))) ⟩
+      4 + 4 * (ideal-size N)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 4 1 _ )) ⟩
+      4 * suc (ideal-size N)
+    ∎
+  nocast-size (L · M) (ncapp mcL mcM) =
+    let IH1 = maybecast-size L mcL in
+    let IH2 = maybecast-size M mcM in
+    begin
+      1 + (size L + size M)
+      ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
+      1 + ((1 + 4 * ideal-size L) + (1 + 4 * ideal-size M))
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ ((con 1 :+ con 4 :* x) :+ (con 1 :+ con 4 :* y))
+                         := con 3 :+ ((con 4 :* x) :+ (con 4 :* y))) refl (ideal-size L) (ideal-size M)) ⟩
+      3 + ((4 * ideal-size L) + (4 * ideal-size M))
+      ≤⟨ ≤-step ≤-refl ⟩
+      4 + ((4 * ideal-size L) + (4 * ideal-size M))
+      ≤⟨ +-monoʳ-≤ 4 (≤-reflexive ((sym (*-distribˡ-+ 4 (ideal-size L) (ideal-size M) )))) ⟩
+      4 + 4 * (ideal-size L + ideal-size M)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 4 1 _ )) ⟩
+      4 * suc (ideal-size L + ideal-size M)
+    ∎
+    where open +-*-Solver
+  nocast-size ($_ r {p}) nclit = s≤s z≤n
+  nocast-size (if L M N) (ncif mcL mcM mcN) =
+    let IH1 = maybecast-size L mcL in
+    let IH2 = maybecast-size M mcM in
+    let IH3 = maybecast-size N mcN in
+    begin
+      1 + (size L + size M + size N)
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
+      1 + ((1 + 4 * ideal-size L) + (1 + 4 * ideal-size M) + (1 + 4 * ideal-size N))
+      ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ ((con 1 :+ con 4 :* x) :+ (con 1 :+ con 4 :* y) :+ (con 1 :+ con 4 :* z)) := con 4 :+ con 4 :* (x :+ y :+ z)) refl (ideal-size L) (ideal-size M) (ideal-size N)) ⟩
+      4 + 4 * (ideal-size L + ideal-size M + ideal-size N)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 4 1 _ )) ⟩
+      4 * suc (ideal-size L + ideal-size M + ideal-size N)
+    ∎
+    where open +-*-Solver
+  nocast-size .(cons _ _) (nccons nc nc₁) = {!!}
+  nocast-size .(fst _) (ncfst x) = {!!}
+  nocast-size .(snd _) (ncsnd x) = {!!}
+  nocast-size .(inl _) ncinl = {!!}
+  nocast-size .(inr _) ncinr = {!!}
+  nocast-size .(case _ _ _) (nccase x nc nc₁) = {!!}
+
+  maybecast-size M (notCast x) = ≤-step (nocast-size M x)
+  maybecast-size (M ⟨ c ⟩) (isCast x) = s≤s (nocast-size M x)
+
+  module EfficientCompile
+    (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
+    where
+
+    open import GTLC
+    open import GTLC2CC Cast cast
+
+    compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) → NotCast (compile M d)
+    compile-efficient (` x) (⊢var ∋x) = ncvar
+    compile-efficient (ƛ A ˙ N) (⊢lam d) = nclam (notCast (compile-efficient N d))
+    compile-efficient (L · M at ℓ) (⊢app d₁ d₂ mA A1~B) =
+       let IH1 = compile-efficient L d₁ in
+       let IH2 = compile-efficient M d₂ in
+       ncapp (isCast IH1) (isCast IH2)
+    compile-efficient .($ _ # _) ⊢lit = nclit
+    compile-efficient (if L then M else N at ℓ) (⊢if d d₁ d₂ mA aa) =
+        ncif (isCast (compile-efficient L d))
+             (isCast (compile-efficient M d₁))
+             (isCast (compile-efficient N d₂))
+    compile-efficient (⟦ M , N ⟧) (⊢cons d d₁) = nccons (compile-efficient M d) (compile-efficient N d₁)
+    compile-efficient (fst M at ℓ) (⊢fst d x) = ncfst (isCast (compile-efficient M d))
+    compile-efficient (snd M at ℓ) (⊢snd d x) = ncsnd (isCast (compile-efficient M d))
+    compile-efficient (inl M other B) (⊢inl d) = ncinl
+    compile-efficient (inr M other A) (⊢inr d) = ncinr
+    compile-efficient (case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ) (⊢case d d₁ d₂ abc bc) =
+      let IH1 = compile-efficient L d in 
+      let IH2 = compile-efficient M d₁ in
+      let IH3 = compile-efficient N d₂ in 
+        nccase (isCast IH1) (nclam (isCast IH2)) (nclam (isCast IH3))
+
+{-
+
   module EfficientCompile
     (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
     where
@@ -340,3 +450,5 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   preserve-size (snd-cast v) szM≤7iszM kp = {!!}
   preserve-size (case-cast v) szM≤7iszM kp = {!!}
   preserve-size compose-casts szM≤7iszM kp = {!!}
+
+-}
