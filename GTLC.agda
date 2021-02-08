@@ -1,7 +1,7 @@
 
 module GTLC where
 
-open import Syntax
+open import Syntax hiding (_∋_⦂_; _,_)
 open import Types public
 open import Variables public
 open import Labels public
@@ -68,9 +68,9 @@ sig (op-inr A) = ■ ∷ []
 sig (op-case ℓ A B) = ■ ∷ (ν ■) ∷ (ν ■) ∷ []
 
 open Syntax.OpSig Op sig
-  renaming (ABT to Term)
+  renaming (ABT to Term) public
 
-pattern ƛ_·_ A N  = (op-lam A) ⦅ cons (bind (ast N)) nil ⦆
+pattern ƛ_˙_ A N  = (op-lam A) ⦅ cons (bind (ast N)) nil ⦆
 
 infixl 7  _·_at_
 pattern _·_at_ L M ℓ = (op-app ℓ) ⦅ cons (ast L) (cons (ast M) nil) ⦆
@@ -93,8 +93,19 @@ pattern case_of_⇒_∣_⇒_at_ L A M B N ℓ =
   (op-case ℓ A B) ⦅ cons (ast L) (cons (bind (ast M))
                          (cons (bind (ast N)) nil)) ⦆
 
+data _∋_⦂_ : Context → ℕ → Type → Set where
+
+  Z : ∀ {Γ A}
+      -------------
+    → (Γ , A) ∋ 0 ⦂ A
+
+  S_ : ∀ {Γ A B n}
+    → Γ ∋ n ⦂ A
+      -----------------
+    → (Γ , B) ∋ suc n ⦂ A
+    
 infix  4  _⊢G_⦂_
-data _⊢G_⦂_ : List Type → Term → Type → Set where
+data _⊢G_⦂_ : Context → Term → Type → Set where
 
   ⊢var : ∀ {Γ A}{x : ℕ}
     → Γ ∋ x ⦂ A
@@ -102,9 +113,9 @@ data _⊢G_⦂_ : List Type → Term → Type → Set where
     → Γ ⊢G (` x) ⦂ A
 
   ⊢lam : ∀ {Γ A B}{N}
-    → A ∷ Γ ⊢G N ⦂ B
+    → (Γ , A) ⊢G N ⦂ B
       -------------------
-    → Γ ⊢G (ƛ A · N) ⦂ A ⇒ B
+    → Γ ⊢G (ƛ A ˙ N) ⦂ A ⇒ B
 
   ⊢app : ∀ {Γ A A₁ A₂ B}{L M}{ℓ}
     → Γ ⊢G L ⦂ A
@@ -154,13 +165,11 @@ data _⊢G_⦂_ : List Type → Term → Type → Set where
       --------------------------
     → Γ ⊢G (inr M other A) ⦂ A `⊎ B
 
-  ⊢case : ∀{Γ A A₁ A₂ B₁ B₂ C₁ C₂}{L M N}{ℓ}
+  ⊢case : ∀{Γ A B₁ B₂ C₁ C₂}{L M N}{ℓ}
     → Γ ⊢G L ⦂ A
-    → B₁ ∷ Γ ⊢G M ⦂ B₂
-    → C₁ ∷ Γ ⊢G N ⦂ C₂
-    → A ▹ A₁ ⊎ A₂
-    → A₁ ~ B₁
-    → A₂ ~ C₁
+    → (Γ , B₁) ⊢G M ⦂ B₂
+    → (Γ , C₁) ⊢G N ⦂ C₂
+    → A ~ (B₁ `⊎ C₁)
     → (bc : B₂ ~ C₂)
       -----------------------------------------
     → Γ ⊢G case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ ⦂ ⨆ bc
