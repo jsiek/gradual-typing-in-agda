@@ -179,3 +179,4 @@ module ParamCastAux (pcs : PreCastStruct) where
      let l = inl ((` Z) ⟨ inlC c x ⟩) in
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
      case M (ƛ l) (ƛ r)
+
