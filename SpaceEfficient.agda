@@ -73,6 +73,117 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     blameOK : ∀{Γ A ℓ}{n}
            → n ⊢ (blame {Γ}{A} ℓ) ok
 
+  weakenOK : ∀{Γ A}{M : Γ ⊢ A}{n m}
+       → n ⊢ M ok → m ≤ n
+       → m ⊢ M ok
+  weakenOK (castOK Mok x) m≤n = castOK (weakenOK Mok (s≤s m≤n)) (≤-trans m≤n x)
+  weakenOK varOK m≤n = varOK
+  weakenOK (lamOK Mok) m≤n = lamOK Mok
+  weakenOK (appOK Mok Mok₁) m≤n = appOK Mok Mok₁
+  weakenOK litOK m≤n = litOK
+  weakenOK (ifOK Mok Mok₁ Mok₂) m≤n = ifOK Mok Mok₁ Mok₂
+  weakenOK (consOK Mok Mok₁) m≤n = consOK Mok Mok₁
+  weakenOK (fstOK Mok) m≤n = fstOK Mok
+  weakenOK (sndOK Mok) m≤n = sndOK Mok
+  weakenOK (inlOK Mok) m≤n = inlOK Mok
+  weakenOK (inrOK Mok) m≤n = inrOK Mok
+  weakenOK (caseOK Mok Mok₁ Mok₂) m≤n = caseOK Mok Mok₁ Mok₂
+  weakenOK blameOK m≤n = blameOK
+
+  plug→OK : ∀{Γ A B}{M : Γ ⊢ A}{F : Frame A B}{n}
+    → n ⊢ plug M F ok
+    → 0 ⊢ M ok 
+  plug→OK {F = EfficientParamCasts.F-·₁ x} (appOK Mok Mok₁) = Mok
+  plug→OK {F = EfficientParamCasts.F-·₂ M} (appOK Mok Mok₁) = Mok₁
+  plug→OK {F = EfficientParamCasts.F-if x x₁} (ifOK Mok Mok₁ Mok₂) = Mok
+  plug→OK {F = EfficientParamCasts.F-×₁ x} (consOK Mok Mok₁) = Mok₁
+  plug→OK {F = EfficientParamCasts.F-×₂ x} (consOK Mok Mok₁) = Mok
+  plug→OK {F = EfficientParamCasts.F-fst} (fstOK Mok) = Mok
+  plug→OK {F = EfficientParamCasts.F-snd} (sndOK Mok) = Mok
+  plug→OK {F = EfficientParamCasts.F-inl} (inlOK Mok) = Mok
+  plug→OK {F = EfficientParamCasts.F-inr} (inrOK Mok) = Mok
+  plug→OK {F = EfficientParamCasts.F-case x x₁} (caseOK Mok Mok₁ Mok₂) = Mok
+
+  OK→plug : ∀{Γ A B}{M M′ : Γ ⊢ A}{F : Frame A B}{n}
+    → n ⊢ plug M F ok
+    → 0 ⊢ M′ ok
+    → n ⊢ plug M′ F ok
+  OK→plug {F = EfficientParamCasts.F-·₁ x} (appOK MFok MFok₁) Mok = appOK Mok MFok₁
+  OK→plug {F = EfficientParamCasts.F-·₂ M} (appOK MFok MFok₁) Mok = appOK MFok Mok
+  OK→plug {F = EfficientParamCasts.F-if x x₁} (ifOK MFok MFok₁ MFok₂) Mok =
+     ifOK Mok MFok₁ MFok₂
+  OK→plug {F = EfficientParamCasts.F-×₁ x} (consOK MFok MFok₁) Mok = consOK MFok Mok
+  OK→plug {F = EfficientParamCasts.F-×₂ x} (consOK MFok MFok₁) Mok = consOK Mok MFok₁
+  OK→plug {F = EfficientParamCasts.F-fst} (fstOK x) Mok = fstOK Mok
+  OK→plug {F = EfficientParamCasts.F-snd} (sndOK x) Mok = sndOK Mok
+  OK→plug {F = EfficientParamCasts.F-inl} (inlOK x) Mok = inlOK Mok
+  OK→plug {F = EfficientParamCasts.F-inr} (inrOK x) Mok = inrOK Mok
+  OK→plug {F = EfficientParamCasts.F-case x x₁} (caseOK a b c) Mok = caseOK Mok b c
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{n}{ctx : ReductionCtx}
+          → n ⊢ M ok  →  ctx / M —→ M′
+          → n ⊢ M′ ok
+
+  preserve-ncc : ∀{Γ A}{M M′ : Γ ⊢ A}
+          → 0 ⊢ M ok  →  non_cast_ctx / M —→ M′
+          → 0 ⊢ M′ ok
+
+  preserve-any : ∀{Γ A}{M M′ : Γ ⊢ A}{n}
+          → n ⊢ M ok  →  any_ctx / M —→ M′
+          → n ⊢ M′ ok
+
+  {- todo: progress -}
+
+  preserve-ok MFok (EfficientParamCasts.ξ M-→M′) =
+     let Mok = plug→OK MFok in
+     let IH = preserve-ok Mok M-→M′ in
+     OK→plug MFok IH
+  preserve-ok (castOK Mok x) (EfficientParamCasts.ξ-cast M-→M′) =
+     let IH = preserve-ok Mok M-→M′ in
+     castOK IH x
+  preserve-ok Mok EfficientParamCasts.ξ-blame = blameOK
+  preserve-ok Mok EfficientParamCasts.ξ-cast-blame = blameOK
+  preserve-ok (appOK (lamOK Mok) Mok₁) (EfficientParamCasts.β x) = {!!}
+  preserve-ok Mok EfficientParamCasts.δ = {!!}
+  preserve-ok Mok EfficientParamCasts.β-if-true = {!!}
+  preserve-ok Mok EfficientParamCasts.β-if-false = {!!}
+  preserve-ok Mok (EfficientParamCasts.β-fst x x₁) = {!!}
+  preserve-ok Mok (EfficientParamCasts.β-snd x x₁) = {!!}
+  preserve-ok Mok (EfficientParamCasts.β-caseL x) = {!!}
+  preserve-ok Mok (EfficientParamCasts.β-caseR x) = {!!}
+  preserve-ok Mok (EfficientParamCasts.cast v) = {!!}
+  preserve-ok Mok (EfficientParamCasts.fun-cast v x) = {!!}
+  preserve-ok Mok (EfficientParamCasts.fst-cast v) = {!!}
+  preserve-ok Mok (EfficientParamCasts.snd-cast v) = {!!}
+  preserve-ok Mok (EfficientParamCasts.case-cast v) = {!!}
+  preserve-ok (castOK (castOK Mok x₁) x) EfficientParamCasts.compose-casts =
+     castOK (weakenOK Mok (s≤s (≤-trans x (s≤s z≤n)))) x
+
+
+  preserve-any MFok (ξ M—→M′) =
+     let Mok = plug→OK MFok in
+     {!!}
+  preserve-any Mok ξ-blame = {!!}
+  preserve-any Mok (β x) = {!!}
+  preserve-any Mok δ = {!!}
+  preserve-any Mok β-if-true = {!!}
+  preserve-any Mok β-if-false = {!!}
+  preserve-any Mok (β-fst x x₁) = {!!}
+  preserve-any Mok (β-snd x x₁) = {!!}
+  preserve-any Mok (β-caseL x) = {!!}
+  preserve-any Mok (β-caseR x) = {!!}
+  preserve-any Mok (fun-cast v x) = {!!}
+  preserve-any Mok (fst-cast v) = {!!}
+  preserve-any Mok (snd-cast v) = {!!}
+  preserve-any Mok (case-cast v) = {!!}
+
+  preserve-ncc (castOK Mok x) (EfficientParamCasts.ξ-cast M-→M′) =
+     let IH = preserve-any Mok M-→M′ in castOK IH z≤n
+  preserve-ncc (castOK Mok x) EfficientParamCasts.ξ-cast-blame = blameOK
+  preserve-ncc (castOK Mok x) (EfficientParamCasts.cast v) = {!!}
+  preserve-ncc (castOK (castOK Mok x₁) x) EfficientParamCasts.compose-casts =
+     castOK (weakenOK Mok (s≤s z≤n)) z≤n
+
 {-
   data CastCount : ∀{Γ A} → Γ ⊢ A → ℕ → Set where
     ccCast : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
@@ -139,8 +250,8 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
            → n ≡ 0
     anyctx-castcount-0 ccM (ξ {F = F} M—→M′) = castcount-plug-0 F ccM
     anyctx-castcount-0 ccM (ξ-blame{F = F}) = castcount-plug-0 F ccM
-    anyctx-castcount-0 (ccApp ccM ccM₁) (EfficientParamCasts.β x) = refl
-    anyctx-castcount-0 (ccApp ccM ccM₁) EfficientParamCasts.δ = refl
+    anyctx-castcount-0 (ccApp ccM ccM₁) (β x) = refl
+    anyctx-castcount-0 (ccApp ccM ccM₁) δ = refl
     anyctx-castcount-0 (ccIf ccM ccM₁ ccM₂) β-if-true = refl
     anyctx-castcount-0 (ccIf ccM ccM₁ ccM₂) β-if-false = refl
     anyctx-castcount-0 (ccFst ccM) (β-fst x x₁) = refl
