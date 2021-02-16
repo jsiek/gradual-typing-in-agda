@@ -411,6 +411,18 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
        compose-casts =
        ⟨ suc n , ⟨ (castOK Mok lt1) , (s≤s (≤-step (≤-step (≤-step ≤-refl)))) ⟩ ⟩
 
+    compress-casts : ∀{A}{M : ∅ ⊢ A}{n}
+            → n ∣ false ⊢ M ok
+            → Σ[ N ∈ (∅ ⊢ A) ] Σ[ k ∈ ℕ ]
+                (non_cast_ctx / M —↠ N)  ×  k ∣ false ⊢ N ok × k ≤ 1
+    compress-casts {M = M} {zero} Mok =
+       ⟨ M , ⟨ 0 , ⟨ (M ■) , ⟨ Mok , z≤n ⟩ ⟩ ⟩ ⟩
+    compress-casts {M = M} {suc zero} Mok =
+       ⟨ M , ⟨ 1 , ⟨ (M ■) , ⟨ Mok , s≤s z≤n ⟩ ⟩ ⟩ ⟩
+    compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩)} {suc (suc zero)} (castOK (castOK Nok x₁) x) = ⟨ N ⟨ compose c d ⟩ , ⟨ 1 , ⟨ non_cast_ctx / (N ⟨ c ⟩) ⟨ d ⟩ —→⟨ compose-casts ⟩ (_ ■) , ⟨ (castOK Nok x₁) , s≤s z≤n ⟩ ⟩ ⟩ ⟩
+    compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩} {suc (suc (suc 0))}
+        (castOK (castOK (castOK Nok lt1) lt2) (s≤s (s≤s z≤n))) =
+        ⟨ (N ⟨ compose c (compose d e) ⟩) , ⟨ 1 , ⟨ (non_cast_ctx / ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩ —→⟨ compose-casts ⟩ (non_cast_ctx / (N ⟨ c ⟩) ⟨ compose d e ⟩ —→⟨ compose-casts ⟩ (_ ■))) , ⟨ (castOK Nok lt1) , (s≤s z≤n) ⟩ ⟩ ⟩ ⟩
 
 {-
   module EfficientCompile
