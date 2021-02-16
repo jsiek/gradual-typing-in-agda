@@ -424,7 +424,6 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
         (castOK (castOK (castOK Nok lt1) lt2) (s≤s (s≤s z≤n))) =
         ⟨ (N ⟨ compose c (compose d e) ⟩) , ⟨ 1 , ⟨ (non_cast_ctx / ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩ —→⟨ compose-casts ⟩ (non_cast_ctx / (N ⟨ c ⟩) ⟨ compose d e ⟩ —→⟨ compose-casts ⟩ (_ ■))) , ⟨ (castOK Nok lt1) , (s≤s z≤n) ⟩ ⟩ ⟩ ⟩
 
-{-
   module EfficientCompile
     (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
     where
@@ -432,34 +431,94 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     open import GTLC
     open import GTLC2CC Cast cast
 
-    compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) → NotCast (compile M d)
-    compile-efficient (` x) (⊢var ∋x) = ncvar
-    compile-efficient (ƛ A ˙ N) (⊢lam d) = nclam (notCast (compile-efficient N d))
-    compile-efficient (L · M at ℓ) (⊢app d₁ d₂ mA A1~B) =
-       let IH1 = compile-efficient L d₁ in
-       let IH2 = compile-efficient M d₂ in
-       ncapp (isCast IH1) (isCast IH2)
-    compile-efficient .($ _ # _) ⊢lit = nclit
-    compile-efficient (if L then M else N at ℓ) (⊢if d d₁ d₂ mA aa) =
-        ncif (isCast (compile-efficient L d))
-             (isCast (compile-efficient M d₁))
-             (isCast (compile-efficient N d₂))
-    compile-efficient (⟦ M , N ⟧) (⊢cons d d₁) =
-        nccons (notCast (compile-efficient M d)) (notCast (compile-efficient N d₁))
-    compile-efficient (fst M at ℓ) (⊢fst d x) = ncfst (isCast (compile-efficient M d))
-    compile-efficient (snd M at ℓ) (⊢snd d x) = ncsnd (isCast (compile-efficient M d))
-    compile-efficient (inl M other B) (⊢inl d) =
-        ncinl (notCast (compile-efficient M d))
-    compile-efficient (inr M other A) (⊢inr d) =
-        ncinr (notCast (compile-efficient M d))
-    compile-efficient (case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ) (⊢case d d₁ d₂ abc bc) =
-      let IH1 = compile-efficient L d in 
-      let IH2 = compile-efficient M d₁ in
-      let IH3 = compile-efficient N d₂ in 
-        nccase (isCast IH1) (notCast (nclam (isCast (compile-efficient M d₁))))
-                            (notCast (nclam (isCast (compile-efficient N d₂))))
+    compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+        → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (compile M d) ok × k ≤ 1
+    compile-efficient (` x) (⊢var ∋x) ul = ⟨ 1 , ⟨ varOK , s≤s z≤n ⟩ ⟩
+    compile-efficient (ƛ A ˙ N) (⊢lam d) ul
+        with compile-efficient N d true
+    ... | ⟨ k , ⟨ Nok , lt ⟩ ⟩ =  ⟨ zero , ⟨ lamOK Nok , {!!} ⟩ ⟩
+    compile-efficient (L · M at ℓ) (⊢app d₁ d₂ mA A1~B) true
+        with compile-efficient L d₁ true
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ true
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩ =
+        ⟨ zero , ⟨ appOK (castulOK Lok lt1) (castulOK Mok lt2) , z≤n ⟩ ⟩
+    compile-efficient (L · M at ℓ) (⊢app d₁ d₂ mA A1~B) false
+        with compile-efficient L d₁ false
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ false
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩ =
+        ⟨ zero , ⟨ appOK (castOK Lok (≤-trans lt1 (s≤s z≤n)))
+                         (castOK Mok (≤-trans lt2 (s≤s z≤n))) , z≤n ⟩ ⟩
+    compile-efficient ($ k # p) ⊢lit ul = ⟨ zero , ⟨ litOK , z≤n ⟩ ⟩
+    compile-efficient (if L then M else N at ℓ) (⊢if d₁ d₂ d₃ mA aa) true 
+        with compile-efficient L d₁ true
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ true
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩
+        with compile-efficient N d₃ true
+    ... | ⟨ n , ⟨ Nok , lt3 ⟩ ⟩ =
+       ⟨ zero , ⟨ (ifOK (castulOK Lok lt1) (castulOK Mok lt2)(castulOK Nok lt3))
+                , z≤n ⟩ ⟩
+    compile-efficient (if L then M else N at ℓ) (⊢if d₁ d₂ d₃ mA aa) false
+        with compile-efficient L d₁ false
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ true
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩
+        with compile-efficient N d₃ true
+    ... | ⟨ n , ⟨ Nok , lt3 ⟩ ⟩ =
+       ⟨ zero ,
+       ⟨ (ifOK (castOK Lok (≤-step lt1)) (castulOK Mok lt2)(castulOK Nok lt3))
+       , z≤n ⟩ ⟩
+    compile-efficient (⟦ M , N ⟧) (⊢cons d d₁) ul
+        with compile-efficient M d ul
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩
+        with compile-efficient N d₁ ul
+    ... | ⟨ n , ⟨ Nok , lt2 ⟩ ⟩ = ⟨ zero , ⟨ (consOK Mok Nok) , z≤n ⟩ ⟩
+    compile-efficient (fst M at ℓ) (⊢fst d x) true 
+        with compile-efficient M d true
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ = ⟨ zero , ⟨ (fstOK(castulOK Mok lt1)) , z≤n ⟩ ⟩
+    compile-efficient (fst M at ℓ) (⊢fst d x) false
+        with compile-efficient M d false
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ =
+          ⟨ zero , ⟨ (fstOK(castOK Mok (≤-trans lt1 (s≤s z≤n)))) , z≤n ⟩ ⟩
+    compile-efficient (snd M at ℓ) (⊢snd d x) true
+        with compile-efficient M d true
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ = ⟨ zero , ⟨ (sndOK(castulOK Mok lt1)) , z≤n ⟩ ⟩
+    compile-efficient (snd M at ℓ) (⊢snd d x) false
+        with compile-efficient M d false
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ =
+          ⟨ zero , ⟨ (sndOK(castOK Mok (≤-trans lt1 (s≤s z≤n)))) , z≤n ⟩ ⟩
+    compile-efficient (inl M other B) (⊢inl d) ul
+        with compile-efficient M d ul
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ = ⟨ zero , ⟨ (inlOK Mok) , z≤n ⟩ ⟩
+    compile-efficient (inr M other A) (⊢inr d) ul
+        with compile-efficient M d ul
+    ... | ⟨ m , ⟨ Mok , lt1 ⟩ ⟩ = ⟨ zero , ⟨ (inrOK Mok) , z≤n ⟩ ⟩
+    compile-efficient (case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ) (⊢case d₁ d₂ d₃ abc bc) true
+        with compile-efficient L d₁ true
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ true
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩
+        with compile-efficient N d₃ true
+    ... | ⟨ n , ⟨ Nok , lt3 ⟩ ⟩ =
+          ⟨ zero ,
+          ⟨ (caseOK (castulOK Lok lt1) (lamOK (castulOK Mok lt2))
+                    (lamOK (castulOK Nok lt3)))
+          , z≤n ⟩ ⟩
+    compile-efficient (case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ) (⊢case d₁ d₂ d₃ abc bc) false
+        with compile-efficient L d₁ false
+    ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
+        with compile-efficient M d₂ true
+    ... | ⟨ m , ⟨ Mok , lt2 ⟩ ⟩
+        with compile-efficient N d₃ true
+    ... | ⟨ n , ⟨ Nok , lt3 ⟩ ⟩ =
+          ⟨ zero ,
+          ⟨ (caseOK (castOK Lok (≤-trans lt1 (s≤s z≤n)))
+                    (lamOK (castulOK Mok lt2)) 
+                    (lamOK (castulOK Nok lt3)))
+          , z≤n ⟩ ⟩
 
--}
 {-
   simple-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M → SimpleValue M
             → size M ≤ 8 * ideal-size M
