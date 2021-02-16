@@ -21,8 +21,8 @@ import EfficientParamCastAux
 
   We need a few operations to define reduction in a generic way.
   In particular, we need parameters that say how to reduce casts and
-  how to eliminate values wrapped in casts. 
-  * The applyCast parameter, applies an Active cast to a value. 
+  how to eliminate values wrapped in casts.
+  * The applyCast parameter, applies an Active cast to a value.
   * The funCast parameter applies a function wrapped in an inert cast
     to an argument.
   * The fstCast and sndCast parameters take the first or second part
@@ -38,7 +38,7 @@ import EfficientParamCastAux
   parameters of the same module.
 
   -}
-  
+
 record CastStruct : Set₁ where
   field
     pcss : PreCastStructWithSafety
