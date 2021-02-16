@@ -3,6 +3,7 @@ open import Labels
 open import Variables
 open import CastStructure
 import EfficientParamCasts
+open import Data.Bool using (Bool; true; false)
 open import Data.Nat {-using (ℕ; _≤_; _⊔_; z≤n; s≤s)-}
 open import Data.Nat.Properties
 open import Data.Nat.Solver
@@ -20,10 +21,17 @@ open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
   Proof idea:
 
-  We define a predicate on terms that ensures that there
-  are no more than 2 casts in sequence. The compose-casts
-  rule takes 2-cast sequences that appear and reduces them
-  to 1 cast before they can further grow to a 3-cast sequence.
+  In contexts that are not eligible for reduction such as underneath a
+  lambda or in the branch of an if or case expression, we only allow
+  up to 2 casts in a sequence. We count a variable as a cast because
+  when we substitute a value for a variable, the value may have one cast.
+
+  In contexts that are eligible for reduction, we allow up to 3 casts
+  in sequence. The worst-case scenario is when there is a β reduction
+  underneath a single cast, where the argument is a value with one
+  cast at the top and the body of the lambda is the lambda's parameter
+  with one cast around it. In this scenario, the contractum has 3
+  casts in a row.
 
 -}
 
@@ -36,501 +44,375 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   open ParamCastCalculus Cast
   open import EfficientParamCastAux precast
 
-  data _⊢_ok : ∀{Γ A} → ℕ → Γ ⊢ A  → Set where
+  data _∣_⊢_ok : ∀{Γ A} → ℕ → Bool → Γ ⊢ A  → Set where
+    castulOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
+             → n ∣ true ⊢ M ok  →  n ≤ 1
+             → suc n ∣ true ⊢ M ⟨ c ⟩ ok
     castOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
-             → suc n ⊢ M ok → n ≤ 1
-             → n ⊢ M ⟨ c ⟩ ok
-    varOK : ∀{Γ A}{∋x : Γ ∋ A}{n : ℕ} → n ⊢ (` ∋x) ok
-    lamOK : ∀{Γ B A}{N : Γ , A ⊢ B}{n}
-          → 0 ⊢ N ok
-          → n ⊢ (ƛ N) ok
-    appOK : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A}{n}
-          → 0 ⊢ L ok → 0 ⊢ M ok
-          → n ⊢ (L · M) ok
-    litOK : ∀{Γ : Context}{A}{r : rep A}{p : Prim A}{n}
-          → n ⊢ ($_ {Γ} r {p}) ok
-    ifOK : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A}{n}
-          → 0 ⊢ L ok → 0 ⊢ M ok → 0 ⊢ N ok
-          → n ⊢ (if L M N) ok
-    consOK : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B}{n}
-          → 0 ⊢ M ok → 0 ⊢ N ok
-          → n ⊢ (cons M N) ok
-    fstOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}
-          → 0 ⊢ M ok
-          → n ⊢ fst M ok
-    sndOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}
-          → 0 ⊢ M ok
-          → n ⊢ snd M ok
-    inlOK : ∀{Γ A B}{M : Γ ⊢ A}{n}
-          → 0 ⊢ M ok
-          → n ⊢ (inl {B = B} M) ok
-    inrOK : ∀{Γ A B}{M : Γ ⊢ B}{n}
-          → 0 ⊢ M ok
-          → n ⊢ (inr {A = A} M) ok
-    caseOK : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}{n}
-           → 0 ⊢ L ok → 0 ⊢ M ok → 0 ⊢ N ok
-           → n ⊢ (case L M N) ok
-    blameOK : ∀{Γ A ℓ}{n}
-           → n ⊢ (blame {Γ}{A} ℓ) ok
+             → n ∣ false ⊢ M ok  →  n ≤ 2
+             → suc n ∣ false ⊢ M ⟨ c ⟩ ok
+    varOK : ∀{Γ A}{∋x : Γ ∋ A}{ul}
+           {- We pre-count a 1 here because a value may have 1 cast
+              and get substituted for this variable. -}
+          → 1 ∣ ul ⊢ (` ∋x) ok
+    lamOK : ∀{Γ B A}{N : Γ , A ⊢ B}{n}{ul}
+          → n ∣ true ⊢ N ok
+          → 0 ∣ ul ⊢ (ƛ N) ok
+    appOK : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A}{ul}{n}{m}
+          → n ∣ ul ⊢ L ok → m ∣ ul ⊢ M ok
+          → 0 ∣ ul ⊢ (L · M) ok
+    litOK : ∀{Γ : Context}{A}{r : rep A}{p : Prim A}{ul}
+          → 0 ∣ ul ⊢ ($_ {Γ} r {p}) ok
+    ifOK : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A}{n m k}{ul}
+          → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
+          → 0 ∣ ul ⊢ (if L M N) ok
+    consOK : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B}{n m}{ul}
+          → n ∣ ul ⊢ M ok → m ∣ ul ⊢ N ok
+          → 0 ∣ ul ⊢ (cons M N) ok
+    fstOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
+          → n ∣ ul ⊢ M ok
+          → 0 ∣ ul ⊢ fst M ok
+    sndOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
+          → n ∣ ul ⊢ M ok
+          → 0 ∣ ul ⊢ snd M ok
+    inlOK : ∀{Γ A B}{M : Γ ⊢ A}{n}{ul}
+          → n ∣ ul ⊢ M ok
+          → 0 ∣ ul ⊢ (inl {B = B} M) ok
+    inrOK : ∀{Γ A B}{M : Γ ⊢ B}{n}{ul}
+          → n ∣ ul ⊢ M ok
+          → 0 ∣ ul ⊢ (inr {A = A} M) ok
+    caseOK : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}{n m k}{ul}
+           → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
+           → 0 ∣ ul ⊢ (case L M N) ok
+    blameOK : ∀{Γ A ℓ}{ul}
+           → 0 ∣ ul ⊢ (blame {Γ}{A} ℓ) ok
 
-  weakenOK : ∀{Γ A}{M : Γ ⊢ A}{n m}
-       → n ⊢ M ok → m ≤ n
-       → m ⊢ M ok
-  weakenOK (castOK Mok x) m≤n = castOK (weakenOK Mok (s≤s m≤n)) (≤-trans m≤n x)
-  weakenOK varOK m≤n = varOK
-  weakenOK (lamOK Mok) m≤n = lamOK Mok
-  weakenOK (appOK Mok Mok₁) m≤n = appOK Mok Mok₁
-  weakenOK litOK m≤n = litOK
-  weakenOK (ifOK Mok Mok₁ Mok₂) m≤n = ifOK Mok Mok₁ Mok₂
-  weakenOK (consOK Mok Mok₁) m≤n = consOK Mok Mok₁
-  weakenOK (fstOK Mok) m≤n = fstOK Mok
-  weakenOK (sndOK Mok) m≤n = sndOK Mok
-  weakenOK (inlOK Mok) m≤n = inlOK Mok
-  weakenOK (inrOK Mok) m≤n = inrOK Mok
-  weakenOK (caseOK Mok Mok₁ Mok₂) m≤n = caseOK Mok Mok₁ Mok₂
-  weakenOK blameOK m≤n = blameOK
+  simple→ok0 : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → SimpleValue M → n ∣ false ⊢ M ok → n ≡ 0
+  simple→ok0 V-ƛ (lamOK Mok) = refl
+  simple→ok0 V-const litOK = refl
+  simple→ok0 (V-pair x x₁) (consOK y z) = refl
+  simple→ok0 (V-inl x) (inlOK y) = refl
+  simple→ok0 (V-inr x) (inrOK y) = refl
 
-  plug→OK : ∀{Γ A B}{M : Γ ⊢ A}{F : Frame A B}{n}
-    → n ⊢ plug M F ok
-    → 0 ⊢ M ok 
-  plug→OK {F = EfficientParamCasts.F-·₁ x} (appOK Mok Mok₁) = Mok
-  plug→OK {F = EfficientParamCasts.F-·₂ M} (appOK Mok Mok₁) = Mok₁
-  plug→OK {F = EfficientParamCasts.F-if x x₁} (ifOK Mok Mok₁ Mok₂) = Mok
-  plug→OK {F = EfficientParamCasts.F-×₁ x} (consOK Mok Mok₁) = Mok₁
-  plug→OK {F = EfficientParamCasts.F-×₂ x} (consOK Mok Mok₁) = Mok
-  plug→OK {F = EfficientParamCasts.F-fst} (fstOK Mok) = Mok
-  plug→OK {F = EfficientParamCasts.F-snd} (sndOK Mok) = Mok
-  plug→OK {F = EfficientParamCasts.F-inl} (inlOK Mok) = Mok
-  plug→OK {F = EfficientParamCasts.F-inr} (inrOK Mok) = Mok
-  plug→OK {F = EfficientParamCasts.F-case x x₁} (caseOK Mok Mok₁ Mok₂) = Mok
+  value→ok1 : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → Value M → n ∣ false ⊢ M ok → n ≤ 1
+  value→ok1 (S-val x) Mok
+      with simple→ok0 x Mok
+  ... | refl = z≤n
+  value→ok1 (V-cast vV) (castOK Vok z) 
+      with simple→ok0 vV Vok
+  ... | refl = s≤s z≤n
 
-  OK→plug : ∀{Γ A B}{M M′ : Γ ⊢ A}{F : Frame A B}{n}
-    → n ⊢ plug M F ok
-    → 0 ⊢ M′ ok
-    → n ⊢ plug M′ F ok
-  OK→plug {F = EfficientParamCasts.F-·₁ x} (appOK MFok MFok₁) Mok = appOK Mok MFok₁
-  OK→plug {F = EfficientParamCasts.F-·₂ M} (appOK MFok MFok₁) Mok = appOK MFok Mok
-  OK→plug {F = EfficientParamCasts.F-if x x₁} (ifOK MFok MFok₁ MFok₂) Mok =
-     ifOK Mok MFok₁ MFok₂
-  OK→plug {F = EfficientParamCasts.F-×₁ x} (consOK MFok MFok₁) Mok = consOK MFok Mok
-  OK→plug {F = EfficientParamCasts.F-×₂ x} (consOK MFok MFok₁) Mok = consOK Mok MFok₁
-  OK→plug {F = EfficientParamCasts.F-fst} (fstOK x) Mok = fstOK Mok
-  OK→plug {F = EfficientParamCasts.F-snd} (sndOK x) Mok = sndOK Mok
-  OK→plug {F = EfficientParamCasts.F-inl} (inlOK x) Mok = inlOK Mok
-  OK→plug {F = EfficientParamCasts.F-inr} (inrOK x) Mok = inrOK Mok
-  OK→plug {F = EfficientParamCasts.F-case x x₁} (caseOK a b c) Mok = caseOK Mok b c
+  value-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → Value M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
 
-  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{n}{ctx : ReductionCtx}
-          → n ⊢ M ok  →  ctx / M —→ M′
-          → n ⊢ M′ ok
+  simple-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → SimpleValue M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
+  simple-strengthen-ok V-ƛ (lamOK Nok) = lamOK Nok
+  simple-strengthen-ok V-const litOK = litOK
+  simple-strengthen-ok (V-pair x x₁) (consOK a b) =
+     consOK (value-strengthen-ok x a) (value-strengthen-ok x₁ b)
+  simple-strengthen-ok (V-inl x) (inlOK a) = inlOK (value-strengthen-ok x a)
+  simple-strengthen-ok (V-inr x) (inrOK a) = inrOK (value-strengthen-ok x a)
 
-  preserve-ncc : ∀{Γ A}{M M′ : Γ ⊢ A}
-          → 0 ⊢ M ok  →  non_cast_ctx / M —→ M′
-          → 0 ⊢ M′ ok
+  value-strengthen-ok (S-val x) Mok = simple-strengthen-ok x Mok
+  value-strengthen-ok (V-cast x) (castOK Mok lt) =
+    let Mok2 = (simple-strengthen-ok x Mok) in
+    castulOK Mok2 (value→ok1 (S-val x) Mok)
 
-  preserve-any : ∀{Γ A}{M M′ : Γ ⊢ A}{n}
-          → n ⊢ M ok  →  any_ctx / M —→ M′
-          → n ⊢ M′ ok
+  weaken-OK-ul : ∀{Γ A}{M : Γ ⊢ A}{n}
+       → n ∣ true ⊢ M ok  →  n ∣ false ⊢ M ok
+  weaken-OK-ul (castulOK Mok lt) =
+     castOK (weaken-OK-ul Mok) (≤-trans lt (s≤s z≤n))
+  weaken-OK-ul varOK = varOK
+  weaken-OK-ul (lamOK Mok) = lamOK Mok
+  weaken-OK-ul (appOK Mok Mok₁) = appOK (weaken-OK-ul Mok) (weaken-OK-ul Mok₁)
+  weaken-OK-ul litOK = litOK
+  weaken-OK-ul (ifOK Mok Mok₁ Mok₂) = ifOK (weaken-OK-ul Mok) Mok₁ Mok₂
+  weaken-OK-ul (consOK Mok Mok₁) = consOK (weaken-OK-ul Mok) (weaken-OK-ul Mok₁)
+  weaken-OK-ul (fstOK Mok) = fstOK (weaken-OK-ul Mok)
+  weaken-OK-ul (sndOK Mok) = sndOK (weaken-OK-ul Mok)
+  weaken-OK-ul (inlOK Mok) = inlOK (weaken-OK-ul Mok)
+  weaken-OK-ul (inrOK Mok) = inrOK (weaken-OK-ul Mok)
+  weaken-OK-ul (caseOK Mok Mok₁ Mok₂) = caseOK (weaken-OK-ul Mok) Mok₁ Mok₂
+  weaken-OK-ul blameOK = blameOK
+       
+  OK-ul→2 : ∀{Γ A}{M : Γ ⊢ A}{n}
+       → n ∣ true ⊢ M ok → n ≤ 2
+  OK-ul→2 (castulOK Mok lt) = s≤s lt
+  OK-ul→2 varOK = s≤s z≤n
+  OK-ul→2 (lamOK Mok) = z≤n
+  OK-ul→2 (appOK Mok Mok₁) = z≤n
+  OK-ul→2 litOK = z≤n
+  OK-ul→2 (ifOK Mok Mok₁ Mok₂) = z≤n
+  OK-ul→2 (consOK Mok Mok₁) = z≤n
+  OK-ul→2 (fstOK Mok) = z≤n
+  OK-ul→2 (sndOK Mok) = z≤n
+  OK-ul→2 (inlOK Mok) = z≤n
+  OK-ul→2 (inrOK Mok) = z≤n
+  OK-ul→2 (caseOK Mok Mok₁ Mok₂) = z≤n
+  OK-ul→2 blameOK = z≤n
+  
+  OK→3 : ∀{Γ A}{M : Γ ⊢ A}{n}{ul}
+       → n ∣ ul ⊢ M ok → n ≤ 3
+  OK→3 (castulOK Mok lt) = s≤s (≤-step lt)
+  OK→3 (castOK Mok x) = s≤s x
+  OK→3 varOK = s≤s z≤n
+  OK→3 (lamOK Mok) = z≤n
+  OK→3 (appOK Mok Mok₁) = z≤n
+  OK→3 litOK = z≤n
+  OK→3 (ifOK Mok Mok₁ Mok₂) = z≤n
+  OK→3 (consOK Mok Mok₁) = z≤n
+  OK→3 (fstOK Mok) = z≤n
+  OK→3 (sndOK Mok) = z≤n
+  OK→3 (inlOK Mok) = z≤n
+  OK→3 (inrOK Mok) = z≤n
+  OK→3 (caseOK Mok Mok₁ Mok₂) = z≤n
+  OK→3 blameOK = z≤n
 
-  {- todo: progress -}
+  rename-ok : ∀{Γ Δ A}{M : Γ ⊢ A}{n}{ul}{ρ : ∀{B} → Γ ∋ B → Δ ∋ B}
+          → n ∣ ul ⊢ M ok
+          → n ∣ ul ⊢ rename ρ M ok
+  rename-ok (castulOK Mok x) = castulOK (rename-ok Mok) x
+  rename-ok (castOK Mok x) = castOK (rename-ok Mok) x
+  rename-ok varOK = varOK
+  rename-ok (lamOK Mok) = lamOK (rename-ok Mok)
+  rename-ok (appOK Mok Mok₁) = appOK (rename-ok Mok) (rename-ok Mok₁)
+  rename-ok litOK = litOK
+  rename-ok (ifOK Mok Mok₁ Mok₂) =
+     ifOK (rename-ok Mok) (rename-ok Mok₁) (rename-ok Mok₂)
+  rename-ok (consOK Mok Mok₁) = consOK (rename-ok Mok) (rename-ok Mok₁)
+  rename-ok (fstOK Mok) = fstOK (rename-ok Mok)
+  rename-ok (sndOK Mok) = sndOK (rename-ok Mok)
+  rename-ok (inlOK Mok) = inlOK (rename-ok Mok)
+  rename-ok (inrOK Mok) = inrOK (rename-ok Mok)
+  rename-ok (caseOK Mok Mok₁ Mok₂) =
+     caseOK (rename-ok Mok) (rename-ok Mok₁) (rename-ok Mok₂)
+  rename-ok blameOK = blameOK
 
-  preserve-ok MFok (EfficientParamCasts.ξ M-→M′) =
-     let Mok = plug→OK MFok in
-     let IH = preserve-ok Mok M-→M′ in
-     OK→plug MFok IH
-  preserve-ok (castOK Mok x) (EfficientParamCasts.ξ-cast M-→M′) =
-     let IH = preserve-ok Mok M-→M′ in
-     castOK IH x
-  preserve-ok Mok EfficientParamCasts.ξ-blame = blameOK
-  preserve-ok Mok EfficientParamCasts.ξ-cast-blame = blameOK
-  preserve-ok (appOK (lamOK Mok) Mok₁) (EfficientParamCasts.β x) = {!!}
-  preserve-ok Mok EfficientParamCasts.δ = {!!}
-  preserve-ok Mok EfficientParamCasts.β-if-true = {!!}
-  preserve-ok Mok EfficientParamCasts.β-if-false = {!!}
-  preserve-ok Mok (EfficientParamCasts.β-fst x x₁) = {!!}
-  preserve-ok Mok (EfficientParamCasts.β-snd x x₁) = {!!}
-  preserve-ok Mok (EfficientParamCasts.β-caseL x) = {!!}
-  preserve-ok Mok (EfficientParamCasts.β-caseR x) = {!!}
-  preserve-ok Mok (EfficientParamCasts.cast v) = {!!}
-  preserve-ok Mok (EfficientParamCasts.fun-cast v x) = {!!}
-  preserve-ok Mok (EfficientParamCasts.fst-cast v) = {!!}
-  preserve-ok Mok (EfficientParamCasts.snd-cast v) = {!!}
-  preserve-ok Mok (EfficientParamCasts.case-cast v) = {!!}
-  preserve-ok (castOK (castOK Mok x₁) x) EfficientParamCasts.compose-casts =
-     castOK (weakenOK Mok (s≤s (≤-trans x (s≤s z≤n)))) x
+  SubstOK : ∀ {Γ Δ}(σ : ∀{B} → Γ ∋ B → Δ ⊢ B) → Set
+  SubstOK {Γ}{Δ} σ = (∀{A}(x : Γ ∋ A) → (Σ[ m ∈ ℕ ] m ∣ true ⊢ σ x ok × m ≤ 1))
+
+  exts-ok : ∀ {Γ Δ A} {σ : ∀{B} → Γ ∋ B → Δ ⊢ B}
+      → SubstOK σ
+      → SubstOK (exts σ {B = A})
+  exts-ok σok Z = ⟨ 1 , ⟨ varOK , (s≤s z≤n) ⟩ ⟩
+  exts-ok σok (S ∋x)
+      with σok ∋x
+  ... | ⟨ k , ⟨ ok , lt ⟩ ⟩ =
+        ⟨ k , ⟨ rename-ok ok , lt ⟩ ⟩
+
+  sub-ok : ∀ {Γ Δ A} (N : Γ ⊢ A) {n : ℕ} {σ : ∀{B} → Γ ∋ B → Δ ⊢ B} {ul}
+      → n ∣ ul ⊢ N ok
+      → SubstOK σ
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ subst σ N ok  ×  k ≤ n
+  sub-ok (M ⟨ c ⟩) (castulOK Mok lt) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ =
+        ⟨ suc m1 , ⟨ castulOK σMok (≤-trans m1≤ lt) , s≤s m1≤ ⟩ ⟩
+  sub-ok (M ⟨ c ⟩) (castOK Mok lt) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ =
+        ⟨ suc m1 , ⟨ (castOK σMok (≤-trans m1≤ lt)) , s≤s m1≤ ⟩ ⟩
+  sub-ok (` x) (varOK{ul = true}) σok = σok x
+  sub-ok (` x) (varOK{ul = false}) σok
+      with σok x
+  ... | ⟨ k , ⟨ σxok , lt ⟩ ⟩ = ⟨ k , ⟨ weaken-OK-ul σxok , lt ⟩ ⟩
+  sub-ok (ƛ N) (lamOK Nok) σok
+      with sub-ok N Nok (exts-ok σok)
+  ... | ⟨ k , ⟨ σNok , lt ⟩ ⟩ =      
+       ⟨ zero , ⟨ (lamOK σNok) , z≤n ⟩ ⟩
+  sub-ok (L · M) (appOK Lok Mok) σok
+      with sub-ok L Lok σok
+  ... | ⟨ l1 , ⟨ σLok , l1≤ ⟩ ⟩
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ =
+      ⟨ zero , ⟨ (appOK σLok σMok) , z≤n ⟩ ⟩
+  sub-ok ($_ r {p}) litOK σok = ⟨ zero , ⟨ litOK , z≤n ⟩ ⟩
+  sub-ok (if L M N) (ifOK Lok Mok Nok) σok
+      with sub-ok L Lok σok
+  ... | ⟨ l1 , ⟨ σLok , l1≤ ⟩ ⟩
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩
+      with sub-ok N Nok σok
+  ... | ⟨ n1 , ⟨ σNok , n1≤ ⟩ ⟩ =
+      ⟨ zero , ⟨ (ifOK σLok σMok σNok) , z≤n ⟩ ⟩
+  sub-ok (cons M N) (consOK Mok Nok) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩
+      with sub-ok N Nok σok
+  ... | ⟨ n1 , ⟨ σNok , n1≤ ⟩ ⟩ =
+      ⟨ zero , ⟨ (consOK σMok σNok) , z≤n ⟩ ⟩
+  sub-ok (fst M) (fstOK Mok) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ = ⟨ zero , ⟨ (fstOK σMok) , z≤n ⟩ ⟩
+  sub-ok (snd M) (sndOK Mok) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ = ⟨ zero , ⟨ (sndOK σMok) , z≤n ⟩ ⟩
+  sub-ok (inl M) (inlOK Mok) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ = ⟨ zero , ⟨ (inlOK σMok) , z≤n ⟩ ⟩
+  sub-ok (inr M) (inrOK Mok) σok
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩ = ⟨ zero , ⟨ (inrOK σMok) , z≤n ⟩ ⟩
+  sub-ok (case L M N) (caseOK Lok Mok Nok) σok
+      with sub-ok L Lok σok
+  ... | ⟨ l1 , ⟨ σLok , l1≤ ⟩ ⟩
+      with sub-ok M Mok σok
+  ... | ⟨ m1 , ⟨ σMok , m1≤ ⟩ ⟩
+      with sub-ok N Nok σok
+  ... | ⟨ n1 , ⟨ σNok , n1≤ ⟩ ⟩ =
+      ⟨ zero , ⟨ (caseOK σLok σMok σNok) , z≤n ⟩ ⟩
+  sub-ok (blame ℓ) blameOK σok = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
 
 
-  preserve-any MFok (ξ M—→M′) =
-     let Mok = plug→OK MFok in
-     {!!}
-  preserve-any Mok ξ-blame = {!!}
-  preserve-any Mok (β x) = {!!}
-  preserve-any Mok δ = {!!}
-  preserve-any Mok β-if-true = {!!}
-  preserve-any Mok β-if-false = {!!}
-  preserve-any Mok (β-fst x x₁) = {!!}
-  preserve-any Mok (β-snd x x₁) = {!!}
-  preserve-any Mok (β-caseL x) = {!!}
-  preserve-any Mok (β-caseR x) = {!!}
-  preserve-any Mok (fun-cast v x) = {!!}
-  preserve-any Mok (fst-cast v) = {!!}
-  preserve-any Mok (snd-cast v) = {!!}
-  preserve-any Mok (case-cast v) = {!!}
+  SubstZeroOK : ∀ {Γ A} (M : Γ ⊢ A) {m : ℕ}
+         → m ∣ false ⊢ M ok → m ≤ 1 → Value M
+         → SubstOK (subst-zero M)
+  SubstZeroOK M {m = m} Mok m≤1 vM Z =
+      ⟨ m , ⟨ value-strengthen-ok vM Mok , m≤1 ⟩ ⟩
+  SubstZeroOK M Mok m≤1 vM (S ∋x) = ⟨ 1 , ⟨ varOK , (s≤s z≤n) ⟩ ⟩
 
-  preserve-ncc (castOK Mok x) (EfficientParamCasts.ξ-cast M-→M′) =
-     let IH = preserve-any Mok M-→M′ in castOK IH z≤n
-  preserve-ncc (castOK Mok x) EfficientParamCasts.ξ-cast-blame = blameOK
-  preserve-ncc (castOK Mok x) (EfficientParamCasts.cast v) = {!!}
-  preserve-ncc (castOK (castOK Mok x₁) x) EfficientParamCasts.compose-casts =
-     castOK (weakenOK Mok (s≤s z≤n)) z≤n
+  subst-ok : ∀ {Γ A B} (N : Γ , A ⊢ B) (M : Γ ⊢ A) {n m : ℕ}{ul}
+      → n ∣ ul ⊢ N ok
+      → m ∣ false ⊢ M ok →  m ≤ 1 → Value M
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ N [ M ] ok × k ≤ n
+  subst-ok N M Nok Mok m≤1 vM
+      with sub-ok N {σ = subst-zero M} Nok (SubstZeroOK M Mok m≤1 vM)
+  ... | ⟨ k , ⟨ NMok , lt ⟩ ⟩ = ⟨ k , ⟨ NMok , lt ⟩ ⟩
+  
+  invert-plug : ∀{Γ A B} (M : Γ ⊢ A) (F : Frame A B) {n : ℕ}
+           → n ∣ false ⊢ plug M F ok
+           → Σ[ m ∈ ℕ ] m ∣ false ⊢ M ok
+  invert-plug M (F-·₁ x) (appOK {n = n} MFok MFok₁) = ⟨ n , MFok ⟩
+  invert-plug M (F-·₂ M₁) (appOK {m = m} MFok MFok₁) = ⟨ m , MFok₁ ⟩
+  invert-plug M (F-if x x₁) (ifOK {n = n} MFok MFok₁ MFok₂) =
+     ⟨ n , MFok ⟩
+  invert-plug M (F-×₁ x) (consOK {m = m} MFok MFok₁) = ⟨ m , MFok₁ ⟩
+  invert-plug M (F-×₂ x) (consOK {n = n} MFok MFok₁) = ⟨ n , MFok ⟩
+  invert-plug M F-fst (fstOK {n = n} MFok) = ⟨ n , MFok ⟩
+  invert-plug M F-snd (sndOK {n = n} MFok) = ⟨ n , MFok ⟩
+  invert-plug M F-inl (inlOK {n = n} MFok) = ⟨ n , MFok ⟩
+  invert-plug M F-inr (inrOK {n = n} MFok) = ⟨ n , MFok ⟩
+  invert-plug M (F-case x x₁) (caseOK {n = n} MFok y z) =
+     ⟨ n , MFok ⟩
 
-{-
-  data CastCount : ∀{Γ A} → Γ ⊢ A → ℕ → Set where
-    ccCast : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
-       → CastCount M n → n ≤ 1 → CastCount (M ⟨ c ⟩) (suc n)
-    ccVar : ∀{Γ A}{∋x : Γ ∋ A} → CastCount (` ∋x) 0
-    ccLam : ∀{Γ B A}{N : Γ , A ⊢ B}{n}
-          → CastCount N n → CastCount (ƛ N) 0
-    ccApp : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A}{n m}
-          → CastCount L n → CastCount M m → CastCount (L · M) 0
-    ccLit : ∀{Γ : Context}{A}{r : rep A}{p : Prim A}
-          → CastCount {Γ} ($_ r {p}) 0
-    ccIf : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A}{m n p}
-          → CastCount L n → CastCount M m → CastCount N p
-          → CastCount (if L M N) 0
-    ccCons : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B}{n m}
-          → CastCount M n → CastCount N m → CastCount (cons M N) 0
-    ccFst : ∀{Γ A B}{M : Γ ⊢ A `× B}{n} → CastCount M n → CastCount (fst M) 0
-    ccSnd : ∀{Γ A B}{M : Γ ⊢ A `× B}{n} → CastCount M n → CastCount (snd M) 0
-    ccInl : ∀{Γ A B}{M : Γ ⊢ A}{n} → CastCount M n
-          → CastCount {Γ}{A `⊎ B} (inl M) 0
-    ccInr : ∀{Γ A B}{M : Γ ⊢ B}{n} → CastCount M n
-          → CastCount {Γ}{A `⊎ B} (inr M) 0
-    ccCase : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}{n m p}
-           → CastCount L n → CastCount M m → CastCount N p
-           → CastCount (case L M N) 0
-    ccBlame : ∀{Γ A ℓ} → CastCount {Γ}{A} (blame {Γ}{A} ℓ) 0
+  plug-ok : ∀{Γ A B} (M M′ : Γ ⊢ A) (F : Frame A B) {n m : ℕ}
+      → m ∣ false ⊢ plug M F ok
+      → n ∣ false ⊢ M′ ok
+      → 0 ∣ false ⊢ plug M′ F ok
+  plug-ok M M′ (F-·₁ x) (appOK y z) Mok = appOK Mok z
+  plug-ok M M′ (F-·₂ M₁) (appOK y z) Mok = appOK y Mok
+  plug-ok M M′ (F-if x x₁) (ifOK a b c) Mok = ifOK Mok b c
+  plug-ok M M′ (F-×₁ x) (consOK a b) Mok = consOK a Mok
+  plug-ok M M′ (F-×₂ x) (consOK a b) Mok = consOK Mok b
+  plug-ok M M′ F-fst (fstOK a) Mok = fstOK Mok
+  plug-ok M M′ F-snd (sndOK a) Mok = sndOK Mok
+  plug-ok M M′ F-inl (inlOK a) Mok = inlOK Mok
+  plug-ok M M′ F-inr (inrOK a) Mok = inrOK Mok
+  plug-ok M M′ (F-case x x₁) (caseOK a b c) Mok = caseOK Mok b c
 
-  cast-count≤2 : ∀{Γ A}{M : Γ ⊢ A}{n} → CastCount M n → n ≤ 2
-  cast-count≤2 (ccCast ccM x) = s≤s x
-  cast-count≤2 ccVar = z≤n
-  cast-count≤2 (ccLam ccM) = z≤n
-  cast-count≤2 (ccApp ccM ccM₁) = z≤n
-  cast-count≤2 ccLit = z≤n
-  cast-count≤2 (ccIf ccM ccM₁ ccM₂) = z≤n
-  cast-count≤2 (ccCons ccM ccM₁) = z≤n
-  cast-count≤2 (ccFst ccM) = z≤n
-  cast-count≤2 (ccSnd ccM) = z≤n
-  cast-count≤2 (ccInl ccM) = z≤n
-  cast-count≤2 (ccInr ccM) = z≤n
-  cast-count≤2 (ccCase ccM ccM₁ ccM₂) = z≤n
-  cast-count≤2 ccBlame = z≤n
+  plug-ok0 : ∀{Γ A B} (M : Γ ⊢ A) (F : Frame A B) {n : ℕ}{ul}
+      → n ∣ ul ⊢ plug M F ok
+      → n ≡ 0
+  plug-ok0 M (F-·₁ x) (appOK a b) = refl
+  plug-ok0 M (F-·₂ M₁) (appOK a b) = refl
+  plug-ok0 M (F-if x x₁) (ifOK a b c) = refl
+  plug-ok0 M (F-×₁ x) (consOK a b) = refl
+  plug-ok0 M (F-×₂ x) (consOK a b) = refl
+  plug-ok0 M F-fst (fstOK a) = refl
+  plug-ok0 M F-snd (sndOK a) = refl
+  plug-ok0 M F-inl (inlOK a) = refl
+  plug-ok0 M F-inr (inrOK a) = refl
+  plug-ok0 M (F-case x x₁) (caseOK a b c) = refl
 
-  module PreserveCount
-    (applyCastCount : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
-         → CastCount M n → n ≤ 1 → (v : Value M)
-         → Σ[ n′ ∈ ℕ ] (CastCount (applyCast M v c {a}) n′))
+  red-any→ok0 : ∀{Γ A}{M M′ : Γ ⊢ A}{n}
+          → n ∣ false ⊢ M ok
+          → any_ctx / M —→ M′
+          → n ≡ 0
+  red-any→ok0 Mok (ξ {M = M}{F = F} M—→M′) = plug-ok0 M F Mok 
+  red-any→ok0 Mok (ξ-blame{F = F}) = plug-ok0 _ F Mok
+  red-any→ok0 (appOK a b) (β x) = refl
+  red-any→ok0 (appOK a b) δ = refl
+  red-any→ok0 (ifOK a b c) β-if-true = refl
+  red-any→ok0 (ifOK a b c) β-if-false = refl
+  red-any→ok0 (fstOK a) (β-fst x x₁) = refl
+  red-any→ok0 (sndOK a) (β-snd x x₁) = refl
+  red-any→ok0 (caseOK a b c) (β-caseL x) = refl
+  red-any→ok0 (caseOK a b c) (β-caseR x) = refl
+  red-any→ok0 (appOK a b) (fun-cast v x) = refl
+  red-any→ok0 (fstOK a) (fst-cast v) = refl
+  red-any→ok0 (sndOK a) (snd-cast v) = refl
+  red-any→ok0 (caseOK a b c) (case-cast v) = refl
+
+  module PreserveOK
+    (preserveApplyCast : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n)
     where
 
-    castcount-plug-0 : ∀ {Γ A B}{M : Γ ⊢ A}{n} (F : Frame A B)
-         → CastCount (plug M F) n → n ≡ 0
-    castcount-plug-0 (F-·₁ x) (ccApp ccMF ccMF₁) = refl
-    castcount-plug-0 (F-·₂ x) (ccApp ccMF ccMF₁) = refl
-    castcount-plug-0 (F-if x x₁) (ccIf ccL ccM ccN) = refl
-    castcount-plug-0 (F-×₁ x) (ccCons ccM ccN) = refl
-    castcount-plug-0 (F-×₂ x) (ccCons ccM ccN) = refl
-    castcount-plug-0 F-fst (ccFst ccM) = refl
-    castcount-plug-0 F-snd (ccSnd ccM) = refl
-    castcount-plug-0 F-inl (ccInl ccM) = refl
-    castcount-plug-0 F-inr (ccInr ccM) = refl
-    castcount-plug-0 (F-case x x₁) (ccCase ccL ccM ccN) = refl
+    preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+            → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+            → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+    preserve-ok {ctx = any_ctx} MFok (ξ {M = M}{M′}{F = F} M—→M′)
+        with invert-plug M F MFok
+    ... | ⟨ m , Mok ⟩
+        with preserve-ok Mok M—→M′
+    ... | ⟨ m2 , ⟨ Mpok , m≤n+2 ⟩ ⟩ =      
+        ⟨ zero , ⟨ plug-ok M M′ F MFok Mpok , z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} Mok ξ-blame = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (appOK {M = M} (lamOK {N = N} Nok) Mok) (β vM) 
+       with subst-ok N M Nok Mok (value→ok1 vM Mok) vM
+    ... | ⟨ k , ⟨ NMok , k≤ ⟩ ⟩ =
+        let n≤2 = OK-ul→2 Nok in
+        let m≤1 = value→ok1 vM Mok in
+        ⟨ k , ⟨ weaken-OK-ul NMok , ≤-trans k≤ n≤2 ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (appOK litOK Mok) δ = ⟨ 0 , ⟨ litOK , z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (ifOK {m = m} litOK Mok Nok) β-if-true =
+       ⟨ m , ⟨ weaken-OK-ul Mok , ≤-trans (OK-ul→2 Mok) ≤-refl ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (ifOK {k = k} litOK Mok Nok) β-if-false =
+       ⟨ k , ⟨ weaken-OK-ul Nok , ≤-trans (OK-ul→2 Nok) ≤-refl ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (fstOK (consOK {n = n} Mpok Wok)) (β-fst vMp vW) =
+      ⟨ n , ⟨ Mpok , (≤-trans (value→ok1 vMp Mpok) (s≤s z≤n)) ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (sndOK (consOK {m = m} Mpok Wok)) (β-snd vM VMp) =
+      ⟨ m , ⟨ Wok , (≤-trans (value→ok1 VMp Wok) (s≤s z≤n)) ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (caseOK (inlOK a) b c) (β-caseL vV) =
+        ⟨ zero , ⟨ appOK (weaken-OK-ul b) a , z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (caseOK (inrOK a) b c) (β-caseR vV) =
+        ⟨ zero , ⟨ (appOK (weaken-OK-ul c) a) , z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (appOK (castOK a c) b) (fun-cast v x) =
+        let xx = value→ok1 x b in
+        ⟨ 1 , ⟨ (castOK (appOK a (castOK b (≤-trans xx (s≤s z≤n)))) z≤n) ,
+                (s≤s z≤n) ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (fstOK (castOK a b)) (fst-cast v) =
+       ⟨ 1 , ⟨ castOK (fstOK a) z≤n , s≤s z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (sndOK (castOK a b)) (snd-cast v) =
+       ⟨ 1 , ⟨ castOK (sndOK a) z≤n , s≤s z≤n ⟩ ⟩
+    preserve-ok {ctx = any_ctx} (caseOK (castOK {n = n} a b) d e)
+        (case-cast {Γ}{A}{B}{A'}{B'}{C}{V}{W₁}{W₂}{c} v {x}) =
+       ⟨ zero , ⟨ (caseOK a
+               (lamOK (appOK (rename-ok d) (castulOK (varOK{∋x = Z})(s≤s z≤n))))
+               (lamOK (appOK (rename-ok e) (castulOK(varOK{∋x = Z})(s≤s z≤n)))))
+             , z≤n ⟩ ⟩
+    preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (ξ-cast M—→M′)
+        with preserve-ok Mok M—→M′
+    ... | ⟨ m , ⟨ Mpok , m≤2 ⟩ ⟩
+        with red-any→ok0 Mok M—→M′
+    ... | refl =     
+          ⟨ suc m , ⟨ castOK Mpok m≤2 , s≤s m≤2 ⟩ ⟩
+    preserve-ok {ctx = non_cast_ctx} (castOK blameOK lt) ξ-cast-blame =
+       ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+    preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (cast v)
+        with preserveApplyCast Mok v
+    ... | ⟨ m , ⟨ acOK , lt2 ⟩ ⟩ =    
+          ⟨ m , ⟨ acOK , ≤-step lt2 ⟩ ⟩
+    preserve-ok {ctx = non_cast_ctx} (castOK (castOK {n = n} Mok lt1) lt2)
+       compose-casts =
+       ⟨ suc n , ⟨ (castOK Mok lt1) , (s≤s (≤-step (≤-step (≤-step ≤-refl)))) ⟩ ⟩
 
-    anyctx-castcount-0 : ∀ {Γ A}{M M′ : Γ ⊢ A}{n}
-           → CastCount M n → any_ctx / M —→ M′
-           → n ≡ 0
-    anyctx-castcount-0 ccM (ξ {F = F} M—→M′) = castcount-plug-0 F ccM
-    anyctx-castcount-0 ccM (ξ-blame{F = F}) = castcount-plug-0 F ccM
-    anyctx-castcount-0 (ccApp ccM ccM₁) (β x) = refl
-    anyctx-castcount-0 (ccApp ccM ccM₁) δ = refl
-    anyctx-castcount-0 (ccIf ccM ccM₁ ccM₂) β-if-true = refl
-    anyctx-castcount-0 (ccIf ccM ccM₁ ccM₂) β-if-false = refl
-    anyctx-castcount-0 (ccFst ccM) (β-fst x x₁) = refl
-    anyctx-castcount-0 (ccSnd ccM) (β-snd x x₁) = refl
-    anyctx-castcount-0 (ccCase ccL ccM ccN) (β-caseL x) = refl
-    anyctx-castcount-0 (ccCase ccL ccM ccN) (β-caseR x) = refl
-    anyctx-castcount-0 (ccApp ccM ccM₁) (fun-cast v x) = refl
-    anyctx-castcount-0 (ccFst ccM) (fst-cast v) = refl
-    anyctx-castcount-0 (ccSnd ccM) (snd-cast v) = refl
-    anyctx-castcount-0 (ccCase ccL ccM ccN) (case-cast v) = refl
-           
-    preserve-castcount-nc : ∀ {Γ A}{M M′ : Γ ⊢ A}{n}
-           → CastCount M 0 → any_ctx / M —→ M′
-           → CastCount M′ n
-    preserve-castcount-nc ccM (ξ M—→M′) = {!!}
-    preserve-castcount-nc ccM ξ-blame = {!!}
-    preserve-castcount-nc ccM (β x) = {!!}
-    preserve-castcount-nc ccM δ = {!!}
-    preserve-castcount-nc ccM β-if-true = {!!}
-    preserve-castcount-nc ccM β-if-false = {!!}
-    preserve-castcount-nc ccM (β-fst x x₁) = {!!}
-    preserve-castcount-nc ccM (β-snd x x₁) = {!!}
-    preserve-castcount-nc ccM (β-caseL x) = {!!}
-    preserve-castcount-nc ccM (β-caseR x) = {!!}
-    preserve-castcount-nc ccM (fun-cast v x) = {!!}
-    preserve-castcount-nc ccM (fst-cast v) = {!!}
-    preserve-castcount-nc ccM (snd-cast v) = {!!}
-    preserve-castcount-nc ccM (case-cast v) = {!!}
 
-    preserve-castcount-c : ∀ {Γ A}{M M′ : Γ ⊢ A}{n}
-           → CastCount M n → non_cast_ctx / M —→ M′
-           → Σ[ n′ ∈ ℕ ] CastCount M′ n′
-    preserve-castcount-c ccM (ξ-cast M—→M′) = {!!}
-    preserve-castcount-c ccM ξ-cast-blame = ⟨ 0 , ccBlame ⟩
-    preserve-castcount-c (ccCast ccM x) (cast v) = applyCastCount ccM x v
-    preserve-castcount-c (ccCast (ccCast ccM x₁) (s≤s z≤n)) compose-casts =
-      ⟨ 1 , (ccCast ccM x₁) ⟩
--}  
 {-
-  plug-maybe→maybe : ∀ {Γ A B} (M : Γ ⊢ A) (F : Frame A B)
-               → MaybeCast (plug M F) → MaybeCast M
-  plug-maybe→maybe M (F-·₁ x) (notCast (ncapp x₁ x₂)) = x₁
-  plug-maybe→maybe M (F-·₂ M₁) (notCast (ncapp x₁ x₂)) = x₂
-  plug-maybe→maybe M (F-if x x₁) (notCast (ncif x₂ x₃ x₄)) = x₂
-  plug-maybe→maybe M (F-×₁ x) (notCast (nccons x₁ x₂)) = x₂
-  plug-maybe→maybe M (F-×₂ x) (notCast (nccons x₁ x₂)) = x₁
-  plug-maybe→maybe M F-fst (notCast (ncfst x)) = x
-  plug-maybe→maybe M F-snd (notCast (ncsnd x)) = x
-  plug-maybe→maybe M F-inl (notCast (ncinl x)) = x
-  plug-maybe→maybe M F-inr (notCast (ncinr x)) = x
-  plug-maybe→maybe M (F-case x x₁) (notCast (nccase x₂ x₃ x₄)) = x₂
-
-  plug-not→maybe : ∀ {Γ A B} (M : Γ ⊢ A) (F : Frame A B)
-               → NotCast (plug M F) → MaybeCast M
-  plug-not→maybe M (F-·₁ N) (ncapp mcM mcN) = mcM
-  plug-not→maybe M (F-·₂ L) (ncapp mcL mcM) = mcM
-  plug-not→maybe M (F-if L N) (ncif x x₁ x₂) = x
-  plug-not→maybe M (F-×₁ x) (nccons ncMF ncMF₁) = ncMF₁
-  plug-not→maybe M (F-×₂ x) (nccons ncMF ncMF₁) = ncMF
-  plug-not→maybe M F-fst (ncfst x) = x
-  plug-not→maybe M F-snd (ncsnd x) = x
-  plug-not→maybe M F-inl (ncinl x) = x
-  plug-not→maybe M F-inr (ncinr x) = x
-  plug-not→maybe M (F-case x x₁) (nccase x₂ ncMF ncMF₁) = x₂
-               
-  plug-notcast : ∀ {Γ A B} (M M′ : Γ ⊢ A) (F : Frame A B)
-               → NotCast (plug M F) → MaybeCast M′ 
-               → NotCast (plug M′ F)
-  plug-notcast M M′ (F-·₁ N) (ncapp mcM mcN) mcM′ = ncapp mcM′ mcN
-  plug-notcast M M′ (F-·₂ L) (ncapp x x₁) mcM′ = ncapp x mcM′
-  plug-notcast M M′ (F-if L N) (ncif x x₁ x₂) mcM′ = ncif mcM′ x₁ x₂
-  plug-notcast M M′ (F-×₁ N) (nccons ncMF ncMF₁) mcM′ = nccons ncMF mcM′
-  plug-notcast M M′ (F-×₂ N) (nccons ncMF ncMF₁) mcM′ = nccons mcM′ ncMF₁
-  plug-notcast M M′ F-fst (ncfst x) mcM′ = ncfst mcM′
-  plug-notcast M M′ F-snd (ncsnd x) mcM′ = ncsnd mcM′
-  plug-notcast M M′ F-inl (ncinl ncMF) mcM′ = ncinl mcM′
-  plug-notcast M M′ F-inr (ncinr ncMF) mcM′ = ncinr mcM′
-  plug-notcast M M′ (F-case L N) (nccase x ncMF ncMF₁) mcM′ =
-      nccase mcM′ ncMF ncMF₁
-
-  plug-maybecast : ∀ {Γ A B} (M M′ : Γ ⊢ A) (F : Frame A B)
-               → MaybeCast (plug M F) → MaybeCast M′ 
-               → MaybeCast (plug M′ F)
-  plug-maybecast M M′ (F-·₁ x) (notCast (ncapp mcM mcN)) mcM′ =
-     notCast (ncapp mcM′ mcN)
-  plug-maybecast M M′ (F-·₂ M₁) (notCast (ncapp mcM mcN)) mcM′ =
-     notCast (ncapp mcM mcM′)
-  plug-maybecast M M′ (F-if x x₁) (notCast (ncif mcL mcM mcN)) mcM′ =
-     notCast (ncif mcM′ mcM mcN)
-  plug-maybecast M M′ (F-×₁ x) (notCast (nccons mcM mcN)) mcM′ =
-     notCast (nccons mcM mcM′)
-  plug-maybecast M M′ (F-×₂ x) (notCast (nccons mcM mcN)) mcM′ =
-     notCast (nccons mcM′ mcN)
-  plug-maybecast M M′ F-fst (notCast (ncfst mcM)) mcM′ =
-     notCast (ncfst mcM′)
-  plug-maybecast M M′ F-snd (notCast (ncsnd mcM)) mcM′ =
-     notCast (ncsnd mcM′)
-  plug-maybecast M M′ F-inl (notCast (ncinl mcM)) mcM′ =
-     notCast (ncinl mcM′)
-  plug-maybecast M M′ F-inr (notCast (ncinr mcM)) mcM′ =
-     notCast (ncinr mcM′)
-  plug-maybecast M M′ (F-case x x₁) (notCast (nccase mcL mcM mcN)) mcM′ =
-     notCast (nccase mcM′ mcM mcN)
-
-  preserve-maybecast : ∀ {Γ A}{M M′ : Γ ⊢ A} {ctx : ReductionCtx}
-         → MaybeCast M
-         → ctx / M —→ M′
-         → MaybeCast M′
-
-
-  rename-notcast : ∀ {Γ Δ A} (N : Γ ⊢ A) (ρ : ∀{B} → Γ ∋ B → Δ ∋ B)
-         →  NotCast N → NotCast (rename ρ N)
-  rename-maybecast : ∀ {Γ Δ A} (N : Γ ⊢ A) (ρ : ∀{B} → Γ ∋ B → Δ ∋ B)
-         →  MaybeCast N → MaybeCast (rename ρ N)
-         
-  rename-notcast (` ∋x) ρ ncvar = ncvar
-  rename-notcast (ƛ N) ρ (nclam x) = nclam (rename-maybecast N (ext ρ) x)
-  rename-notcast (L · M) ρ (ncapp x x₁) =
-     ncapp (rename-maybecast L ρ x) (rename-maybecast M ρ x₁)
-  rename-notcast .($ _) ρ nclit = nclit
-  rename-notcast (if L M N) ρ (ncif x x₁ x₂) =
-      ncif (rename-maybecast L ρ x) (rename-maybecast M ρ x₁)
-           (rename-maybecast N ρ x₂)
-  rename-notcast (cons M N) ρ (nccons x x₁) =
-      nccons (rename-maybecast M ρ x) (rename-maybecast N ρ x₁)
-  rename-notcast (fst M) ρ (ncfst x) = ncfst (rename-maybecast M ρ x)
-  rename-notcast (snd M) ρ (ncsnd x) = ncsnd (rename-maybecast M ρ x)
-  rename-notcast (inl M) ρ (ncinl x) = ncinl (rename-maybecast M ρ x)
-  rename-notcast (inr M) ρ (ncinr x) = ncinr (rename-maybecast M ρ x)
-  rename-notcast (case L M N) ρ (nccase x x₁ x₂) =
-      nccase (rename-maybecast L ρ x) (rename-maybecast M ρ x₁)
-             (rename-maybecast N ρ x₂)
-  rename-notcast (blame ℓ) ρ ncblame = ncblame
-  
-  rename-maybecast N ρ (notCast x) = notCast (rename-notcast N ρ x)
-  rename-maybecast (M ⟨ c ⟩) ρ (isCast x) = isCast (rename-notcast M ρ x)
-  rename-maybecast (M ⟨ c ⟩) ρ (castVal mcN vM) =
-     castVal (rename-maybecast M ρ mcN ) (rename-value M ρ vM)
-
-  OKSubst : ∀{Γ Δ} → (∀ {A} → Γ ∋ A → Δ ⊢ A) → Set
-  OKSubst {Γ}{Δ} σ = ∀ {A} (x : Γ ∋ A)
-                   → (NotCast (σ x)) ⊎ (MaybeCast (σ x) × Value (σ x))
-
-  OKSubst-exts : ∀ {Γ Δ A} (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
-         → OKSubst σ → OKSubst (exts σ {B = A})
-  OKSubst-exts σ okσ Z = inj₁ ncvar
-  OKSubst-exts σ okσ (S ∋x)
-      with okσ ∋x
-  ... | inj₁ xx = inj₁ (rename-notcast (σ ∋x) S_ xx)
-  ... | inj₂ (⟨ yy , zz ⟩) =
-        inj₂ (⟨ (rename-maybecast (σ ∋x) S_ yy) , (rename-value (σ ∋x) S_ zz) ⟩)
-
-  subst-maybecast : ∀ {Γ Δ A} (N : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
-         → OKSubst σ → MaybeCast N
-         → MaybeCast (subst σ N)
-         
-  subst-notcast : ∀ {Γ Δ A} (N : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
-         → OKSubst σ → NotCast N
-         → NotCast (subst σ N) ⊎ (MaybeCast (subst σ N) × Value (subst σ N))
-  subst-notcast (` ∋x) σ okσ ncvar = okσ ∋x
-  subst-notcast (ƛ N) σ okσ (nclam mcN) =
-    let IH = subst-maybecast N (exts σ) (OKSubst-exts σ okσ) mcN in
-    inj₂ (⟨ (notCast (nclam IH)) , (S-val V-ƛ) ⟩)
-  subst-notcast (L · M) σ okσ (ncapp x x₁) =
-     let IH1 = subst-maybecast L σ okσ x in
-     let IH2 = subst-maybecast M σ okσ x₁ in
-     inj₁ (ncapp IH1 IH2)
-  subst-notcast ($_ r {p}) σ okσ nclit = inj₁ nclit
-  subst-notcast (if L M N) σ okσ (ncif x x₁ x₂) =
-     let IH1 = subst-maybecast L σ okσ x in
-     let IH2 = subst-maybecast M σ okσ x₁ in
-     let IH3 = subst-maybecast N σ okσ x₂ in
-     inj₁ (ncif IH1 IH2 IH3)
-  subst-notcast (cons M N) σ okσ (nccons x x₁) =
-     let IH1 = subst-maybecast M σ okσ x in
-     let IH2 = subst-maybecast N σ okσ x₁ in
-     inj₁ (nccons IH1 IH2)
-  subst-notcast (fst M) σ okσ (ncfst x) =
-     inj₁ (ncfst (subst-maybecast M σ okσ x))
-  subst-notcast (snd M) σ okσ (ncsnd x) =
-     inj₁ (ncsnd (subst-maybecast M σ okσ x))
-  subst-notcast (inl M) σ okσ (ncinl x) =
-     inj₁ (ncinl (subst-maybecast M σ okσ x))
-  subst-notcast (inr M) σ okσ (ncinr x) =
-     inj₁ (ncinr (subst-maybecast M σ okσ x))
-  subst-notcast (case L M N) σ okσ (nccase x x₁ x₂) =
-     let IH1 = subst-maybecast L σ okσ x in
-     let IH2 = subst-maybecast M σ okσ x₁ in
-     let IH3 = subst-maybecast N σ okσ x₂ in
-     inj₁ (nccase IH1 IH2 IH3)
-  subst-notcast (blame ℓ) σ okσ ncblame = inj₁ ncblame
-
-  subst-maybecast N σ okσ (notCast ncN)
-      with subst-notcast N σ okσ ncN
-  ... | inj₁ nc = notCast nc
-  ... | inj₂ (⟨ mc , v ⟩) = mc
-  subst-maybecast (M ⟨ c ⟩) σ okσ (isCast ncM)
-      with subst-notcast M σ okσ ncM
-  ... | inj₁ nc = isCast nc
-  ... | inj₂ (⟨ mc , v ⟩) = castVal mc v
-  subst-maybecast (M ⟨ c ⟩) σ okσ (castVal mcM x) =
-     let IH = subst-maybecast M σ okσ mcM in
-     castVal IH (subst-value M σ x)
-
-  sub-maybecast : ∀ {Γ A B} (N : Γ , A ⊢ B) (M : Γ ⊢ A)
-         → MaybeCast M →  Value M → MaybeCast N
-         → MaybeCast (N [ M ])
-  sub-maybecast N M mcM vM mcN = subst-maybecast N (subst-zero M) G mcN
-    where
-    G : OKSubst (subst-zero M)
-    G Z = inj₂ (⟨ mcM , vM ⟩)
-    G (S ∋x) = inj₁ ncvar
-
-
-  preserve-notcast : ∀ {Γ A}{M M′ : Γ ⊢ A} 
-         → NotCast M
-         → any_ctx / M —→ M′
-         → MaybeCast M′
-  preserve-notcast ncM (ξ {M = M}{M′}{F} M—→M′) =
-     let mcM′ = preserve-maybecast (plug-not→maybe M F ncM) M—→M′ in
-     notCast (plug-notcast M M′ F ncM mcM′)
-  preserve-notcast ncM ξ-blame = notCast ncblame
-  preserve-notcast (ncapp (notCast (nclam mcN)) mcW) (β {N = N}{W} vW) =
-      sub-maybecast N W mcW vW mcN
-  preserve-notcast ncM δ = notCast nclit
-  preserve-notcast (ncif x x₁ x₂) β-if-true = x₁
-  preserve-notcast (ncif x x₁ x₂) β-if-false = x₂
-  preserve-notcast (ncfst (notCast (nccons x₂ x₃))) (β-fst x x₁) = x₂
-  preserve-notcast (ncsnd (notCast (nccons x₂ x₃))) (β-snd x x₁) = x₃
-  preserve-notcast (nccase (notCast (ncinl x₁)) x₂ x₃) (β-caseL x) =
-     notCast (ncapp x₂ x₁)
-  preserve-notcast (nccase (notCast (ncinr x₁)) x₂ x₃) (β-caseR x) =
-     notCast (ncapp x₃ x₁)
-  preserve-notcast (ncapp (isCast x₁) x₂) (fun-cast v x) =
-     isCast (ncapp (notCast x₁) (castVal x₂ x))
-  preserve-notcast (ncapp (castVal x₁ x₃) x₂) (fun-cast v x) =
-     isCast (ncapp x₁ (castVal x₂ x))
-  preserve-notcast (ncfst (isCast x)) (fst-cast v) =
-     isCast (ncfst (notCast x))
-  preserve-notcast (ncfst (castVal x x₁)) (fst-cast v) =
-     isCast (ncfst x)
-  preserve-notcast (ncsnd (isCast x)) (snd-cast v) = isCast (ncsnd (notCast x))
-  preserve-notcast (ncsnd (castVal x x₁)) (snd-cast v) = isCast (ncsnd x)
-  preserve-notcast (nccase (isCast x) x₁ x₂) (case-cast v) =
-     notCast (nccase (notCast x)
-                (notCast (nclam (notCast (ncapp (rename-maybecast _ S_ x₁)
-                                                (isCast ncvar)))))
-                (notCast (nclam (notCast (ncapp (rename-maybecast _ S_ x₂)
-                                                (isCast ncvar))))))
-  preserve-notcast (nccase (castVal x x₃) x₁ x₂) (case-cast v) =
-    notCast (nccase x (notCast (nclam (notCast (ncapp (rename-maybecast _ S_ x₁)
-                                                      (isCast ncvar)))))
-                      (notCast (nclam (notCast (ncapp (rename-maybecast _ S_ x₂)
-                                                      (isCast ncvar))))))
-  
-  preserve-maybecast mcM (ξ {M = M}{M′}{F} M-→M′) =
-    let IH = preserve-maybecast (plug-maybe→maybe M F mcM) M-→M′ in
-    plug-maybecast M M′ F mcM IH 
-  preserve-maybecast (isCast x) (ξ-cast M-→M′) =
-    let IH = preserve-notcast x M-→M′ in
-    {!!}
-  preserve-maybecast (castVal mcM x) (ξ-cast M-→M′) = {!!}
-  preserve-maybecast mcM ξ-blame = {!!}
-  preserve-maybecast mcM ξ-cast-blame = {!!}
-  preserve-maybecast mcM (β x) = {!!}
-  preserve-maybecast mcM δ = {!!}
-  preserve-maybecast mcM β-if-true = {!!}
-  preserve-maybecast mcM β-if-false = {!!}
-  preserve-maybecast mcM (β-fst x x₁) = {!!}
-  preserve-maybecast mcM (β-snd x x₁) = {!!}
-  preserve-maybecast mcM (β-caseL x) = {!!}
-  preserve-maybecast mcM (β-caseR x) = {!!}
-  preserve-maybecast mcM (cast v) = {!!}
-  preserve-maybecast mcM (fun-cast v x) = {!!}
-  preserve-maybecast mcM (fst-cast v) = {!!}
-  preserve-maybecast mcM (snd-cast v) = {!!}
-  preserve-maybecast mcM (case-cast v) = {!!}
-  preserve-maybecast mcM compose-casts = {!!}
-
   module EfficientCompile
     (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
     where
