@@ -520,6 +520,25 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
           , z≤n ⟩ ⟩
 
 
+  size-OK-1 : ∀ {Γ B}(M : Γ ⊢ B) (n : ℕ) {ul} (Mok : n ∣ ul ⊢ M ok)
+    → size M ≤ n + 12 * ideal-size M
+    → 1 + (size M) ≤ 12 * (1 + ideal-size M)
+  size-OK-1 M n Mok IH =
+    begin
+      1 + (size M)
+      ≤⟨ s≤s IH ⟩
+      1 + (n + 12 * ideal-size M)
+      ≤⟨ s≤s (+-mono-≤ (OK→3 Mok) ≤-refl) ⟩
+      4 + 12 * ideal-size M
+      ≤⟨ +-mono-≤ lt-4-12 ≤-refl ⟩
+      12 + 12 * ideal-size M
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩
+      12 * (1 + ideal-size M)
+    ∎
+    where
+    lt-4-12 : 4 ≤ 12
+    lt-4-12 = s≤s (s≤s (s≤s (s≤s z≤n)))
+    
   size-OK : ∀{Γ A}{M : Γ ⊢ A}{n}{ul}
        → n ∣ ul ⊢ M ok → size M ≤ n + 12 * ideal-size M
   size-OK (castulOK {M = M}{n = n} Mok n≤1) =
@@ -554,8 +573,27 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     where
     lt-4-12 : 4 ≤ 12
     lt-4-12 = s≤s (s≤s (s≤s (s≤s z≤n)))
-  size-OK (appOK Lok Mok) = {!!}
-  size-OK litOK = {!!}
+  size-OK (appOK {L = L}{M}{n = n}{m} Lok Mok) =
+    begin
+      1 + size L + size M
+      ≤⟨ s≤s (+-mono-≤ (size-OK Lok) (size-OK Mok)) ⟩
+      1 + (n + 12 * ideal-size L) + (m + 12 * ideal-size M)
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (OK→3 Lok) ≤-refl) (+-mono-≤ (OK→3 Mok) ≤-refl)) ⟩
+      1 + (3 + 12 * ideal-size L) + (3 + 12 * ideal-size M)
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ (con 3 :+ con 12 :* x) :+ (con 3 :+ con 12 :* y) := con 7 :+ (con 12 :* x) :+ (con 12 :* y)) refl (ideal-size L) (ideal-size M)) ⟩
+      7 + 12 * ideal-size L + 12 * ideal-size M
+      ≤⟨ +-mono-≤ lt-7-12 ≤-refl ⟩
+      12 + 12 * ideal-size L + 12 * ideal-size M
+      ≤⟨ +-monoʳ-≤ 12 (≤-reflexive (sym (*-distribˡ-+ 12 (ideal-size L) (ideal-size M)))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩      
+      12 * (1 + ideal-size L + ideal-size M)
+    ∎
+    where
+    lt-7-12 : 7 ≤ 12
+    lt-7-12 = s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))))
+    open +-*-Solver
+  size-OK litOK = s≤s z≤n
   size-OK (ifOK {L = L}{M}{N}{n}{m}{k} Lok Mok Nok) =
     begin
       1 + size L + size M + size N
@@ -578,242 +616,51 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     ∎
     where
     open +-*-Solver
-  size-OK (consOK Mok Nok) = {!!}
-  size-OK (fstOK Mok) = {!!}
-  size-OK (sndOK Mok) = {!!}
-  size-OK (inlOK Mok) = {!!}
-  size-OK (inrOK Mok) = {!!}
-  size-OK (caseOK Lok Mok Nok) = {!!}
-  size-OK blameOK = {!!}
-
-{-
-  simple-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M → SimpleValue M
-            → size M ≤ 8 * ideal-size M
-            
-  value-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M → Value M
-            → size M ≤ 1 + 8 * ideal-size M
-  maybecast-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M
-            → size M ≤ 2 + 8 * ideal-size M
-
-  simple-size (ƛ N) (notCast (nclam mcN)) V-ƛ =
-      let IH = maybecast-size N mcN in
-      begin
-        1 + size N
-        ≤⟨ s≤s IH ⟩
-        3 + (8 * ideal-size N)
-        ≤⟨ +-mono-≤ X ≤-refl ⟩
-        8 + (8 * ideal-size N)
-        ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-        8 * (1 + ideal-size N)
-      ∎
-      where
-      X : 3 ≤ 8
-      X = s≤s (s≤s (s≤s z≤n))
-  simple-size ($_ r {p}) mcM V-const = s≤s z≤n
-  simple-size (cons M N) (notCast (nccons mcM mcN)) (V-pair vM vN) =
-      let IH1 = maybecast-size M mcM in
-      let IH2 = maybecast-size N mcN in
-      begin
-        1 + (size M + size N)
-        ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
-        1 + ((2 + 8 * ideal-size M) + (2 + 8 * ideal-size N))
-        ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ ((con 2 :+ con 8 :* x) :+ (con 2 :+ con 8 :* y)) := con 5 :+ (con 8 :* x :+ con 8 :* y)) refl (ideal-size M) (ideal-size N)) ⟩
-        5 + (8 * ideal-size M + 8 * ideal-size N)
-        ≤⟨ +-monoʳ-≤ 5 ((≤-reflexive ((sym (*-distribˡ-+ 8 (ideal-size M) (ideal-size N) ))))) ⟩
-        5 + 8 * (ideal-size M + ideal-size N)
-        ≤⟨ +-mono-≤ X ≤-refl ⟩
-        8 + 8 * (ideal-size M + ideal-size N)
-        ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-        8 * (1 + (ideal-size M + ideal-size N))
-      ∎
+  size-OK (consOK{M = L}{N = M}{n = n}{m} Lok Mok) =
+    begin
+      1 + size L + size M
+      ≤⟨ s≤s (+-mono-≤ (size-OK Lok) (size-OK Mok)) ⟩
+      1 + (n + 12 * ideal-size L) + (m + 12 * ideal-size M)
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (OK→3 Lok) ≤-refl) (+-mono-≤ (OK→3 Mok) ≤-refl)) ⟩
+      1 + (3 + 12 * ideal-size L) + (3 + 12 * ideal-size M)
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ (con 3 :+ con 12 :* x) :+ (con 3 :+ con 12 :* y) := con 7 :+ (con 12 :* x) :+ (con 12 :* y)) refl (ideal-size L) (ideal-size M)) ⟩
+      7 + 12 * ideal-size L + 12 * ideal-size M
+      ≤⟨ +-mono-≤ lt-7-12 ≤-refl ⟩
+      12 + 12 * ideal-size L + 12 * ideal-size M
+      ≤⟨ +-monoʳ-≤ 12 (≤-reflexive (sym (*-distribˡ-+ 12 (ideal-size L) (ideal-size M)))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩      
+      12 * (1 + ideal-size L + ideal-size M)
+    ∎
     where
-    X : 5 ≤ 8
-    X = s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))
+    lt-7-12 : 7 ≤ 12
+    lt-7-12 = s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))))
     open +-*-Solver
-  simple-size (inl M) (notCast (ncinl mcM)) (V-inl vM) =
-    let IH = value-size M mcM vM in
+  size-OK (fstOK {M = M}{n = n} Mok) = size-OK-1 M n Mok (size-OK Mok)
+  size-OK (sndOK {M = M}{n = n} Mok) = size-OK-1 M n Mok (size-OK Mok)
+  size-OK (inlOK {M = M}{n = n} Mok) = size-OK-1 M n Mok (size-OK Mok)
+  size-OK (inrOK {M = M}{n = n} Mok) = size-OK-1 M n Mok (size-OK Mok)
+  size-OK (caseOK {L = L}{M}{N}{n}{m}{k} Lok Mok Nok) =
     begin
-      1 + (size M)
-      ≤⟨ s≤s IH ⟩
-      2 + 8 * ideal-size M
-      ≤⟨ +-mono-≤ X ≤-refl ⟩
-      8 + (8 * ideal-size M)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * (1 + ideal-size M)
+      1 + size L + size M + size N
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (size-OK Lok) (size-OK Mok)) (size-OK Nok)) ⟩
+      1 + (n + 12 * ideal-size L) + (m + 12 * ideal-size M)
+        + (k + 12 * ideal-size N)
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (+-mono-≤ (OK→3 Lok) ≤-refl) (+-mono-≤ (OK→3 Mok) ≤-refl)) (+-mono-≤ (OK→3 Nok) ≤-refl)) ⟩
+      1 + (3 + 12 * ideal-size L) + (3 + 12 * ideal-size M)
+        + (3 + 12 * ideal-size N)
+      ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ (con 3 :+ con 12 :* x) :+ (con 3 :+ con 12 :* y) :+ (con 3 :+ con 12 :* z) := con 10 :+ con 12 :* x :+ con 12 :* y :+ con 12 :* z) refl (ideal-size L) (ideal-size M) (ideal-size N)) ⟩
+      10 + 12 * ideal-size L + 12 * ideal-size M + 12 * ideal-size N
+      ≤⟨ ≤-step (≤-step ≤-refl) ⟩
+      12 + 12 * ideal-size L + 12 * ideal-size M + 12 * ideal-size N
+      ≤⟨ +-monoʳ-≤ 12 (+-monoˡ-≤ (12 * ideal-size N) (≤-reflexive (sym ((*-distribˡ-+ 12 (ideal-size L) (ideal-size M)))))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M) + 12 * ideal-size N
+      ≤⟨ +-monoʳ-≤ 12 (≤-reflexive (sym (*-distribˡ-+ 12 (ideal-size L + ideal-size M) (ideal-size N)))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M + ideal-size N)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩
+      12 * (1 + ideal-size L + ideal-size M + ideal-size N)
     ∎
     where
-    X : 2 ≤ 8
-    X = s≤s (s≤s z≤n)
-  simple-size (inr M) (notCast (ncinr mcM)) (V-inr vM) =
-    let IH = value-size M mcM vM in
-    begin
-      1 + (size M)
-      ≤⟨ s≤s IH ⟩
-      2 + 8 * ideal-size M
-      ≤⟨ +-mono-≤ X ≤-refl ⟩
-      8 + (8 * ideal-size M)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * (1 + ideal-size M)
-    ∎
-    where
-    X : 2 ≤ 8
-    X = s≤s (s≤s z≤n)
-  nocast-size : ∀{Γ A} (M : Γ ⊢ A) → NotCast M → size M ≤ 8 * ideal-size M
-  
-  value-size M mcM (Value.S-val sM) = ≤-step (simple-size M mcM sM)
-  value-size (M ⟨ c ⟩) (isCast ncM) (V-cast sM) =
-    let IH = nocast-size M ncM in s≤s IH
-  value-size (M ⟨ c ⟩) (castVal mcM vM) (V-cast sM) =
-    let IH = simple-size M mcM sM in s≤s IH
-
-  nocast-size (` ∋x) ncvar = s≤s z≤n
-  nocast-size (ƛ N) (nclam mcN) =
-    let IH = maybecast-size N mcN in
-    begin
-      suc (size N)
-      ≤⟨ s≤s IH ⟩
-      3 + 8 * (ideal-size N)
-      ≤⟨ +-mono-≤ (s≤s (s≤s (s≤s (z≤n{n = 5})))) ≤-refl ⟩
-      8 + 8 * (ideal-size N)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size N)
-    ∎
-  nocast-size (L · M) (ncapp mcL mcM) =
-    let IH1 = maybecast-size L mcL in
-    let IH2 = maybecast-size M mcM in
-    begin
-      1 + (size L + size M)
-      ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
-      1 + ((2 + 8 * ideal-size L) + (2 + 8 * ideal-size M))
-      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ ((con 2 :+ con 8 :* x) :+ (con 2 :+ con 8 :* y))
-                         := con 5 :+ ((con 8 :* x) :+ (con 8 :* y))) refl (ideal-size L) (ideal-size M)) ⟩
-      5 + ((8 * ideal-size L) + (8 * ideal-size M))
-      ≤⟨ +-mono-≤ (s≤s (s≤s (s≤s (s≤s (s≤s (z≤n {n = 3})))))) ≤-refl ⟩
-      8 + ((8 * ideal-size L) + (8 * ideal-size M))
-      ≤⟨ +-monoʳ-≤ 8 (≤-reflexive ((sym (*-distribˡ-+ 8 (ideal-size L) (ideal-size M) )))) ⟩
-      8 + 8 * (ideal-size L + ideal-size M)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size L + ideal-size M)
-    ∎
-    where open +-*-Solver
-  nocast-size ($_ r {p}) nclit = s≤s z≤n
-  nocast-size (if L M N) (ncif mcL mcM mcN) =
-    let IH1 = maybecast-size L mcL in
-    let IH2 = maybecast-size M mcM in
-    let IH3 = maybecast-size N mcN in
-    begin
-      1 + (size L + size M + size N)
-      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
-      1 + ((2 + 8 * ideal-size L) + (2 + 8 * ideal-size M) + (2 + 8 * ideal-size N))
-      ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ ((con 2 :+ con 8 :* x) :+ (con 2 :+ con 8 :* y) :+ (con 2 :+ con 8 :* z)) := con 7 :+ con 8 :* (x :+ y :+ z)) refl (ideal-size L) (ideal-size M) (ideal-size N)) ⟩
-      7 + 8 * (ideal-size L + ideal-size M + ideal-size N)
-      ≤⟨ +-mono-≤ X ≤-refl ⟩
-      8 + 8 * (ideal-size L + ideal-size M + ideal-size N)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size L + ideal-size M + ideal-size N)
-    ∎
-    where
-    X : 7 ≤ 8
-    X = s≤s (s≤s (s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))))
     open +-*-Solver
-  nocast-size (cons M N) (nccons mcM mcN) =
-    let IH1 = maybecast-size M mcM in
-    let IH2 = maybecast-size N mcN in
-    begin
-     1 + (size M + size N)
-     ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
-     1 + ((2 + 8 * ideal-size M) + (2 + 8 * ideal-size N))
-     ≤⟨ ≤-reflexive (solve 2 (λ x y → con 1 :+ ((con 2 :+ con 8 :* x) :+ (con 2 :+ con 8 :* y)) := con 5 :+ ((con 8 :* x) :+ (con 8 :* y))) refl (ideal-size M) (ideal-size N)) ⟩
-     5 + ((8 * ideal-size M) + (8 * ideal-size N))
-     ≤⟨ +-mono-≤ X ≤-refl ⟩
-     8 + (8 * ideal-size M + 8 * ideal-size N)
-     ≤⟨ +-monoʳ-≤ 8 ((≤-reflexive ((sym (*-distribˡ-+ 8 (ideal-size M) (ideal-size N) ))))) ⟩
-     8 + 8 * (ideal-size M + ideal-size N)
-     ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-     8 * suc (ideal-size M + ideal-size N)
-    ∎
-    where
-    X : 5 ≤ 8
-    X = s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))
-    open +-*-Solver
-  nocast-size (fst M) (ncfst mcM) =
-    let IH = maybecast-size M mcM in
-    begin
-     1 + size M
-     ≤⟨ s≤s IH ⟩
-     3 + 8 * (ideal-size M)
-     ≤⟨ +-mono-≤ X ≤-refl ⟩
-     8 + 8 * (ideal-size M)
-     ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-     8 * suc (ideal-size M)
-    ∎
-    where
-    X : 3 ≤ 8
-    X = s≤s (s≤s (s≤s z≤n))
-  nocast-size (snd M) (ncsnd mcM) =
-    let IH = maybecast-size M mcM in
-    begin
-     1 + size M
-     ≤⟨ s≤s IH ⟩
-     3 + 8 * (ideal-size M)
-     ≤⟨ +-mono-≤ X ≤-refl ⟩
-     8 + 8 * (ideal-size M)
-     ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-     8 * suc (ideal-size M)
-    ∎
-    where
-    X : 3 ≤ 8
-    X = s≤s (s≤s (s≤s z≤n))
-  nocast-size (inl M) (ncinl mcM) =
-    let IH = maybecast-size M mcM in
-    begin
-      1 + size M
-      ≤⟨ s≤s IH ⟩
-      3 + 8 * (ideal-size M)
-      ≤⟨ +-mono-≤ X ≤-refl ⟩
-      8 + 8 * (ideal-size M)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size M)
-    ∎
-    where
-    X : 3 ≤ 8
-    X = s≤s (s≤s (s≤s z≤n))
-  nocast-size (inr M) (ncinr mcM) =
-    let IH = maybecast-size M mcM in
-    begin
-      1 + size M
-      ≤⟨ s≤s IH ⟩
-      3 + 8 * (ideal-size M)
-      ≤⟨ +-mono-≤ X ≤-refl ⟩
-      8 + 8 * (ideal-size M)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size M)
-    ∎
-    where
-    X : 3 ≤ 8
-    X = s≤s (s≤s (s≤s z≤n))
-  nocast-size (case L M N) (nccase mcL mcM mcN) =
-    let IH1 = maybecast-size L mcL in
-    let IH2 = maybecast-size M mcM in
-    let IH3 = maybecast-size N mcN in
-    begin
-      1 + (size L + size M + size N)
-      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
-      1 + ((2 + 8 * ideal-size L) + (2 + 8 * ideal-size M) + (2 + 8 * ideal-size N))
-      ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ ((con 2 :+ con 8 :* x) :+ (con 2 :+ con 8 :* y) :+ (con 2 :+ con 8 :* z)) := con 7 :+ con 8 :* (x :+ y :+ z)) refl (ideal-size L) (ideal-size M) (ideal-size N)) ⟩
-      7 + 8 * (ideal-size L + ideal-size M + ideal-size N)
-      ≤⟨ ≤-step ≤-refl ⟩
-      8 + 8 * (ideal-size L + ideal-size M + ideal-size N)
-      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 8 1 _ )) ⟩
-      8 * suc (ideal-size L + ideal-size M + ideal-size N)
-    ∎
-    where open +-*-Solver
-  nocast-size (blame ℓ) ncblame = s≤s z≤n
-  maybecast-size M (notCast ncM) =
-    let IH = nocast-size M ncM in ≤-step (≤-step IH)
-  maybecast-size (M ⟨ c ⟩) (isCast ncM) =
-    let IH = nocast-size M ncM in s≤s (≤-step IH)
-  maybecast-size (M ⟨ c ⟩) (castVal mcM vM) =
-    let IH = value-size M mcM vM in s≤s IH
+  size-OK blameOK = s≤s z≤n
 
--}
