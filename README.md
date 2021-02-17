@@ -58,7 +58,15 @@ Inventory
    is parameterized over `EfficientCastStruct`.  This module includes
    a proof of progress.
 
-* [SpaceEfficient.agda]()
+* [PreserveHeight.agda](./PreserveHeight.agda): Proves that the height
+   of the casts in a program do not increase during reduction.  Their
+   size is bounded by their height, so this result contributes to the
+   proof of space efficiency.
+
+* [SpaceEfficient.agda](./SpaceEfficient.agda): A proof that the
+   space-efficient reduction relation really is space efficient.  That
+   is, the casts that can accumulate during reduction only multiply
+   the size of the program by a constant.
 
 * [GTLC2CC.agda](./GTLC2CC.agda): Compilation of the GTLC to the
    Parameterized Cast Calculus.  The compilation is type preserving.
