@@ -436,7 +436,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     compile-efficient (` x) (⊢var ∋x) ul = ⟨ 1 , ⟨ varOK , s≤s z≤n ⟩ ⟩
     compile-efficient (ƛ A ˙ N) (⊢lam d) ul
         with compile-efficient N d true
-    ... | ⟨ k , ⟨ Nok , lt ⟩ ⟩ =  ⟨ zero , ⟨ lamOK Nok , {!!} ⟩ ⟩
+    ... | ⟨ k , ⟨ Nok , lt ⟩ ⟩ =  ⟨ zero , ⟨ lamOK Nok , z≤n ⟩ ⟩
     compile-efficient (L · M at ℓ) (⊢app d₁ d₂ mA A1~B) true
         with compile-efficient L d₁ true
     ... | ⟨ l , ⟨ Lok , lt1 ⟩ ⟩
@@ -518,6 +518,73 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
                     (lamOK (castulOK Mok lt2)) 
                     (lamOK (castulOK Nok lt3)))
           , z≤n ⟩ ⟩
+
+
+  size-OK : ∀{Γ A}{M : Γ ⊢ A}{n}{ul}
+       → n ∣ ul ⊢ M ok → size M ≤ n + 12 * ideal-size M
+  size-OK (castulOK {M = M}{n = n} Mok n≤1) =
+    begin
+      1 + (size M)
+      ≤⟨ s≤s (size-OK Mok) ⟩
+      1 + (n + 12 * ideal-size M)
+      ≤⟨ ≤-refl ⟩
+      (suc n) + 12 * ideal-size M
+    ∎
+  size-OK (castOK {M = M}{n = n} Mok n≤2) =
+    begin
+      1 + (size M)
+      ≤⟨ s≤s (size-OK Mok) ⟩
+      1 + (n + 12 * ideal-size M)
+      ≤⟨ ≤-refl ⟩
+      (suc n) + 12 * ideal-size M
+    ∎
+  size-OK varOK = s≤s z≤n
+  size-OK (lamOK {N = N}{n = n} Nok) =
+    begin
+      1 + (size N)
+      ≤⟨ s≤s (size-OK Nok) ⟩
+      1 + (n + 12 * ideal-size N)
+      ≤⟨ s≤s (+-mono-≤ (OK→3 Nok) ≤-refl) ⟩
+      4 + 12 * ideal-size N
+      ≤⟨ +-mono-≤ lt-4-12 ≤-refl ⟩
+      12 + 12 * ideal-size N
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩
+      12 * (1 + ideal-size N)
+    ∎
+    where
+    lt-4-12 : 4 ≤ 12
+    lt-4-12 = s≤s (s≤s (s≤s (s≤s z≤n)))
+  size-OK (appOK Lok Mok) = {!!}
+  size-OK litOK = {!!}
+  size-OK (ifOK {L = L}{M}{N}{n}{m}{k} Lok Mok Nok) =
+    begin
+      1 + size L + size M + size N
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (size-OK Lok) (size-OK Mok)) (size-OK Nok)) ⟩
+      1 + (n + 12 * ideal-size L) + (m + 12 * ideal-size M)
+        + (k + 12 * ideal-size N)
+      ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (+-mono-≤ (OK→3 Lok) ≤-refl) (+-mono-≤ (OK→3 Mok) ≤-refl)) (+-mono-≤ (OK→3 Nok) ≤-refl)) ⟩
+      1 + (3 + 12 * ideal-size L) + (3 + 12 * ideal-size M)
+        + (3 + 12 * ideal-size N)
+      ≤⟨ ≤-reflexive (solve 3 (λ x y z → con 1 :+ (con 3 :+ con 12 :* x) :+ (con 3 :+ con 12 :* y) :+ (con 3 :+ con 12 :* z) := con 10 :+ con 12 :* x :+ con 12 :* y :+ con 12 :* z) refl (ideal-size L) (ideal-size M) (ideal-size N)) ⟩
+      10 + 12 * ideal-size L + 12 * ideal-size M + 12 * ideal-size N
+      ≤⟨ ≤-step (≤-step ≤-refl) ⟩
+      12 + 12 * ideal-size L + 12 * ideal-size M + 12 * ideal-size N
+      ≤⟨ +-monoʳ-≤ 12 (+-monoˡ-≤ (12 * ideal-size N) (≤-reflexive (sym ((*-distribˡ-+ 12 (ideal-size L) (ideal-size M)))))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M) + 12 * ideal-size N
+      ≤⟨ +-monoʳ-≤ 12 (≤-reflexive (sym (*-distribˡ-+ 12 (ideal-size L + ideal-size M) (ideal-size N)))) ⟩
+      12 + 12 * (ideal-size L + ideal-size M + ideal-size N)
+      ≤⟨ ≤-reflexive (sym (*-distribˡ-+ 12 1 _ )) ⟩
+      12 * (1 + ideal-size L + ideal-size M + ideal-size N)
+    ∎
+    where
+    open +-*-Solver
+  size-OK (consOK Mok Nok) = {!!}
+  size-OK (fstOK Mok) = {!!}
+  size-OK (sndOK Mok) = {!!}
+  size-OK (inlOK Mok) = {!!}
+  size-OK (inrOK Mok) = {!!}
+  size-OK (caseOK Lok Mok Nok) = {!!}
+  size-OK blameOK = {!!}
 
 {-
   simple-size : ∀{Γ A} (M : Γ ⊢ A) → MaybeCast M → SimpleValue M
