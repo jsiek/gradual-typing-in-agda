@@ -37,11 +37,23 @@ record PreCastStruct : Set₁ where
     baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
     projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
 
-
-record PreCastStructWithSafety : Set₁ where
+record PreCastStructWithPrecision : Set₁ where
   field
     precast : PreCastStruct
   open PreCastStruct precast public
+  infix 6 ⟪_⟫⊑⟪_⟫
+  infix 6 ⟪_⟫⊑_
+  infix 6 _⊑⟪_⟫
+  field
+    ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                            → (i : Inert c) → (i′ : Inert c′) → Set
+    ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set
+    _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set
+
+record PreCastStructWithSafety : Set₁ where
+  field
+    pcsp : PreCastStructWithPrecision
+  open PreCastStructWithPrecision pcsp public
   field
     {- The fields below are for blame-subtyping. -}
     Safe : ∀ {A} → Cast A → Label → Set

@@ -37,12 +37,6 @@ module GroundCast where
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → .(A ~ B) → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast public
-
-  import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → cast A B ℓ c) public
-
   {-
 
   We categorize casts into the inert ones (that form values) and
@@ -72,6 +66,9 @@ n  -}
     A-proj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
     A-pair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
     A-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
+
+  import ParamCastCalculus
+  open ParamCastCalculus Cast Inert public
 
   {-
 
@@ -185,6 +182,47 @@ n  -}
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (A-proj c j)
 
+  infix 6 ⟪_⟫⊑⟪_⟫
+  data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                               → (i : Inert c) → (i′ : Inert c′) → Set where
+    -- Inert injections
+    lpii-inj : ∀ {G} {c : Cast (G ⇒ ⋆)} {c′ : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+        -----------------------------------------
+      → ⟪ I-inj g c ⟫⊑⟪ I-inj g c′ ⟫
+
+    -- Inert cross casts
+    lpii-fun : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+     → A ⇒ B ⊑ A′ ⇒ B′
+     → C ⇒ D ⊑ C′ ⇒ D′
+       -------------------------------------
+     → ⟪ I-fun c ⟫⊑⟪ I-fun c′ ⟫
+
+  infix 6 ⟪_⟫⊑_
+  data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
+    -- Inert injections
+    lpit-inj : ∀ {G A′} {c : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+      → G ⊑ A′
+        -------------------------
+      → ⟪ I-inj g c ⟫⊑ A′
+
+    -- Inert cross casts
+    lpit-fun : ∀ {A A′ B B′ C D} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → C ⇒ D ⊑ A′ ⇒ B′
+        ------------------------------------------
+      → ⟪ I-fun c ⟫⊑ A′ ⇒ B′
+
+  infix 6 _⊑⟪_⟫
+  data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
+    -- Inert cross casts
+    lpti-fun : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → A ⇒ B ⊑ C′ ⇒ D′
+        ---------------------------------------------
+      → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
+
   open import Subtyping using (_<:₃_)
   open _<:₃_
   infix 5 _<:_
@@ -270,9 +308,16 @@ n  -}
              ; baseNotInert = baseNotInert
              ; projNotInert = projNotInert
              }
+  pcsp : PreCastStructWithPrecision
+  pcsp = record
+              { precast = pcs;
+                ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
+                ⟪_⟫⊑_ = ⟪_⟫⊑_;
+                _⊑⟪_⟫ = _⊑⟪_⟫
+              }
   pcss : PreCastStructWithSafety
   pcss = record
-             { precast = pcs
+             { pcsp = pcsp
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe
@@ -340,7 +385,7 @@ n  -}
   ... | sum~ c d =
     let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
     let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩) in
-    case M (ƛ l) (ƛ r)
+    case M l r
 
   applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
@@ -370,7 +415,7 @@ n  -}
   ... | yes gB with canonical⋆ _ vV
   ...   | [ G , [ V , [ c , [ i , meq ] ] ] ] rewrite meq with gnd-eq? G B {inert-ground c i} {gB}
   ...     | yes eq rewrite eq with allsafe
-  ...       | allsafe-cast _ allsafe-V = allsafe-V
+  ...       | allsafe-wrap _ allsafe-V = allsafe-V
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | yes gB | _ | no _ = allsafe-blame-diff-ℓ ℓ≢
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | no ¬gB with ground B {B≢⋆}
   ...   | [ H , [ gH , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = Sym~ c~} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = unk~L} ℓ≢) allsafe)
@@ -381,11 +426,11 @@ n  -}
   ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-ℓ≢ {c~ = c~fst} ℓ≢) (allsafe-fst allsafe))
                                          (allsafe-cast (safe-ℓ≢ {c~ = c~snd} ℓ≢) (allsafe-snd allsafe))
   applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) allsafe with ~-relevant c~
-  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe-var)))
-                                            (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe-var)))
+  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe-var))
+                                            (allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe-var))
   applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) allsafe with ~-relevant c~
-  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe-var)))
-                                            (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var)))
+  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe-var))
+                                            (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var))
 
   open import CastStructure
 
@@ -406,6 +451,9 @@ n  -}
   import ParamCastReduction
   module Red = ParamCastReduction cs
   open Red
+
+  import GTLC2CC
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
   -- Instantiate blame-subtyping theorem for `GroundCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public
