@@ -89,3 +89,8 @@ data _,_⊢_⊑ᴳ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢G A
     → {ab : A₁ ~ B₁} {ab′ : A₁′ ~ B₁′} {ac : A₂ ~ C₁} {ac′ : A₂′ ~ C₁′} {bc : B₂ ~ C₂} {bc′ : B₂′ ~ C₂′}
       ------------------------------------------------------------------------------------------------------------
     → Γ , Γ′ ⊢ case L M N ℓ {ma} {ab} {ac} {bc} ⊑ᴳ case L′ M′ N′ ℓ′ {ma′} {ab′} {ac′} {bc′}
+
+{- Example(s):
+   Similar to the example in Fig. 5, Refined Criteria. -}
+_ : ∅ , ∅ ⊢ ((ƛ ⋆ ˙ (` Z)) · ($_ 42 {P-Base}) at pos 0) {match⇒⇒} {unk~L} ⊑ᴳ ((ƛ (` Nat) ˙ (` Z)) · ($_ 42 {P-Base}) at pos 0) {match⇒⇒} {base~}
+_ = ⊑ᴳ-· (⊑ᴳ-ƛ unk⊑ (⊑ᴳ-var refl)) ⊑ᴳ-prim
