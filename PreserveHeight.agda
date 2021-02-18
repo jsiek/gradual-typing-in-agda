@@ -15,8 +15,7 @@ open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
 {-
 
-  A proof that the Efficient Parameterized Cast Calculus
-  is indeed space efficient.
+  The height of casts is monotonically decreasing with reduction.
 
 -}
 
@@ -47,11 +46,16 @@ module PreserveHeight (ecs : EfficientCastStruct) where
   plug-height : ∀ {Γ A B} (M : Γ ⊢ A) (M′ : Γ ⊢ A) (F : Frame A B)
       → c-height M′ ≤ c-height M
       → c-height (plug M′ F) ≤ c-height (plug M F)
-  plug-height M M′ F M′≤M  = {!!}
-
-  subst-height : ∀ {Γ A B} (N : Γ , A ⊢ B) (W : Γ ⊢ A)
-      → c-height (N [ W ]) ≤ c-height N ⊔ c-height W
-  subst-height N W = {!!}
+  plug-height M M′ (F-·₁ x) M′≤M = ⊔-mono-≤ M′≤M ≤-refl
+  plug-height M M′ (F-·₂ M₁) M′≤M = ⊔-mono-≤ ≤-refl M′≤M
+  plug-height M M′ (F-if x x₁) M′≤M = ⊔-mono-≤ (⊔-mono-≤ M′≤M ≤-refl) ≤-refl
+  plug-height M M′ (F-×₁ x) M′≤M = ⊔-mono-≤ ≤-refl M′≤M
+  plug-height M M′ (F-×₂ x) M′≤M = ⊔-mono-≤ M′≤M ≤-refl
+  plug-height M M′ F-fst M′≤M = M′≤M
+  plug-height M M′ F-snd M′≤M = M′≤M
+  plug-height M M′ F-inl M′≤M = M′≤M
+  plug-height M M′ F-inr M′≤M = M′≤M
+  plug-height M M′ (F-case x x₁) M′≤M = ⊔-mono-≤ (⊔-mono-≤ M′≤M ≤-refl) ≤-refl
 
   rename-height : ∀{Γ Δ A} (M : Γ ⊢ A) (ρ : ∀ {C} → Γ ∋ C → Δ ∋ C)
       → c-height M ≡ c-height (rename ρ M)
@@ -70,6 +74,88 @@ module PreserveHeight (ecs : EfficientCastStruct) where
      | rename-height N ρ = refl
   rename-height (M ⟨ c ⟩) ρ rewrite rename-height M ρ = refl
   rename-height (blame ℓ) ρ = refl
+
+  SubstHeight : ∀{Γ Δ} (σ : ∀ {C} → Γ ∋ C → Δ ⊢ C) (m : ℕ) → Set
+  SubstHeight {Γ}{Δ} σ m = ∀{C} (x : Γ ∋ C) → c-height (σ x) ≤ m
+
+  sub-height : ∀{Γ Δ A} (M : Γ ⊢ A) (σ : ∀ {C} → Γ ∋ C → Δ ⊢ C) (m : ℕ)
+      → SubstHeight σ m
+      → c-height (subst σ M) ≤ c-height M ⊔ m
+  sub-height (` x) σ m σ≤m = σ≤m x
+  sub-height (ƛ M) σ m σ≤m = {!!}
+  sub-height (L · M) σ m σ≤m =
+    begin
+      c-height (subst σ L) ⊔ c-height (subst σ M)
+      ≤⟨ ⊔-mono-≤ (sub-height L σ m σ≤m) (sub-height M σ m σ≤m) ⟩
+      (c-height L ⊔ m) ⊔ (c-height M ⊔ m)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height L) m _) ⟩
+      c-height L ⊔ (m ⊔ (c-height M ⊔ m))
+      ≤⟨ ⊔-monoʳ-≤ (c-height L) (≤-reflexive (⊔-comm m _)) ⟩
+      c-height L ⊔ ((c-height M ⊔ m) ⊔ m)
+      ≤⟨ ⊔-monoʳ-≤ (c-height L) (≤-reflexive (⊔-assoc (c-height M) _ _)) ⟩
+      c-height L ⊔ (c-height M ⊔ (m ⊔ m))
+      ≤⟨ ⊔-monoʳ-≤ (c-height L) (⊔-monoʳ-≤ (c-height M) (≤-reflexive (⊔-idem m))) ⟩
+      c-height L ⊔ (c-height M ⊔ m)
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height L) _ _)) ⟩
+      (c-height L ⊔ c-height M) ⊔ m
+    ∎
+  sub-height ($ x) σ m σ≤m = z≤n
+  sub-height (if L M N) σ m σ≤m =
+    begin
+      c-height (subst σ L) ⊔ c-height (subst σ M) ⊔ c-height (subst σ N)
+      ≤⟨ ⊔-mono-≤ (⊔-mono-≤ (sub-height L σ m σ≤m) (sub-height M σ m σ≤m))
+                            (sub-height N σ m σ≤m) ⟩
+      ((c-height L ⊔ m) ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → X ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height L) _ _)) ⟩
+      (c-height L ⊔ (m ⊔ (c-height M ⊔ m))) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-comm m _)) ⟩
+      (c-height L ⊔ ((c-height M ⊔ m) ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height M) _ _)) ⟩
+      (c-height L ⊔ (c-height M ⊔ (m ⊔ m))) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ (c-height M ⊔ X)) ⊔ (c-height N ⊔ m)) (⊔-idem m)) ⟩
+      (c-height L ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ {!!} ⟩
+      c-height L ⊔ ((c-height M ⊔ m) ⊔ (c-height N ⊔ m))
+      ≤⟨ {!!} ⟩
+      c-height L ⊔ (c-height M ⊔ (m ⊔ (c-height N ⊔ m)))
+      ≤⟨ {!!} ⟩
+      c-height L ⊔ (c-height M ⊔ ((c-height N ⊔ m) ⊔ m))
+      ≤⟨ {!!} ⟩
+      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ (m ⊔ m)))
+      ≤⟨ {!!} ⟩
+      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ m))
+      ≤⟨ {!!} ⟩
+      (c-height L ⊔ c-height M) ⊔ (c-height N ⊔ m)
+      ≤⟨ {!!} ⟩
+      ((c-height L ⊔ c-height M) ⊔ c-height N) ⊔ m
+    ∎
+  sub-height (cons M N) σ m σ≤m =
+    begin
+      c-height (subst σ M) ⊔ c-height (subst σ N)
+      ≤⟨ ⊔-mono-≤ (sub-height M σ m σ≤m) (sub-height N σ m σ≤m) ⟩
+      (c-height M ⊔ m) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height M) m _) ⟩
+      c-height M ⊔ (m ⊔ (c-height N ⊔ m))
+      ≤⟨ ⊔-monoʳ-≤ (c-height M) (≤-reflexive (⊔-comm m _)) ⟩
+      c-height M ⊔ ((c-height N ⊔ m) ⊔ m)
+      ≤⟨ ⊔-monoʳ-≤ (c-height M) (≤-reflexive (⊔-assoc (c-height N) _ _)) ⟩
+      c-height M ⊔ (c-height N ⊔ (m ⊔ m))
+      ≤⟨ ⊔-monoʳ-≤ (c-height M) (⊔-monoʳ-≤ (c-height N) (≤-reflexive (⊔-idem m))) ⟩
+      c-height M ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height M) _ _)) ⟩
+      (c-height M ⊔ c-height N) ⊔ m
+    ∎
+  sub-height (fst M) σ m σ≤m = sub-height M σ m σ≤m
+  sub-height (snd M) σ m σ≤m = sub-height M σ m σ≤m
+  sub-height (inl M) σ m σ≤m = sub-height M σ m σ≤m
+  sub-height (inr M) σ m σ≤m = sub-height M σ m σ≤m
+  sub-height (case L M N) σ m σ≤m = {!!}
+  sub-height (M ⟨ c ⟩) σ m σ≤m = {!!}
+  sub-height (blame ℓ) σ m σ≤m = {!!}
+
+  subst-height : ∀ {Γ A B} (N : Γ , A ⊢ B) (W : Γ ⊢ A)
+      → c-height (N [ W ]) ≤ c-height N ⊔ c-height W
+  subst-height N W = {!!}
 
   module PreserveHeight
     (applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}

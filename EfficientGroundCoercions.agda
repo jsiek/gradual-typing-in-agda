@@ -711,3 +711,5 @@ module EfficientGroundCoercions where
       (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
       ∎)))
 
+  open import PreserveHeight ecs
+  
