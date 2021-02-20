@@ -492,5 +492,10 @@ n  -}
   import GTLC2CC
   open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
+  -- Instantiate the proof of "compilation from GTLC to CC preserves precision".
+  open import CompilePresPrec pcsp
+  open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c)
+    using (compile-pres-prec) public
+
   -- Instantiate blame-subtyping theorem for `GroundCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public
