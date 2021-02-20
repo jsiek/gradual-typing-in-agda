@@ -223,6 +223,39 @@ n  -}
         ---------------------------------------------
       → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
 
+  {- Lemmas about precision, suppose all casts are inert:
+       1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
+  ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
+    → (i : Inert c)
+    → A ⊑ A′ → B ⊑ A′
+      ------------------
+    → ⟪ i ⟫⊑ A′
+  ⊑→lpit (I-inj g _) lp1 lp2 = lpit-inj g lp1
+  ⊑→lpit (I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
+
+  {-   2. It implies A ⊑ A′ and B ⊑ B′ if ⟨ A ⇒ B ⟩ ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
+  lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
+    → ⟪ i ⟫⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (B ⊑ B′)
+  lpii→⊑ (lpii-inj g) = [ Refl⊑ , unk⊑ ]
+  lpii→⊑ (lpii-fun lp1 lp2) = [ lp1 , lp2 ]
+
+  {-   3. It implies A ⊑ A′ and B ⊑ A′ if ⟨ A ⇒ B ⟩ ⊑ A′ . -}
+  lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
+    → ⟪ i ⟫⊑ A′
+      --------------------
+    → (A ⊑ A′) × (B ⊑ A′)
+  lpit→⊑ (lpit-inj g lp) = [ lp , unk⊑ ]
+  lpit→⊑ (lpit-fun lp1 lp2) = [ lp1 , lp2 ]
+
+  {-   4. It implies A ⊑ A′ and A ⊑ B′ if A ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
+  lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (A ⊑ B′)
+  lpti→⊑ (lpti-fun lp1 lp2) = [ lp1 , lp2 ]
+
   open import Subtyping using (_<:₃_)
   open _<:₃_
   infix 5 _<:_
@@ -313,7 +346,11 @@ n  -}
               { precast = pcs;
                 ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
                 ⟪_⟫⊑_ = ⟪_⟫⊑_;
-                _⊑⟪_⟫ = _⊑⟪_⟫
+                _⊑⟪_⟫ = _⊑⟪_⟫;
+                ⊑→lpit = ⊑→lpit;
+                lpii→⊑ = lpii→⊑;
+                lpit→⊑ = lpit→⊑;
+                lpti→⊑ = lpti→⊑
               }
   pcss : PreCastStructWithSafety
   pcss = record

@@ -137,3 +137,30 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
 -- Example(s):
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᶜ-var refl)
+
+⊑ᶜ→⊑ : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
+  → Γ ⊑* Γ′
+  → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    -----------------
+  → A ⊑ A′
+⊑ᶜ→⊑ lp* ⊑ᶜ-prim = Refl⊑
+⊑ᶜ→⊑ lp* (⊑ᶜ-var eq) = ⊑*→⊑ _ _ lp* eq
+⊑ᶜ→⊑ lp* (⊑ᶜ-ƛ lp lpN) = fun⊑ lp (⊑ᶜ→⊑ (⊑*-, lp lp*) lpN)
+⊑ᶜ→⊑ lp* (⊑ᶜ-· lpL lpM) with ⊑ᶜ→⊑ lp* lpL
+... | (fun⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-if lpL lpM lpN) = ⊑ᶜ→⊑ lp* lpN
+⊑ᶜ→⊑ lp* (⊑ᶜ-cons lpM lpN) = pair⊑ (⊑ᶜ→⊑ lp* lpM) (⊑ᶜ→⊑ lp* lpN)
+⊑ᶜ→⊑ lp* (⊑ᶜ-fst lpM) with ⊑ᶜ→⊑ lp* lpM
+... | (pair⊑ lp1 lp2) = lp1
+⊑ᶜ→⊑ lp* (⊑ᶜ-snd lpM) with ⊑ᶜ→⊑ lp* lpM
+... | (pair⊑ lp1 lp2) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-inl lp lpM) = sum⊑ (⊑ᶜ→⊑ lp* lpM) lp
+⊑ᶜ→⊑ lp* (⊑ᶜ-inr lp lpM) = sum⊑ lp (⊑ᶜ→⊑ lp* lpM)
+⊑ᶜ→⊑ lp* (⊑ᶜ-case lpL lp1 lp2 lpM lpN) = ⊑ᶜ→⊑ (⊑*-, lp1 lp*) lpM
+⊑ᶜ→⊑ lp* (⊑ᶜ-cast lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-castl lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM) = proj₂ (lpii→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrapl lpi lpM) = proj₂ (lpit→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM) = proj₂ (lpti→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-blame lp) = lp
