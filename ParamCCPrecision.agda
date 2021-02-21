@@ -16,9 +16,10 @@ open PreCastStructWithPrecision pcsp
 
 open import ParamCastCalculus Cast Inert
 
-{- This module defines the precision relation for the cast calculus. -}
+{- The precision relation for the cast calculus. -}
 infix 6 _,_⊢_⊑ᶜ_
-
+{- The precision relation for substitution. -}
+infix 6 _,_,_,_⊢_⊑ˢ_
 
 -- Term precision of CC.
 data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A → Γ′ ⊢ A′ → Set where
@@ -134,33 +135,18 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : Context) → {A A′ : Type} → Γ ⊢ A 
       -------------------------------
     → Γ , Γ′ ⊢ M ⊑ᶜ blame {Γ′} {A′} ℓ
 
+data _,_,_,_⊢_⊑ˢ_ : (Γ Δ Γ′ Δ′ : Context) → Subst Γ Δ → Subst Γ′ Δ′ → Set where
+
+  ⊑ˢ-σ₀ : ∀ {Δ Δ′ A A′} {M : Δ ⊢ A} {M′ : Δ′ ⊢ A′}
+    → Δ , Δ′ ⊢ M ⊑ᶜ M′
+      ------------------------------------------
+    → (Δ , A) , Δ , (Δ′ , A′) , Δ′ ⊢ (subst-zero M) ⊑ˢ (subst-zero M′)
+
+  ⊑ˢ-exts : ∀ {Γ Γ′ Δ Δ′ B B′} {σ : Subst Γ Δ} {σ′ : Subst Γ′ Δ′}
+    → Γ , Δ , Γ′ , Δ′ ⊢ σ ⊑ˢ σ′
+      -------------------------------------------------------------------
+    → (Γ ,  B) , (Δ , B) , (Γ′ , B′) , (Δ′ , B′) ⊢ (exts σ) ⊑ˢ (exts σ′)
+
 -- Example(s):
 _ : ∅ , ∅ ⊢ ƛ_ {B = ⋆} {⋆} (` Z) ⊑ᶜ ƛ_ {B = ` Nat} {` Nat} (` Z)
 _ = ⊑ᶜ-ƛ unk⊑ (⊑ᶜ-var refl)
-
-⊑ᶜ→⊑ : ∀ {Γ Γ′ A A′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
-  → Γ ⊑* Γ′
-  → Γ , Γ′ ⊢ M ⊑ᶜ M′
-    -----------------
-  → A ⊑ A′
-⊑ᶜ→⊑ lp* ⊑ᶜ-prim = Refl⊑
-⊑ᶜ→⊑ lp* (⊑ᶜ-var eq) = ⊑*→⊑ _ _ lp* eq
-⊑ᶜ→⊑ lp* (⊑ᶜ-ƛ lp lpN) = fun⊑ lp (⊑ᶜ→⊑ (⊑*-, lp lp*) lpN)
-⊑ᶜ→⊑ lp* (⊑ᶜ-· lpL lpM) with ⊑ᶜ→⊑ lp* lpL
-... | (fun⊑ lp1 lp2) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-if lpL lpM lpN) = ⊑ᶜ→⊑ lp* lpN
-⊑ᶜ→⊑ lp* (⊑ᶜ-cons lpM lpN) = pair⊑ (⊑ᶜ→⊑ lp* lpM) (⊑ᶜ→⊑ lp* lpN)
-⊑ᶜ→⊑ lp* (⊑ᶜ-fst lpM) with ⊑ᶜ→⊑ lp* lpM
-... | (pair⊑ lp1 lp2) = lp1
-⊑ᶜ→⊑ lp* (⊑ᶜ-snd lpM) with ⊑ᶜ→⊑ lp* lpM
-... | (pair⊑ lp1 lp2) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-inl lp lpM) = sum⊑ (⊑ᶜ→⊑ lp* lpM) lp
-⊑ᶜ→⊑ lp* (⊑ᶜ-inr lp lpM) = sum⊑ lp (⊑ᶜ→⊑ lp* lpM)
-⊑ᶜ→⊑ lp* (⊑ᶜ-case lpL lp1 lp2 lpM lpN) = ⊑ᶜ→⊑ (⊑*-, lp1 lp*) lpM
-⊑ᶜ→⊑ lp* (⊑ᶜ-cast lp1 lp2 lpM) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-castl lp1 lp2 lpM) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM) = proj₂ (lpii→⊑ lpi)
-⊑ᶜ→⊑ lp* (⊑ᶜ-wrapl lpi lpM) = proj₂ (lpit→⊑ lpi)
-⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM) = proj₂ (lpti→⊑ lpi)
-⊑ᶜ→⊑ lp* (⊑ᶜ-blame lp) = lp

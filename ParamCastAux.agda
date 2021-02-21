@@ -25,9 +25,81 @@ open import Data.Empty using (⊥; ⊥-elim)
 module ParamCastAux (pcs : PreCastStruct) where
 
   open PreCastStruct pcs
-  
+
   import ParamCastCalculus
   open ParamCastCalculus Cast Inert
+
+
+  {- Lemmas about renaming and substitution: -}
+  {- Two renamings ρ , ω satisfy `RenameIso` means that two isomorphic DeBruijn indices
+     after renaming are also isomorphic. -}
+  RenameIso : ∀ {Γ Γ′ Δ Δ′} → (ρ : Rename Γ Δ) → (ω : Rename Γ′ Δ′) → Set
+  RenameIso {Γ} {Γ′} {Δ} {Δ′} ρ ω =
+    ∀ {A B} {x : Γ ∋ A} {y : Γ′ ∋ B} → ∋→ℕ x ≡ ∋→ℕ y → ∋→ℕ (ρ x) ≡ ∋→ℕ (ω y)
+
+  S-iso : ∀ {Γ Γ′ A A′}
+    → RenameIso {Γ} {Γ′} {Γ , A} {Γ′ , A′} S_ S_
+  S-iso eq = cong suc eq
+
+  open import Data.Nat.Properties using (suc-injective)
+  -- Extending two related renamings ρ , ω preserves `RenameIso`.
+  ext-pres-RenameIso : ∀ {Γ Γ′ Δ Δ′} {B B′} {ρ : Rename Γ Δ} {ω : Rename Γ′ Δ′}
+    → RenameIso ρ ω
+      -----------------------------------------------------------
+    → RenameIso {Γ , B} {Γ′ , B′} {Δ , B}  {Δ′ , B′} (ext ρ) (ext ω)
+  ext-pres-RenameIso f {x = Z} {Z} eq = refl
+  ext-pres-RenameIso f {x = S x} {S y} eq = let ρx≡ωy = f (suc-injective eq) in cong suc ρx≡ωy
+
+  private
+    data _≈_ : ∀ {Γ Δ} → Rename Γ Δ → Subst Δ Γ → Set where
+
+      ≈-base : ∀ {Γ A} → _≈_ {Γ , A} {Γ , A , A} (ext S_) (subst-zero (` Z))
+
+      ≈-ext : ∀ {Γ Δ B} {ρ : Rename Γ Δ} {σ : Subst Δ Γ}
+        → ρ ≈ σ
+          ------------------
+        → _≈_ {Γ , B} {Δ , B} (ext ρ) (exts σ)
+
+    ≈-var-id : ∀ {Γ Δ X} {ρ : Rename Γ Δ} {σ : Subst Δ Γ}
+      → (x : Γ ∋ X)
+      → ρ ≈ σ
+        ---------------
+      → ` x ≡ σ (ρ x)
+    ≈-var-id Z ≈-base = refl
+    ≈-var-id (S x) ≈-base = refl
+    ≈-var-id Z (≈-ext r) = refl
+    ≈-var-id (S x) (≈-ext r) = cong (λ M → rename S_ M) (≈-var-id x r)
+
+    cong₃ : ∀ {A B C X : Set} (f : A → B → C → X) {u v w x y z}
+      → u ≡ x → v ≡ y → w ≡ z → f u v w ≡ f x y z
+    cong₃ f refl refl refl = refl
+
+    {- If renaming ρ and substitution σ satisfy ρ ≈ σ, then M ≡ σ (ρ M) . -}
+    subst-var-eq : ∀ {Γ Δ X} {ρ : Rename Γ Δ} {σ : Subst Δ Γ}
+      → (M : Γ ⊢ X)
+      → ρ ≈ σ
+        --------------------------
+      → M ≡ subst σ (rename ρ M)
+    subst-var-eq (` x) r = ≈-var-id x r
+    subst-var-eq (ƛ M) r = cong ƛ_ (subst-var-eq M (≈-ext r))
+    subst-var-eq (M · N) r = cong₂ _·_ (subst-var-eq M r) (subst-var-eq N r)
+    subst-var-eq ($ x) r = refl
+    subst-var-eq (if L M N) r = cong₃ if (subst-var-eq L r) (subst-var-eq M r) (subst-var-eq N r)
+    subst-var-eq (cons M N) r = cong₂ cons (subst-var-eq M r) (subst-var-eq N r)
+    subst-var-eq (fst M) r = cong fst (subst-var-eq M r)
+    subst-var-eq (snd M) r = cong snd (subst-var-eq M r)
+    subst-var-eq (inl M) r = cong inl (subst-var-eq M r)
+    subst-var-eq (inr M) r = cong inr (subst-var-eq M r)
+    subst-var-eq (case L M N) r = cong₃ case (subst-var-eq L r) (subst-var-eq M (≈-ext r)) (subst-var-eq N (≈-ext r))
+    subst-var-eq (M ⟨ c ⟩) r = cong (λ □ → □ ⟨ c ⟩) (subst-var-eq M r)
+    subst-var-eq (M ⟪ i ⟫) r = cong (λ □ → □ ⟪ i ⟫) (subst-var-eq M r)
+    subst-var-eq (blame ℓ) r = refl
+
+  substitution-Z-eq : ∀ {Γ A B}
+    → (M : Γ , A ⊢ B)
+      --------------------------------
+    → M ≡ rename (ext S_) M [ ` Z ]
+  substitution-Z-eq M = subst-var-eq M ≈-base
 
   {-
 
@@ -108,7 +180,7 @@ module ParamCastAux (pcs : PreCastStruct) where
 
     F-if : ∀ {Γ A}
       → Γ ⊢ A
-      → Γ ⊢ A    
+      → Γ ⊢ A
       → Frame {Γ} (` 𝔹) A
 
     F-×₁ : ∀ {Γ A B}
@@ -168,7 +240,7 @@ module ParamCastAux (pcs : PreCastStruct) where
   plug M (F-cast c) = M ⟨ c ⟩
   plug M (F-wrap i) = M ⟪ i ⟫
 
-  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B) 
+  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B)
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
        → (x : Cross c)
        → Γ ⊢ C ⇒ D
@@ -191,7 +263,7 @@ module ParamCastAux (pcs : PreCastStruct) where
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
        case M l r
 
-  {- Here are a few inversion lemmas for `plug` : -}
+  {- Plug inversion lemmas: -}
   plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
     → (F : Frame C A)
     → plug N F ≡ fst M
