@@ -6,7 +6,7 @@ open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax) renamin
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructure
+open import PreCastStructureWithPrecision
 
 
 

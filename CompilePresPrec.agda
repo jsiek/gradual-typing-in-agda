@@ -5,7 +5,7 @@ open import Variables
 open import Labels
 open import GTLC
 open import GTLCPrecision
-open import PreCastStructure
+open import PreCastStructureWithPrecision
 
 module CompilePresPrec
   (pcsp : PreCastStructWithPrecision)

@@ -49,13 +49,12 @@ record CastStruct : Set₁ where
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
-    {- NOTE:
-      The fields below are for blame-subtyping.
-    -}
+    {- The field is for blame-subtyping. -}
     applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
       → (a : Active c)
       → Safe c ℓ
       → CastsAllSafe V ℓ
+        --------------------------------------
       → CastsAllSafe (applyCast V vV c {a}) ℓ
 
 

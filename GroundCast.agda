@@ -15,7 +15,6 @@ module GroundCast where
   open import Data.Nat
   open import Data.Bool
   open import Types
-  open import PreCastStructure
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -321,6 +320,9 @@ n  -}
    the Parametric Cast Calculus by applying the ParamCastAux module.
 
    -}
+  open import PreCastStructure
+  open import PreCastStructureWithPrecision
+
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -341,20 +343,9 @@ n  -}
              ; baseNotInert = baseNotInert
              ; projNotInert = projNotInert
              }
-  pcsp : PreCastStructWithPrecision
-  pcsp = record {
-           precast = pcs;
-           ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
-           ⟪_⟫⊑_ = ⟪_⟫⊑_;
-           _⊑⟪_⟫ = _⊑⟪_⟫;
-           ⊑→lpit = ⊑→lpit;
-           lpii→⊑ = lpii→⊑;
-           lpit→⊑ = lpit→⊑;
-           lpti→⊑ = lpti→⊑
-         }
   pcss : PreCastStructWithSafety
   pcss = record
-             { pcsp = pcsp
+             { precast = pcs
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe
@@ -363,6 +354,17 @@ n  -}
              ; inlSafe = inlSafe
              ; inrSafe = inrSafe
              }
+  pcsp : PreCastStructWithPrecision
+  pcsp = record {
+           pcss = pcss;
+           ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
+           ⟪_⟫⊑_ = ⟪_⟫⊑_;
+           _⊑⟪_⟫ = _⊑⟪_⟫;
+           ⊑→lpit = ⊑→lpit;
+           lpii→⊑ = lpii→⊑;
+           lpit→⊑ = lpit→⊑;
+           lpti→⊑ = lpti→⊑
+         }
 
   import ParamCastAux
   open ParamCastAux pcs
@@ -473,16 +475,16 @@ n  -}
   open import CastStructureWithPrecision
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
-  csp : CastStructWithPrecision
-  csp = record {
-          cs = cs;
-          applyCast-catchup = {!!}
+  cs = record {
+          applyCast = applyCast;
+          applyCast-pres-allsafe = applyCast-pres-allsafe
         }
+  -- csp : CastStructWithPrecision
+  -- csp = record {
+  --         applyCast = applyCast;
+  --         applyCast-pres-allsafe = applyCast-pres-allsafe;
+  --         applyCast-catchup = {!!}
+  --       }
 
   {-
 
