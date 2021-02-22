@@ -17,7 +17,7 @@ module HyperCoercions where
   open import Data.Bool using (Bool; true; false)
   open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_)
   open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-step; 
-       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n)
+       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-monoˡ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n; n≤m⊔n; ⊔-idem)
   open Data.Nat.Properties.≤-Reasoning
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
@@ -405,7 +405,12 @@ module HyperCoercions where
           → n ∣ false ⊢ M ok → (v : Value M)
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
   applyCastOK {c = id★} {n} {A-id★} Mok v = ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
-  applyCastOK {c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v = {!!}
+  applyCastOK {M = M}{c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v
+      with canonical⋆ M v
+  ... | ⟨ A' , ⟨ V , ⟨ c , ⟨ i , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq 
+      with Mok
+  ... | castOK {n = n₁} Vok lt =      
+      ⟨ (suc n₁) , ⟨ (castOK Vok lt) , (s≤s (≤-step (≤-step ≤-refl))) ⟩ ⟩
   applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
   applyCastOK {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {n} {A-mid A-cpair} Mok v =
      ⟨ zero , ⟨ consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n) , z≤n ⟩ ⟩
@@ -421,22 +426,90 @@ module HyperCoercions where
              ; compose = _⨟_
              ; height = height
              ; compose-height = compose-height
-             ; applyCastOK = {!!}
+             ; applyCastOK = λ{Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a}
              }
   open EfficientCastStruct ecs using (c-height)
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
+  applyCast-height {v = v} {id★} {A-id★} = m≤m⊔n _ _
+  applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , inj)} {A-proj}
+      with canonical⋆ V v
+  ... | ⟨ A' , ⟨ V' , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
+      begin
+        c-height V' ⊔ height (c ⨟ (?? ℓ {g = g} ↷ m , inj))
+        ≤⟨ ⊔-monoʳ-≤ (c-height V') (compose-height c _) ⟩
+        c-height V' ⊔ (height c ⊔ height (?? ℓ {g = g} ↷ m , inj))
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V') _ _)) ⟩
+        (c-height V' ⊔ height c) ⊔ height-m m
+      ∎
+  applyCast-height {v = v} {x ↷ x₁ , .(cfail _)} {A-fail} = z≤n
+  applyCast-height {V = V}{v} {.𝜖 ↷ (c ×' d) , .𝜖} {A-mid A-cpair} =
+    begin
+      (c-height V ⊔ height c) ⊔ (c-height V ⊔ height d)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _) ⟩
+      c-height V ⊔ (height c ⊔ (c-height V ⊔ height d))
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (sym (⊔-assoc (height c) _ _))) ⟩
+      c-height V ⊔ ((height c ⊔ c-height V) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (⊔-monoˡ-≤ (height d) (≤-reflexive (⊔-comm (height c) _))) ⟩
+      c-height V ⊔ ((c-height V ⊔ height c) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (⊔-assoc (c-height V) _ _)) ⟩
+      c-height V ⊔ (c-height V ⊔ (height c ⊔ height d))
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+      (c-height V ⊔ c-height V) ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoˡ-≤ (height c ⊔ height d) (≤-reflexive (⊔-idem (c-height V))) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+  applyCast-height {V = V}{v} {.𝜖 ↷ (c +' d) , .𝜖} {A-mid A-csum} =
+    begin
+      (c-height V ⊔ height c) ⊔ height d
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _ ) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+  applyCast-height {v = v} {.𝜖 ↷ .(id _) , .𝜖} {A-mid A-idι} = m≤m⊔n _ _
+
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+  dom-height {c = pr ↷ c ↣ d , inj} {C-fun} = ≤-step (m≤m⊔n _ _)
+  
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+  cod-height {c = c} {C-fun} = ≤-step (n≤m⊔n _ _)
+  
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+  fst-height {c = c}{C-pair} = ≤-step (m≤m⊔n _ _)
+  
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+  snd-height {c = c}{C-pair} = ≤-step (n≤m⊔n _ _)
+  
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+  inlC-height {c = c}{C-sum} = ≤-step (m≤m⊔n _ _)
+  
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c
+  inrC-height {c = c}{C-sum} = ≤-step (n≤m⊔n _ _)
+
+
   ecsh : EfficientCastStructHeight
   ecsh = record
               { effcast = ecs
-              ; applyCast-height = {!!}
-              ; dom-height = {!!}
-              ; cod-height = {!!}
-              ; fst-height = {!!}
-              ; snd-height = {!!}
-              ; inlC-height = {!!}
-              ; inrC-height = {!!}
+              ; applyCast-height = (λ {Γ}{A}{B}{V}{v}{c}{a} → applyCast-height{Γ}{A}{B}{V}{v}{c}{a})
+              ; dom-height = (λ {A}{B}{C}{D}{c}{x} → dom-height{A}{B}{C}{D}{c}{x})
+              ; cod-height = (λ {A}{B}{C}{D}{c}{x} → cod-height{A}{B}{C}{D}{c}{x})
+              ; fst-height = (λ {A}{B}{C}{D}{c}{x} → fst-height{A}{B}{C}{D}{c}{x})
+              ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
+              ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
+              ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
               }
 
   import PreserveHeight
