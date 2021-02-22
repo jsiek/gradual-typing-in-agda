@@ -1,10 +1,10 @@
 module Types where
 
-  open import Data.Bool
+  open import Data.Bool using (Bool; true; false)
   open import Data.Empty using () renaming (⊥ to Bot)
   open import Data.Empty.Irrelevant using (⊥-elim)
   open import Data.Integer using (ℤ)
-  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
+  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_) renaming (_⊔_ to _∨_)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -38,6 +38,13 @@ module Types where
     _`×_ : Type → Type → Type
     _`⊎_ : Type → Type → Type
 
+
+  height-t : Type → ℕ
+  height-t ⋆ = 0
+  height-t (` B) = 0
+  height-t (A ⇒ B) = suc (height-t A ∨ height-t B)
+  height-t (A `× B) = suc (height-t A ∨ height-t B)
+  height-t (A `⊎ B) = suc (height-t A ∨ height-t B)
 
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆

@@ -5,7 +5,8 @@ module AGT where
   open import Labels
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
-  open import Data.Nat using (ℕ; zero; suc)
+  open import Data.Bool using (Bool; true; false)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -1377,6 +1378,38 @@ module AGT where
   applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} = M ⟨ compose c d ⟩
   applyCast M v (error _ _) {activeError} = blame (pos zero)
   
+  height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+  height (_ ⇒ B ⇒ _) = height-t B
+  height (error _ _) = 0
+
+  height-lb : ∀{BB' B B' : Type}
+     → (∀ {C' : Type} → Σ (B ⊑ C') (λ x → B' ⊑ C') → BB' ⊑ C')
+     → B ~ B'
+     → height-t BB' ≤ height-t B ∨ height-t B'
+  height-lb {⋆} {B} {B'} lb B~B' = z≤n
+  height-lb {` x} {B} {B'} lb B~B' = z≤n
+  height-lb {BB' ⇒ BB''} {B} {B'} lb B~B' = {!!}
+  height-lb {BB' `× BB''} {B} {B'} lb B~B' = {!!}
+  height-lb {BB' `⊎ BB''} {B} {B'} lb B~B' = {!!}
+
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (compose s t) ≤ (height s) ∨ (height t)
+  compose-height (_ ⇒ B ⇒ _) (_ ⇒ B' ⇒ _)
+      with B `~ B'
+  ... | no nc = z≤n
+  ... | yes B~B'
+      with (B `⊔ B') {B~B'}
+  ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
+      {!!}
+  compose-height (_ ⇒ B ⇒ _) (error _ _) = z≤n
+  compose-height (error _ _) (_ ⇒ B ⇒ _) = z≤n
+  compose-height (error _ _) (error _ _) = z≤n
+
+  applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+  applyCastOK {M = M}{c}{n}{a} Mok v = {!!}
+     
   open import CastStructure
 
   ecs : EfficientCastStruct
@@ -1384,11 +1417,83 @@ module AGT where
              { precast = pcs
              ; applyCast = applyCast
              ; compose = compose
+             ; height = height
+             ; compose-height = compose-height
+             ; applyCastOK = applyCastOK
              }
              
+  open EfficientCastStruct ecs using (c-height)
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ∨ height c
+  applyCast-height {V = V}{v}{c}{a} = {!!}
+
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+  dom-height {c = c} {x} = {!!}
+  
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+  cod-height {c = c} {x} = {!!}
+  
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+  fst-height {c = c}{x} = {!!}
+  
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+  snd-height {c = c}{x} = {!!}
+  
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+  inlC-height {c = c}{x} = {!!}
+  
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c
+  inrC-height {c = c}{x} = {!!}
+  
+
+  ecsh : EfficientCastStructHeight
+  ecsh = record
+              { effcast = ecs
+              ; applyCast-height = (λ {Γ}{A}{B}{V}{v}{c}{a} → applyCast-height{Γ}{A}{B}{V}{v}{c}{a})
+              ; dom-height = (λ {A}{B}{C}{D}{c}{x} → dom-height{A}{B}{C}{D}{c}{x})
+              ; cod-height = (λ {A}{B}{C}{D}{c}{x} → cod-height{A}{B}{C}{D}{c}{x})
+              ; fst-height = (λ {A}{B}{C}{D}{c}{x} → fst-height{A}{B}{C}{D}{c}{x})
+              ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
+              ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
+              ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
+              }
+
+  import PreserveHeight
+  module PH = PreserveHeight ecsh
+
+  preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —→ M′ → c-height M′ ≤ c-height M
+  preserve-height M—→M′ = PH.preserve-height M—→M′
+
+
+  import SpaceEfficient
+  module SE = SpaceEfficient ecs
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
+
+  module EC = SE.EfficientCompile {!!}
+
+  open import GTLC
+  import GTLC2CC
+  module Compile = GTLC2CC Cast {!!}
+
+  compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
+  compile-efficient d ul = EC.compile-efficient d ul
+  
   {-
 
    Alternative idea about evidence.  Use consistency judgements!
