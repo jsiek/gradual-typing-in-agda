@@ -14,13 +14,11 @@ open import Types
 open import Variables
 open import Labels
 open import PreCastStructure
-open import CastStructure
 open import CastStructureWithPrecision
 
 module ParamGradualGuaranteeAux (csp : CastStructWithPrecision) where
 
 open CastStructWithPrecision csp
-open CastStruct cs
 
 open import ParamCastCalculus Cast Inert
 open import ParamCastAux precast
