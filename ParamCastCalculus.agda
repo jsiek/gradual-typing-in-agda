@@ -17,7 +17,7 @@ module ParamCastCalculus (Cast : Type → Set) where
 open import Variables
 open import Labels
 open import Data.Nat
-open import Data.Bool
+open import Data.Bool using (Bool; true; false)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong; cong₂; cong-app)
@@ -216,4 +216,47 @@ ideal-size (inr M) = suc (ideal-size M)
 ideal-size (case L M N) = suc (ideal-size L + ideal-size M + ideal-size N)
 ideal-size (M ⟨ c ⟩) = ideal-size M
 ideal-size (blame ℓ) = 1
+
+data _∣_⊢_ok : ∀{Γ A} → ℕ → Bool → Γ ⊢ A  → Set where
+  castulOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
+           → n ∣ true ⊢ M ok  →  n ≤ 1
+           → suc n ∣ true ⊢ M ⟨ c ⟩ ok
+  castOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
+           → n ∣ false ⊢ M ok  →  n ≤ 2
+           → suc n ∣ false ⊢ M ⟨ c ⟩ ok
+  varOK : ∀{Γ A}{∋x : Γ ∋ A}{ul}
+         {- We pre-count a 1 here because a value may have 1 cast
+            and get substituted for this variable. -}
+        → 1 ∣ ul ⊢ (` ∋x) ok
+  lamOK : ∀{Γ B A}{N : Γ , A ⊢ B}{n}{ul}
+        → n ∣ true ⊢ N ok
+        → 0 ∣ ul ⊢ (ƛ N) ok
+  appOK : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A}{ul}{n}{m}
+        → n ∣ ul ⊢ L ok → m ∣ ul ⊢ M ok
+        → 0 ∣ ul ⊢ (L · M) ok
+  litOK : ∀{Γ : Context}{A}{r : rep A}{p : Prim A}{ul}
+        → 0 ∣ ul ⊢ ($_ {Γ} r {p}) ok
+  ifOK : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A}{n m k}{ul}
+        → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
+        → 0 ∣ ul ⊢ (if L M N) ok
+  consOK : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B}{n m}{ul}
+        → n ∣ ul ⊢ M ok → m ∣ ul ⊢ N ok
+        → 0 ∣ ul ⊢ (cons M N) ok
+  fstOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
+        → n ∣ ul ⊢ M ok
+        → 0 ∣ ul ⊢ fst M ok
+  sndOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
+        → n ∣ ul ⊢ M ok
+        → 0 ∣ ul ⊢ snd M ok
+  inlOK : ∀{Γ A B}{M : Γ ⊢ A}{n}{ul}
+        → n ∣ ul ⊢ M ok
+        → 0 ∣ ul ⊢ (inl {B = B} M) ok
+  inrOK : ∀{Γ A B}{M : Γ ⊢ B}{n}{ul}
+        → n ∣ ul ⊢ M ok
+        → 0 ∣ ul ⊢ (inr {A = A} M) ok
+  caseOK : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}{n m k}{ul}
+         → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
+         → 0 ∣ ul ⊢ (case L M N) ok
+  blameOK : ∀{Γ A ℓ}{ul}
+         → 0 ∣ ul ⊢ (blame {Γ}{A} ℓ) ok
 

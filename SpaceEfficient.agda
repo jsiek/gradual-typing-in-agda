@@ -44,49 +44,6 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   open ParamCastCalculus Cast
   open import EfficientParamCastAux precast
 
-  data _∣_⊢_ok : ∀{Γ A} → ℕ → Bool → Γ ⊢ A  → Set where
-    castulOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
-             → n ∣ true ⊢ M ok  →  n ≤ 1
-             → suc n ∣ true ⊢ M ⟨ c ⟩ ok
-    castOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}
-             → n ∣ false ⊢ M ok  →  n ≤ 2
-             → suc n ∣ false ⊢ M ⟨ c ⟩ ok
-    varOK : ∀{Γ A}{∋x : Γ ∋ A}{ul}
-           {- We pre-count a 1 here because a value may have 1 cast
-              and get substituted for this variable. -}
-          → 1 ∣ ul ⊢ (` ∋x) ok
-    lamOK : ∀{Γ B A}{N : Γ , A ⊢ B}{n}{ul}
-          → n ∣ true ⊢ N ok
-          → 0 ∣ ul ⊢ (ƛ N) ok
-    appOK : ∀{Γ A B}{L : Γ ⊢ A ⇒ B}{M : Γ ⊢ A}{ul}{n}{m}
-          → n ∣ ul ⊢ L ok → m ∣ ul ⊢ M ok
-          → 0 ∣ ul ⊢ (L · M) ok
-    litOK : ∀{Γ : Context}{A}{r : rep A}{p : Prim A}{ul}
-          → 0 ∣ ul ⊢ ($_ {Γ} r {p}) ok
-    ifOK : ∀{Γ A}{L : Γ ⊢ ` 𝔹}{M N : Γ ⊢ A}{n m k}{ul}
-          → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
-          → 0 ∣ ul ⊢ (if L M N) ok
-    consOK : ∀{Γ A B}{M : Γ ⊢ A}{N : Γ ⊢ B}{n m}{ul}
-          → n ∣ ul ⊢ M ok → m ∣ ul ⊢ N ok
-          → 0 ∣ ul ⊢ (cons M N) ok
-    fstOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
-          → n ∣ ul ⊢ M ok
-          → 0 ∣ ul ⊢ fst M ok
-    sndOK : ∀{Γ A B}{M : Γ ⊢ A `× B}{n}{ul}
-          → n ∣ ul ⊢ M ok
-          → 0 ∣ ul ⊢ snd M ok
-    inlOK : ∀{Γ A B}{M : Γ ⊢ A}{n}{ul}
-          → n ∣ ul ⊢ M ok
-          → 0 ∣ ul ⊢ (inl {B = B} M) ok
-    inrOK : ∀{Γ A B}{M : Γ ⊢ B}{n}{ul}
-          → n ∣ ul ⊢ M ok
-          → 0 ∣ ul ⊢ (inr {A = A} M) ok
-    caseOK : ∀{Γ A B C}{L : Γ ⊢ A `⊎ B}{M : Γ ⊢ A ⇒ C}{N : Γ ⊢ B ⇒ C}{n m k}{ul}
-           → n ∣ ul ⊢ L ok → m ∣ true ⊢ M ok → k ∣ true ⊢ N ok
-           → 0 ∣ ul ⊢ (case L M N) ok
-    blameOK : ∀{Γ A ℓ}{ul}
-           → 0 ∣ ul ⊢ (blame {Γ}{A} ℓ) ok
-
   simple→ok0 : ∀{Γ A}{M : Γ ⊢ A}{n}
     → SimpleValue M → n ∣ false ⊢ M ok → n ≡ 0
   simple→ok0 V-ƛ (lamOK Mok) = refl
@@ -346,83 +303,77 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   red-any→ok0 (sndOK a) (snd-cast v) = refl
   red-any→ok0 (caseOK a b c) (case-cast v) = refl
 
-  module PreserveOK
-    (preserveApplyCast : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
-          → n ∣ false ⊢ M ok → (v : Value M)
-          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n)
-    where
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok {ctx = any_ctx} MFok (ξ {M = M}{M′}{F = F} M—→M′)
+      with invert-plug M F MFok
+  ... | ⟨ m , Mok ⟩
+      with preserve-ok Mok M—→M′
+  ... | ⟨ m2 , ⟨ Mpok , m≤n+2 ⟩ ⟩ =      
+      ⟨ zero , ⟨ plug-ok M M′ F MFok Mpok , z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} Mok ξ-blame = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (appOK {M = M} (lamOK {N = N} Nok) Mok) (β vM) 
+     with subst-ok N M Nok Mok (value→ok1 vM Mok) vM
+  ... | ⟨ k , ⟨ NMok , k≤ ⟩ ⟩ =
+      let n≤2 = OK-ul→2 Nok in
+      let m≤1 = value→ok1 vM Mok in
+      ⟨ k , ⟨ weaken-OK-ul NMok , ≤-trans k≤ n≤2 ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (appOK litOK Mok) δ = ⟨ 0 , ⟨ litOK , z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (ifOK {m = m} litOK Mok Nok) β-if-true =
+     ⟨ m , ⟨ weaken-OK-ul Mok , ≤-trans (OK-ul→2 Mok) ≤-refl ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (ifOK {k = k} litOK Mok Nok) β-if-false =
+     ⟨ k , ⟨ weaken-OK-ul Nok , ≤-trans (OK-ul→2 Nok) ≤-refl ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (fstOK (consOK {n = n} Mpok Wok)) (β-fst vMp vW) =
+    ⟨ n , ⟨ Mpok , (≤-trans (value→ok1 vMp Mpok) (s≤s z≤n)) ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (sndOK (consOK {m = m} Mpok Wok)) (β-snd vM VMp) =
+    ⟨ m , ⟨ Wok , (≤-trans (value→ok1 VMp Wok) (s≤s z≤n)) ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (caseOK (inlOK a) b c) (β-caseL vV) =
+      ⟨ zero , ⟨ appOK (weaken-OK-ul b) a , z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (caseOK (inrOK a) b c) (β-caseR vV) =
+      ⟨ zero , ⟨ (appOK (weaken-OK-ul c) a) , z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (appOK (castOK a c) b) (fun-cast v x) =
+      let xx = value→ok1 x b in
+      ⟨ 1 , ⟨ (castOK (appOK a (castOK b (≤-trans xx (s≤s z≤n)))) z≤n) ,
+              (s≤s z≤n) ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (fstOK (castOK a b)) (fst-cast v) =
+     ⟨ 1 , ⟨ castOK (fstOK a) z≤n , s≤s z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (sndOK (castOK a b)) (snd-cast v) =
+     ⟨ 1 , ⟨ castOK (sndOK a) z≤n , s≤s z≤n ⟩ ⟩
+  preserve-ok {ctx = any_ctx} (caseOK (castOK {n = n} a b) d e)
+      (case-cast {Γ}{A}{B}{A'}{B'}{C}{V}{W₁}{W₂}{c} v {x}) =
+     ⟨ zero , ⟨ (caseOK a
+             (lamOK (appOK (rename-ok d) (castulOK (varOK{∋x = Z})(s≤s z≤n))))
+             (lamOK (appOK (rename-ok e) (castulOK(varOK{∋x = Z})(s≤s z≤n)))))
+           , z≤n ⟩ ⟩
+  preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (ξ-cast M—→M′)
+      with preserve-ok Mok M—→M′
+  ... | ⟨ m , ⟨ Mpok , m≤2 ⟩ ⟩
+      with red-any→ok0 Mok M—→M′
+  ... | refl =     
+        ⟨ suc m , ⟨ castOK Mpok m≤2 , s≤s m≤2 ⟩ ⟩
+  preserve-ok {ctx = non_cast_ctx} (castOK blameOK lt) ξ-cast-blame =
+     ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (cast v)
+      with applyCastOK Mok v
+  ... | ⟨ m , ⟨ acOK , lt2 ⟩ ⟩ =    
+        ⟨ m , ⟨ acOK , ≤-step lt2 ⟩ ⟩
+  preserve-ok {ctx = non_cast_ctx} (castOK (castOK {n = n} Mok lt1) lt2)
+     compose-casts =
+     ⟨ suc n , ⟨ (castOK Mok lt1) , (s≤s (≤-step (≤-step (≤-step ≤-refl)))) ⟩ ⟩
 
-    preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
-            → n ∣ false ⊢ M ok  →  ctx / M —→ M′
-            → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
-    preserve-ok {ctx = any_ctx} MFok (ξ {M = M}{M′}{F = F} M—→M′)
-        with invert-plug M F MFok
-    ... | ⟨ m , Mok ⟩
-        with preserve-ok Mok M—→M′
-    ... | ⟨ m2 , ⟨ Mpok , m≤n+2 ⟩ ⟩ =      
-        ⟨ zero , ⟨ plug-ok M M′ F MFok Mpok , z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} Mok ξ-blame = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (appOK {M = M} (lamOK {N = N} Nok) Mok) (β vM) 
-       with subst-ok N M Nok Mok (value→ok1 vM Mok) vM
-    ... | ⟨ k , ⟨ NMok , k≤ ⟩ ⟩ =
-        let n≤2 = OK-ul→2 Nok in
-        let m≤1 = value→ok1 vM Mok in
-        ⟨ k , ⟨ weaken-OK-ul NMok , ≤-trans k≤ n≤2 ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (appOK litOK Mok) δ = ⟨ 0 , ⟨ litOK , z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (ifOK {m = m} litOK Mok Nok) β-if-true =
-       ⟨ m , ⟨ weaken-OK-ul Mok , ≤-trans (OK-ul→2 Mok) ≤-refl ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (ifOK {k = k} litOK Mok Nok) β-if-false =
-       ⟨ k , ⟨ weaken-OK-ul Nok , ≤-trans (OK-ul→2 Nok) ≤-refl ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (fstOK (consOK {n = n} Mpok Wok)) (β-fst vMp vW) =
-      ⟨ n , ⟨ Mpok , (≤-trans (value→ok1 vMp Mpok) (s≤s z≤n)) ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (sndOK (consOK {m = m} Mpok Wok)) (β-snd vM VMp) =
-      ⟨ m , ⟨ Wok , (≤-trans (value→ok1 VMp Wok) (s≤s z≤n)) ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (caseOK (inlOK a) b c) (β-caseL vV) =
-        ⟨ zero , ⟨ appOK (weaken-OK-ul b) a , z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (caseOK (inrOK a) b c) (β-caseR vV) =
-        ⟨ zero , ⟨ (appOK (weaken-OK-ul c) a) , z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (appOK (castOK a c) b) (fun-cast v x) =
-        let xx = value→ok1 x b in
-        ⟨ 1 , ⟨ (castOK (appOK a (castOK b (≤-trans xx (s≤s z≤n)))) z≤n) ,
-                (s≤s z≤n) ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (fstOK (castOK a b)) (fst-cast v) =
-       ⟨ 1 , ⟨ castOK (fstOK a) z≤n , s≤s z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (sndOK (castOK a b)) (snd-cast v) =
-       ⟨ 1 , ⟨ castOK (sndOK a) z≤n , s≤s z≤n ⟩ ⟩
-    preserve-ok {ctx = any_ctx} (caseOK (castOK {n = n} a b) d e)
-        (case-cast {Γ}{A}{B}{A'}{B'}{C}{V}{W₁}{W₂}{c} v {x}) =
-       ⟨ zero , ⟨ (caseOK a
-               (lamOK (appOK (rename-ok d) (castulOK (varOK{∋x = Z})(s≤s z≤n))))
-               (lamOK (appOK (rename-ok e) (castulOK(varOK{∋x = Z})(s≤s z≤n)))))
-             , z≤n ⟩ ⟩
-    preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (ξ-cast M—→M′)
-        with preserve-ok Mok M—→M′
-    ... | ⟨ m , ⟨ Mpok , m≤2 ⟩ ⟩
-        with red-any→ok0 Mok M—→M′
-    ... | refl =     
-          ⟨ suc m , ⟨ castOK Mpok m≤2 , s≤s m≤2 ⟩ ⟩
-    preserve-ok {ctx = non_cast_ctx} (castOK blameOK lt) ξ-cast-blame =
-       ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
-    preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (cast v)
-        with preserveApplyCast Mok v
-    ... | ⟨ m , ⟨ acOK , lt2 ⟩ ⟩ =    
-          ⟨ m , ⟨ acOK , ≤-step lt2 ⟩ ⟩
-    preserve-ok {ctx = non_cast_ctx} (castOK (castOK {n = n} Mok lt1) lt2)
-       compose-casts =
-       ⟨ suc n , ⟨ (castOK Mok lt1) , (s≤s (≤-step (≤-step (≤-step ≤-refl)))) ⟩ ⟩
-
-    compress-casts : ∀{A}{M : ∅ ⊢ A}{n}
-            → n ∣ false ⊢ M ok
-            → Σ[ N ∈ (∅ ⊢ A) ] Σ[ k ∈ ℕ ]
-                (non_cast_ctx / M —↠ N)  ×  k ∣ false ⊢ N ok × k ≤ 1
-    compress-casts {M = M} {zero} Mok =
-       ⟨ M , ⟨ 0 , ⟨ (M ■) , ⟨ Mok , z≤n ⟩ ⟩ ⟩ ⟩
-    compress-casts {M = M} {suc zero} Mok =
-       ⟨ M , ⟨ 1 , ⟨ (M ■) , ⟨ Mok , s≤s z≤n ⟩ ⟩ ⟩ ⟩
-    compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩)} {suc (suc zero)} (castOK (castOK Nok x₁) x) = ⟨ N ⟨ compose c d ⟩ , ⟨ 1 , ⟨ non_cast_ctx / (N ⟨ c ⟩) ⟨ d ⟩ —→⟨ compose-casts ⟩ (_ ■) , ⟨ (castOK Nok x₁) , s≤s z≤n ⟩ ⟩ ⟩ ⟩
-    compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩} {suc (suc (suc 0))}
-        (castOK (castOK (castOK Nok lt1) lt2) (s≤s (s≤s z≤n))) =
-        ⟨ (N ⟨ compose c (compose d e) ⟩) , ⟨ 1 , ⟨ (non_cast_ctx / ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩ —→⟨ compose-casts ⟩ (non_cast_ctx / (N ⟨ c ⟩) ⟨ compose d e ⟩ —→⟨ compose-casts ⟩ (_ ■))) , ⟨ (castOK Nok lt1) , (s≤s z≤n) ⟩ ⟩ ⟩ ⟩
+  compress-casts : ∀{A}{M : ∅ ⊢ A}{n}
+          → n ∣ false ⊢ M ok
+          → Σ[ N ∈ (∅ ⊢ A) ] Σ[ k ∈ ℕ ]
+              (non_cast_ctx / M —↠ N)  ×  k ∣ false ⊢ N ok × k ≤ 1
+  compress-casts {M = M} {zero} Mok =
+     ⟨ M , ⟨ 0 , ⟨ (M ■) , ⟨ Mok , z≤n ⟩ ⟩ ⟩ ⟩
+  compress-casts {M = M} {suc zero} Mok =
+     ⟨ M , ⟨ 1 , ⟨ (M ■) , ⟨ Mok , s≤s z≤n ⟩ ⟩ ⟩ ⟩
+  compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩)} {suc (suc zero)} (castOK (castOK Nok x₁) x) = ⟨ N ⟨ compose c d ⟩ , ⟨ 1 , ⟨ non_cast_ctx / (N ⟨ c ⟩) ⟨ d ⟩ —→⟨ compose-casts ⟩ (_ ■) , ⟨ (castOK Nok x₁) , s≤s z≤n ⟩ ⟩ ⟩ ⟩
+  compress-casts {M = ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩} {suc (suc (suc 0))}
+      (castOK (castOK (castOK Nok lt1) lt2) (s≤s (s≤s z≤n))) =
+      ⟨ (N ⟨ compose c (compose d e) ⟩) , ⟨ 1 , ⟨ (non_cast_ctx / ((N ⟨ c ⟩) ⟨ d ⟩) ⟨ e ⟩ —→⟨ compose-casts ⟩ (non_cast_ctx / (N ⟨ c ⟩) ⟨ compose d e ⟩ —→⟨ compose-casts ⟩ (_ ■))) , ⟨ (castOK Nok lt1) , (s≤s z≤n) ⟩ ⟩ ⟩ ⟩
 
   module EfficientCompile
     (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))

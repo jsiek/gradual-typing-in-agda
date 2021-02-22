@@ -18,11 +18,10 @@
 module EfficientGroundCoercions where
 
   open import Agda.Primitive using ()
+  open import Data.Bool using (Bool; true; false)
   open import Data.Nat
   open import Data.Nat.Properties
-  {-open ≤-Reasoning-}
-     {- renaming (begin_ to start_; _∎ to _□; _≡⟨_⟩_ to _≡⟨_⟩'_) -}
-  open import Types hiding (_⊔_) {- using (Type; ⋆; _⇒_; _`×_; _`⊎_; Ground; Base; _~_; eq-unk; ground?; ground; Sym~) -}
+  open import Types hiding (_⊔_)
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -34,8 +33,6 @@ module EfficientGroundCoercions where
       renaming (_,_ to ⟨_,_⟩)
   import Relation.Binary.PropositionalEquality as Eq
   open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open Eq.≡-Reasoning
-
 
   data iCast : Type → Set
   data gCast : Type → Set
@@ -197,8 +194,10 @@ module EfficientGroundCoercions where
    GTLC to λC.
 
   -}
+  mkcast = (λ A B ℓ {c} → coerce A B {c} ℓ)
+  
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
+  open GTLC2CC Cast mkcast public
 
 
   {-
@@ -504,7 +503,7 @@ module EfficientGroundCoercions where
 
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
-            → ∀ {a : Active c} → Γ ⊢ B
+            → ∀ {a : PreCastStruct.Active pcs c} → Γ ⊢ B
   applyCast M v id★ {a} = M
   applyCast M v (` (` idι)) {a} = M
   applyCast M v (` (cfail G H ℓ)) {a} = blame ℓ
@@ -548,22 +547,43 @@ module EfficientGroundCoercions where
   height-i : ∀{A B} → iCast (A ⇒ B) → ℕ
   height-g : ∀{A B} → gCast (A ⇒ B) → ℕ
   
-  height : ∀{A B} → Cast (A ⇒ B) → ℕ
-  height id★ = 0
-  height (G ?? p ⨟ i) = height-i i
-  height (` i) = height-i i
+  height-s : ∀{A B} → Cast (A ⇒ B) → ℕ
+  height-s id★ = 0
+  height-s (G ?? p ⨟ i) = height-i i
+  height-s (` i) = height-i i
 
   height-i (g ⨟!) = height-g g
   height-i (` g) = height-g g
   height-i (cfail G H p) = 0
 
   height-g idι = 0
-  height-g (c ↣ d) = suc ((height c) ⊔ (height d))
-  height-g (c ×' d) = suc ((height c) ⊔ (height d))
-  height-g (c +' d) = suc ((height c) ⊔ (height d))
+  height-g (c ↣ d) = suc ((height-s c) ⊔ (height-s d))
+  height-g (c ×' d) = suc ((height-s c) ⊔ (height-s d))
+  height-g (c +' d) = suc ((height-s c) ⊔ (height-s d))
 
-  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
-     → height (s ⨟ t) ≤ (height s) ⊔ (height t)
+  compose-height-s : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height-s (s ⨟ t) ≤ (height-s s) ⊔ (height-s t)
+
+  applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+  applyCastOK {M = M} {id★} {n} {a} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+  applyCastOK {M = M} {G ?? ℓ ⨟ i} {n} {a} Mok v
+      with canonical⋆ M v
+  ... | ⟨ A' , ⟨ V , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq
+      with Mok
+  ... | castOK {n = n₁} Vok lt =      
+      ⟨ suc n₁ , ⟨ (castOK Vok lt) , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {M = M} {` (g ⨟!)} {n} {A-intmd ()} Mok v
+  applyCastOK {M = M} {` (` idι)} {n} {a} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+  applyCastOK {M = M} {` (` (c ↣ d))} {n} {A-intmd (A-gnd ())} Mok v
+  applyCastOK {M = M} {` (` (c ×' d))} {n} {a} Mok v =
+      ⟨ zero , ⟨ (consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n)) , z≤n ⟩ ⟩
+  applyCastOK {M = M} {` (` (c +' d))} {n} {a} Mok v =
+      ⟨ zero , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))))
+                             (lamOK (inrOK (castulOK varOK (s≤s z≤n))))) , z≤n ⟩ ⟩
+  applyCastOK {M = M} {` cfail G H x} {n} {a} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  
 
   open import CastStructure
 
@@ -572,12 +592,104 @@ module EfficientGroundCoercions where
              { precast = pcs
              ; applyCast = applyCast
              ; compose = _⨟_
-             ; height = height
-             ; compose-height = compose-height
+             ; height = height-s
+             ; compose-height = compose-height-s
+             ; applyCastOK = (λ {Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a})
              }
-             
+  
   import EfficientParamCasts
   open EfficientParamCasts ecs public
+
+  c-height = EfficientCastStruct.c-height ecs
+  height = EfficientCastStruct.height ecs  
+
+  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
+  applyCast-height {v = v} {id★} {a} = m≤m⊔n _ _
+  applyCast-height {V = V}{v} {(G ?? ℓ ⨟ i){g = g}} {a}
+      with canonical⋆ V v
+  ... | ⟨ A' , ⟨ V' , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
+    begin
+      c-height V' ⊔ height-s (c ⨟ (G ?? ℓ ⨟ i))
+      ≤⟨ ⊔-monoʳ-≤ (c-height V') (compose-height-s c (G ?? ℓ ⨟ i)) ⟩
+      c-height V' ⊔ (height-s c ⊔ height-s ((G ?? ℓ ⨟ i){g = g}))
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V') _ _ )) ⟩
+      (c-height V' ⊔ height-s c) ⊔ height-i i
+    ∎
+    where open ≤-Reasoning
+  applyCast-height {v = v} {` (g ⨟!)} {A-intmd ()}
+  applyCast-height {v = v} {` (` idι)} {a} = m≤m⊔n _ _
+  applyCast-height {v = v} {` (` (c ↣ d))} {A-intmd (A-gnd ())}
+  applyCast-height {V = V}{v} {` (` (c ×' d))} {a} =
+    begin
+      (c-height V ⊔ height c) ⊔ (c-height V ⊔ height d)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _) ⟩
+      c-height V ⊔ (height c ⊔ (c-height V ⊔ height d))
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (sym (⊔-assoc (height c) _ _))) ⟩
+      c-height V ⊔ ((height c ⊔ c-height V) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (⊔-monoˡ-≤ (height d) (≤-reflexive (⊔-comm (height c) _))) ⟩
+      c-height V ⊔ ((c-height V ⊔ height c) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (⊔-assoc (c-height V) _ _)) ⟩
+      c-height V ⊔ (c-height V ⊔ (height c ⊔ height d))
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+      (c-height V ⊔ c-height V) ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoˡ-≤ (height c ⊔ height d) (≤-reflexive (⊔-idem (c-height V))) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+    where open ≤-Reasoning
+  applyCast-height {V = V}{v} {` (` (c +' d))} {a} =
+    begin
+      c-height (applyCast V v (` (` (c +' d))) {a})
+      ≤⟨ ≤-refl ⟩
+      c-height (eta⊎ V (` (` (c +' d))) C-cross)
+      ≤⟨ ≤-refl ⟩
+      (c-height V ⊔ height c) ⊔ height d
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _ ) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+    where open ≤-Reasoning
+  applyCast-height {v = v} {` cfail G H x} {a} = z≤n
+  
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+  dom-height {c = ` (` (c ↣ d))} {C-cross} = ≤-step (m≤m⊔n _ _)
+  
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+  cod-height {c = ` (` (c ↣ d))} {C-cross} = ≤-step (n≤m⊔n _ _)
+  
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+  fst-height {c = ` (` (c ×' d))}{C-cross} = ≤-step (m≤m⊔n _ _)
+  
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+  snd-height {c = ` (` (c ×' d))}{C-cross} = ≤-step (n≤m⊔n _ _)
+  
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+  inlC-height {c = ` (` (c +' d))}{C-cross} = ≤-step (m≤m⊔n _ _)
+  
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c
+  inrC-height {c = ` (` (c +' d))}{C-cross} = ≤-step (n≤m⊔n _ _)
+
+  ecsh : EfficientCastStructHeight
+  ecsh = record
+              { effcast = ecs
+              ; applyCast-height = (λ {Γ}{A}{B}{V}{v}{c}{a} → applyCast-height{Γ}{A}{B}{V}{v}{c}{a})
+              ; dom-height = (λ {A}{B}{C}{D}{c}{x} → dom-height{A}{B}{C}{D}{c}{x})
+              ; cod-height = (λ {A}{B}{C}{D}{c}{x} → cod-height{A}{B}{C}{D}{c}{x})
+              ; fst-height = (λ {A}{B}{C}{D}{c}{x} → fst-height{A}{B}{C}{D}{c}{x})
+              ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
+              ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
+              ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
+              }
 
   assoc-iss : ∀{A B C D} (i₁ : iCast (A ⇒ B)) → (s₂ : Cast (B ⇒ C))
         → (s₃ : Cast (C ⇒ D))
@@ -633,7 +745,7 @@ module EfficientGroundCoercions where
      cong₂ _+'_ (assoc c c₁ c₂) (assoc d d₁ d₂)
 
   compose-height-is : ∀ {A B C} → (i : iCast (A ⇒ B)) (s : Cast (B ⇒ C))
-     → height-i (i i⨟s s) ≤ (height-i i) ⊔ (height s)
+     → height-i (i i⨟s s) ≤ (height-i i) ⊔ (height-s s)
 
   compose-height-gi : ∀ {A B C} → (g : gCast (A ⇒ B)) (i : iCast (B ⇒ C))
     → height-i (g g⨟i i) ≤ height-g g ⊔ height-i i
@@ -641,9 +753,9 @@ module EfficientGroundCoercions where
   compose-height-gg : ∀ {A B C} → (g : gCast (A ⇒ B)) (h : gCast (B ⇒ C))
     → height-g (g g⨟g h) ≤ height-g g ⊔ height-g h
 
-  compose-height {.⋆} {.⋆} {C} id★ t = ≤-refl
-  compose-height {.⋆} {B} {C} (G ?? p ⨟ i) t = compose-height-is i t
-  compose-height {A} {B} {C} (` i) t = compose-height-is i t
+  compose-height-s {.⋆} {.⋆} {C} id★ t = ≤-refl
+  compose-height-s {.⋆} {B} {C} (G ?? p ⨟ i) t = compose-height-is i t
+  compose-height-s {A} {B} {C} (` i) t = compose-height-is i t
 
   compose-height-is (g ⨟!) id★ = ≤-reflexive (sym (⊔-identityʳ (height-g g)))
   compose-height-is (_⨟! {G = G} g {gg}) ((H ?? p ⨟ i){hg})
@@ -660,56 +772,81 @@ module EfficientGroundCoercions where
 
   compose-height-gg idι idι = z≤n
   compose-height-gg (c ↣ d) (c₁ ↣ d₁) =
-    let x = compose-height c₁ c in
-    let y = compose-height d d₁ in
+    let x = compose-height-s c₁ c in
+    let y = compose-height-s d d₁ in
      s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive
        (begin
-       height c₁ ⊔ height c ⊔ (height d ⊔ height d₁)
-       ≡⟨ (⊔-assoc (height c₁) _ _) ⟩
-       height c₁ ⊔ (height c ⊔ (height d ⊔ height d₁))
-       ≡⟨ cong (λ c → height c₁ ⊔ c) (sym (⊔-assoc (height c)_ _)) ⟩
-       height c₁ ⊔ (height c ⊔ height d ⊔ height d₁)
-       ≡⟨ sym (⊔-assoc (height c₁) ((height c) ⊔ (height d)) (height d₁)) ⟩ 
-       (height c₁ ⊔ (height c ⊔ height d)) ⊔ height d₁
-       ≡⟨ (cong₂ _⊔_ (⊔-comm (height c₁) (height c ⊔ height d)) refl) ⟩
-       ((height c ⊔ height d) ⊔ height c₁) ⊔ height d₁
-       ≡⟨ ⊔-assoc (height c ⊔ height d) (height c₁) (height d₁) ⟩
-       height c ⊔ height d ⊔ (height c₁ ⊔ height d₁)
+       height-s c₁ ⊔ height-s c ⊔ (height-s d ⊔ height-s d₁)
+       ≡⟨ (⊔-assoc (height-s c₁) _ _) ⟩
+       height-s c₁ ⊔ (height-s c ⊔ (height-s d ⊔ height-s d₁))
+       ≡⟨ cong (λ c → height-s c₁ ⊔ c) (sym (⊔-assoc (height-s c)_ _)) ⟩
+       height-s c₁ ⊔ (height-s c ⊔ height-s d ⊔ height-s d₁)
+       ≡⟨ sym (⊔-assoc (height-s c₁) ((height-s c) ⊔ (height-s d)) (height-s d₁)) ⟩ 
+       (height-s c₁ ⊔ (height-s c ⊔ height-s d)) ⊔ height-s d₁
+       ≡⟨ (cong₂ _⊔_ (⊔-comm (height-s c₁) (height-s c ⊔ height-s d)) refl) ⟩
+       ((height-s c ⊔ height-s d) ⊔ height-s c₁) ⊔ height-s d₁
+       ≡⟨ ⊔-assoc (height-s c ⊔ height-s d) (height-s c₁) (height-s d₁) ⟩
+       height-s c ⊔ height-s d ⊔ (height-s c₁ ⊔ height-s d₁)
        ∎)))
+     where open Eq.≡-Reasoning
   compose-height-gg (c ×' d) (c₁ ×' d₁) =
-    let x = compose-height c c₁ in
-    let y = compose-height d d₁ in
+    let x = compose-height-s c c₁ in
+    let y = compose-height-s d d₁ in
       s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive
       (begin
-      height c ⊔ height c₁ ⊔ (height d ⊔ height d₁)
-      ≡⟨ ⊔-assoc (height c) (height c₁) (height d ⊔ height d₁) ⟩
-      height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁))
-      ≡⟨ cong (λ d → height c ⊔ d) (sym (⊔-assoc (height c₁) _ _)) ⟩
-      height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁)
-      ≡⟨ cong (λ e → height c ⊔ (e ⊔ height d₁)) (⊔-comm (height c₁) _) ⟩
-      height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁)
-      ≡⟨ cong (λ e → height c ⊔ e) (⊔-assoc (height d) _ _) ⟩
-      height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁))
-      ≡⟨ sym (⊔-assoc (height c) _ _) ⟩
-      (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      height-s c ⊔ height-s c₁ ⊔ (height-s d ⊔ height-s d₁)
+      ≡⟨ ⊔-assoc (height-s c) (height-s c₁) (height-s d ⊔ height-s d₁) ⟩
+      height-s c ⊔ (height-s c₁ ⊔ (height-s d ⊔ height-s d₁))
+      ≡⟨ cong (λ d → height-s c ⊔ d) (sym (⊔-assoc (height-s c₁) _ _)) ⟩
+      height-s c ⊔ ((height-s c₁ ⊔ height-s d) ⊔ height-s d₁)
+      ≡⟨ cong (λ e → height-s c ⊔ (e ⊔ height-s d₁)) (⊔-comm (height-s c₁) _) ⟩
+      height-s c ⊔ ((height-s d ⊔ height-s c₁) ⊔ height-s d₁)
+      ≡⟨ cong (λ e → height-s c ⊔ e) (⊔-assoc (height-s d) _ _) ⟩
+      height-s c ⊔ (height-s d ⊔ (height-s c₁ ⊔ height-s d₁))
+      ≡⟨ sym (⊔-assoc (height-s c) _ _) ⟩
+      (height-s c ⊔ height-s d) ⊔ (height-s c₁ ⊔ height-s d₁)
       ∎)))
+     where open Eq.≡-Reasoning
   compose-height-gg (c +' d) (c₁ +' d₁) =
-    let x = compose-height c c₁ in
-    let y = compose-height d d₁ in
+    let x = compose-height-s c c₁ in
+    let y = compose-height-s d d₁ in
       s≤s (≤-trans (⊔-mono-≤ x y) (≤-reflexive 
       (begin
-      height c ⊔ height c₁ ⊔ (height d ⊔ height d₁)
-      ≡⟨ ⊔-assoc (height c) (height c₁) (height d ⊔ height d₁) ⟩
-      height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁))
-      ≡⟨ cong (λ d → height c ⊔ d) (sym (⊔-assoc (height c₁) _ _)) ⟩
-      height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁)
-      ≡⟨ cong (λ e → height c ⊔ (e ⊔ height d₁)) (⊔-comm (height c₁) _) ⟩
-      height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁)
-      ≡⟨ cong (λ e → height c ⊔ e) (⊔-assoc (height d) _ _) ⟩
-      height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁))
-      ≡⟨ sym (⊔-assoc (height c) _ _) ⟩
-      (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      height-s c ⊔ height-s c₁ ⊔ (height-s d ⊔ height-s d₁)
+      ≡⟨ ⊔-assoc (height-s c) (height-s c₁) (height-s d ⊔ height-s d₁) ⟩
+      height-s c ⊔ (height-s c₁ ⊔ (height-s d ⊔ height-s d₁))
+      ≡⟨ cong (λ d → height-s c ⊔ d) (sym (⊔-assoc (height-s c₁) _ _)) ⟩
+      height-s c ⊔ ((height-s c₁ ⊔ height-s d) ⊔ height-s d₁)
+      ≡⟨ cong (λ e → height-s c ⊔ (e ⊔ height-s d₁)) (⊔-comm (height-s c₁) _) ⟩
+      height-s c ⊔ ((height-s d ⊔ height-s c₁) ⊔ height-s d₁)
+      ≡⟨ cong (λ e → height-s c ⊔ e) (⊔-assoc (height-s d) _ _) ⟩
+      height-s c ⊔ (height-s d ⊔ (height-s c₁ ⊔ height-s d₁))
+      ≡⟨ sym (⊔-assoc (height-s c) _ _) ⟩
+      (height-s c ⊔ height-s d) ⊔ (height-s c₁ ⊔ height-s d₁)
       ∎)))
+    where open Eq.≡-Reasoning
 
-  open import PreserveHeight ecs
-  
+
+  import PreserveHeight
+  module PH = PreserveHeight ecsh
+
+  preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —→ M′ → c-height M′ ≤ c-height M
+  preserve-height M—→M′ = PH.preserve-height M—→M′
+
+
+  import SpaceEfficient
+  module SE = SpaceEfficient ecs
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
+
+  module EC = SE.EfficientCompile mkcast
+
+  open import GTLC
+
+  compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (compile M d) ok × k ≤ 1
+  compile-efficient d ul = EC.compile-efficient d ul
