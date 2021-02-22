@@ -15,15 +15,15 @@ module GroundInertX where
   open import Data.Nat
   open import Data.Bool
   open import Types
-  open import PreCastStructure
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Relation.Binary.PropositionalEquality
-     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
-     renaming (_,_ to [_,_])
+    using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Data.Product
+    using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ; Σ-syntax)
+    renaming (_,_ to [_,_])
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
 
@@ -68,11 +68,9 @@ n  -}
     A-inj : ∀{A} → (c : Cast (A ⇒ ⋆)) → ¬ Ground A → A ≢ ⋆ → Active c
     A-proj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast Inert public
+  open import ParamCastCalculus Cast Inert public
 
-  import GTLC2CC
-  open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
+  open import GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
   {-
 
@@ -245,6 +243,129 @@ n  -}
   inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | sum~ _ d~ = safe-ℓ≢ {c~ = d~} ℓ≢
 
+
+  infix 6 ⟪_⟫⊑⟪_⟫
+  data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                               → (i : Inert c) → (i′ : Inert c′) → Set where
+
+    -- Inert injections
+    lpii-inj : ∀ {G} {c : Cast (G ⇒ ⋆)} {c′ : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+      → ⟪ Inert.I-inj g c ⟫⊑⟪ Inert.I-inj g c′ ⟫
+
+    -- Inert cross casts
+    lpii-fun : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → C ⇒ D ⊑ C′ ⇒ D′
+        ----------------------------------------------------------------------
+      → ⟪ Inert.I-fun c ⟫⊑⟪ Inert.I-fun c′ ⟫
+
+    lpii-pair : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A `× B) ⇒ (C `× D))} {c′ : Cast ((A′ `× B′) ⇒ (C′ `× D′))}
+      → A `× B ⊑ A′ `× B′
+      → C `× D ⊑ C′ `× D′
+        ----------------------------------------------------------------------
+      → ⟪ Inert.I-pair c ⟫⊑⟪ Inert.I-pair c′ ⟫
+
+    lpii-sum : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A `⊎ B) ⇒ (C `⊎ D))} {c′ : Cast ((A′ `⊎ B′) ⇒ (C′ `⊎ D′))}
+      → A `⊎ B ⊑ A′ `⊎ B′
+      → C `⊎ D ⊑ C′ `⊎ D′
+        ----------------------------------------------------------------------
+      → ⟪ Inert.I-sum c ⟫⊑⟪ Inert.I-sum c′ ⟫
+
+  infix 6 ⟪_⟫⊑_
+  data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
+
+    -- Inert injections
+    lpit-inj : ∀ {G A′} {c : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+      → G ⊑ A′
+        -------------------------
+      → ⟪ Inert.I-inj g c ⟫⊑ A′
+
+    -- Inert cross casts
+    lpit-fun : ∀ {A A′ B B′ C D} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → C ⇒ D ⊑ A′ ⇒ B′
+        ------------------------------------------
+      → ⟪ Inert.I-fun c ⟫⊑ A′ ⇒ B′
+
+    lpit-pair : ∀ {A A′ B B′ C D} {c : Cast ((A `× B) ⇒ (C `× D))}
+      → A `× B ⊑ A′ `× B′
+      → C `× D ⊑ A′ `× B′
+        ------------------------------------------
+      → ⟪ Inert.I-pair c ⟫⊑ A′ `× B′
+
+    lpit-sum : ∀ {A A′ B B′ C D} {c : Cast ((A `⊎ B) ⇒ (C `⊎ D))}
+      → A `⊎ B ⊑ A′ `⊎ B′
+      → C `⊎ D ⊑ A′ `⊎ B′
+        ------------------------------------------
+      → ⟪ Inert.I-sum c ⟫⊑ A′ `⊎ B′
+
+  infix 6 _⊑⟪_⟫
+  data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
+
+    -- Inert cross casts
+    lpti-fun : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → A ⇒ B ⊑ C′ ⇒ D′
+        ---------------------------------------------
+      → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
+
+    lpti-pair : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ `× B′) ⇒ (C′ `× D′))}
+      → A `× B ⊑ A′ `× B′
+      → A `× B ⊑ C′ `× D′
+        ----------------------------------------------
+      → A `× B ⊑⟪ Inert.I-pair c′ ⟫
+
+    lpti-sum : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ `⊎ B′) ⇒ (C′ `⊎ D′))}
+      → A `⊎ B ⊑ A′ `⊎ B′
+      → A `⊎ B ⊑ C′ `⊎ D′
+        ----------------------------------------------
+      → A `⊎ B ⊑⟪ Inert.I-sum c′ ⟫
+
+  {- Lemmas about precision, suppose all casts are inert:
+       1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
+  ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
+    → (i : Inert c)
+    → A ⊑ A′ → B ⊑ A′
+      ------------------
+    → ⟪ i ⟫⊑ A′
+  ⊑→lpit (Inert.I-inj g _) lp1 lp2 = lpit-inj g lp1
+  ⊑→lpit (Inert.I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
+  ⊑→lpit (Inert.I-pair _) (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) = lpit-pair (pair⊑ lp1 lp3) (pair⊑ lp2 lp4)
+  ⊑→lpit (Inert.I-sum _) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) = lpit-sum (sum⊑ lp1 lp3) (sum⊑ lp2 lp4)
+
+  {-   2. It implies A ⊑ A′ and B ⊑ B′ if ⟨ A ⇒ B ⟩ ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
+  lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
+    → ⟪ i ⟫⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (B ⊑ B′)
+  lpii→⊑ (lpii-inj g) = [ Refl⊑ , unk⊑ ]
+  lpii→⊑ (lpii-fun lp1 lp2) = [ lp1 , lp2 ]
+  lpii→⊑ (lpii-pair lp1 lp2) = [ lp1 , lp2 ]
+  lpii→⊑ (lpii-sum lp1 lp2) = [ lp1 , lp2 ]
+
+  {-   3. It implies A ⊑ A′ and B ⊑ A′ if ⟨ A ⇒ B ⟩ ⊑ A′ . -}
+  lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
+    → ⟪ i ⟫⊑ A′
+      --------------------
+    → (A ⊑ A′) × (B ⊑ A′)
+  lpit→⊑ (lpit-inj g lp) = [ lp , unk⊑ ]
+  lpit→⊑ (lpit-fun lp1 lp2) = [ lp1 , lp2 ]
+  lpit→⊑ (lpit-pair lp1 lp2) = [ lp1 , lp2 ]
+  lpit→⊑ (lpit-sum lp1 lp2) = [ lp1 , lp2 ]
+
+  {-   4. It implies A ⊑ A′ and A ⊑ B′ if A ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
+  lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (A ⊑ B′)
+  lpti→⊑ (lpti-fun lp1 lp2) = [ lp1 , lp2 ]
+  lpti→⊑ (lpti-pair lp1 lp2) = [ lp1 , lp2 ]
+  lpti→⊑ (lpti-sum lp1 lp2) = [ lp1 , lp2 ]
+
+  open import PreCastStructure
+  open import PreCastStructureWithPrecision
   {-
 
    We take the first step of instantiating the reduction semantics of
@@ -282,6 +403,17 @@ n  -}
              ; inlSafe = inlSafe
              ; inrSafe = inrSafe
              }
+  pcsp : PreCastStructWithPrecision
+  pcsp = record {
+           pcss = pcss;
+           ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
+           ⟪_⟫⊑_ = ⟪_⟫⊑_;
+           _⊑⟪_⟫ = _⊑⟪_⟫;
+           ⊑→lpit = ⊑→lpit;
+           lpii→⊑ = lpii→⊑;
+           lpit→⊑ = lpit→⊑;
+           lpti→⊑ = lpti→⊑
+         }
 
   import ParamCastAux
   open ParamCastAux pcs
@@ -381,10 +513,150 @@ n  -}
   type safety for λB.
 
   -}
-
-  import ParamCastReduction
-  module Red = ParamCastReduction cs
-  open Red
+  open import ParamCastReduction cs
 
   -- Instantiate blame-subtyping theorem for `GroundCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public
+
+
+  {- A few lemmas to prove `catchup`. -}
+  open import ParamCCPrecision pcsp
+  private
+    wrapV-⊑-inv : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
+      → Value V → Value V′ → (i : Inert c) → A′ ≢ ⋆
+      → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
+        ------------------------
+      → Γ , Γ′ ⊢ V ⊑ᶜ V′
+    wrapV-⊑-inv v v' (Inert.I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
+    wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
+
+    ground-to-ndng-inert : ∀ {H B} {ℓ}
+      → (c~ : H ~ B)
+      → Ground H → B ≢ ⋆ → ¬ Ground B
+        --------------------------------
+      → Inert (cast H B ℓ c~)
+    ground-to-ndng-inert unk~R h-g b-nd b-ng = contradiction refl b-nd
+    ground-to-ndng-inert base~ h-g b-nd b-ng = contradiction h-g b-ng
+    ground-to-ndng-inert (fun~ c~ c~₁) h-g b-nd b-ng = Inert.I-fun _
+    ground-to-ndng-inert (pair~ c~ c~₁) h-g b-nd b-ng = Inert.I-pair _
+    ground-to-ndng-inert (sum~ c~ c~₁) h-g b-nd b-ng = Inert.I-sum _
+
+    {-
+      We write ground / non-ground as separate lemmas to get around Agda's termination checker:
+      this is because the first, ground one does not make any recursive call and the
+      second, non-ground one calls into the first one, which serves as a base case.
+    -}
+    applyCast-proj-g-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV
+      with ground? B
+    ... | yes b-g
+      with canonical⋆ _ v
+    ...   | [ G , [ V₁ , [ c₁ , [ i , meq ] ] ] ] rewrite meq
+      with gnd-eq? G B {inert-ground c₁ i} {b-g}
+    ...     | yes ap-b rewrite ap-b
+      with v
+    ...       | V-wrap vV₁ .i = [ V₁ , [ vV₁ , [ V₁ ∎ , wrapV-⊑-inv vV₁ v′ i (lp-¬⋆ nd lp) lpV ] ] ]
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | yes b-g | [ G , [ V₁ , [ c₁ , [ Inert.I-inj g₁ _ , meq ] ] ] ] | no ap-b
+      with lpV
+    ...       | ⊑ᶜ-wrapl (lpit-inj _ lp₁) _ = contradiction (lp-consis-ground-eq g₁ g Refl~ lp₁ lp) ap-b
+    ...       | ⊑ᶜ-wrap (lpii-inj _) _ = contradiction lp (nd⋢⋆ nd)
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | no b-ng = contradiction g b-ng
+
+    applyCast-proj-ng-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆) → ¬ Ground B
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-ng-catchup {c = cast .⋆ B ℓ _} nd ng v v′ lp lpV
+      with ground? B
+    ... | yes b-g = contradiction b-g ng
+    ... | no b-ng
+      with ground B {nd}
+    ...   | [ H , [ h-g , c~ ] ]
+      with applyCast-proj-g-catchup {c = cast ⋆ H ℓ unk~L} (ground-nd h-g) h-g v v′ (⊑-ground-relax h-g lp c~ nd) lpV
+    ...     | [ W , [ vW , [ rd* , lpW ] ] ] =
+      {- The important observation here is that the expanded casts are an active projection
+         to ground followed by an inert cross cast. -}
+      -- The 1st cast ⋆ ⇒ H is active since H is ground.
+      let a = Active.A-proj (cast ⋆ H ℓ unk~L) (ground-nd h-g)
+      -- The 2nd cast H ⇒ B is inert since it is cross.
+          i = ground-to-ndng-inert {ℓ = ℓ} (Sym~ c~) h-g nd ng in
+        [ W ⟪ i ⟫ ,
+          [ V-wrap vW i ,
+            [ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {a} ⟩ rd*)) (_ —→⟨ wrap vW {i} ⟩ _ ∎) ,
+              ⊑ᶜ-wrapl (⊑→lpit i (⊑-ground-relax h-g lp c~ nd) lp) lpW ] ] ]
+
+    {-
+      Finally, we case on whether the target type of the cast, B, is ground, for which
+      we've already proved both cases. As is mentioned above, we make it very sure that
+      the proof terminates - even if in the expansion case, the term grows bigger by one cast.
+    -}
+    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆)
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {Active.A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-catchup {B = B} {c = c} nd v v′ lp lpV
+      with ground? B
+    ... | yes g = applyCast-proj-g-catchup {c = c} nd g v v′ lp lpV
+    ... | no ng = applyCast-proj-ng-catchup {c = c} nd ng v v′ lp lpV
+
+  applyCast-catchup : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+    → (a : Active c)
+    → (vV : Value V) → Value V′
+    → A ⊑ A′ → B ⊑ A′
+    → Γ , Γ′ ⊢ V ⊑ᶜ V′
+      ----------------------------------------------------------
+    → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+  applyCast-catchup (Active.A-id _) vV vV′ lp1 lp2 lpV = [ _ , [ vV , [ _ ∎ , lpV ] ] ]
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (Active.A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+    with ground A {a-nd}
+  ... | [ G , [ g , c~ ] ]
+    with g | c~ | lp1
+  ...   | G-Base | base~ | _ =
+    let i = Inert.I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i ⟫ , [ V-wrap vV i , [ _ —→⟨ ξ (cast vV {Active.A-id {a = A-Base} _}) ⟩ _ —→⟨ wrap vV {i} ⟩ _ ∎ ,
+                                    ⊑ᶜ-wrapl (lpit-inj g lp1) lpV ] ] ]
+  ...   | G-Base | unk~L | _ = contradiction refl a-nd
+  ...   | G-Fun | fun~ c~₁ c~₂ | fun⊑ lp11 lp12 =
+    let i₁ = Inert.I-fun (cast A G ℓ (fun~ c~₁ c~₂))
+        i₂ = Inert.I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i₁ ⟫ ⟪ i₂ ⟫ , [ V-wrap (V-wrap vV i₁) i₂ ,
+        [ _ —→⟨ ξ (wrap vV {i₁}) ⟩ _ —→⟨ wrap (V-wrap vV i₁) {i₂} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj g (⊑-ground-relax g lp1 c~ a-nd)) (⊑ᶜ-wrapl (lpit-fun lp1 ground-fun-⊑) lpV) ] ] ]
+  ...   | G-Fun | unk~L | _ = contradiction refl a-nd
+  ...   | G-Pair | pair~ c~₁ c~₂ | pair⊑ lp11 lp12 =
+    let i₁ = Inert.I-pair (cast A G ℓ (pair~ c~₁ c~₂))
+        i₂ = Inert.I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i₁ ⟫ ⟪ i₂ ⟫ , [ V-wrap (V-wrap vV i₁) i₂ ,
+        [ _ —→⟨ ξ (wrap vV {i₁}) ⟩ _ —→⟨ wrap (V-wrap vV i₁) {i₂} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj g (⊑-ground-relax g lp1 c~ a-nd)) (⊑ᶜ-wrapl (lpit-pair lp1 ground-pair-⊑) lpV) ] ] ]
+  ...   | G-Pair | unk~L | _ = contradiction refl a-nd
+  ...   | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
+    let i₁ = Inert.I-sum (cast A G ℓ (sum~ c~₁ c~₂))
+        i₂ = Inert.I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i₁ ⟫ ⟪ i₂ ⟫ , [ V-wrap (V-wrap vV i₁) i₂ ,
+        [ _ —→⟨ ξ (wrap vV {i₁}) ⟩ _ —→⟨ wrap (V-wrap vV i₁) {i₂} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj g (⊑-ground-relax g lp1 c~ a-nd)) (⊑ᶜ-wrapl (lpit-sum lp1 ground-sum-⊑) lpV) ] ] ]
+  ...   | G-Sum | unk~L | _ = contradiction refl a-nd
+  applyCast-catchup (Active.A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
+
+  open import CastStructureWithPrecision
+  csp : CastStructWithPrecision
+  csp = record {
+          pcsp = pcsp;
+          applyCast = applyCast;
+          applyCast-pres-allsafe = applyCast-pres-allsafe;
+          applyCast-catchup = applyCast-catchup
+        }
+
+  {- Instantiate the proof of "compilation from GTLC to CC preserves precision". -}
+  open import CompilePresPrec pcsp
+  open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
