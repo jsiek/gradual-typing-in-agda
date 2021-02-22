@@ -15,9 +15,11 @@ open import Variables
 open import Labels
 open import PreCastStructure
 open import CastStructure
+open import CastStructureWithPrecision
 
-module ParamGradualGuaranteeAux (cs : CastStruct) where
+module ParamGradualGuaranteeAux (csp : CastStructWithPrecision) where
 
+open CastStructWithPrecision csp
 open CastStruct cs
 
 open import ParamCastCalculus Cast Inert
@@ -31,18 +33,18 @@ cast-eq-inv : ∀ {Γ A A′ B} {M : Γ ⊢ A} {M′ : Γ ⊢ A′} {c : Cast (A
   → Σ[ eq ∈ (A ≡ A′) ] (subst-eq (λ □ → Cast (□ ⇒ B)) eq c ≡ c′) × (subst-eq (λ □ → Γ ⊢ □) eq M ≡ M′)
 cast-eq-inv refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
 
-cast-left : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+cast-catchup : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
   → Value V → Value V′
   → A ⊑ A′ → B ⊑ A′
   → Γ , Γ′ ⊢ V ⊑ᶜ V′
     ----------------------------------------------------------
   → ∃[ W ] ((Value W) × (V ⟨ c ⟩ —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
-cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV
+cast-catchup {V = V} {V′} {c} vV vV′ lp1 lp2 lpV
   with ActiveOrInert c
-... | inj₁ a = {!!}
---   with applyCast-left a vV vV′ lp1 lp2 lpV
--- ...   | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (_ —→⟨ cast vV {a} ⟩ rd*) , lpW ⟩ ⟩ ⟩
-cast-left {V = V} {V′} {c} vV vV′ lp1 lp2 lpV | inj₂ i =
+... | inj₁ a
+  with applyCast-catchup a vV vV′ lp1 lp2 lpV
+...   | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (_ —→⟨ cast vV {a} ⟩ rd*) , lpW ⟩ ⟩ ⟩
+cast-catchup {V = V} {V′} {c} vV vV′ lp1 lp2 lpV | inj₂ i =
   ⟨ V ⟪ i ⟫ , ⟨ (V-wrap vV i) , ⟨ _ —→⟨ wrap vV {i} ⟩ _ ∎ , ⊑ᶜ-wrapl (⊑→lpit i lp1 lp2) lpV ⟩ ⟩ ⟩
 
 {- Catching up on the less precise side. -}
@@ -68,7 +70,7 @@ catchup v′ (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
   with catchup v′ lpM
 ... | ⟨ V , ⟨ vV , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   -- this is the more involved case so we prove it in a separate lemma
-  with cast-left {c = c} vV v′ lp1 lp2 lpV
+  with cast-catchup {c = c} vV v′ lp1 lp2 lpV
 ...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (↠-trans (plug-cong (F-cast _) rd*₁) rd*₂) , lpW ⟩ ⟩ ⟩
 catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM)
   -- just recur in all 3 wrap cases

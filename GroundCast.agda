@@ -342,16 +342,16 @@ n  -}
              ; projNotInert = projNotInert
              }
   pcsp : PreCastStructWithPrecision
-  pcsp = record
-              { precast = pcs;
-                ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
-                ⟪_⟫⊑_ = ⟪_⟫⊑_;
-                _⊑⟪_⟫ = _⊑⟪_⟫;
-                ⊑→lpit = ⊑→lpit;
-                lpii→⊑ = lpii→⊑;
-                lpit→⊑ = lpit→⊑;
-                lpti→⊑ = lpti→⊑
-              }
+  pcsp = record {
+           precast = pcs;
+           ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
+           ⟪_⟫⊑_ = ⟪_⟫⊑_;
+           _⊑⟪_⟫ = _⊑⟪_⟫;
+           ⊑→lpit = ⊑→lpit;
+           lpii→⊑ = lpii→⊑;
+           lpit→⊑ = lpit→⊑;
+           lpti→⊑ = lpti→⊑
+         }
   pcss : PreCastStructWithSafety
   pcss = record
              { pcsp = pcsp
@@ -470,6 +470,7 @@ n  -}
                                             (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var))
 
   open import CastStructure
+  open import CastStructureWithPrecision
 
   cs : CastStruct
   cs = record
@@ -477,6 +478,11 @@ n  -}
              ; applyCast = applyCast
              ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
+  csp : CastStructWithPrecision
+  csp = record {
+          cs = cs;
+          applyCast-catchup = {!!}
+        }
 
   {-
 
