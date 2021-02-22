@@ -78,11 +78,54 @@ module PreserveHeight (ecs : EfficientCastStruct) where
   SubstHeight : ∀{Γ Δ} (σ : ∀ {C} → Γ ∋ C → Δ ⊢ C) (m : ℕ) → Set
   SubstHeight {Γ}{Δ} σ m = ∀{C} (x : Γ ∋ C) → c-height (σ x) ≤ m
 
+  SubstHeight-exts : ∀{Γ Δ B} (σ : ∀ {C} → Γ ∋ C → Δ ⊢ C) (m : ℕ) 
+        → SubstHeight σ m
+        → SubstHeight (exts σ {B = B}) m
+  SubstHeight-exts σ m σ≤m Z = z≤n
+  SubstHeight-exts {B = B} σ m σ≤m (S ∋x) =
+      let eq = rename-height (σ ∋x) S_ in
+      ≤-trans (≤-reflexive (sym eq)) (σ≤m ∋x)
+
+  sub-height-3 : ∀ {Γ Δ A B C} (L : Γ ⊢ A)(M : Γ ⊢ B)(N : Γ ⊢ C)(σ : {D : Type} → Γ ∋ D → Δ ⊢ D)(m : ℕ)
+      → c-height (subst σ L) ≤ c-height L ⊔ m
+      → c-height (subst σ M) ≤ c-height M ⊔ m
+      → c-height (subst σ N) ≤ c-height N ⊔ m
+      → c-height (subst σ L) ⊔ c-height (subst σ M) ⊔ c-height (subst σ N)
+         ≤ ((c-height L ⊔ c-height M) ⊔ c-height N) ⊔ m
+  sub-height-3 L M N σ m IH1 IH2 IH3 =
+      begin
+      c-height (subst σ L) ⊔ c-height (subst σ M) ⊔ c-height (subst σ N)
+      ≤⟨ ⊔-mono-≤ (⊔-mono-≤ IH1 IH2) IH3 ⟩
+      ((c-height L ⊔ m) ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → X ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height L) _ _)) ⟩
+      (c-height L ⊔ (m ⊔ (c-height M ⊔ m))) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-comm m _)) ⟩
+      (c-height L ⊔ ((c-height M ⊔ m) ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height M) _ _)) ⟩
+      (c-height L ⊔ (c-height M ⊔ (m ⊔ m))) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ (c-height M ⊔ X)) ⊔ (c-height N ⊔ m)) (⊔-idem m)) ⟩
+      (c-height L ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height L) _ _) ⟩
+      c-height L ⊔ ((c-height M ⊔ m) ⊔ (c-height N ⊔ m))
+      ≤⟨ ⊔-monoʳ-≤ (c-height L) (≤-reflexive (⊔-assoc (c-height M) _ _)) ⟩
+      c-height L ⊔ (c-height M ⊔ (m ⊔ (c-height N ⊔ m)))
+      ≤⟨ ⊔-monoʳ-≤ (c-height L) (⊔-monoʳ-≤ (c-height M) (≤-reflexive (⊔-comm m _))) ⟩
+      c-height L ⊔ (c-height M ⊔ ((c-height N ⊔ m) ⊔ m))
+      ≤⟨ ≤-reflexive (cong (λ X → c-height L ⊔ (c-height M ⊔ X)) (⊔-assoc (c-height N) _ _)) ⟩
+      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ (m ⊔ m)))
+      ≤⟨ ≤-reflexive (cong (λ X → c-height L ⊔ (c-height M ⊔ (c-height N ⊔ X))) (⊔-idem m)) ⟩
+      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ m))
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height L) _ _)) ⟩
+      (c-height L ⊔ c-height M) ⊔ (c-height N ⊔ m)
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height L ⊔ c-height M) _ _)) ⟩
+      ((c-height L ⊔ c-height M) ⊔ c-height N) ⊔ m
+    ∎
+
   sub-height : ∀{Γ Δ A} (M : Γ ⊢ A) (σ : ∀ {C} → Γ ∋ C → Δ ⊢ C) (m : ℕ)
       → SubstHeight σ m
       → c-height (subst σ M) ≤ c-height M ⊔ m
   sub-height (` x) σ m σ≤m = σ≤m x
-  sub-height (ƛ M) σ m σ≤m = {!!}
+  sub-height (ƛ M) σ m σ≤m = sub-height M (exts σ) m (SubstHeight-exts σ m σ≤m)
   sub-height (L · M) σ m σ≤m =
     begin
       c-height (subst σ L) ⊔ c-height (subst σ M)
@@ -101,34 +144,8 @@ module PreserveHeight (ecs : EfficientCastStruct) where
     ∎
   sub-height ($ x) σ m σ≤m = z≤n
   sub-height (if L M N) σ m σ≤m =
-    begin
-      c-height (subst σ L) ⊔ c-height (subst σ M) ⊔ c-height (subst σ N)
-      ≤⟨ ⊔-mono-≤ (⊔-mono-≤ (sub-height L σ m σ≤m) (sub-height M σ m σ≤m))
-                            (sub-height N σ m σ≤m) ⟩
-      ((c-height L ⊔ m) ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
-      ≤⟨ ≤-reflexive (cong (λ X → X ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height L) _ _)) ⟩
-      (c-height L ⊔ (m ⊔ (c-height M ⊔ m))) ⊔ (c-height N ⊔ m)
-      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-comm m _)) ⟩
-      (c-height L ⊔ ((c-height M ⊔ m) ⊔ m)) ⊔ (c-height N ⊔ m)
-      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ X) ⊔ (c-height N ⊔ m)) (⊔-assoc (c-height M) _ _)) ⟩
-      (c-height L ⊔ (c-height M ⊔ (m ⊔ m))) ⊔ (c-height N ⊔ m)
-      ≤⟨ ≤-reflexive (cong (λ X → (c-height L ⊔ (c-height M ⊔ X)) ⊔ (c-height N ⊔ m)) (⊔-idem m)) ⟩
-      (c-height L ⊔ (c-height M ⊔ m)) ⊔ (c-height N ⊔ m)
-      ≤⟨ {!!} ⟩
-      c-height L ⊔ ((c-height M ⊔ m) ⊔ (c-height N ⊔ m))
-      ≤⟨ {!!} ⟩
-      c-height L ⊔ (c-height M ⊔ (m ⊔ (c-height N ⊔ m)))
-      ≤⟨ {!!} ⟩
-      c-height L ⊔ (c-height M ⊔ ((c-height N ⊔ m) ⊔ m))
-      ≤⟨ {!!} ⟩
-      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ (m ⊔ m)))
-      ≤⟨ {!!} ⟩
-      c-height L ⊔ (c-height M ⊔ (c-height N ⊔ m))
-      ≤⟨ {!!} ⟩
-      (c-height L ⊔ c-height M) ⊔ (c-height N ⊔ m)
-      ≤⟨ {!!} ⟩
-      ((c-height L ⊔ c-height M) ⊔ c-height N) ⊔ m
-    ∎
+     sub-height-3 L M N σ m (sub-height L σ m σ≤m) (sub-height M σ m σ≤m)
+                            (sub-height N σ m σ≤m)
   sub-height (cons M N) σ m σ≤m =
     begin
       c-height (subst σ M) ⊔ c-height (subst σ N)
@@ -149,13 +166,31 @@ module PreserveHeight (ecs : EfficientCastStruct) where
   sub-height (snd M) σ m σ≤m = sub-height M σ m σ≤m
   sub-height (inl M) σ m σ≤m = sub-height M σ m σ≤m
   sub-height (inr M) σ m σ≤m = sub-height M σ m σ≤m
-  sub-height (case L M N) σ m σ≤m = {!!}
-  sub-height (M ⟨ c ⟩) σ m σ≤m = {!!}
-  sub-height (blame ℓ) σ m σ≤m = {!!}
+  sub-height (case L M N) σ m σ≤m =
+     sub-height-3 L M N σ m (sub-height L σ m σ≤m) (sub-height M σ m σ≤m)
+                            (sub-height N σ m σ≤m)
+  sub-height (M ⟨ c ⟩) σ m σ≤m =
+    begin
+      c-height (subst σ M) ⊔ height c
+      ≤⟨ ⊔-mono-≤ (sub-height M σ m σ≤m) ≤-refl ⟩
+      (c-height M ⊔ m) ⊔ height c
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height M) _ _) ⟩
+      c-height M ⊔ (m ⊔ height c)
+      ≤⟨ ⊔-monoʳ-≤ (c-height M) (≤-reflexive (⊔-comm m _)) ⟩
+      c-height M ⊔ (height c ⊔ m)
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height M) _ _)) ⟩
+      (c-height M ⊔ height c) ⊔ m
+    ∎
+  sub-height (blame ℓ) σ m σ≤m = z≤n
 
   subst-height : ∀ {Γ A B} (N : Γ , A ⊢ B) (W : Γ ⊢ A)
       → c-height (N [ W ]) ≤ c-height N ⊔ c-height W
-  subst-height N W = {!!}
+  subst-height N W = sub-height N (subst-zero W) (c-height W) SH
+    where
+    SH : SubstHeight (subst-zero W) (c-height W)
+    SH Z = ≤-refl
+    SH (S ∋x) = z≤n
+
 
   module PreserveHeight
     (applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
