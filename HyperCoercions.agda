@@ -14,8 +14,9 @@
 module HyperCoercions where
 
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
-  open import Data.Nat using (ℕ; suc; _≤_; _⊔_; s≤s)
-  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive;
+  open import Data.Bool using (Bool; true; false)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_)
+  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-step; 
        ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n)
   open Data.Nat.Properties.≤-Reasoning
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
@@ -133,8 +134,10 @@ module HyperCoercions where
   coerce (A `⊎ B) (C `⊎ D) {sum~ c d} ℓ =
      𝜖 ↷ (coerce A C {c} ℓ +' coerce B D {d} ℓ) , 𝜖
 
+  mkcast = (λ A B ℓ {c} → coerce A B {c} ℓ)
+
   import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+  module Compile = GTLC2CC Cast mkcast
 
   data InertMiddle : ∀ {A} → Middle A → Set where
     I-cfun : ∀{A B A' B'}{s : Cast (B ⇒ A)} {t : Cast (A' ⇒ B')}
@@ -398,6 +401,19 @@ module HyperCoercions where
 
   open import CastStructure
 
+  applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+  applyCastOK {c = id★} {n} {A-id★} Mok v = ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v = {!!}
+  applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {n} {A-mid A-cpair} Mok v =
+     ⟨ zero , ⟨ consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n) , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ +' _) , .𝜖} {n} {A-mid A-csum} Mok v =
+     ⟨ zero , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))) )
+                            (lamOK (inrOK (castulOK varOK (s≤s z≤n))))) , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(id _) , .𝜖} {n} {A-mid A-idι} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+
   ecs : EfficientCastStruct
   ecs = record
              { precast = pcs
@@ -405,12 +421,48 @@ module HyperCoercions where
              ; compose = _⨟_
              ; height = height
              ; compose-height = compose-height
+             ; applyCastOK = {!!}
              }
-             
+  open EfficientCastStruct ecs using (c-height)
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  ecsh : EfficientCastStructHeight
+  ecsh = record
+              { effcast = ecs
+              ; applyCast-height = {!!}
+              ; dom-height = {!!}
+              ; cod-height = {!!}
+              ; fst-height = {!!}
+              ; snd-height = {!!}
+              ; inlC-height = {!!}
+              ; inrC-height = {!!}
+              }
 
+  import PreserveHeight
+  module PH = PreserveHeight ecsh
+
+  preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —→ M′ → c-height M′ ≤ c-height M
+  preserve-height M—→M′ = PH.preserve-height M—→M′
+
+
+  import SpaceEfficient
+  module SE = SpaceEfficient ecs
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
+
+  module EC = SE.EfficientCompile mkcast
+
+  open import GTLC
+
+  compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
+  compile-efficient d ul = EC.compile-efficient d ul
+  
   data PreType : Type → Set where
     P-Base : ∀{ι} → PreType (` ι)
     P-Fun : ∀{A B} → PreType (A ⇒ B)
