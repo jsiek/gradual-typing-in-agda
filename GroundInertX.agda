@@ -807,3 +807,5 @@ n  -}
   {- Instantiate the proof of "compilation from GTLC to CC preserves precision". -}
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
+
+  -- open import ParamGradualGuaranteeAux csp public
