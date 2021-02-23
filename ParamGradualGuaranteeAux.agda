@@ -214,3 +214,23 @@ cast-Z-⊑ {A} {B} {A′} {M = M} {M′} {c} lp1 lp2 lpM = subst-eq (λ □ → 
                               (rename-pres-prec (ext-pres-RenameIso (S-iso {A = A} {A′ = B′})) lpM)
   eq : rename (ext S_) M [ ` Z ] ≡ M
   eq = sym (substitution-Z-eq M)
+
+sim-if-true : ∀ {A A′} {L : ∅ ⊢ ` 𝔹} {M N : ∅ ⊢ A} {M′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ true) {P-Base} → ∅ , ∅ ⊢ M ⊑ᶜ M′
+    --------------------------------------------------
+  → ∃[ K ] ((if L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ M′))
+sim-if-true {M = M} {N} lpL lpM
+  with catchup V-const lpL
+... | ⟨ ($ true) {P-Base} , ⟨ V-const , ⟨ rd* , lpV ⟩ ⟩ ⟩ =
+  ⟨ M , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-true ⟩ _ ∎) , lpM ⟩ ⟩
+... | ⟨ V ⟪ i ⟫ , ⟨ V-wrap v .i , ⟨ rd* , lpVi ⟩ ⟩ ⟩ = contradiction i (baseNotInert _)
+
+sim-if-false : ∀ {A A′} {L : ∅ ⊢ ` 𝔹} {M N : ∅ ⊢ A} {N′ : ∅ ⊢ A′}
+  → ∅ , ∅ ⊢ L ⊑ᶜ ($ false) {P-Base} → ∅ , ∅ ⊢ N ⊑ᶜ N′
+    ---------------------------------------------------
+  → ∃[ K ] ((if L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ N′))
+sim-if-false {M = M} {N} lpL lpN
+  with catchup V-const lpL
+... | ⟨ ($ false) {P-Base} , ⟨ V-const , ⟨ rd* , lpV ⟩ ⟩ ⟩ =
+  ⟨ N , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-false ⟩ _ ∎) , lpN ⟩ ⟩
+... | ⟨ V ⟪ i ⟫ , ⟨ V-wrap v .i , ⟨ rd* , lpVi ⟩ ⟩ ⟩ = contradiction i (baseNotInert _)
