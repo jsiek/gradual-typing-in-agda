@@ -471,6 +471,8 @@ n  -}
   ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe-var))
                                             (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var))
 
+  {- A few lemmas to prove `catchup`. -}
+
   open import CastStructure
   open import CastStructureWithPrecision
 
