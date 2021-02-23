@@ -7,6 +7,7 @@ module AGT where
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Bool using (Bool; true; false)
   open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
+  open import Data.Nat.Properties using (⊔-mono-≤; ≤-trans; ≤-refl; ≤-reflexive; m≤m⊔n; ⊔-assoc; ⊔-comm)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -1382,15 +1383,121 @@ module AGT where
   height (_ ⇒ B ⇒ _) = height-t B
   height (error _ _) = 0
 
+  ⊑-height-≤ : ∀{A B} → A ⊑ B → height-t A ≤ height-t B
+  ⊑-height-≤ {.⋆} {B} unk⊑ = z≤n
+  ⊑-height-≤ {.(` _)} {.(` _)} base⊑ = z≤n
+  ⊑-height-≤ {.(_ ⇒ _)} {.(_ ⇒ _)} (fun⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+  ⊑-height-≤ {.(_ `× _)} {.(_ `× _)} (pair⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+  ⊑-height-≤ {.(_ `⊎ _)} {.(_ `⊎ _)} (sum⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+
   height-lb : ∀{BB' B B' : Type}
-     → (∀ {C' : Type} → Σ (B ⊑ C') (λ x → B' ⊑ C') → BB' ⊑ C')
+     → (∀ {C' : Type} → ub C' B B' → BB' ⊑ C')
      → B ~ B'
+     → B ⊑ BB' → B' ⊑ BB'
      → height-t BB' ≤ height-t B ∨ height-t B'
-  height-lb {⋆} {B} {B'} lb B~B' = z≤n
-  height-lb {` x} {B} {B'} lb B~B' = z≤n
-  height-lb {BB' ⇒ BB''} {B} {B'} lb B~B' = {!!}
-  height-lb {BB' `× BB''} {B} {B'} lb B~B' = {!!}
-  height-lb {BB' `⊎ BB''} {B} {B'} lb B~B' = {!!}
+  height-lb {BB} {.⋆} {B'} lb unk~L B⊑BB' B'⊑BB' =
+     let xx = lb {B'} ⟨ unk⊑ , Refl⊑ ⟩ in
+     ⊑-height-≤ xx
+  height-lb {BB} {B} {.⋆} lb unk~R B⊑BB' B'⊑BB' =
+     let xx = lb {B} ⟨ Refl⊑ , unk⊑ ⟩ in
+     ≤-trans (m≤m⊔n _ _) (⊔-mono-≤ (⊑-height-≤ xx) ≤-refl)
+  height-lb {BB} {(` ι)} {.(` _)} lb base~ B⊑BB' B'⊑BB' =
+    let xx = lb {` ι} ⟨ Refl⊑ , Refl⊑ ⟩ in
+    ⊑-height-≤ xx 
+  height-lb {BB1 ⇒ BB2} {B1 ⇒ B2} {B1' ⇒ B2'} lb (fun~ B~B' B~B'') (fun⊑ B⊑BB' B⊑BB'') (fun⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G (Sym~ B~B') B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' ⇒ BB2} ⟨ (fun⊑ B1'⊑C' B⊑BB'') , fun⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | fun⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 ⇒ C'} ⟨ (fun⊑ B⊑BB' B2'⊑C') , fun⊑ B'⊑BB' B2⊑C' ⟩
+    ... | fun⊑ xx yy = yy
+    
+  height-lb {BB1 `× BB2} {B1 `× B2} {B1' `× B2'} lb (pair~ B~B' B~B'')
+    (pair⊑ B⊑BB' B⊑BB'') (pair⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G B~B' B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' `× BB2} ⟨ (pair⊑ B1'⊑C' B⊑BB'') , pair⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | pair⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 `× C'} ⟨ (pair⊑ B⊑BB' B2'⊑C') , pair⊑ B'⊑BB' B2⊑C' ⟩
+    ... | pair⊑ xx yy = yy
+    
+  height-lb {BB1 `⊎ BB2} {B1 `⊎ B2} {B1' `⊎ B2'} lb (sum~ B~B' B~B'')
+    (sum⊑ B⊑BB' B⊑BB'') (sum⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G B~B' B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' `⊎ BB2} ⟨ (sum⊑ B1'⊑C' B⊑BB'') , sum⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | sum⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 `⊎ C'} ⟨ (sum⊑ B⊑BB' B2'⊑C') , sum⊑ B'⊑BB' B2⊑C' ⟩
+    ... | sum⊑ xx yy = yy
 
   compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
      → height (compose s t) ≤ (height s) ∨ (height t)
@@ -1400,7 +1507,7 @@ module AGT where
   ... | yes B~B'
       with (B `⊔ B') {B~B'}
   ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
-      {!!}
+      height-lb lb B~B' B⊑B⊔B' B'⊑B⊔B'
   compose-height (_ ⇒ B ⇒ _) (error _ _) = z≤n
   compose-height (error _ _) (_ ⇒ B ⇒ _) = z≤n
   compose-height (error _ _) (error _ _) = z≤n
@@ -1419,7 +1526,7 @@ module AGT where
              ; compose = compose
              ; height = height
              ; compose-height = compose-height
-             ; applyCastOK = applyCastOK
+             ; applyCastOK = λ{Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a}
              }
              
   open EfficientCastStruct ecs using (c-height)
