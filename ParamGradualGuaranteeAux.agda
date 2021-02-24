@@ -13,7 +13,6 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructure
 open import CastStructureWithPrecision
 
 module ParamGradualGuaranteeAux (csp : CastStructWithPrecision) where
@@ -234,3 +233,24 @@ sim-if-false {M = M} {N} lpL lpN
 ... | ⟨ ($ false) {P-Base} , ⟨ V-const , ⟨ rd* , lpV ⟩ ⟩ ⟩ =
   ⟨ N , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-false ⟩ _ ∎) , lpN ⟩ ⟩
 ... | ⟨ V ⟪ i ⟫ , ⟨ V-wrap v .i , ⟨ rd* , lpVi ⟩ ⟩ ⟩ = contradiction i (baseNotInert _)
+
+sim-case-caseL-v : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                                      {V′ : ∅ ⊢ A′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
+  → Value L → Value V′
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ L ⊑ᶜ inl {B = B′} V′ → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B′) ⊢ N ⊑ᶜ N′
+    --------------------------------------------------------
+  → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ M′ [ V′ ]))
+sim-case-caseL-v (V-inl v) v′ lp1 lp2 (⊑ᶜ-inl _ lpV) lpM lpN =
+  ⟨ _ , ⟨ _ —→⟨ β-caseL v ⟩ _ ∎ , subst-pres-prec (⊑ˢ-σ₀ lpV) lpM ⟩ ⟩
+sim-case-caseL-v (V-wrap {c = c} v i) v′ lp1 lp2 (⊑ᶜ-wrapl lpit lpV) lpM lpN
+  with lpit→⊑ lpit
+... | ⟨ unk⊑ , sum⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
+... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
+  let x = proj₁ (Inert-Cross⊎ _ i)
+      cₗ = inlC _ x
+      cᵣ = inrC _ x
+      ⟨ K , ⟨ rd* , lpK ⟩ ⟩ =
+        sim-case-caseL-v v v′ lp₁₁ lp₁₂ lpV (cast-Z-⊑ {c = cₗ} lp1 lp₁₁ lpM)
+                                            (cast-Z-⊑ {c = cᵣ} lp2 lp₁₂ lpN) in
+    ⟨ K , ⟨ _ —→⟨ case-cast v {x} ⟩ rd* , lpK ⟩ ⟩
