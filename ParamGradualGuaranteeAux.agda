@@ -234,23 +234,129 @@ sim-if-false {M = M} {N} lpL lpN
   ⟨ N , ⟨ ↠-trans (plug-cong (F-if M N) rd*) (_ —→⟨ β-if-false ⟩ _ ∎) , lpN ⟩ ⟩
 ... | ⟨ V ⟪ i ⟫ , ⟨ V-wrap v .i , ⟨ rd* , lpVi ⟩ ⟩ ⟩ = contradiction i (baseNotInert _)
 
-sim-case-caseL-v : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
-                                      {V′ : ∅ ⊢ A′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
-  → Value L → Value V′
+private
+  sim-case-caseL-v : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                                        {V′ : ∅ ⊢ A′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
+    → Value L → Value V′
+    → A ⊑ A′ → B ⊑ B′
+    → ∅ , ∅ ⊢ L ⊑ᶜ inl {B = B′} V′ → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B′) ⊢ N ⊑ᶜ N′
+      --------------------------------------------------------
+    → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ M′ [ V′ ]))
+  sim-case-caseL-v (V-inl v) v′ lp1 lp2 (⊑ᶜ-inl _ lpV) lpM lpN =
+    ⟨ _ , ⟨ _ —→⟨ β-caseL v ⟩ _ ∎ , subst-pres-prec (⊑ˢ-σ₀ lpV) lpM ⟩ ⟩
+  sim-case-caseL-v (V-wrap {c = c} v i) v′ lp1 lp2 (⊑ᶜ-wrapl lpit lpV) lpM lpN
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , sum⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
+    let x = proj₁ (Inert-Cross⊎ _ i)
+        cₗ = inlC _ x
+        cᵣ = inrC _ x
+        ⟨ K , ⟨ rd* , lpK ⟩ ⟩ =
+          sim-case-caseL-v v v′ lp₁₁ lp₁₂ lpV (cast-Z-⊑ {c = cₗ} lp1 lp₁₁ lpM)
+                                              (cast-Z-⊑ {c = cᵣ} lp2 lp₁₂ lpN) in
+      ⟨ K , ⟨ _ —→⟨ case-cast v {x} ⟩ rd* , lpK ⟩ ⟩
+
+sim-case-caseL : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                                    {V′ : ∅ ⊢ A′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
+  → Value V′
   → A ⊑ A′ → B ⊑ B′
   → ∅ , ∅ ⊢ L ⊑ᶜ inl {B = B′} V′ → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B′) ⊢ N ⊑ᶜ N′
     --------------------------------------------------------
   → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ M′ [ V′ ]))
-sim-case-caseL-v (V-inl v) v′ lp1 lp2 (⊑ᶜ-inl _ lpV) lpM lpN =
-  ⟨ _ , ⟨ _ —→⟨ β-caseL v ⟩ _ ∎ , subst-pres-prec (⊑ˢ-σ₀ lpV) lpM ⟩ ⟩
-sim-case-caseL-v (V-wrap {c = c} v i) v′ lp1 lp2 (⊑ᶜ-wrapl lpit lpV) lpM lpN
-  with lpit→⊑ lpit
-... | ⟨ unk⊑ , sum⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
-... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
-  let x = proj₁ (Inert-Cross⊎ _ i)
-      cₗ = inlC _ x
-      cᵣ = inrC _ x
-      ⟨ K , ⟨ rd* , lpK ⟩ ⟩ =
-        sim-case-caseL-v v v′ lp₁₁ lp₁₂ lpV (cast-Z-⊑ {c = cₗ} lp1 lp₁₁ lpM)
-                                            (cast-Z-⊑ {c = cᵣ} lp2 lp₁₂ lpN) in
-    ⟨ K , ⟨ _ —→⟨ case-cast v {x} ⟩ rd* , lpK ⟩ ⟩
+sim-case-caseL v′ lp1 lp2 lpL lpM lpN
+  with catchup (V-inl v′) lpL
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-case-caseL-v v v′ lp1 lp2 lpV lpM lpN
+...   | ⟨ K , ⟨ rd*₂ , lpK ⟩ ⟩ = ⟨ K , ⟨ ↠-trans (plug-cong (F-case _ _) rd*₁) rd*₂ , lpK ⟩ ⟩
+
+private
+  sim-case-caseR-v : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                                        {V′ : ∅ ⊢ B′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
+    → Value L → Value V′
+    → A ⊑ A′ → B ⊑ B′
+    → ∅ , ∅ ⊢ L ⊑ᶜ inr {A = A′} V′ → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B′) ⊢ N ⊑ᶜ N′
+      --------------------------------------------------------
+    → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ N′ [ V′ ]))
+  sim-case-caseR-v (V-inr v) v′ lp1 lp2 (⊑ᶜ-inr _ lpV) lpM lpN =
+    ⟨ _ , ⟨ _ —→⟨ β-caseR v ⟩ _ ∎ , subst-pres-prec (⊑ˢ-σ₀ lpV) lpN ⟩ ⟩
+  sim-case-caseR-v (V-wrap {c = c} v i) v′ lp1 lp2 (⊑ᶜ-wrapl lpit lpV) lpM lpN
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , sum⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
+    let x = proj₁ (Inert-Cross⊎ _ i)
+        cₗ = inlC _ x
+        cᵣ = inrC _ x
+        ⟨ K , ⟨ rd* , lpK ⟩ ⟩ =
+          sim-case-caseR-v v v′ lp₁₁ lp₁₂ lpV (cast-Z-⊑ {c = cₗ} lp1 lp₁₁ lpM)
+                                              (cast-Z-⊑ {c = cᵣ} lp2 lp₁₂ lpN) in
+      ⟨ K , ⟨ _ —→⟨ case-cast v {x} ⟩ rd* , lpK ⟩ ⟩
+
+sim-case-caseR : ∀ {A A′ B B′ C C′} {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                                    {V′ : ∅ ⊢ B′} {M′ : ∅ , A′ ⊢ C′} {N′ : ∅ , B′ ⊢ C′}
+  → Value V′
+  → A ⊑ A′ → B ⊑ B′
+  → ∅ , ∅ ⊢ L ⊑ᶜ inr {A = A′} V′ → (∅ , A) , (∅ , A′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B′) ⊢ N ⊑ᶜ N′
+    --------------------------------------------------------
+  → ∃[ K ] ((case L M N —↠ K) × (∅ , ∅ ⊢ K ⊑ᶜ N′ [ V′ ]))
+sim-case-caseR v′ lp1 lp2 lpL lpM lpN
+  with catchup (V-inr v′) lpL
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-case-caseR-v v v′ lp1 lp2 lpV lpM lpN
+...   | ⟨ K , ⟨ rd*₂ , lpK ⟩ ⟩ = ⟨ K , ⟨ ↠-trans (plug-cong (F-case _ _) rd*₁) rd*₂ , lpK ⟩ ⟩
+
+private
+  sim-fst-cons-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+    → Value V → Value V′ → Value W′
+    → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
+      ------------------------------------------
+    → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
+  sim-fst-cons-v (V-pair {V = V} {W} v w) v′ w′ (⊑ᶜ-cons lpV lpW) =
+    ⟨ V , ⟨ _ —→⟨ β-fst v w ⟩ _ ∎ , lpV ⟩ ⟩
+  sim-fst-cons-v (V-wrap {V = V} {c} v i) v′ w′ (⊑ᶜ-wrapl lpit lpV)
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , pair⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩
+    with sim-fst-cons-v v v′ w′ lpV
+  ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast (fstC c x)) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
+
+sim-fst-cons : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+  → Value V′ → Value W′
+  → ∅ , ∅ ⊢ N ⊑ᶜ cons V′ W′
+    ------------------------------------------
+  → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ V′))
+sim-fst-cons v′ w′ lpN
+  -- first goes to fst V where V is value
+  with catchup (V-pair v′ w′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  -- then goes from there by `sim-fst-cons-v`
+  with sim-fst-cons-v v v′ w′ lpV
+...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ ↠-trans (plug-cong F-fst rd*₁) rd*₂ , lpM ⟩ ⟩
+
+private
+  sim-snd-cons-v : ∀ {A A′ B B′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+    → Value V → Value V′ → Value W′
+    → ∅ , ∅ ⊢ V ⊑ᶜ cons V′ W′
+      ------------------------------------------
+    → ∃[ M ] ((snd V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ W′))
+  sim-snd-cons-v (V-pair {V = V} {W} v w) v′ w′ (⊑ᶜ-cons lpV lpW) = ⟨ W , ⟨ _ —→⟨ β-snd v w ⟩ _ ∎ , lpW ⟩ ⟩
+  sim-snd-cons-v (V-wrap {V = V} {c} v i) v′ w′ (⊑ᶜ-wrapl lpit lpV)
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , pair⊑ lp21 lp22 ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩
+    with sim-snd-cons-v v v′ w′ lpV
+  ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ M ⟨ sndC c x ⟩ , ⟨ _ —→⟨ snd-cast v {x} ⟩ plug-cong (F-cast (sndC c x)) rd* , ⊑ᶜ-castl lp₁₂ lp₂₂ lpM ⟩ ⟩
+
+sim-snd-cons : ∀ {A A′ B B′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A′} {W′ : ∅ ⊢ B′}
+  → Value V′ → Value W′
+  → ∅ , ∅ ⊢ N ⊑ᶜ cons V′ W′
+    ------------------------------------------
+  → ∃[ M ] ((snd N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ W′))
+sim-snd-cons v′ w′ lpN
+  with catchup (V-pair v′ w′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-snd-cons-v v v′ w′ lpV
+...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ ↠-trans (plug-cong F-snd rd*₁) rd*₂ , lpM ⟩ ⟩
