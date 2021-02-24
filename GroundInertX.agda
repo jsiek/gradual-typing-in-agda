@@ -181,6 +181,9 @@ n  -}
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a c = ActiveNotInert (A-id {a = a} c)
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (A-proj c j)
 
@@ -323,6 +326,19 @@ n  -}
         ----------------------------------------------
       → A `⊎ B ⊑⟪ I-sum c′ ⟫
 
+  inj-⊑-inj : ∀ {A A′ B′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
+    → (i : Inert c) → (i′ : Inert c′)
+    → ⟪ i ⟫⊑⟪ i′ ⟫
+      --------------------
+    → (A′ ≡ A) × (B′ ≡ ⋆)
+  inj-⊑-inj .(I-inj g _) .(I-inj g _) (lpii-inj g) = [ refl , refl ]
+
+  ⋆-⋢-inert : ∀ {A′ B′} {c′ : Cast (A′ ⇒ B′)}
+    → (i′ : Inert c′)
+      ----------------
+    → ¬ (⋆ ⊑⟪ i′ ⟫)
+  ⋆-⋢-inert _ = λ ()
+
   {- Lemmas about precision, suppose all casts are inert:
        1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
   ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
@@ -390,6 +406,7 @@ n  -}
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
@@ -409,6 +426,8 @@ n  -}
            ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
+           inj-⊑-inj = inj-⊑-inj;
+           ⋆-⋢-inert = ⋆-⋢-inert;
            ⊑→lpit = ⊑→lpit;
            lpii→⊑ = lpii→⊑;
            lpit→⊑ = lpit→⊑;
@@ -677,40 +696,9 @@ n  -}
     dyn-value-⊑-wrap v v′ (Inert.I-sum (cast .(_ `⊎ _) .(_ `⊎ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpV) =
       ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) lpV)
 
-  {- Various inversion lemmas about `wrap` being on either / both sides. -}
-  value-⊑-wrap-inv : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ ⋆)} {i′ : Inert c′}
-    → Value V → Value (V′ ⟪ i′ ⟫)
-    → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
-      -----------------------
-    → ∅ , ∅ ⊢ V ⊑ᶜ V′
-  value-⊑-wrap-inv v (V-wrap v′ (I-inj g′ _)) (⊑ᶜ-wrap lpii lpW)
-    with lpii→⊑ lpii
-  ... | [ lp , unk⊑ ] = ⊑ᶜ-wrapl (⊑→lpit _ lp unk⊑) lpW
-  value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ (I-inj g′ _)) (⊑ᶜ-wrapl lpit lpV)
-    with lpit→⊑ lpit
-  ... | [ unk⊑ , unk⊑ ] with i
-  ...   | I-inj () _
+  open import ParamGradualGuaranteeAux pcsp
 
-  wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
-    → A′ ≢ ⋆
-    → Value (V ⟪ i ⟫) → Value V′
-    → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
-      ----------------------
-    → ∅ , ∅ ⊢ V ⊑ᶜ V′
-  -- Different from the lemma above, where the wrap is on the rhs, we require that the rhs has a type that is not ⋆.
-  wrap-⊑-value-inv nd v w (⊑ᶜ-wrap (lpii-inj _) lpV) = contradiction refl nd
-  wrap-⊑-value-inv nd v w (⊑ᶜ-wrapl lpi lpV) = lpV
-
-  wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
-                      {i : Inert c} {i′ : Inert c′}
-    → Value (V ⟪ i ⟫) → Value (V′ ⟪ i′ ⟫)
-    → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
-      -----------------------------
-    → ∅ , ∅ ⊢ V ⊑ᶜ V′
-  wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrap _ lpV) = lpV
-  wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl (lpit-inj () unk⊑) lpV)
-
-  apply-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+  applyCast-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
     → (v : Value V) → Value V′
     → (a : Active c) → (i′ : Inert c′)
     → A ⊑ A′ → B ⊑ B′
@@ -718,35 +706,35 @@ n  -}
       -----------------------------------------
     → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ V′ ⟪ i′ ⟫
   -- Id
-  apply-⊑-wrap v v′ (A-id _) i′ lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ i′ lpV
+  applyCast-⊑-wrap v v′ (A-id _) i′ lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ i′ lpV
   -- Inj
-  apply-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-inj g′ _) unk⊑ _ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-inj (cast .(` _) .⋆ _ _) ng nd) (I-inj G-Base _) base⊑ _ lpV = contradiction G-Base ng
-  apply-⊑-wrap v v′ (A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (I-inj G-Fun _) (fun⊑ unk⊑ unk⊑) _ lpV = contradiction G-Fun ng
-  apply-⊑-wrap v v′ (A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) _ lpV = contradiction G-Pair ng
-  apply-⊑-wrap v v′ (A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) _ lpV = contradiction G-Sum ng
-  apply-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-fun _) unk⊑ _ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (I-fun _) (fun⊑ lp1 lp2) _ lpV
+  applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-inj g′ _) unk⊑ _ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-inj (cast .(` _) .⋆ _ _) ng nd) (I-inj G-Base _) base⊑ _ lpV = contradiction G-Base ng
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (I-inj G-Fun _) (fun⊑ unk⊑ unk⊑) _ lpV = contradiction G-Fun ng
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) _ lpV = contradiction G-Pair ng
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) _ lpV = contradiction G-Sum ng
+  applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-fun _) unk⊑ _ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ ⇒ _) .⋆ _ _) ng nd) (I-fun _) (fun⊑ lp1 lp2) _ lpV
     with ground _ {nd}
   ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
     ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
                                              (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV))
-  apply-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-pair _) unk⊑ _ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (I-pair _) (pair⊑ lp1 lp2) _ lpV
+  applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-pair _) unk⊑ _ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (I-pair _) (pair⊑ lp1 lp2) _ lpV
     with ground _ {nd}
   ... | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
     ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑))
                                               (⊑ᶜ-castl (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑) lpV))
-  apply-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-sum _) unk⊑ _ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (I-sum _) (sum⊑ lp1 lp2) _ lpV
+  applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-sum _) unk⊑ _ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (I-sum _) (sum⊑ lp1 lp2) _ lpV
     with ground _ {nd}
   ... | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
     ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑))
                                              (⊑ᶜ-castl (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑) lpV))
   -- Proj
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ B _ _) nd) (I-inj x _) _ unk⊑ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-fun _) _ unk⊑ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) _) (I-fun _) _ (fun⊑ lp1 lp2) lpV
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ B _ _) nd) (I-inj x _) _ unk⊑ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-fun _) _ unk⊑ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) _) (I-fun _) _ (fun⊑ lp1 lp2) lpV
     with ground? (A ⇒ B)
   ... | yes G-Fun
     with canonical⋆ _ v
@@ -755,13 +743,13 @@ n  -}
   ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpW = contradiction refl ap
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) nd) (I-fun _) _ (fun⊑ lp1 lp2) lpV | no ng
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) nd) (I-fun _) _ (fun⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
     ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
                                                        (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV))
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-pair _) _ unk⊑ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) _) (I-pair _) _ (pair⊑ lp1 lp2) lpV
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-pair _) _ unk⊑ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) _) (I-pair _) _ (pair⊑ lp1 lp2) lpV
     with ground? (A `× B)
   ... | yes G-Pair
     with canonical⋆ _ v
@@ -770,13 +758,13 @@ n  -}
   ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ _ _)) lpW = contradiction refl ap
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) nd) (I-pair _) _ (pair⊑ lp1 lp2) lpV | no ng
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) nd) (I-pair _) _ (pair⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
     ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑))
                                                          (⊑ᶜ-castl unk⊑ (pair⊑ unk⊑ unk⊑) lpV))
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-sum _) _ unk⊑ lpV = contradiction refl nd
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) _) (I-sum _) _ (sum⊑ lp1 lp2) lpV
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-sum _) _ unk⊑ lpV = contradiction refl nd
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) _) (I-sum _) _ (sum⊑ lp1 lp2) lpV
     with ground? (A `⊎ B)
   ... | yes G-Sum
     with canonical⋆ _ v
@@ -785,7 +773,7 @@ n  -}
   ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpW = contradiction refl ap
-  apply-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) nd) (I-sum _) _ (sum⊑ lp1 lp2) lpV | no ng
+  applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) nd) (I-sum _) _ (sum⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
     ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑))
@@ -798,14 +786,11 @@ n  -}
           applyCast = applyCast;
           applyCast-pres-allsafe = applyCast-pres-allsafe;
           applyCast-catchup = applyCast-catchup;
-          value-⊑-wrap-inv = value-⊑-wrap-inv;
-          wrap-⊑-value-inv = wrap-⊑-value-inv;
-          wrap-⊑-wrap-inv = wrap-⊑-wrap-inv;
-          apply-⊑-wrap = apply-⊑-wrap
+          applyCast-⊑-wrap = applyCast-⊑-wrap
         }
 
   {- Instantiate the proof of "compilation from GTLC to CC preserves precision". -}
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
 
-  -- open import ParamGradualGuaranteeAux csp public
+  -- open import ParamGradualGuaranteeSim csp

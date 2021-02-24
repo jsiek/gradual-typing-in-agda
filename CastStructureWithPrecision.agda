@@ -51,25 +51,7 @@ record CastStructWithPrecision : Set₁ where
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
         -----------------------------------------------------------------------
       → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
-    {- Inversion lemmas. -}
-    value-⊑-wrap-inv : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ ⋆)} {i′ : Inert c′}
-      → Value V → Value (V′ ⟪ i′ ⟫)
-      → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
-        -----------------------
-      → ∅ , ∅ ⊢ V ⊑ᶜ V′
-    wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
-      → A′ ≢ ⋆
-      → Value (V ⟪ i ⟫) → Value V′
-      → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
-        ----------------------
-      → ∅ , ∅ ⊢ V ⊑ᶜ V′
-    wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
-                        {i : Inert c} {i′ : Inert c′}
-      → Value (V ⟪ i ⟫) → Value (V′ ⟪ i′ ⟫)
-      → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
-        -----------------------------
-      → ∅ , ∅ ⊢ V ⊑ᶜ V′
-    apply-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+    applyCast-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
       → (v : Value V) → Value V′
       → (a : Active c) → (i′ : Inert c′)
       → A ⊑ A′ → B ⊑ B′
