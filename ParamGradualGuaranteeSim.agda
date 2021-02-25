@@ -389,7 +389,8 @@ private
     with lpti→⊑ lpti
   ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ = ⟨ fst V , ⟨ fst V ∎ , ⊑ᶜ-castr lp₁₁ lp₂₁ (⊑ᶜ-fst lpV) ⟩ ⟩
 
-sim-fst-wrap : ∀ {A B A₁′ B₁′ A₂′ B₂′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+sim-fst-wrap : ∀ {A B A₁′ B₁′ A₂′ B₂′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′}
+                                       {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
   → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
   → ∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫
     ------------------------------------------------------------------
@@ -399,3 +400,40 @@ sim-fst-wrap v′ i′ x′ lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-fst-wrap-v v v′ i′ x′ lpV
 ...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
+
+private
+  sim-snd-wrap-v : ∀ {A B A₁′ B₁′ A₂′ B₂′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′}
+                                           {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+    → Value V → Value V′
+    → (i′ : Inert c′) → (x′ : Cross c′)
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+      ------------------------------------------------------------------
+    → ∃[ M ] ((snd V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (snd V′) ⟨ sndC c′ x′ ⟩))
+  sim-snd-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV)
+    with lpii→⊑ lpii
+  ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ (snd V) ⟨ sndC c x ⟩ , ⟨ _ —→⟨ snd-cast v {x} ⟩ _ ∎ , (⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-snd lpV)) ⟩ ⟩
+  sim-snd-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrapl lpit lpV)
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩
+    with sim-snd-wrap-v v v′ i′ x′ lpV
+  ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ M ⟨ sndC c x ⟩ , ⟨ _ —→⟨ snd-cast v {x} ⟩ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp₁₂ lp₂₂ lpM ⟩ ⟩
+  sim-snd-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV)
+    with lpti→⊑ lpti
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ = ⟨ snd V , ⟨ snd V ∎ , ⊑ᶜ-castr lp₁₂ lp₂₂ (⊑ᶜ-snd lpV) ⟩ ⟩
+
+sim-snd-wrap : ∀ {A B A₁′ B₁′ A₂′ B₂′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫
+    ------------------------------------------------------------------
+  → ∃[ M ] ((snd N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (snd V′) ⟨ sndC c′ x′ ⟩))
+sim-snd-wrap v′ i′ x′ lpN
+  with catchup (V-wrap v′ i′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-snd-wrap-v v v′ i′ x′ lpV
+... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-snd rd*₁) rd*₂) , lpM ⟩ ⟩
