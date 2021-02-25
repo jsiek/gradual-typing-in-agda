@@ -437,3 +437,66 @@ sim-snd-wrap v′ i′ x′ lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-snd-wrap-v v v′ i′ x′ lpV
 ... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-snd rd*₁) rd*₂) , lpM ⟩ ⟩
+
+
+private
+  sim-case-wrap-v : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
+                      {V : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                      {V′ : ∅ ⊢ A₁′ `⊎ B₁′} {M′ : ∅ , A₂′ ⊢ C′} {N′ : ∅ , B₂′ ⊢ C′} {c′ : Cast ((A₁′ `⊎ B₁′) ⇒ (A₂′ `⊎ B₂′))}
+    → Value V → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+    → A ⊑ A₂′ → B ⊑ B₂′
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫ → (∅ , A) , (∅ , A₂′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B₂′) ⊢ N ⊑ᶜ N′
+      ------------------------------------------------------------------
+    → ∃[ K ] ((case V M N —↠ K) ×
+               (∅ , ∅ ⊢ K ⊑ᶜ case V′ (rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ])
+                                     (rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ])))
+  sim-case-wrap-v {A₂′ = A₂′} {B₂′} (V-wrap v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrap lpii lpV) lpM lpN
+    with lpii→⊑ lpii
+  ... | ⟨ unk⊑ , sum⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ sum⊑ {A = A₁} {B = B₁} lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
+    let x = proj₁ (Inert-Cross⊎ _ i) in
+      ⟨ _ , ⟨ _ —→⟨ case-cast v {x} ⟩ _ ∎ ,
+              ⊑ᶜ-case lpV lp₁₁ lp₁₂
+                      (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-var refl)))
+                                       (rename-pres-prec (ext-pres-RenameIso (S-iso {A = A₁} {A′ = A₂′})) lpM))
+                      (subst-pres-prec (⊑ˢ-σ₀ (⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-var refl)))
+                                       (rename-pres-prec (ext-pres-RenameIso (S-iso {A = B₁} {A′ = B₂′})) lpN)) ⟩ ⟩
+  sim-case-wrap-v {A₂} {B₂} {A₂′ = A₂′} {B₂′} {M = M} {N} {M′ = M′} {N′}
+                  (V-wrap {c = c} v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapl lpit lpV) lpM lpN
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , sum⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ sum⊑ {A = A₁} {B = B₁} lp3 lp4 , _ ⟩ =
+    let ⟨ K , ⟨ rd* , lpK ⟩ ⟩ = sim-case-wrap-v v v′ i′ x′ lp3 lp4 lpV lpM† lpN† in
+      ⟨ K , ⟨ _ —→⟨ case-cast v {x} ⟩ rd* , lpK ⟩ ⟩
+    where
+    x = proj₁ (Inert-Cross⊎ _ i)
+    lpM† : (∅ , A₁) , (∅ , A₂′) ⊢ rename (ext S_) M [ ` Z ⟨ inlC c x ⟩ ] ⊑ᶜ M′
+    lpM† = cast-Z-⊑ lp1 lp3 lpM
+    lpN† : (∅ , B₁) , (∅ , B₂′) ⊢ rename (ext S_) N [ ` Z ⟨ inrC c x ⟩ ] ⊑ᶜ N′
+    lpN† = cast-Z-⊑ lp2 lp4 lpN
+  sim-case-wrap-v {A = A} {B} {A₁′ = A₁′} {B₁′} {M = M} {N} {M′ = M′} {N′} {c′}
+                  v v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapr lpti lpV) lpM lpN
+    with lpti→⊑ lpti
+  ... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
+    ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-case lpV lp₁₁ lp₁₂ lpM† lpN† ⟩ ⟩
+    where
+    lpM† : (∅ , A) , (∅ , A₁′) ⊢ M ⊑ᶜ rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ]
+    lpM† = ⊑-cast-Z lp₂₁ lp₁₁ lpM
+    lpN† : (∅ , B) , (∅ , B₁′) ⊢ N ⊑ᶜ rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ]
+    lpN† = ⊑-cast-Z lp₂₂ lp₁₂ lpN
+
+sim-case-wrap : ∀ {A B C A₁′ B₁′ A₂′ B₂′ C′}
+                  {L : ∅ ⊢ A `⊎ B} {M : ∅ , A ⊢ C} {N : ∅ , B ⊢ C}
+                  {V′ : ∅ ⊢ A₁′ `⊎ B₁′} {M′ : ∅ , A₂′ ⊢ C′} {N′ : ∅ , B₂′ ⊢ C′} {c′ : Cast ((A₁′ `⊎ B₁′) ⇒ (A₂′ `⊎ B₂′))}
+  → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+  → A ⊑ A₂′ → B ⊑ B₂′
+  → ∅ , ∅ ⊢ L ⊑ᶜ V′ ⟪ i′ ⟫ → (∅ , A) , (∅ , A₂′) ⊢ M ⊑ᶜ M′ → (∅ , B) , (∅ , B₂′) ⊢ N ⊑ᶜ N′
+    ----------------------------------------
+  → ∃[ K ] ((case L M N —↠ K) ×
+             (∅ , ∅ ⊢ K ⊑ᶜ case V′ (rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ])
+                                   (rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ])))
+sim-case-wrap v′ i′ x′ lp1 lp2 lpL lpM lpN
+  with catchup (V-wrap v′ i′) lpL
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-case-wrap-v v v′ i′ x′ lp1 lp2 lpV lpM lpN
+...   | ⟨ K , ⟨ rd*₂ , lpK ⟩ ⟩ = ⟨ K , ⟨ ↠-trans (plug-cong (F-case _ _) rd*₁) rd*₂ , lpK ⟩ ⟩
