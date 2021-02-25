@@ -362,3 +362,40 @@ sim-snd-cons v′ w′ lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-snd-cons-v v v′ w′ lpV
 ...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ ↠-trans (plug-cong F-snd rd*₁) rd*₂ , lpM ⟩ ⟩
+
+private
+  sim-fst-wrap-v : ∀ {A B A₁′ B₁′ A₂′ B₂′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′}
+                                           {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+    → Value V → Value V′
+    → (i′ : Inert c′) → (x′ : Cross c′)
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+      ------------------------------------------------------------------
+    → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (fst V′) ⟨ fstC c′ x′ ⟩))
+  sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV)
+    with lpii→⊑ lpii
+  ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ (fst V) ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ _ ∎ , (⊑ᶜ-cast lp₁₁ lp₂₁ (⊑ᶜ-fst lpV)) ⟩ ⟩
+  sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrapl lpit lpV)
+    with lpit→⊑ lpit
+  ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩
+    with sim-fst-wrap-v v v′ i′ x′ lpV
+  ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
+    let x = proj₁ (Inert-Cross× _ i) in
+      ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
+  sim-fst-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV)
+    with lpti→⊑ lpti
+  ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ = ⟨ fst V , ⟨ fst V ∎ , ⊑ᶜ-castr lp₁₁ lp₂₁ (⊑ᶜ-fst lpV) ⟩ ⟩
+
+sim-fst-wrap : ∀ {A B A₁′ B₁′ A₂′ B₂′} {N : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → Value V′ → (i′ : Inert c′) → (x′ : Cross c′)
+  → ∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫
+    ------------------------------------------------------------------
+  → ∃[ M ] ((fst N —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (fst V′) ⟨ fstC c′ x′ ⟩))
+sim-fst-wrap v′ i′ x′ lpN
+  with catchup (V-wrap v′ i′) lpN
+... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
+  with sim-fst-wrap-v v v′ i′ x′ lpV
+...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
