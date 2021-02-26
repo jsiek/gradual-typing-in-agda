@@ -70,7 +70,7 @@ catchup v′ (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
 ... | ⟨ V , ⟨ vV , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   -- this is the more involved case so we prove it in a separate lemma
   with cast-catchup {c = c} vV v′ lp1 lp2 lpV
-...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ (↠-trans (plug-cong (F-cast _) rd*₁) rd*₂) , lpW ⟩ ⟩ ⟩
+...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpW ⟩ ⟩ ⟩
 catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM)
   -- just recur in all 3 wrap cases
   with catchup v′ lpM
@@ -399,7 +399,7 @@ sim-fst-wrap v′ i′ x′ lpN
   with catchup (V-wrap v′ i′) lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-fst-wrap-v v v′ i′ x′ lpV
-...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-fst rd*₁) rd*₂) , lpM ⟩ ⟩
+...   | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ ↠-trans (plug-cong F-fst rd*₁) rd*₂ , lpM ⟩ ⟩
 
 private
   sim-snd-wrap-v : ∀ {A B A₁′ B₁′ A₂′ B₂′} {V : ∅ ⊢ A `× B} {V′ : ∅ ⊢ A₁′ `× B₁′}
@@ -436,7 +436,7 @@ sim-snd-wrap v′ i′ x′ lpN
   with catchup (V-wrap v′ i′) lpN
 ... | ⟨ V , ⟨ v , ⟨ rd*₁ , lpV ⟩ ⟩ ⟩
   with sim-snd-wrap-v v v′ i′ x′ lpV
-... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ (↠-trans (plug-cong F-snd rd*₁) rd*₂) , lpM ⟩ ⟩
+... | ⟨ M , ⟨ rd*₂ , lpM ⟩ ⟩ = ⟨ M , ⟨ ↠-trans (plug-cong F-snd rd*₁) rd*₂ , lpM ⟩ ⟩
 
 
 private
@@ -631,4 +631,4 @@ sim-app-wrap v′ w′ i′ x′ lpL lpM
 ...   | ⟨ W , ⟨ w , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩
   with sim-app-wrap-v v w v′ w′ i′ x′ lpV lpW
 ...     | ⟨ N , ⟨ rd*₃ , lpN ⟩ ⟩ =
-  ⟨ N , ⟨ (↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v}) rd*₂) rd*₃)) , lpN ⟩ ⟩
+  ⟨ N , ⟨ ↠-trans (plug-cong (F-·₁ _) rd*₁) (↠-trans (plug-cong (F-·₂ _ {v}) rd*₂) rd*₃) , lpN ⟩ ⟩
