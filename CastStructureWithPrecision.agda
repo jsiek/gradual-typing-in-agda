@@ -58,3 +58,33 @@ record CastStructWithPrecision : Set₁ where
       → ∅ , ∅ ⊢ V ⊑ᶜ V′
         -----------------------------------------
       → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ V′ ⟪ i′ ⟫
+
+
+    sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+      → Value V → (v′ : Value V′)
+      → (a′ : Active c′)
+      → A ⊑ A′ → B ⊑ B′
+      → ∅ , ∅ ⊢ V ⊑ᶜ V′
+        ------------------------------------------------------------
+      → ∃[ N ] ((V ⟨ c ⟩ —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ applyCast V′ v′ c′ {a′}))
+    sim-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+      → Value V → (v′ : Value V′)
+      → (i′ : Inert c′)
+      → A ⊑ A′ → B ⊑ B′
+      → ∅ , ∅ ⊢ V ⊑ᶜ V′
+        -----------------------------------------------------
+      → ∃[ N ] ((V ⟨ c ⟩ —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ V′ ⟪ i′ ⟫))
+    castr-cast : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+      → Value V → (v′ : Value V′)
+      → (a′ : Active c′)
+      → A ⊑ A′ → A ⊑ B′
+      → ∅ , ∅ ⊢ V ⊑ᶜ V′
+        ------------------------------------------------------------
+      → ∅ , ∅ ⊢ V ⊑ᶜ applyCast V′ v′ c′ {a′}
+    castr-wrap : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+      → Value V → (v′ : Value V′)
+      → (i′ : Inert c′)
+      → A ⊑ A′ → A ⊑ B′
+      → ∅ , ∅ ⊢ V ⊑ᶜ V′
+        -----------------------------------------------------
+      → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫

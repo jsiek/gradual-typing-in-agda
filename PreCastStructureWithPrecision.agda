@@ -38,11 +38,16 @@ record PreCastStructWithPrecision : Set₁ where
         ----------------
       → ¬ (⋆ ⊑⟪ i′ ⟫)
 
+    {- Lemmas about precision, suppose all casts are inert:
+         1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
     ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
       → (i : Inert c) → A ⊑ A′ → B ⊑ A′ → ⟪ i ⟫⊑ A′
+    {-   2. It implies A ⊑ A′ and B ⊑ B′ if ⟨ A ⇒ B ⟩ ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
     lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
       → ⟪ i ⟫⊑⟪ i′ ⟫ → (A ⊑ A′) × (B ⊑ B′)
+    {-   3. It implies A ⊑ A′ and B ⊑ A′ if ⟨ A ⇒ B ⟩ ⊑ A′ . -}
     lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
       → ⟪ i ⟫⊑ A′    → (A ⊑ A′) × (B ⊑ A′)
+    {-   4. It implies A ⊑ A′ and A ⊑ B′ if A ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
     lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
       → A ⊑⟪ i′ ⟫    → (A ⊑ A′) × (A ⊑ B′)

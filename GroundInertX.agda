@@ -326,6 +326,7 @@ n  -}
         ----------------------------------------------
       → A `⊎ B ⊑⟪ I-sum c′ ⟫
 
+
   inj-⊑-inj : ∀ {A A′ B′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
     → (i : Inert c) → (i′ : Inert c′)
     → ⟪ i ⟫⊑⟪ i′ ⟫
@@ -339,8 +340,7 @@ n  -}
     → ¬ (⋆ ⊑⟪ i′ ⟫)
   ⋆-⋢-inert _ = λ ()
 
-  {- Lemmas about precision, suppose all casts are inert:
-       1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
+
   ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
     → (i : Inert c)
     → A ⊑ A′ → B ⊑ A′
@@ -351,7 +351,6 @@ n  -}
   ⊑→lpit (I-pair _) (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) = lpit-pair (pair⊑ lp1 lp3) (pair⊑ lp2 lp4)
   ⊑→lpit (I-sum _) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) = lpit-sum (sum⊑ lp1 lp3) (sum⊑ lp2 lp4)
 
-  {-   2. It implies A ⊑ A′ and B ⊑ B′ if ⟨ A ⇒ B ⟩ ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
   lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
     → ⟪ i ⟫⊑⟪ i′ ⟫
       --------------------
@@ -361,7 +360,6 @@ n  -}
   lpii→⊑ (lpii-pair lp1 lp2) = [ lp1 , lp2 ]
   lpii→⊑ (lpii-sum lp1 lp2) = [ lp1 , lp2 ]
 
-  {-   3. It implies A ⊑ A′ and B ⊑ A′ if ⟨ A ⇒ B ⟩ ⊑ A′ . -}
   lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
     → ⟪ i ⟫⊑ A′
       --------------------
@@ -371,7 +369,6 @@ n  -}
   lpit→⊑ (lpit-pair lp1 lp2) = [ lp1 , lp2 ]
   lpit→⊑ (lpit-sum lp1 lp2) = [ lp1 , lp2 ]
 
-  {-   4. It implies A ⊑ A′ and A ⊑ B′ if A ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
   lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
     → A ⊑⟪ i′ ⟫
       --------------------
