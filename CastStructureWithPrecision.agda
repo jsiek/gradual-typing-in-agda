@@ -51,13 +51,6 @@ record CastStructWithPrecision : Set₁ where
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
         -----------------------------------------------------------------------
       → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
-    applyCast-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
-      → (v : Value V) → Value V′
-      → (a : Active c) → (i′ : Inert c′)
-      → A ⊑ A′ → B ⊑ B′
-      → ∅ , ∅ ⊢ V ⊑ᶜ V′
-        -----------------------------------------
-      → ∅ , ∅ ⊢ applyCast V v c {a} ⊑ᶜ V′ ⟪ i′ ⟫
 
 
     sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
