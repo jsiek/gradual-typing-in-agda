@@ -21,7 +21,7 @@ module GroundCast where
   open import Relation.Nullary.Negation using (contradiction)
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
      renaming (_,_ to [_,_])
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
@@ -178,82 +178,11 @@ n  -}
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a c = ActiveNotInert (A-id {a = a} c)
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (A-proj c j)
-
-  infix 6 ⟪_⟫⊑⟪_⟫
-  data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
-                               → (i : Inert c) → (i′ : Inert c′) → Set where
-    -- Inert injections
-    lpii-inj : ∀ {G} {c : Cast (G ⇒ ⋆)} {c′ : Cast (G ⇒ ⋆)}
-      → (g : Ground G)
-        -----------------------------------------
-      → ⟪ I-inj g c ⟫⊑⟪ I-inj g c′ ⟫
-
-    -- Inert cross casts
-    lpii-fun : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
-     → A ⇒ B ⊑ A′ ⇒ B′
-     → C ⇒ D ⊑ C′ ⇒ D′
-       -------------------------------------
-     → ⟪ I-fun c ⟫⊑⟪ I-fun c′ ⟫
-
-  infix 6 ⟪_⟫⊑_
-  data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
-    -- Inert injections
-    lpit-inj : ∀ {G A′} {c : Cast (G ⇒ ⋆)}
-      → (g : Ground G)
-      → G ⊑ A′
-        -------------------------
-      → ⟪ I-inj g c ⟫⊑ A′
-
-    -- Inert cross casts
-    lpit-fun : ∀ {A A′ B B′ C D} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
-      → A ⇒ B ⊑ A′ ⇒ B′
-      → C ⇒ D ⊑ A′ ⇒ B′
-        ------------------------------------------
-      → ⟪ I-fun c ⟫⊑ A′ ⇒ B′
-
-  infix 6 _⊑⟪_⟫
-  data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
-    -- Inert cross casts
-    lpti-fun : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
-      → A ⇒ B ⊑ A′ ⇒ B′
-      → A ⇒ B ⊑ C′ ⇒ D′
-        ---------------------------------------------
-      → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
-
-  {- Lemmas about precision, suppose all casts are inert:
-       1. It implies ⟨ A ⇒ B ⟩ ⊑ A′ if A ⊑ A′ and B ⊑ B′. -}
-  ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
-    → (i : Inert c)
-    → A ⊑ A′ → B ⊑ A′
-      ------------------
-    → ⟪ i ⟫⊑ A′
-  ⊑→lpit (I-inj g _) lp1 lp2 = lpit-inj g lp1
-  ⊑→lpit (I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
-
-  {-   2. It implies A ⊑ A′ and B ⊑ B′ if ⟨ A ⇒ B ⟩ ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
-  lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
-    → ⟪ i ⟫⊑⟪ i′ ⟫
-      --------------------
-    → (A ⊑ A′) × (B ⊑ B′)
-  lpii→⊑ (lpii-inj g) = [ Refl⊑ , unk⊑ ]
-  lpii→⊑ (lpii-fun lp1 lp2) = [ lp1 , lp2 ]
-
-  {-   3. It implies A ⊑ A′ and B ⊑ A′ if ⟨ A ⇒ B ⟩ ⊑ A′ . -}
-  lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
-    → ⟪ i ⟫⊑ A′
-      --------------------
-    → (A ⊑ A′) × (B ⊑ A′)
-  lpit→⊑ (lpit-inj g lp) = [ lp , unk⊑ ]
-  lpit→⊑ (lpit-fun lp1 lp2) = [ lp1 , lp2 ]
-
-  {-   4. It implies A ⊑ A′ and A ⊑ B′ if A ⊑ ⟨ A′ ⇒ B′ ⟩ . -}
-  lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
-    → A ⊑⟪ i′ ⟫
-      --------------------
-    → (A ⊑ A′) × (A ⊑ B′)
-  lpti→⊑ (lpti-fun lp1 lp2) = [ lp1 , lp2 ]
 
   open import Subtyping using (_<:₃_)
   open _<:₃_
@@ -314,6 +243,90 @@ n  -}
   inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | sum~ _ d~ = safe-ℓ≢ {c~ = d~} ℓ≢
 
+
+  infix 6 ⟪_⟫⊑⟪_⟫
+  data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                               → (i : Inert c) → (i′ : Inert c′) → Set where
+    -- Inert injections
+    lpii-inj : ∀ {G} {c : Cast (G ⇒ ⋆)} {c′ : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+        -----------------------------------------
+      → ⟪ I-inj g c ⟫⊑⟪ I-inj g c′ ⟫
+
+    -- Inert cross casts
+    lpii-fun : ∀ {A A′ B B′ C C′ D D′} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+     → A ⇒ B ⊑ A′ ⇒ B′
+     → C ⇒ D ⊑ C′ ⇒ D′
+       -------------------------------------
+     → ⟪ I-fun c ⟫⊑⟪ I-fun c′ ⟫
+
+  infix 6 ⟪_⟫⊑_
+  data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
+    -- Inert injections
+    lpit-inj : ∀ {G A′} {c : Cast (G ⇒ ⋆)}
+      → (g : Ground G)
+      → G ⊑ A′
+        -------------------------
+      → ⟪ I-inj g c ⟫⊑ A′
+
+    -- Inert cross casts
+    lpit-fun : ∀ {A A′ B B′ C D} {c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → C ⇒ D ⊑ A′ ⇒ B′
+        ------------------------------------------
+      → ⟪ I-fun c ⟫⊑ A′ ⇒ B′
+
+  infix 6 _⊑⟪_⟫
+  data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
+    -- Inert cross casts
+    lpti-fun : ∀ {A A′ B B′ C′ D′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+      → A ⇒ B ⊑ A′ ⇒ B′
+      → A ⇒ B ⊑ C′ ⇒ D′
+        ---------------------------------------------
+      → A ⇒ B ⊑⟪ Inert.I-fun c′ ⟫
+
+  inj-⊑-inj : ∀ {A A′ B′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
+    → (i : Inert c) → (i′ : Inert c′)
+    → ⟪ i ⟫⊑⟪ i′ ⟫
+      --------------------
+    → (A′ ≡ A) × (B′ ≡ ⋆)
+  inj-⊑-inj .(I-inj g _) .(I-inj g _) (lpii-inj g) = [ refl , refl ]
+
+  ⋆-⋢-inert : ∀ {A′ B′} {c′ : Cast (A′ ⇒ B′)}
+    → (i′ : Inert c′)
+      ----------------
+    → ¬ (⋆ ⊑⟪ i′ ⟫)
+  ⋆-⋢-inert _ = λ ()
+
+  ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
+    → (i : Inert c)
+    → A ⊑ A′ → B ⊑ A′
+      ------------------
+    → ⟪ i ⟫⊑ A′
+  ⊑→lpit (I-inj g _) lp1 lp2 = lpit-inj g lp1
+  ⊑→lpit (I-fun _) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) = lpit-fun (fun⊑ lp1 lp3) (fun⊑ lp2 lp4)
+
+  lpii→⊑ : ∀ {A A′ B B′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)} {i : Inert c} {i′ : Inert c′}
+    → ⟪ i ⟫⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (B ⊑ B′)
+  lpii→⊑ (lpii-inj g) = [ Refl⊑ , unk⊑ ]
+  lpii→⊑ (lpii-fun lp1 lp2) = [ lp1 , lp2 ]
+
+  lpit→⊑ : ∀ {A A′ B} {c : Cast (A ⇒ B)} {i : Inert c}
+    → ⟪ i ⟫⊑ A′
+      --------------------
+    → (A ⊑ A′) × (B ⊑ A′)
+  lpit→⊑ (lpit-inj g lp) = [ lp , unk⊑ ]
+  lpit→⊑ (lpit-fun lp1 lp2) = [ lp1 , lp2 ]
+
+  lpti→⊑ : ∀ {A A′ B′} {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑⟪ i′ ⟫
+      --------------------
+    → (A ⊑ A′) × (A ⊑ B′)
+  lpti→⊑ (lpti-fun lp1 lp2) = [ lp1 , lp2 ]
+
+
   {-
 
    We take the first step of instantiating the reduction semantics of
@@ -341,6 +354,7 @@ n  -}
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
@@ -360,6 +374,8 @@ n  -}
            ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
+           inj-⊑-inj = inj-⊑-inj;
+           ⋆-⋢-inert = ⋆-⋢-inert;
            ⊑→lpit = ⊑→lpit;
            lpii→⊑ = lpii→⊑;
            lpit→⊑ = lpit→⊑;
@@ -509,3 +525,15 @@ n  -}
 
   -- Instantiate blame-subtyping theorem for `GroundCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public
+
+
+  {- A few lemmas to prove `catchup`. -}
+  open import ParamCCPrecision pcsp
+  private
+    wrapV-⊑-inv : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
+      → Value V → Value V′ → (i : Inert c) → A′ ≢ ⋆
+      → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
+        ------------------------
+      → Γ , Γ′ ⊢ V ⊑ᶜ V′
+    wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
+    wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
