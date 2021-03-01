@@ -24,8 +24,6 @@ open import ParamCastAux precast
 open import ParamCastReduction cs
 open import ParamCCPrecision pcsp
 
--- open import ParamGradualGuaranteeAux pcsp
-
 cast-eq-inv : ∀ {Γ A A′ B} {M : Γ ⊢ A} {M′ : Γ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B)}
   → M ⟨ c ⟩ ≡ M′ ⟨ c′ ⟩
     --------------------

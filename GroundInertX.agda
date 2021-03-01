@@ -854,4 +854,4 @@ module GroundInertX where
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
 
-  -- open import ParamGradualGuaranteeSim csp
+  open import ParamGradualGuarantee csp
