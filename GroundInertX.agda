@@ -1,15 +1,3 @@
-{-
-
-  This module formalizes the λB calculus (Siek, Thiemann, Wadler
-  2015), aka. the blame calculus without predicate types, and proves
-  type safety via progress and preservation.
-
-  This module is relatively small because it reuses the definitions
-  and proofs from the Parameterized Cast Calculus. This module just
-  has to provide the appropriate parameters.
-
--}
-
 module GroundInertX where
 
   open import Data.Nat
@@ -27,25 +15,9 @@ module GroundInertX where
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
 
-  {-
-
-   The λB calculus represents a cast as a pair of types, the source and target,
-   and a blame label. The two types must be consistent.
-
-   -}
-
+  {- Definitions: Cast, Active, and Inert -}
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → A ~ B → Cast (A ⇒ B)
-
-  {-
-
-  We categorize casts into the inert ones (that form values) and
-  the active ones (that reduce).
-
-  For λB, there are two kinds of inert casts, those from a ground
-  type to ⋆ and those between two function types.
-
-n  -}
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A} → Ground A → (c : Cast (A ⇒ ⋆)) → Inert c
@@ -53,15 +25,6 @@ n  -}
     I-fun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Inert c
     I-pair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Inert c
     I-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Inert c
-
-  {-
-
-  The rest of the casts are active casts, which we further subdivide
-  according to which reduction rule is applicable. We have the
-  identity casts, the injections from non-ground types, the casts
-  between pair types, and the casts between sum types.
-
-  -}
 
   data Active : ∀ {A} → Cast A → Set where
     A-id : ∀{A} → {a : Atomic A} → (c : Cast (A ⇒ A)) → Active c
@@ -72,19 +35,11 @@ n  -}
 
   open import GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
-  {-
-
-   To show that every cast is either active or inert, we
-   consider all the cases between two consistent types.
-
-   -}
-
   base-consis-eq : ∀ {ι ι' : Base} → .(` ι ~ ` ι') → ι ≡ ι'
   base-consis-eq {Nat} {Nat} c = refl
   base-consis-eq {Int} {Int} c = refl
   base-consis-eq {𝔹} {𝔹} c = refl
   base-consis-eq {Unit} {Unit} c = refl
-  -- Updated the constructor names according to the definition of base types in Primitives . - Tianyu
   base-consis-eq {Base.Void} {Base.Void} _ = refl
   base-consis-eq {Blame} {Blame} _ = refl
 
@@ -120,6 +75,7 @@ n  -}
   ActiveNotInert (A-inj c ¬g _) (I-inj g .c) = ¬g g
   ActiveNotInert (A-proj c neq) (I-inj _ .c) = neq refl
 
+  {- Cross casts: -}
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B' ℓ} {cn} → Cross (cast (A ⇒ B) (A' ⇒ B') ℓ cn)
     C-pair : ∀{A B A' B' ℓ} {cn} → Cross (cast (A `× B) (A' `× B') ℓ cn)
@@ -173,10 +129,6 @@ n  -}
   inrC (cast (A `⊎ B) (C `⊎ D) ℓ c') x
       with ~-relevant c'
   ... | sum~ c d = cast B D ℓ d
-
-  {-
-  Finally, we show that casts to base type are not inert.
-  -}
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
@@ -379,12 +331,7 @@ n  -}
 
   open import PreCastStructure
   open import PreCastStructureWithPrecision
-  {-
 
-   We take the first step of instantiating the reduction semantics of
-   the Parametric Cast Calculus by applying the ParamCastAux module.
-
-   -}
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -438,33 +385,16 @@ n  -}
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A
   inert-ground c (I-inj g .c) = g
 
-  {-
-
-   To instantiate the ParamCastReduction module, we must provide
-   several operations, the first of which is applyCast. This handles
-   applying an active cast to a value. We comment each case with the
-   reduction rule from Siek, Thiemann, and Wadler (2015). The
-   definition of applyCast is driven by pattern matching on the
-   parameter {a : Active c}.
-
-   -}
-
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
      → ∀ {a : Active c} → Γ ⊢ B
-  {-
-    V : ι ⇒ ι   —→   V
-   -}
+  {- V : ι ⇒ ι   —→   V -}
   applyCast M v c {A-id c} = M
-  {-
-    V : A ⇒ ⋆   —→   V : A ⇒ G ⇒ ⋆
-   -}
+  {- V : A ⇒ ⋆   —→   V : A ⇒ G ⇒ ⋆ -}
   applyCast M v (cast A ⋆ ℓ cn) {A-inj c a-ng a-nd}
       with ground A {a-nd}
   ... | [ G , cns ] = (M ⟨ cast A G ℓ (proj₂ cns) ⟩) ⟨ cast G ⋆ ℓ unk~R ⟩
-  {-
-    V : G ⇒p ⋆ ⇒q G  —→   V
-    V : G ⇒p ⋆ ⇒q H  —→   blame q
-   -}
+  {- V : G ⇒p ⋆ ⇒q G  —→   V
+     V : G ⇒p ⋆ ⇒q H  —→   blame q -}
   applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd}
       with ground? B
   ... | yes b-g
@@ -473,14 +403,12 @@ n  -}
               with gnd-eq? G B {inert-ground c' i} {b-g}
   ...         | yes ap-b rewrite ap-b = V
   ...         | no ap-b = blame ℓ
-  {-
-    V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B
-   -}
+  {- V : ⋆ ⇒ B   —→   V : ⋆ ⇒ H ⇒ B -}
   applyCast M v (cast ⋆ B ℓ cn) {A-proj c b-nd}
       | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
-  -- Since cross casts are all inert we don't have cases for them.
+  {- Since cross casts are all inert we don't have cases for them here. -}
 
   applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
@@ -523,15 +451,10 @@ n  -}
              ; applyCast-pres-allsafe = applyCast-pres-allsafe
              }
 
-  {-
-
-  We now instantiate the module ParamCastReduction, thereby proving
-  type safety for λB.
-
-  -}
+  {- We now instantiate the module ParamCastReduction and thereby prove type safety. -}
   open import ParamCastReduction cs
 
-  -- Instantiate blame-subtyping theorem for `GroundCast`.
+  {- Instantiate blame-subtyping theorem for `GroundCast`. -}
   open import ParamBlameSubtyping cs using (soundness-<:) public
 
 
