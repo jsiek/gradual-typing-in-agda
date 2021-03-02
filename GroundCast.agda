@@ -497,12 +497,6 @@ n  -}
           applyCast = applyCast;
           applyCast-pres-allsafe = applyCast-pres-allsafe
         }
-  -- csp : CastStructWithPrecision
-  -- csp = record {
-  --         applyCast = applyCast;
-  --         applyCast-pres-allsafe = applyCast-pres-allsafe;
-  --         applyCast-catchup = {!!}
-  --       }
 
   {-
 
@@ -537,3 +531,66 @@ n  -}
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
     wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
     wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
+
+    applyCast-proj-g-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV
+      with ground? B
+    ... | yes b-g
+      with canonical⋆ _ v
+    ...   | [ G , [ V₁ , [ c₁ , [ i , meq ] ] ] ] rewrite meq
+      with gnd-eq? G B {inert-ground c₁ i} {b-g}
+    ...     | yes ap-b rewrite ap-b
+      with v
+    ...       | V-wrap vV₁ .i = [ V₁ , [ vV₁ , [ V₁ ∎ , wrapV-⊑-inv vV₁ v′ i (lp-¬⋆ nd lp) lpV ] ] ]
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | yes b-g | [ G , [ V₁ , [ c₁ , [ I-inj g₁ _ , meq ] ] ] ] | no ap-b
+      with lpV
+    ...       | ⊑ᶜ-wrapl (lpit-inj _ lp₁) _ = contradiction (lp-consis-ground-eq g₁ g Refl~ lp₁ lp) ap-b
+    ...       | ⊑ᶜ-wrap (lpii-inj _) _ = contradiction lp (nd⋢⋆ nd)
+    applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | no b-ng = contradiction g b-ng
+
+    applyCast-proj-ng-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆) → ¬ Ground B
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-ng-catchup {B = ⋆} nd ng v v′ lp lpV = contradiction refl nd
+    applyCast-proj-ng-catchup {B = ` B₁} nd ng v v′ lp lpV = contradiction G-Base ng
+    applyCast-proj-ng-catchup {B = B₁ ⇒ B₂} {c = cast .⋆ .(B₁ ⇒ B₂) ℓ _} nd ng v v′ lp lpV
+      with ground? (B₁ ⇒ B₂)
+    ... | yes b-g = contradiction b-g ng
+    ... | no b-ng
+      with ground (B₁ ⇒ B₂) {nd}
+    ...   | [ ⋆ ⇒ ⋆ , [ G-Fun , c~ ] ]
+      with applyCast-proj-g-catchup {c = cast ⋆ (⋆ ⇒ ⋆) ℓ unk~L} (ground-nd G-Fun) G-Fun v v′ (⊑-ground-relax G-Fun lp c~ nd) lpV
+    ...     | [ W , [ vW , [ rd* , lpW ] ] ] =
+      -- The 1st cast ⋆ ⇒ ⋆ → ⋆ is an active projection
+      let a = A-proj (cast ⋆ (⋆ ⇒ ⋆) ℓ unk~L) (ground-nd G-Fun)
+      -- The 2nd cast ⋆ → ⋆ ⇒ B₁ → B₂ is an inert function cast
+          i = I-fun _ in
+        [ W ⟪ i ⟫ ,
+          [ V-wrap vW i ,
+            [ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {a} ⟩ rd*)) (_ —→⟨ wrap vW {i} ⟩ _ ∎) ,
+              ⊑ᶜ-wrapl (⊑→lpit i (⊑-ground-relax G-Fun lp c~ nd) lp) lpW ] ] ]
+    applyCast-proj-ng-catchup {B = B₁ `× B₂} {c = cast .⋆ .(B₁ `× B₂) ℓ _} nd ng v v′ lp lpV
+      with ground? (B₁ `× B₂)
+    ... | yes b-g = contradiction b-g ng
+    ... | no b-ng
+      with ground (B₁ `× B₂) {nd}
+    ...   | [ ⋆ `× ⋆ , [ G-Pair , c~ ] ]
+      with applyCast-proj-g-catchup {c = cast ⋆ (⋆ `× ⋆) ℓ unk~L} (ground-nd G-Pair) G-Pair v v′ (⊑-ground-relax G-Pair lp c~ nd) lpV
+    ...     | [ W , [ vW , [ rd* , lpW ] ] ] = {!!}
+    applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} nd ng v v′ lp lpV = {!!}
+
+
+    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆)
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
