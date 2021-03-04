@@ -117,6 +117,11 @@ n  -}
   ActiveNotInert (A-inj c ¬g _) (I-inj g .c) = ¬g g
   ActiveNotInert (A-proj c neq) (I-inj _ .c) = neq refl
 
+  from-dyn-active : ∀ {ℓ} → (B : Type) → Active (cast ⋆ B ℓ unk~L)
+  from-dyn-active {ℓ} B with eq-unk B
+  ... | yes refl = A-id {a = A-Unk} (cast ⋆ ⋆ ℓ unk~L)
+  ... | no nd = A-proj (cast ⋆ B ℓ unk~L) nd
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A ⇒ B) (A' ⇒ B') ℓ cn)
     C-pair : ∀{A B A' B' ℓ} .{cn} → Cross (cast (A `× B) (A' `× B') ℓ cn)
@@ -523,6 +528,14 @@ n  -}
 
   {- A few lemmas to prove `catchup`. -}
   open import ParamCCPrecision pcsp
+  applyCast-catchup : ∀ {Γ Γ′ A A′ B} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ B)}
+    → (a : Active c)
+    → (vV : Value V) → Value V′
+    → A ⊑ A′ → B ⊑ A′
+    → Γ , Γ′ ⊢ V ⊑ᶜ V′
+      ----------------------------------------------------------
+    → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+
   private
     wrapV-⊑-inv : ∀ {Γ Γ′ A A′} {V : Γ ⊢ A} {V′ : Γ′ ⊢ A′} {c : Cast (A ⇒ ⋆)}
       → Value V → Value V′ → (i : Inert c) → A′ ≢ ⋆
@@ -531,6 +544,13 @@ n  -}
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
     wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
     wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
+
+    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆)
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
 
     applyCast-proj-g-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
       → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
@@ -584,13 +604,13 @@ n  -}
       with ground (B₁ `× B₂) {nd}
     ...   | [ ⋆ `× ⋆ , [ G-Pair , c~ ] ]
       with applyCast-proj-g-catchup {c = cast ⋆ (⋆ `× ⋆) ℓ unk~L} (ground-nd G-Pair) G-Pair v v′ (⊑-ground-relax G-Pair lp c~ nd) lpV
-    ...     | [ W , [ vW , [ rd* , lpW ] ] ] = {!!}
+    ...     | [ cons W₁ W₂ , [ V-pair w₁ w₂ , [ rd* , lpW ] ] ]
+      with lp | v′ | lpW
+    ...       | pair⊑ lp₁ lp₂ | V-pair v′₁ v′₂ | ⊑ᶜ-cons lpW₁ lpW₂
+      with applyCast-catchup {c = cast ⋆ B₁ ℓ unk~L} (from-dyn-active B₁) w₁ v′₁ unk⊑ lp₁ lpW₁
+         | applyCast-catchup {c = cast ⋆ B₂ ℓ unk~L} (from-dyn-active B₂) w₂ v′₂ unk⊑ lp₂ lpW₂
+    ...         | [ V₁ , [ v₁ , [ rd*₁ , lpV₁ ] ] ] | [ V₂ , [ v₂ , [ rd*₂ , lpV₂ ] ] ] =
+      [ cons V₁ V₂ , [ V-pair v₁ v₂ , [ {!!} , ⊑ᶜ-cons lpV₁ lpV₂ ] ] ]
     applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} nd ng v v′ lp lpV = {!!}
 
 
-    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
-      → (nd : B ≢ ⋆)
-      → (vV : Value V) → Value V′
-      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-        ----------------------------------------------------------
-      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
