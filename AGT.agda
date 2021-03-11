@@ -7,7 +7,9 @@ module AGT where
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Bool using (Bool; true; false)
   open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
-  open import Data.Nat.Properties using (⊔-mono-≤; ≤-trans; ≤-refl; ≤-reflexive; m≤m⊔n; ⊔-assoc; ⊔-comm)
+  open import Data.Nat.Properties
+    using (⊔-mono-≤; ⊔-monoˡ-≤; ≤-trans; ≤-refl; ≤-reflexive; m≤m⊔n; n≤m⊔n; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
+    ⊔-identityˡ; ⊔-identityʳ)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -1375,8 +1377,9 @@ module AGT where
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
   applyCast M (EfficientParamCastAux.S-val x) .(⋆ ⇒ _ ⇒ _) {activeA⋆} =
-    ⊥-elim (simple⋆ M x refl)
-  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} = M ⟨ compose c d ⟩
+      ⊥-elim (simple⋆ M x refl)
+  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} =
+      M ⟨ compose c d ⟩
   applyCast M v (error _ _) {activeError} = blame (pos zero)
   
   height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
@@ -1515,7 +1518,15 @@ module AGT where
   applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
           → n ∣ false ⊢ M ok → (v : Value M)
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
-  applyCastOK {M = M}{c}{n}{a} Mok v = {!!}
+  applyCastOK {M = M} {.((` _) ⇒ ` _ ⇒ (` _))} {n} {activeId} Mok v =
+      ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {M = M} {.(error _ _)} {n} {activeError} Mok v =
+      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  applyCastOK {M = M} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} Mok (S-val x) =
+      ⊥-elim (simple⋆ M x refl)
+  applyCastOK {M = V ⟨ .(_ ⇒ _ ⇒ ⋆) ⟩} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} (castOK {n = n₁} Vok lt)
+      (V-cast {i = inert x x₁} sv) =
+      ⟨ suc n₁ , ⟨ (castOK Vok lt) , s≤s (≤-step (≤-step ≤-refl)) ⟩ ⟩
      
   open import CastStructure
 
@@ -1536,31 +1547,74 @@ module AGT where
   applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
         {a : Active c}
       → c-height (applyCast V v c {a}) ≤ c-height V ∨ height c
-  applyCast-height {V = V}{v}{c}{a} = {!!}
-
+  applyCast-height {V = V} {v} {.((` _) ⇒ ` _ ⇒ (` _))} {activeId} =
+      ≤-reflexive (sym (⊔-identityʳ _))
+  applyCast-height {V = V} {v} {.(error _ _)} {activeError} = z≤n
+  applyCast-height {V = V} {S-val x} {.(⋆ ⇒ _ ⇒ _)} {activeA⋆} =
+      ⊥-elim (simple⋆ V x refl)
+  applyCast-height {Γ}{⋆}{B}{V = V ⟨ (A ⇒ B₁ ⇒ ⋆){ab1}{cb1} ⟩} {V-cast {i = inert x y} sv}
+      {(⋆ ⇒ B₂ ⇒ B){ab}{cb}} {activeA⋆}
+      with B₁ `~ B₂
+  ... | yes xx = {!!}
+  ... | no xx = {!!}
+  {-
+      begin
+        c-height (V ⟨ compose ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ((⋆ ⇒ B₂ ⇒ B){ab}{cb}) ⟩)
+        ≤⟨ m≤m⊔n _ _ ⟩
+        c-height (V ⟨ compose ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ((⋆ ⇒ B₂ ⇒ B){ab}{cb}) ⟩) ∨ height-t B₂
+        ≤⟨ ⊔-monoˡ-≤ (height-t B₂) {!!} ⟩
+        c-height (V ⟨ ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ⟩) ∨ height-t B₂
+      ∎
+    where
+    open Data.Nat.Properties.≤-Reasoning
+-}
   dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (dom c x) ≤ height c
-  dom-height {c = c} {x} = {!!}
+  dom-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun}
+      with ⊑R⇒ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩
+      with ab
+  ... | fun⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
   
   cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (cod c x) ≤ height c
-  cod-height {c = c} {x} = {!!}
+  cod-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun} 
+      with ⊑R⇒ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | fun⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
   
   fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
        → height (fstC c x) ≤ height c
-  fst-height {c = c}{x} = {!!}
+  fst-height {c = (.(_ `× _) ⇒ .(_ `× _) ⇒ .(_ `× _)){ab}{cb}} {C-pair}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | pair⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
   
   snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
        → height (sndC c x) ≤ height c
-  snd-height {c = c}{x} = {!!}
+  snd-height {c = (.(_ `× _) ⇒ .(_ `× _) ⇒ .(_ `× _)){ab}{cb}} {C-pair}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | pair⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
   
   inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inlC c x) ≤ height c
-  inlC-height {c = c}{x} = {!!}
+  inlC-height {c = (.(_ `⊎ _) ⇒ .(_ `⊎ _) ⇒ .(_ `⊎ _)){ab}{cb}} {C-sum}
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩  
+      with ab
+  ... | sum⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
   
   inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inrC c x) ≤ height c
-  inrC-height {c = c}{x} = {!!}
+  inrC-height {c = (.(_ `⊎ _) ⇒ .(_ `⊎ _) ⇒ .(_ `⊎ _)){ab}{cb}} {C-sum}
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | sum⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
   
 
   ecsh : EfficientCastStructHeight

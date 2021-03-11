@@ -567,7 +567,8 @@ module EfficientGroundCoercions where
   applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
           → n ∣ false ⊢ M ok → (v : Value M)
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
-  applyCastOK {M = M} {id★} {n} {a} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+  applyCastOK {M = M} {id★} {n} {a} Mok v =
+      ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
   applyCastOK {M = M} {G ?? ℓ ⨟ i} {n} {a} Mok v
       with canonical⋆ M v
   ... | ⟨ A' , ⟨ V , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq
@@ -575,14 +576,20 @@ module EfficientGroundCoercions where
   ... | castOK {n = n₁} Vok lt =      
       ⟨ suc n₁ , ⟨ (castOK Vok lt) , ≤-step (≤-step ≤-refl) ⟩ ⟩
   applyCastOK {M = M} {` (g ⨟!)} {n} {A-intmd ()} Mok v
-  applyCastOK {M = M} {` (` idι)} {n} {a} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+  applyCastOK {M = M} {` (` idι)} {n} {a} Mok v =
+      ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
   applyCastOK {M = M} {` (` (c ↣ d))} {n} {A-intmd (A-gnd ())} Mok v
   applyCastOK {M = M} {` (` (c ×' d))} {n} {a} Mok v =
-      ⟨ zero , ⟨ (consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n)) , z≤n ⟩ ⟩
+      ⟨ zero
+      , ⟨ (consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n))
+      , z≤n ⟩ ⟩
   applyCastOK {M = M} {` (` (c +' d))} {n} {a} Mok v =
-      ⟨ zero , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))))
-                             (lamOK (inrOK (castulOK varOK (s≤s z≤n))))) , z≤n ⟩ ⟩
-  applyCastOK {M = M} {` cfail G H x} {n} {a} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+      ⟨ zero
+      , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))))
+                             (lamOK (inrOK (castulOK varOK (s≤s z≤n)))))
+                             , z≤n ⟩ ⟩
+  applyCastOK {M = M} {` cfail G H x} {n} {a} Mok v =
+      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
   
 
   open import CastStructure
@@ -594,7 +601,8 @@ module EfficientGroundCoercions where
              ; compose = _⨟_
              ; height = height-s
              ; compose-height = compose-height-s
-             ; applyCastOK = (λ {Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a})
+             ; applyCastOK = (λ {Γ}{A}{B}{M}{c}{n}{a} →
+                               applyCastOK{Γ}{A}{B}{M}{c}{n}{a})
              }
   
   import EfficientParamCasts
