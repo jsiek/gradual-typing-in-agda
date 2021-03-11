@@ -629,6 +629,36 @@ n  -}
                        ↠-trans (plug-cong (F-×₂ _) rd*₁) (plug-cong (F-×₁ _) rd*₂)
                      ) ,
             ⊑ᶜ-cons lpV₁ lpV₂ ] ] ]
-    applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} nd ng v v′ lp lpV = {!!}
-
-
+    applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} {c = cast .⋆ .(B₁ `⊎ B₂) ℓ _} nd ng v v′ lp lpV
+      with ground? (B₁ `⊎ B₂)
+    ... | yes b-g = contradiction b-g ng
+    ... | no b-ng
+      with ground (B₁ `⊎ B₂) {nd}
+    ...   | [ ⋆ `⊎ ⋆ , [ G-Sum , c~ ] ]
+      with applyCast-proj-g-catchup {c = cast ⋆ (⋆ `⊎ ⋆) ℓ unk~L} (ground-nd G-Sum) G-Sum v v′ (⊑-ground-relax G-Sum lp c~ nd) lpV
+    ...     | [ inl W , [ V-inl w , [ rd* , lpW ] ] ] = {!!}
+    ...     | [ inr W , [ V-inr w , [ rd* , lpW ] ] ]
+      with lp | v′ | lpW
+    ...       | sum⊑ lp₁ lp₂ | V-inr v′₂ | ⊑ᶜ-inr unk⊑ lpW₂
+      with applyCast-catchup {c = cast ⋆ B₂ ℓ unk~L} (from-dyn-active B₂) w v′₂ unk⊑ lp₂ lpW₂
+    ...         | [ V₂ , [ v₂ , [ rd*₂ , lpV₂ ] ] ] =
+      [ inr V₂ ,
+        [ V-inr v₂ ,
+          {- Here we need to prove V ⟨ ⋆ ⇒ ⋆ ⊎ ⋆ ⟩ ⟨ ⋆ ⊎ ⋆ ⇒ B₁ × B₂ ⟩ —↠ inr V₂ -}
+          [ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {A-proj _ (λ ())} ⟩ rd*))
+                     {- inr W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩ —↠ inr V₂ -}
+                     (
+                       -- inr W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩
+                       _ —→⟨ cast (V-inr w) {A-sum _} ⟩
+                       -- case (inr W) (inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩))
+                       _ —→⟨ β-caseR w ⟩ {!!}
+                       -- -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
+                       -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
+                       -- -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (W₂ ⟨ ⋆ ⇒ B₂ ⟩)
+                       -- _ —→⟨ ξ {F = F-×₂ _} (cast w₁ {from-dyn-active B₁}) ⟩
+                       -- _ —→⟨ ξ {F = F-×₁ _} (cast w₂ {from-dyn-active B₂}) ⟩
+                       -- -- cons V₁ V₂
+                       -- ↠-trans (plug-cong (F-×₂ _) rd*₁) (plug-cong (F-×₁ _) rd*₂)
+                     )
+                     ,
+            ⊑ᶜ-inr lp₁ lpV₂ ] ] ]
