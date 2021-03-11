@@ -615,16 +615,19 @@ n  -}
           {- Here we need to prove V ⟨ ⋆ ⇒ ⋆ × ⋆ ⟩ ⟨ ⋆ × ⋆ ⇒ B₁ × B₂ ⟩ —↠ cons V₁ V₂ -}
           [ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {A-proj _ (λ ())} ⟩ rd*))
                      {- cons W₁ W₂ ⟨ ⋆ × ⋆ ⇒ B₁ × B₂ ⟩ —↠ cons V₁ V₂ -}
-                     (_ —→⟨ cast (V-pair w₁ w₂) {A-pair _} ⟩
-                      -- cons (fst (cons W₁ W₂) ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
-                      _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst w₁ w₂)) ⟩
-                      -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
-                      _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
-                      -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (W₂ ⟨ ⋆ ⇒ B₂ ⟩)
-                      _ —→⟨ ξ {F = F-×₂ _} (cast w₁ {from-dyn-active B₁}) ⟩
-                      {!!}
-                      -- ↠-trans (plug-cong (F-×₂ _) {!!}) {!!}
-                      ) ,
+                     (
+                       -- cons W₁ W₂ ⟨ ⋆ × ⋆ ⇒ B₁ × B₂ ⟩
+                       _ —→⟨ cast (V-pair w₁ w₂) {A-pair _} ⟩
+                       -- cons (fst (cons W₁ W₂) ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
+                       _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst w₁ w₂)) ⟩
+                       -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
+                       _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
+                       -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (W₂ ⟨ ⋆ ⇒ B₂ ⟩)
+                       _ —→⟨ ξ {F = F-×₂ _} (cast w₁ {from-dyn-active B₁}) ⟩
+                       _ —→⟨ ξ {F = F-×₁ _} (cast w₂ {from-dyn-active B₂}) ⟩
+                       -- cons V₁ V₂
+                       ↠-trans (plug-cong (F-×₂ _) rd*₁) (plug-cong (F-×₁ _) rd*₂)
+                     ) ,
             ⊑ᶜ-cons lpV₁ lpV₂ ] ] ]
     applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} nd ng v v′ lp lpV = {!!}
 
