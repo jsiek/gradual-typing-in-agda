@@ -8,7 +8,8 @@ module AGT where
   open import Data.Bool using (Bool; true; false)
   open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
   open import Data.Nat.Properties
-    using (⊔-mono-≤; ⊔-monoˡ-≤; ≤-trans; ≤-refl; ≤-reflexive; m≤m⊔n; n≤m⊔n; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
+    using (⊔-mono-≤; ⊔-monoˡ-≤; ⊔-monoʳ-≤; ≤-trans; ≤-refl; ≤-reflexive;
+    m≤m⊔n; n≤m⊔n; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
     ⊔-identityˡ; ⊔-identityʳ)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
@@ -1544,6 +1545,11 @@ module AGT where
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  lub-height : ∀{B₁ B₂}{c} → height-t ((B₁ ⊔ B₂){c}) ≤ height-t B₁ ∨ height-t B₂
+  lub-height {B₁}{B₂}{c}
+      with (B₁ `⊔ B₂){c}
+  ... | ⟨ C , ⟨ ⟨ b1c , b2c ⟩ , lub ⟩ ⟩ = height-lb lub c b1c b2c
+
   applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
         {a : Active c}
       → c-height (applyCast V v c {a}) ≤ c-height V ∨ height c
@@ -1555,19 +1561,25 @@ module AGT where
   applyCast-height {Γ}{⋆}{B}{V = V ⟨ (A ⇒ B₁ ⇒ ⋆){ab1}{cb1} ⟩} {V-cast {i = inert x y} sv}
       {(⋆ ⇒ B₂ ⇒ B){ab}{cb}} {activeA⋆}
       with B₁ `~ B₂
-  ... | yes xx = {!!}
-  ... | no xx = {!!}
-  {-
+  ... | yes c =
       begin
-        c-height (V ⟨ compose ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ((⋆ ⇒ B₂ ⇒ B){ab}{cb}) ⟩)
-        ≤⟨ m≤m⊔n _ _ ⟩
-        c-height (V ⟨ compose ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ((⋆ ⇒ B₂ ⇒ B){ab}{cb}) ⟩) ∨ height-t B₂
-        ≤⟨ ⊔-monoˡ-≤ (height-t B₂) {!!} ⟩
-        c-height (V ⟨ ((A ⇒ B₁ ⇒ ⋆){ab1}{cb1}) ⟩) ∨ height-t B₂
+        c-height V ∨ height-t (proj₁ ((B₁ `⊔ B₂){c}))
+        ≤⟨ ⊔-mono-≤ ≤-refl (lub-height {B₁}{B₂}{c}) ⟩
+        c-height V ∨ (height-t B₁ ∨ height-t B₂)
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+        c-height V ∨ height-t B₁ ∨ height-t B₂
       ∎
-    where
-    open Data.Nat.Properties.≤-Reasoning
--}
+    where open Data.Nat.Properties.≤-Reasoning
+  ... | no c =
+      begin
+        c-height V ∨ 0
+        ≤⟨ ⊔-mono-≤ ≤-refl z≤n ⟩
+        c-height V ∨ (height-t B₁ ∨ height-t B₂)
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+        c-height V ∨ height-t B₁ ∨ height-t B₂      
+      ∎
+    where open Data.Nat.Properties.≤-Reasoning
+    
   dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (dom c x) ≤ height c
   dom-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun}
@@ -1645,11 +1657,16 @@ module AGT where
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
   preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
 
-  module EC = SE.EfficientCompile {!!}
+  make-cast : (A B : Type) → Label → {c : A ~ B} → EfficientCastStruct.Cast ecs (A ⇒ B)
+  make-cast A B ℓ {c}
+      with (A `⊔ B){c}
+  ... | ⟨ A⊔B , ⟨ ⟨ ac , bc ⟩ , lub ⟩ ⟩ = (A ⇒ A⊔B ⇒ B){ac}{bc}
+
+  module EC = SE.EfficientCompile make-cast
 
   open import GTLC
   import GTLC2CC
-  module Compile = GTLC2CC Cast {!!}
+  module Compile = GTLC2CC Cast make-cast
 
   compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
       → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
