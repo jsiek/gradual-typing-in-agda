@@ -635,9 +635,31 @@ n  -}
     ... | no b-ng
       with ground (B₁ `⊎ B₂) {nd}
     ...   | [ ⋆ `⊎ ⋆ , [ G-Sum , c~ ] ]
-      with applyCast-proj-g-catchup {c = cast ⋆ (⋆ `⊎ ⋆) ℓ unk~L} (ground-nd G-Sum) G-Sum v v′ (⊑-ground-relax G-Sum lp c~ nd) lpV
-    ...     | [ inl W , [ V-inl w , [ rd* , lpW ] ] ] = {!!}
-    ...     | [ inr W , [ V-inr w , [ rd* , lpW ] ] ]
+      with applyCast-proj-g-catchup {c = cast ⋆ (⋆ `⊎ ⋆) ℓ unk~L} (ground-nd G-Sum) G-Sum v v′
+                                                                  (⊑-ground-relax G-Sum lp c~ nd) lpV
+    ...     | [ inl W , [ V-inl w , [ rd* , lpW ] ] ]
+      with lp | v′ | lpW
+    ...       | sum⊑ lp₁ lp₂ | V-inl v′₁ | ⊑ᶜ-inl unk⊑ lpW₁
+      with applyCast-catchup {c = cast ⋆ B₁ ℓ unk~L} (from-dyn-active B₁) w v′₁ unk⊑ lp₁ lpW₁
+    ...         | [ V₁ , [ v₁ , [ rd*₁ , lpV₁ ] ] ] =
+      [ inl V₁ ,
+        [ V-inl v₁ ,
+          {- Here we need to prove V ⟨ ⋆ ⇒ ⋆ ⊎ ⋆ ⟩ ⟨ ⋆ ⊎ ⋆ ⇒ B₁ × B₂ ⟩ —↠ inl V₁ -}
+          [ ↠-trans (plug-cong (F-cast _) (_ —→⟨ cast v {A-proj _ (λ ())} ⟩ rd*))
+                     {- inl W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩ —↠ inl V₁ -}
+                     (
+                       -- inl W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩
+                       _ —→⟨ cast (V-inl w) {A-sum _} ⟩
+                       -- case (inl W) (inl ((` Z) ⟨ cast ⋆ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast ⋆ B₂ ℓ d ⟩))
+                       _ —→⟨ β-caseL w ⟩
+                       -- (inl (` Z ⟨ ⋆ ⇒ B₂ ⟩)) [ W ] ≡ inl (W ⟨ ⋆ ⇒ B₂ ⟩)
+                       _ —→⟨ ξ (cast w {from-dyn-active B₁} ) ⟩
+                       plug-cong F-inl rd*₁
+                       -- inl V₁
+                     ),
+            ⊑ᶜ-inl lp₂ lpV₁ ] ] ]
+    applyCast-proj-ng-catchup {B = B₁ `⊎ B₂} {c = cast .⋆ .(B₁ `⊎ B₂) ℓ _} nd ng v v′ lp lpV
+                              | no b-ng | [ ⋆ `⊎ ⋆ , [ G-Sum , c~ ] ] | [ inr W , [ V-inr w , [ rd* , lpW ] ] ]
       with lp | v′ | lpW
     ...       | sum⊑ lp₁ lp₂ | V-inr v′₂ | ⊑ᶜ-inr unk⊑ lpW₂
       with applyCast-catchup {c = cast ⋆ B₂ ℓ unk~L} (from-dyn-active B₂) w v′₂ unk⊑ lp₂ lpW₂
@@ -650,15 +672,11 @@ n  -}
                      (
                        -- inr W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩
                        _ —→⟨ cast (V-inr w) {A-sum _} ⟩
-                       -- case (inr W) (inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩))
-                       _ —→⟨ β-caseR w ⟩ {!!}
-                       -- -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
-                       -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
-                       -- -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (W₂ ⟨ ⋆ ⇒ B₂ ⟩)
-                       -- _ —→⟨ ξ {F = F-×₂ _} (cast w₁ {from-dyn-active B₁}) ⟩
-                       -- _ —→⟨ ξ {F = F-×₁ _} (cast w₂ {from-dyn-active B₂}) ⟩
-                       -- -- cons V₁ V₂
-                       -- ↠-trans (plug-cong (F-×₂ _) rd*₁) (plug-cong (F-×₁ _) rd*₂)
-                     )
-                     ,
+                       -- case (inr W) (inl ((` Z) ⟨ cast ⋆ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast ⋆ B₂ ℓ d ⟩))
+                       _ —→⟨ β-caseR w ⟩
+                       -- (inr (` Z ⟨ ⋆ ⇒ B₂ ⟩)) [ W ] ≡ inr (W ⟨ ⋆ ⇒ B₂ ⟩)
+                       _ —→⟨ ξ (cast w {from-dyn-active B₂} ) ⟩
+                       plug-cong F-inr rd*₂
+                       -- inr V₂
+                     ),
             ⊑ᶜ-inr lp₁ lpV₂ ] ] ]
