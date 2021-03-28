@@ -545,13 +545,6 @@ n  -}
     wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
     wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
 
-    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
-      → (nd : B ≢ ⋆)
-      → (vV : Value V) → Value V′
-      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
-        ----------------------------------------------------------
-      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
-
     applyCast-proj-g-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
       → (nd : B ≢ ⋆) → Ground B   -- B ≢ ⋆ is actually implied since B is ground.
       → (vV : Value V) → Value V′
@@ -680,3 +673,14 @@ n  -}
                        -- inr V₂
                      ),
             ⊑ᶜ-inr lp₁ lpV₂ ] ] ]
+
+    applyCast-proj-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
+      → (nd : B ≢ ⋆)
+      → (vV : Value V) → Value V′
+      → B ⊑ A′ → Γ , Γ′ ⊢ V ⊑ᶜ V′
+        ----------------------------------------------------------
+      → ∃[ W ] ((Value W) × (applyCast V vV c {A-proj c nd} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
+    applyCast-proj-catchup {B = B} {c = c} nd v v′ lp lpV
+      with ground? B
+    ... | yes g = applyCast-proj-g-catchup {c = c} nd g v v′ lp lpV
+    ... | no ng = applyCast-proj-ng-catchup {c = c} nd ng v v′ lp lpV
