@@ -471,36 +471,6 @@ module Types where
   ⊑Base→~Base unk⊑ = unk~L
   ⊑Base→~Base base⊑ = base~
 
-{-
-  base-eq? : (A : Base) → (B : Base) 
-          → Dec (A ≡ B)
-  base-eq? Nat Nat = yes refl
-  base-eq? Nat Int = no (λ ())
-  base-eq? Nat 𝔹 = no (λ ())
-  base-eq? Nat Unit = no (λ ())
-  base-eq? Nat ⊥ = no (λ ())
-  base-eq? Int Nat = no (λ ())
-  base-eq? Int Int = yes refl
-  base-eq? Int 𝔹 = no (λ ())
-  base-eq? Int Unit = no (λ ())
-  base-eq? Int ⊥ = no (λ ())
-  base-eq? 𝔹 Nat = no (λ ())
-  base-eq? 𝔹 Int = no (λ ())
-  base-eq? 𝔹 𝔹 = yes refl
-  base-eq? 𝔹 Unit = no (λ ())
-  base-eq? 𝔹 ⊥ = no (λ ())
-  base-eq? Unit Nat = no (λ ())
-  base-eq? Unit Int = no (λ ())
-  base-eq? Unit 𝔹 = no (λ ())
-  base-eq? Unit Unit = yes refl
-  base-eq? Unit ⊥ = no (λ ())
-  base-eq? ⊥ Nat = no (λ ())
-  base-eq? ⊥ Int = no (λ ())
-  base-eq? ⊥ 𝔹 = no (λ ())
-  base-eq? ⊥ Unit = no (λ ())
-  base-eq? ⊥ ⊥ = yes refl
--}
-
   _`~_ : (A : Type) → (B : Type) → Dec (A ~ B)
   ⋆ `~ B = yes unk~L
   (` ι) `~ ⋆ = yes unk~R
@@ -738,21 +708,6 @@ module Types where
 
   ¬⌣ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ⌣ ` ι')
   ¬⌣ii neq base⌣ = neq refl
-
-{-
-  consis-eq : ∀{A B} (c : A ~ B)→ (d : A ~ B) → c ≡ d
-  consis-eq {⋆} {⋆} unk~L unk~L = {!!}
-  consis-eq {⋆} {⋆} unk~L unk~R = {!!}
-  consis-eq {⋆} {⋆} unk~R d = {!!}
-  consis-eq {⋆} {` x} c d = {!!}
-  consis-eq {⋆} {B ⇒ B₁} c d = {!!}
-  consis-eq {⋆} {B `× B₁} c d = {!!}
-  consis-eq {⋆} {B `⊎ B₁} c d = {!!}
-  consis-eq {` x} {B} c d = {!!}
-  consis-eq {A ⇒ A₁} {B} c d = {!!}
-  consis-eq {A `× A₁} {B} c d = {!!}
-  consis-eq {A `⊎ A₁} {B} c d = {!!}
--}
 
   ⨆ : ∀{A B : Type} → (c : A ~ B) → Type
   ⨆ {.⋆} {B} unk~L = B
