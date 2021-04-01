@@ -684,3 +684,41 @@ n  -}
       with ground? B
     ... | yes g = applyCast-proj-g-catchup {c = c} nd g v v′ lp lpV
     ... | no ng = applyCast-proj-ng-catchup {c = c} nd ng v v′ lp lpV
+
+  applyCast-catchup (A-id _) vV vV′ lp1 lp2 lpV = [ _ , [ vV , [ _ ∎ , lpV ] ] ]
+
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+    with ground A {a-nd}
+  ... | [ G , [ g , c~ ] ]
+    with g | c~ | lp1
+  ...   | G-Base | base~ | _ =
+    let i = I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i ⟫ , [ V-wrap vV i , [ _ —→⟨ ξ (cast vV {A-id {a = A-Base} _}) ⟩ _ —→⟨ wrap vV {i} ⟩ _ ∎ ,
+                                    ⊑ᶜ-wrapl (lpit-inj g lp1) lpV ] ] ]
+  ...   | G-Base | unk~L | _ = contradiction refl a-nd
+  ...   | G-Fun | unk~L | _ = contradiction refl a-nd
+  ...   | G-Fun | fun~ c~₁ c~₂ | fun⊑ lp11 lp12 =
+    let i₁ = I-fun (cast A G ℓ (fun~ c~₁ c~₂))
+        i₂ = I-inj g (cast G ⋆ ℓ unk~R) in
+      [ V ⟪ i₁ ⟫ ⟪ i₂ ⟫ , [ V-wrap (V-wrap vV i₁) i₂ ,
+        [ _ —→⟨ ξ (wrap vV {i₁}) ⟩ _ —→⟨ wrap (V-wrap vV i₁) {i₂} ⟩ _ ∎ ,
+          ⊑ᶜ-wrapl (lpit-inj g (⊑-ground-relax g lp1 c~ a-nd)) (⊑ᶜ-wrapl (lpit-fun lp1 ground-fun-⊑) lpV) ] ] ]
+  ...   | G-Pair | unk~L | _ = contradiction refl a-nd
+  ...   | G-Pair | pair~ c~₁ c~₂ | pair⊑ lp11 lp12
+    with vV | vV′ | lpV
+  ...     | V-pair {A = A₁} {B₁} {V₁} {V₂} v₁ v₂ | V-pair {V = V₁′} {W = V₂′} v₁′ v₂′ | ⊑ᶜ-cons lpV₁ lpV₂
+  -- cons V₁ V₂ ⟨ A × B ⇒ ⋆ × ⋆ ⟩ ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩ —↠ (cons (V₁ ⟨ A ⇒ ⋆ ⟩) (V₂ ⟨ B ⇒ ⋆ ⟩)) ⟪ ⋆ × ⋆ ⇒ ⋆ ⟫
+    with eq-unk A₁ | eq-unk B₁
+  ...       | yes refl | yes refl =
+    [ cons V₁ V₂ ⟪ I-inj g c ⟫ , [ V-wrap vV (I-inj g _) , [ {!!} , ⊑ᶜ-wrapl (lpit-inj _ lp1) (⊑ᶜ-cons lpV₁ lpV₂) ] ] ]
+  ...       | yes refl | no b1-nd = {!!}
+  ...       | no a1-nd | yes refl = {!!}
+  ...       | no a1-nd | no b1-nd = {!!}
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
+    contradiction refl a-nd
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
+    {!!}
+
+  applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
+  applyCast-catchup (A-pair _) vV vV′ lp1 lp2 lpV = {!!}
+  applyCast-catchup (A-sum _) vV vV′ lp1 lp2 lpV = {!!}
