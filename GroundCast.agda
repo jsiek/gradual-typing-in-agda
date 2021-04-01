@@ -710,7 +710,17 @@ n  -}
   -- cons V₁ V₂ ⟨ A × B ⇒ ⋆ × ⋆ ⟩ ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩ —↠ (cons (V₁ ⟨ A ⇒ ⋆ ⟩) (V₂ ⟨ B ⇒ ⋆ ⟩)) ⟪ ⋆ × ⋆ ⇒ ⋆ ⟫
     with eq-unk A₁ | eq-unk B₁
   ...       | yes refl | yes refl =
-    [ cons V₁ V₂ ⟪ I-inj g c ⟫ , [ V-wrap vV (I-inj g _) , [ {!!} , ⊑ᶜ-wrapl (lpit-inj _ lp1) (⊑ᶜ-cons lpV₁ lpV₂) ] ] ]
+    [ cons V₁ V₂ ⟪ I-inj g c ⟫ , [ V-wrap vV (I-inj g _) ,
+      [ _ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _}) ⟩
+        -- cons (fst (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆⟩) (snd (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
+        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v₁ v₂))) ⟩
+        -- cons (V₁ ⟨ ⋆ ⇒ ⋆ ⟩) (snd (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
+        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v₁ v₂))) ⟩
+        -- cons (V₁ ⟨ ⋆ ⇒ ⋆ ⟩) (V₂ ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
+        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (cast v₁ {A-id {a = A-Unk} (cast ⋆ ⋆ ℓ unk~L)})) ⟩
+        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (cast v₂ {A-id {a = A-Unk} (cast ⋆ ⋆ ℓ unk~L)})) ⟩
+        _ —→⟨ wrap (V-pair v₁ v₂) ⟩ _ ∎ ,
+        ⊑ᶜ-wrapl (lpit-inj _ lp1) (⊑ᶜ-cons lpV₁ lpV₂) ] ] ]
   ...       | yes refl | no b1-nd = {!!}
   ...       | no a1-nd | yes refl = {!!}
   ...       | no a1-nd | no b1-nd = {!!}
