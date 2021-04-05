@@ -743,8 +743,30 @@ n  -}
                         ↠-trans (plug-cong (F-cast _) (plug-cong (F-×₂ _) rd*₁))
                                  (↠-trans (plug-cong (F-cast _) (plug-cong (F-×₁ _) rd*₂)) (_ —→⟨ wrap (V-pair w₁ w₂) ⟩ _ ∎))) ,
               ⊑ᶜ-wrapl (lpit-inj _ (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-cons lpW₁ lpW₂) ] ] ]
-  ...       | inj₂ i₁ | inj₁ a₂ = {!!}
-  ...       | inj₁ a₁ | inj₂ i₂ = {!!}
+  ...       | inj₂ i₁ | inj₁ a₂ =
+    let [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ v₂ v₂′ lp12 unk⊑ lpV₂ in
+      [ cons (V₁ ⟪ i₁ ⟫) W₂ ⟪ I-inj g (cast (⋆ `× ⋆) ⋆ ℓ unk~R) ⟫ ,
+        [ V-wrap (V-pair (V-wrap v₁ i₁) w₂) _ ,
+          [ _ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _})⟩
+              ↠-trans (plug-cong (F-cast _) (proj₂ (proj₂ (applyCast-reduction-pair c~ v₁ v₂))))
+                       -- cons (V₁ ⟨ A₁ ⇒ ⋆ ⟩) (V₂ ⟨ B₁ ⇒ ⋆ ⟩) ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩
+                       (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (wrap v₁ {i₁})) ⟩
+                        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (cast v₂ {a₂})) ⟩
+                        ↠-trans (plug-cong (F-cast _) (plug-cong (F-×₁ _) rd*₂))
+                                 (_ —→⟨ wrap (V-pair (V-wrap v₁ i₁) w₂) ⟩ _ ∎)) ,
+            ⊑ᶜ-wrapl (⊑→lpit _ (pair⊑ unk⊑ unk⊑) lp2) (⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpV₁) lpW₂) ] ] ]
+  ...       | inj₁ a₁ | inj₂ i₂ =
+    let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v₁ v₁′ lp11 unk⊑ lpV₁ in
+      [ cons W₁ (V₂ ⟪ i₂ ⟫) ⟪ I-inj g (cast (⋆ `× ⋆) ⋆ ℓ unk~R) ⟫ ,
+        [ V-wrap (V-pair w₁ (V-wrap v₂ i₂)) _ ,
+          [ _ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _})⟩
+              ↠-trans (plug-cong (F-cast _) (proj₂ (proj₂ (applyCast-reduction-pair c~ v₁ v₂))))
+                       -- cons (V₁ ⟨ A₁ ⇒ ⋆ ⟩) (V₂ ⟨ B₁ ⇒ ⋆ ⟩) ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩
+                       (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (cast v₁ {a₁})) ⟩
+                        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (wrap v₂ {i₂})) ⟩
+                        ↠-trans (plug-cong (F-cast _) (plug-cong (F-×₂ _) rd*₁))
+                                 (_ —→⟨ wrap (V-pair w₁ (V-wrap v₂ i₂)) ⟩ _ ∎)) ,
+            ⊑ᶜ-wrapl (⊑→lpit _ (pair⊑ unk⊑ unk⊑) lp2) (⊑ᶜ-cons lpW₁ (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 unk⊑) lpV₂)) ] ] ]
   ...       | inj₂ i₁ | inj₂ i₂ =
         [ cons (V₁ ⟪ i₁ ⟫) (V₂ ⟪ i₂ ⟫) ⟪ I-inj g (cast (⋆ `× ⋆) ⋆ ℓ unk~R) ⟫ ,
           [ V-wrap (V-pair (V-wrap v₁ _) (V-wrap v₂ _)) _ ,
