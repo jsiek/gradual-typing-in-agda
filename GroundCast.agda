@@ -707,23 +707,47 @@ n  -}
   ...   | G-Pair | pair~ c~₁ c~₂ | pair⊑ lp11 lp12
     with vV | vV′ | lpV
   ...     | V-pair {A = A₁} {B₁} {V₁} {V₂} v₁ v₂ | V-pair {V = V₁′} {W = V₂′} v₁′ v₂′ | ⊑ᶜ-cons lpV₁ lpV₂
-  -- cons V₁ V₂ ⟨ A × B ⇒ ⋆ × ⋆ ⟩ ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩ —↠ (cons (V₁ ⟨ A ⇒ ⋆ ⟩) (V₂ ⟨ B ⇒ ⋆ ⟩)) ⟪ ⋆ × ⋆ ⇒ ⋆ ⟫
-    with eq-unk A₁ | eq-unk B₁
-  ...       | yes refl | yes refl =
-    [ cons V₁ V₂ ⟪ I-inj g c ⟫ , [ V-wrap vV (I-inj g _) ,
-      [ _ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _}) ⟩
-        -- cons (fst (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆⟩) (snd (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
-        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v₁ v₂))) ⟩
-        -- cons (V₁ ⟨ ⋆ ⇒ ⋆ ⟩) (snd (cons V₁ V₂) ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
-        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v₁ v₂))) ⟩
-        -- cons (V₁ ⟨ ⋆ ⇒ ⋆ ⟩) (V₂ ⟨ ⋆ ⇒ ⋆ ⟩) ⟨ ⋆ → ⋆ ⇒ ⋆ ⟩
-        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (cast v₁ {A-id {a = A-Unk} (cast ⋆ ⋆ ℓ unk~L)})) ⟩
-        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (cast v₂ {A-id {a = A-Unk} (cast ⋆ ⋆ ℓ unk~L)})) ⟩
-        _ —→⟨ wrap (V-pair v₁ v₂) ⟩ _ ∎ ,
-        ⊑ᶜ-wrapl (lpit-inj _ lp1) (⊑ᶜ-cons lpV₁ lpV₂) ] ] ]
-  ...       | yes refl | no b1-nd = {!!}
-  ...       | no a1-nd | yes refl = {!!}
-  ...       | no a1-nd | no b1-nd = {!!}
+    {- Need to prove:
+      cons V₁ V₂ ⟨ A × B ⇒ ⋆ × ⋆ ⟩ ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩ —↠
+      cons (V₁ ⟨ A ⇒ ⋆ ⟩) (V₂ ⟨ B ⇒ ⋆ ⟩) ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩
+      Note that A ⇒ ⋆ can be either active, such as A-id or A-inj , or inert, such as I-inj , depending on A.
+    -}
+    with ActiveOrInert (cast A₁ ⋆ ℓ unk~R) | ActiveOrInert (cast B₁ ⋆ ℓ unk~R)
+  ...       | inj₁ a₁ | inj₁ a₂ =
+      let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v₁ v₁′ lp11 unk⊑ lpV₁
+          [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ v₂ v₂′ lp12 unk⊑ lpV₂ in
+        [ cons W₁ W₂ ⟪ I-inj G-Pair (cast (⋆ `× ⋆) ⋆ ℓ unk~R) ⟫ ,
+          [ V-wrap (V-pair w₁ w₂) _ ,
+            [ _ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _})⟩
+              ↠-trans (plug-cong (F-cast _) (reduction-lemma {c~ = c~} v₁ v₂))
+                       -- cons (V₁ ⟨ A₁ ⇒ ⋆ ⟩) (V₂ ⟨ B₁ ⇒ ⋆ ⟩) ⟨ ⋆ × ⋆ ⇒ ⋆ ⟩
+                       (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₂ _} (cast v₁ {a₁})) ⟩
+                        _ —→⟨ ξ {F = F-cast _} (ξ {F = F-×₁ _} (cast v₂ {a₂})) ⟩
+                        ↠-trans (plug-cong (F-cast _) (plug-cong (F-×₂ _) rd*₁))
+                                 (↠-trans (plug-cong (F-cast _) (plug-cong (F-×₁ _) rd*₂)) (_ —→⟨ wrap (V-pair w₁ w₂) ⟩ _ ∎))) ,
+              ⊑ᶜ-wrapl (lpit-inj _ (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-cons lpW₁ lpW₂) ] ] ]
+      where
+      -- We reason about the 4 forms of the consistency relation in a separate lemma
+      reduction-lemma : ∀ {Γ A B} {V : Γ ⊢ A} {W : Γ ⊢ B} {c~ : A `× B ~ ⋆ `× ⋆} {ℓ}
+        → (v : Value V) → (w : Value W)
+        →      applyCast (cons V W) (V-pair v w) (cast (A `× B) (⋆ `× ⋆) ℓ c~) {A-pair _}
+           —↠ cons (V ⟨ cast A ⋆ ℓ unk~R ⟩) (W ⟨ cast B ⋆ ℓ unk~R ⟩)
+      reduction-lemma {c~ = c~} v w with ~-relevant c~
+      ... | pair~ unk~L unk~L = _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+                                _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+                                _ ∎
+      ... | pair~ unk~L unk~R = _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+                                _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+                                _ ∎
+      ... | pair~ unk~R unk~L = _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+                                _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+                                _ ∎
+      ... | pair~ unk~R unk~R = _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+                                _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+                                _ ∎
+  ...       | inj₂ i₁ | inj₁ a₂ = {!!}
+  ...       | inj₁ a₁ | inj₂ i₂ = {!!}
+  ...       | inj₂ i₁ | inj₂ i₂ = {!!}
   applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
     contradiction refl a-nd
   applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
@@ -732,3 +756,5 @@ n  -}
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
   applyCast-catchup (A-pair _) vV vV′ lp1 lp2 lpV = {!!}
   applyCast-catchup (A-sum _) vV vV′ lp1 lp2 lpV = {!!}
+
+
