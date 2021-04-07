@@ -780,12 +780,28 @@ n  -}
               ⊑ᶜ-wrapl (lpit-inj _ (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpV₁)
                                                                (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 unk⊑) lpV₂)) ] ] ]
 
-  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+    | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
     contradiction refl a-nd
-  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
     {!!}
 
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
-  applyCast-catchup (A-pair _) vV vV′ lp1 lp2 lpV = {!!}
+  applyCast-catchup {V = cons V W} (A-pair (cast (A `× B) (C `× D) ℓ c~)) (V-pair v w) vV′ (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
+    with ~-relevant c~
+  ... | pair~ c~1 c~2
+    with ActiveOrInert (cast A C ℓ c~1) | ActiveOrInert (cast B D ℓ c~2)
+  ...   | inj₁ a₁ | inj₁ a₂ = {!!}
+  ...   | inj₁ a₁ | inj₂ i₂ = {!!}
+  ...   | inj₂ i₁ | inj₁ a₂ = {!!}
+  ...   | inj₂ i₁ | inj₂ i₂ =
+    [ cons (V ⟪ i₁ ⟫) (W ⟪ i₂ ⟫) ,
+      [ {!!} ,
+        [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+          _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+          _ —→⟨ ξ {F = F-×₂ _} (wrap v {i = i₁}) ⟩
+          _ —→⟨ ξ {F = F-×₁ _} (wrap w {i = i₂}) ⟩
+          _ ∎ ,
+          ⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpW) ] ] ]
   applyCast-catchup (A-sum _) vV vV′ lp1 lp2 lpV = {!!}
-
