@@ -788,20 +788,49 @@ n  -}
     {!!}
 
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
-  applyCast-catchup {V = cons V W} (A-pair (cast (A `× B) (C `× D) ℓ c~)) (V-pair v w) vV′ (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
+  applyCast-catchup {V = cons V W} (A-pair (cast (A `× B) (C `× D) ℓ c~)) (V-pair v w) (V-pair v′ w′) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
     with ~-relevant c~
   ... | pair~ c~1 c~2
     with ActiveOrInert (cast A C ℓ c~1) | ActiveOrInert (cast B D ℓ c~2)
-  ...   | inj₁ a₁ | inj₁ a₂ = {!!}
-  ...   | inj₁ a₁ | inj₂ i₂ = {!!}
-  ...   | inj₂ i₁ | inj₁ a₂ = {!!}
+  ...   | inj₁ a₁ | inj₁ a₂ =
+    let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV
+        [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
+      [ cons W₁ W₂ ,
+        [ V-pair w₁ w₂ ,
+          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+            _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
+            ↠-trans (plug-cong (F-×₂ _) rd*₁)
+                     (↠-trans (plug-cong (F-×₁ _) rd*₂) (_ ∎)) ,
+            ⊑ᶜ-cons lpW₁ lpW₂ ] ] ]
+  ...   | inj₁ a₁ | inj₂ i₂ =
+    let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV in
+      [ cons W₁ (W ⟪ i₂ ⟫) ,
+        [ V-pair w₁ (V-wrap w i₂) ,
+          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+            _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
+            (plug-cong (F-×₂ _) rd*₁) ,
+            ⊑ᶜ-cons lpW₁ (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpW) ] ] ]
+  ...   | inj₂ i₁ | inj₁ a₂ =
+    let [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
+      [ cons (V ⟪ i₁ ⟫) W₂ ,
+        [ V-pair (V-wrap v i₁) w₂ ,
+          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+            _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
+            _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
+            (plug-cong (F-×₁ _) rd*₂) ,
+            ⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) lpW₂ ] ] ]
   ...   | inj₂ i₁ | inj₂ i₂ =
     [ cons (V ⟪ i₁ ⟫) (W ⟪ i₂ ⟫) ,
-      [ {!!} ,
+      [ V-pair (V-wrap v i₁) (V-wrap w i₂) ,
         [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
           _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
-          _ —→⟨ ξ {F = F-×₂ _} (wrap v {i = i₁}) ⟩
-          _ —→⟨ ξ {F = F-×₁ _} (wrap w {i = i₂}) ⟩
+          _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
+          _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
           _ ∎ ,
           ⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpW) ] ] ]
   applyCast-catchup (A-sum _) vV vV′ lp1 lp2 lpV = {!!}
