@@ -784,8 +784,17 @@ n  -}
     | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
     contradiction refl a-nd
   applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
-    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
+    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12
+    with vV | vV′ | lpV
+  ... | V-inl {V = W} w | V-inl {V = W′} w′ | ⊑ᶜ-inl lpB lpW =
+    {-       (inl W ⟨ A ⊎ B ⇒ ⋆ ⊎ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
+        —↠ (case (inl W) (inl (` Z ⟨ A ⇒ ⋆ ⟩)) (inr (` Z ⟨ B ⇒ ⋆ ⟩))) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
+        —↠ ((inl (` Z ⟨ A ⇒ ⋆ ⟩)) [ W ]) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
+        —↠ inl (W ⟨ A ⇒ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
+        At this point we need to case on whether A ⇒ ⋆ is active or inert.
+    -}
     {!!}
+  ... | V-inr {V = W} w | V-inr {V = W′} w′ | ⊑ᶜ-inr lpA lpW = {!!}
 
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
   applyCast-catchup {V = cons V W} (A-pair (cast (A `× B) (C `× D) ℓ c~)) (V-pair v w) (V-pair v′ w′) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
