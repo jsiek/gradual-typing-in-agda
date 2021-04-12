@@ -702,6 +702,26 @@ n  -}
           _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
           _ ∎ ] ]
 
+    applyCast-reduction-sum-left : ∀ {Γ A B C D} {V : Γ ⊢ A} {ℓ}
+      → (c~ : A `⊎ B ~ C `⊎ D)
+      → (v : Value V)
+      → ∃[ c~1 ]
+           (applyCast (inl V) (V-inl v) (cast (A `⊎ B) (C `⊎ D) ℓ c~) {A-sum _}
+              —↠
+            inl (V ⟨ cast A C ℓ c~1 ⟩))
+    applyCast-reduction-sum-left c~ v with ~-relevant c~
+    ... | sum~ c~1 c~2 = [ c~1 , _ —→⟨ β-caseL v ⟩ _ ∎ ]
+
+    applyCast-reduction-sum-right : ∀ {Γ A B C D} {V : Γ ⊢ B} {ℓ}
+      → (c~ : A `⊎ B ~ C `⊎ D)
+      → (v : Value V)
+      → ∃[ c~2 ]
+           (applyCast (inr V) (V-inr v) (cast (A `⊎ B) (C `⊎ D) ℓ c~) {A-sum _}
+              —↠
+            inr (V ⟨ cast B D ℓ c~2 ⟩))
+    applyCast-reduction-sum-right c~ v with ~-relevant c~
+    ... | sum~ c~1 c~2 = [ c~2 , _ —→⟨ β-caseR v ⟩ _ ∎ ]
+
   applyCast-catchup (A-id _) vV vV′ lp1 lp2 lpV = [ _ , [ vV , [ _ ∎ , lpV ] ] ]
 
   applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
@@ -780,21 +800,32 @@ n  -}
               ⊑ᶜ-wrapl (lpit-inj _ (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpV₁)
                                                                (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 unk⊑) lpV₂)) ] ] ]
 
-  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+  applyCast-catchup {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
     | [ G , [ g , c~ ] ] | G-Sum | unk~L | _ =
     contradiction refl a-nd
-  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) vV vV′ lp1 lp2 lpV
+  applyCast-catchup {V = V} {c = cast (A₁ `⊎ B₁) ⋆ ℓ _} (A-inj c a-ng a-nd) (V-inl {V = W} w) (V-inl {V = W′} w′) lp1 lp2 (⊑ᶜ-inl lpB lpW)
     | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12
-    with vV | vV′ | lpV
-  ... | V-inl {V = W} w | V-inl {V = W′} w′ | ⊑ᶜ-inl lpB lpW =
     {-       (inl W ⟨ A ⊎ B ⇒ ⋆ ⊎ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         —↠ (case (inl W) (inl (` Z ⟨ A ⇒ ⋆ ⟩)) (inr (` Z ⟨ B ⇒ ⋆ ⟩))) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         —↠ ((inl (` Z ⟨ A ⇒ ⋆ ⟩)) [ W ]) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         —↠ inl (W ⟨ A ⇒ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         At this point we need to case on whether A ⇒ ⋆ is active or inert.
     -}
+    with ActiveOrInert (cast A₁ ⋆ ℓ unk~R)
+  ... | inj₁ a₁ = {!!}
+  ... | inj₂ i₁ =
+    [ inl (W ⟪ i₁ ⟫) ⟪ I-inj G-Sum (cast (⋆ `⊎ ⋆) ⋆ ℓ unk~R) ⟫ ,
+      [ V-wrap (V-inl (V-wrap w i₁)) (I-inj G-Sum _) ,
+        [ _ —→⟨ ξ {F = F-cast _} (cast (V-inl w) {A-sum _}) ⟩
+          ↠-trans (plug-cong (F-cast _) (proj₂ (applyCast-reduction-sum-left c~ w)))
+                   (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-inl} (wrap w {i₁})) ⟩
+                    _ —→⟨ wrap (V-inl (V-wrap w i₁)) {I-inj G-Sum _} ⟩
+                    _ ∎) ,
+          ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpW)) ] ] ]
+  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) (V-inr {V = W} w) (V-inr {V = W′} w′) lp1 lp2 (⊑ᶜ-inr lpA lpW)
+    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
     {!!}
-  ... | V-inr {V = W} w | V-inr {V = W′} w′ | ⊑ᶜ-inr lpA lpW = {!!}
+
 
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
   applyCast-catchup {V = cons V W} (A-pair (cast (A `× B) (C `× D) ℓ c~)) (V-pair v w) (V-pair v′ w′) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
