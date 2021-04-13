@@ -809,10 +809,22 @@ n  -}
         —↠ (case (inl W) (inl (` Z ⟨ A ⇒ ⋆ ⟩)) (inr (` Z ⟨ B ⇒ ⋆ ⟩))) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         —↠ ((inl (` Z ⟨ A ⇒ ⋆ ⟩)) [ W ]) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
         —↠ inl (W ⟨ A ⇒ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
-        At this point we need to case on whether A ⇒ ⋆ is active or inert.
+        At this point we need to case on whether A ⇒ ⋆ is active or inert. If active, goes to:
+        —↠ inl W₁ ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
+        Otherwise if inert, goes to:
+        —↠ inl (W ⟨ A ⇒ ⋆ ⟩) ⟨ ⋆ ⊎ ⋆ ⇒ ⋆ ⟩
     -}
     with ActiveOrInert (cast A₁ ⋆ ℓ unk~R)
-  ... | inj₁ a₁ = {!!}
+  ... | inj₁ a₁ =
+    let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ w w′ lp11 unk⊑ lpW in
+      [ inl W₁ ⟪ I-inj G-Sum (cast (⋆ `⊎ ⋆) ⋆ ℓ unk~R) ⟫ ,
+        [ V-wrap (V-inl w₁) (I-inj G-Sum _) ,
+          [ _ —→⟨ ξ {F = F-cast _} (cast (V-inl w) {A-sum _}) ⟩
+            ↠-trans (plug-cong (F-cast _) (proj₂ (applyCast-reduction-sum-left c~ w)))
+                     (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-inl} (cast w {a₁})) ⟩
+                      ↠-trans (plug-cong (F-cast _) (plug-cong F-inl rd*₁))
+                               (_ —→⟨ wrap (V-inl w₁) {I-inj G-Sum _} ⟩ _ ∎)) ,
+            ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) lp2) (⊑ᶜ-inl unk⊑ lpW₁) ] ] ]
   ... | inj₂ i₁ =
     [ inl (W ⟪ i₁ ⟫) ⟪ I-inj G-Sum (cast (⋆ `⊎ ⋆) ⋆ ℓ unk~R) ⟫ ,
       [ V-wrap (V-inl (V-wrap w i₁)) (I-inj G-Sum _) ,
@@ -821,10 +833,31 @@ n  -}
                    (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-inl} (wrap w {i₁})) ⟩
                     _ —→⟨ wrap (V-inl (V-wrap w i₁)) {I-inj G-Sum _} ⟩
                     _ ∎) ,
-          ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpW)) ] ] ]
-  applyCast-catchup {A = A} {V = V} {c = cast A ⋆ ℓ _} (A-inj c a-ng a-nd) (V-inr {V = W} w) (V-inr {V = W′} w′) lp1 lp2 (⊑ᶜ-inr lpA lpW)
-    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12 =
-    {!!}
+          ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑)
+                   (⊑ᶜ-inl unk⊑ (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 unk⊑) lpW)) ] ] ]
+  applyCast-catchup {A = A} {V = V} {c = cast (A₁ `⊎ B₁) ⋆ ℓ _} (A-inj c a-ng a-nd) (V-inr {V = W} w) (V-inr {V = W′} w′) lp1 lp2 (⊑ᶜ-inr lpA lpW)
+    | [ G , [ g , c~ ] ] | G-Sum | sum~ c~₁ c~₂ | sum⊑ lp11 lp12
+    with ActiveOrInert (cast B₁ ⋆ ℓ unk~R)
+  ... | inj₁ a₂ =
+    let [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 unk⊑ lpW in
+      [ inr W₂ ⟪ I-inj G-Sum (cast (⋆ `⊎ ⋆) ⋆ ℓ unk~R) ⟫ ,
+        [ V-wrap (V-inr w₂) (I-inj G-Sum _) ,
+          [ _ —→⟨ ξ {F = F-cast _} (cast (V-inr w) {A-sum _}) ⟩
+            ↠-trans (plug-cong (F-cast _) (proj₂ (applyCast-reduction-sum-right c~ w)))
+                     (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-inr} (cast w {a₂})) ⟩
+                      ↠-trans (plug-cong (F-cast _) (plug-cong F-inr rd*₂))
+                               (_ —→⟨ wrap (V-inr w₂) {I-inj G-Sum _} ⟩ _ ∎)) ,
+            ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) lp2) (⊑ᶜ-inr unk⊑ lpW₂) ] ] ]
+  ... | inj₂ i₂ =
+    [ inr (W ⟪ i₂ ⟫) ⟪ I-inj G-Sum (cast (⋆ `⊎ ⋆) ⋆ ℓ unk~R) ⟫ ,
+      [ V-wrap (V-inr (V-wrap w i₂)) (I-inj G-Sum _) ,
+        [ _ —→⟨ ξ {F = F-cast _} (cast (V-inr w) {A-sum _}) ⟩
+          ↠-trans (plug-cong (F-cast _) (proj₂ (applyCast-reduction-sum-right c~ w)))
+                   (_ —→⟨ ξ {F = F-cast _} (ξ {F = F-inr} (wrap w {i₂})) ⟩
+                    _ —→⟨ wrap (V-inr (V-wrap w i₂)) {I-inj G-Sum _} ⟩
+                    _ ∎) ,
+          ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑)
+                   (⊑ᶜ-inr unk⊑ (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 unk⊑) lpW)) ] ] ]
 
 
   applyCast-catchup (A-proj c b-nd) vV vV′ lp1 lp2 lpV = applyCast-proj-catchup {c = c} b-nd vV vV′ lp2 lpV
