@@ -906,4 +906,41 @@ n  -}
           _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
           _ ∎ ,
           ⊑ᶜ-cons (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpW) ] ] ]
-  applyCast-catchup (A-sum _) vV vV′ lp1 lp2 lpV = {!!}
+  applyCast-catchup {V = inl V} (A-sum (cast (A `⊎ B) (C `⊎ D) ℓ c~)) (V-inl v) (V-inl v′) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inl lpB lpV)
+    with ~-relevant c~
+  ... | sum~ c~1 c~2
+    with ActiveOrInert (cast A C ℓ c~1)
+  ...   | inj₁ a₁ =
+    let [ W , [ w , [ rd* , lpW ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV in
+      [ inl W ,
+        [ V-inl w ,
+          [ _ —→⟨ β-caseL v ⟩
+            _ —→⟨ ξ {F = F-inl} (cast v {a₁}) ⟩
+            plug-cong F-inl rd* ,
+            ⊑ᶜ-inl lp22 lpW ] ] ]
+  ...   | inj₂ i₁ =
+    [ inl (V ⟪ i₁ ⟫) ,
+      [ V-inl (V-wrap v i₁) ,
+        [ _ —→⟨ β-caseL v ⟩
+          _ —→⟨ ξ {F = F-inl} (wrap v {i₁}) ⟩
+          _ ∎ ,
+          ⊑ᶜ-inl lp22 (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) ] ] ]
+  applyCast-catchup {V = inr V} (A-sum (cast (A `⊎ B) (C `⊎ D) ℓ c~)) (V-inr v) (V-inr v′) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inr lpA lpV)
+    with ~-relevant c~
+  ... | sum~ c~1 c~2
+    with ActiveOrInert (cast B D ℓ c~2)
+  ...   | inj₁ a₂ =
+    let [ W , [ w , [ rd* , lpW ] ] ] = applyCast-catchup a₂ v v′ lp12 lp22 lpV in
+      [ inr W ,
+        [ V-inr w ,
+          [ _ —→⟨ β-caseR v ⟩
+            _ —→⟨ ξ {F = F-inr} (cast v {a₂}) ⟩
+            plug-cong F-inr rd* ,
+            ⊑ᶜ-inr lp21 lpW ] ] ]
+  ...   | inj₂ i₂ =
+    [ inr (V ⟪ i₂ ⟫) ,
+      [ V-inr (V-wrap v i₂) ,
+        [ _ —→⟨ β-caseR v ⟩
+          _ —→⟨ ξ {F = F-inr} (wrap v {i₂}) ⟩
+          _ ∎ ,
+          ⊑ᶜ-inr lp21 (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpV) ] ] ]
