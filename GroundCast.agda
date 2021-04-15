@@ -436,10 +436,13 @@ n  -}
       | no b-ng with ground B {b-nd}
   ...    | [ H , [ h-g , cns ] ] =
            (M ⟨ cast ⋆ H ℓ unk~L ⟩) ⟨ cast H B ℓ (Sym~ cns) ⟩
-  applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c') {A-pair _}
-      with ~-relevant c'
-  ... | pair~ c d =
-    cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ d ⟩)
+  -- applyCast M v (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c') {A-pair _}
+  --     with ~-relevant c'
+  -- ... | pair~ c d =
+  --   cons (fst M ⟨ cast A₁ B₁ ℓ c ⟩) (snd M ⟨ cast A₂ B₂ ℓ d ⟩)
+  applyCast (cons V W) (V-pair v w) (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c~)
+    with ~-relevant c~
+  ... | pair~ c d = cons (V ⟨ cast A₁ B₁ ℓ c ⟩) (W ⟨ cast A₂ B₂ ℓ d ⟩)
   applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c') {A-sum _}
       with ~-relevant c'
   ... | sum~ c d =
@@ -479,12 +482,16 @@ n  -}
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | yes gB | _ | no _ = allsafe-blame-diff-ℓ ℓ≢
   applyCast-pres-allsafe {vV = vV} (A-proj (cast ⋆ B ℓ′ _) B≢⋆) (safe-ℓ≢ ℓ≢) allsafe | no ¬gB with ground B {B≢⋆}
   ...   | [ H , [ gH , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = Sym~ c~} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = unk~L} ℓ≢) allsafe)
-  applyCast-pres-allsafe (A-pair (cast (_ `× _) (_ `× _) ℓ c~)) (safe-<: (<:-× sub-fst sub-snd)) allsafe with ~-relevant c~
-  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-<: {c~ = c~fst} sub-fst) (allsafe-fst allsafe))
-                                         (allsafe-cast (safe-<: {c~ = c~snd} sub-snd) (allsafe-snd allsafe))
-  applyCast-pres-allsafe (A-pair (cast (_ `× _) (_ `× _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) allsafe with ~-relevant c~
-  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-ℓ≢ {c~ = c~fst} ℓ≢) (allsafe-fst allsafe))
-                                         (allsafe-cast (safe-ℓ≢ {c~ = c~snd} ℓ≢) (allsafe-snd allsafe))
+  applyCast-pres-allsafe {V = cons V W} {V-pair v w} (A-pair (cast (_ `× _) (_ `× _) ℓ c~))
+                         (safe-<: (<:-× sub-fst sub-snd)) (allsafe-cons allsafe-V allsafe-W)
+    with ~-relevant c~
+  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-<: {c~ = c~fst} sub-fst) allsafe-V)
+                                         (allsafe-cast (safe-<: {c~ = c~snd} sub-snd) allsafe-W)
+  applyCast-pres-allsafe {V = cons V W} {V-pair v w} (A-pair (cast (_ `× _) (_ `× _) ℓ′ c~))
+                         (safe-ℓ≢ ℓ≢) (allsafe-cons allsafe-V allsafe-W)
+    with ~-relevant c~
+  ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-ℓ≢ {c~ = c~fst} ℓ≢) allsafe-V)
+                                         (allsafe-cast (safe-ℓ≢ {c~ = c~snd} ℓ≢) allsafe-W)
   applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) allsafe with ~-relevant c~
   ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe-var))
                                             (allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe-var))
@@ -613,10 +620,10 @@ n  -}
                      (
                        -- cons W₁ W₂ ⟨ ⋆ × ⋆ ⇒ B₁ × B₂ ⟩
                        _ —→⟨ cast (V-pair w₁ w₂) {A-pair _} ⟩
-                       -- cons (fst (cons W₁ W₂) ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
-                       _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst w₁ w₂)) ⟩
-                       -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
-                       _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
+                       -- -- cons (fst (cons W₁ W₂) ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
+                       -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst w₁ w₂)) ⟩
+                       -- -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (snd (cons W₁ W₂) ⟨ ⋆ ⇒ B₂ ⟩)
+                       -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd w₁ w₂)) ⟩
                        -- cons (W₁ ⟨ ⋆ ⇒ B₁ ⟩) (W₂ ⟨ ⋆ ⇒ B₂ ⟩)
                        _ —→⟨ ξ {F = F-×₂ _} (cast w₁ {from-dyn-active B₁}) ⟩
                        _ —→⟨ ξ {F = F-×₁ _} (cast w₂ {from-dyn-active B₂}) ⟩
@@ -761,12 +768,15 @@ n  -}
               —↠
             cons (V ⟨ cast A C ℓ c~1 ⟩) (W ⟨ cast B D ℓ c~2 ⟩))
     applyCast-reduction-pair c~ v w with ~-relevant c~
-    ... | pair~ c~1 c~2 =
-      [ c~1 ,
-        [ c~2 ,
-          _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
-          _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
-          _ ∎ ] ]
+    ... | pair~ c~1 c~2 = [ c~1 , [ c~2 , _ ∎ ] ]
+
+    applyCast-reduction-inj : ∀ {Γ A} {V : Γ ⊢ A} {ℓ}
+      → (v : Value V)
+      → (ng : ¬ Ground A) → (nd : A ≢ ⋆)
+      → ∃[ G ] ∃[ c~ ] (applyCast V v (cast A ⋆ ℓ unk~R) {A-inj _ ng nd} —↠ (V ⟨ cast A G ℓ c~ ⟩) ⟨ cast G ⋆ ℓ unk~R ⟩)
+    applyCast-reduction-inj {A = A} v ng nd
+      with ground A {nd}
+    ... | [ G , [ _ , c~ ] ] = [ G , [ c~ , _ ∎ ] ]
 
     applyCast-reduction-sum-left : ∀ {Γ A B C D} {V : Γ ⊢ A} {ℓ}
       → (c~ : A `⊎ B ~ C `⊎ D)
@@ -936,8 +946,9 @@ n  -}
         [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
       [ cons W₁ W₂ ,
         [ V-pair w₁ w₂ ,
-          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
-            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+          [
+            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
             ↠-trans (plug-cong (F-×₂ _) rd*₁)
@@ -947,8 +958,9 @@ n  -}
     let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV in
       [ cons W₁ (W ⟪ i₂ ⟫) ,
         [ V-pair w₁ (V-wrap w i₂) ,
-          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
-            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+          [
+            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
             (plug-cong (F-×₂ _) rd*₁) ,
@@ -957,8 +969,9 @@ n  -}
     let [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
       [ cons (V ⟪ i₁ ⟫) W₂ ,
         [ V-pair (V-wrap v i₁) w₂ ,
-          [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
-            _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+          [
+            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+            -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
             (plug-cong (F-×₁ _) rd*₂) ,
@@ -966,8 +979,9 @@ n  -}
   ...   | inj₂ i₁ | inj₂ i₂ =
     [ cons (V ⟪ i₁ ⟫) (W ⟪ i₂ ⟫) ,
       [ V-pair (V-wrap v i₁) (V-wrap w i₂) ,
-        [ _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
-          _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
+        [
+          -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+          -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
           _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
           _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
           _ ∎ ,
@@ -1047,3 +1061,65 @@ n  -}
             ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV) ] ]
   sim-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
     [ _ , [ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV ] ]
+
+  sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+    → Value V → (v′ : Value V′)
+    → (a′ : Active c′)
+    → A ⊑ A′ → B ⊑ B′
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′
+      ------------------------------------------------------------
+    → ∃[ N ] ((V ⟨ c ⟩ —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ applyCast V′ v′ c′ {a′}))
+  sim-cast v v′ (A-id _) lp1 lp2 lpV = [ _ , [ _ ∎ , ⊑ᶜ-castl lp1 lp2 lpV ] ]
+  sim-cast v v′ (A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+    with ground A′ {nd}
+  ... | [ G′ , _ ] = [ _ , [ _ ∎ , ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-cast lp1 unk⊑ lpV) ] ]
+  sim-cast v v′ (A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+    with ground? B′
+  ... | yes b′-g
+    with canonical⋆ _ v′
+  ...   | [ G′ , [ W′ , [ c′ , [ i′ , meq′ ] ] ] ] rewrite meq′
+    with gnd-eq? G′ B′ {inert-ground _ i′} {b′-g}
+  ...     | yes ap rewrite ap = [ _ , [ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (value-⊑-wrap-inv v v′ lpV) ] ]
+  ...     | no  ap = [ _ , [ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (⊑ᶜ-blame unk⊑) ] ]
+  sim-cast v v′ (A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
+    with ground B′ {nd}
+  ...   | [ G′ , [ g′ , _ ] ] = [ _ , [ _ ∎ , ⊑ᶜ-cast unk⊑ lp2 (⊑ᶜ-castr unk⊑ unk⊑ lpV) ] ]
+
+  sim-cast (V-wrap v i) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Pair _) (⊑ᶜ-cons lpV₁ lpV₂))
+    with ~-relevant c~′
+  ... | pair~ c~1′ c~2′ with v
+  ...   | V-pair v₁ v₂ =
+    [ _ ,
+      [ _ —→⟨ cast (V-wrap v i) {A-id {a = A-Unk} _} ⟩ _ ∎ ,
+        ⊑ᶜ-wrapl (⊑→lpit i (pair⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-cons (⊑ᶜ-castr unk⊑ unk⊑ lpV₁) (⊑ᶜ-castr unk⊑ unk⊑ lpV₂)) ] ]
+  sim-cast (V-wrap v i) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) unk⊑ lp2 (⊑ᶜ-wrapl (lpit-inj G-Pair _) (⊑ᶜ-cons lpV₁ lpV₂))
+    with ~-relevant c~′
+  ... | pair~ c~1′ c~2′ = [ _ , [ _ ∎ , ⊑ᶜ-castl unk⊑ lp2 (⊑ᶜ-wrapl (⊑→lpit i ground-pair-⊑ unk⊑)
+                                                                    (⊑ᶜ-cons (⊑ᶜ-castr unk⊑ unk⊑ lpV₁) (⊑ᶜ-castr unk⊑ unk⊑ lpV₂))) ] ]
+  sim-cast {c = c} (V-pair v₁ v₂) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) unk⊑ (⊑ᶜ-cons lpV₁ lpV₂)
+    with ~-relevant c~′
+  ... | pair~ c~1′ c~2′
+    with ActiveOrInert c
+  ...   | inj₁ a with a
+  ...     | A-inj (cast (A `× B) ⋆ ℓ _) ng nd =
+    let [ G , [ g~ , rd* ] ] = applyCast-reduction-inj {ℓ = ℓ} (V-pair v₁ v₂) ng nd in
+    let [ _ , [ _ , rd*₂ ] ] = applyCast-reduction-pair {ℓ = ℓ} g~ v₁ v₂ in
+      [ _ , [ _ —→⟨ cast (V-pair v₁ v₂) {A-inj _ ng nd} ⟩
+                 (↠-trans rd* (_ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _}) ⟩ plug-cong (F-cast _) rd*₂)) ,
+                 ⊑ᶜ-castl ground-pair-⊑ unk⊑ (⊑ᶜ-cons (⊑ᶜ-cast lp11 unk⊑ lpV₁) (⊑ᶜ-cast lp12 unk⊑ lpV₂)) ] ]
+  sim-cast {c = c} (V-pair v₁ v₂) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) unk⊑ (⊑ᶜ-cons lpV₁ lpV₂)
+    | pair~ _ _ | inj₂ i with i
+  ...     | I-inj G-Pair .c =
+    [ _ , [ _ —→⟨ wrap (V-pair v₁ v₂) {i} ⟩ _ ∎ ,
+            ⊑ᶜ-wrapl (⊑→lpit i (pair⊑ unk⊑ unk⊑) unk⊑)
+                     (⊑ᶜ-cons (⊑ᶜ-castr unk⊑ unk⊑ lpV₁) (⊑ᶜ-castr unk⊑ unk⊑ lpV₂)) ] ]
+  sim-cast {c = c} (V-pair v₁ v₂) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV₁ lpV₂)
+    with ~-relevant c~′
+  ... | pair~ c~1′ c~2′ with c
+  ...   | cast (A `× B) (C `× D) ℓ c~ with ~-relevant c~
+  ...     | pair~ c~1 c~2 =
+    let [ _ , [ _ , rd* ] ] = applyCast-reduction-pair (pair~ c~1 c~2) v₁ v₂ in
+      [ _ , [ _ —→⟨ cast (V-pair v₁ v₂) {A-pair _} ⟩ rd* ,
+              ⊑ᶜ-cons (⊑ᶜ-cast lp11 lp21 lpV₁) (⊑ᶜ-cast lp12 lp22 lpV₂) ] ]
+
+  sim-cast v v′ (A-sum c) lp1 lp2 lpV = {!!}
