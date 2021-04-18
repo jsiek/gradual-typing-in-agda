@@ -443,12 +443,18 @@ n  -}
   applyCast (cons V W) (V-pair v w) (cast (A₁ `× A₂) (B₁ `× B₂) ℓ c~)
     with ~-relevant c~
   ... | pair~ c d = cons (V ⟨ cast A₁ B₁ ℓ c ⟩) (W ⟨ cast A₂ B₂ ℓ d ⟩)
-  applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c') {A-sum _}
-      with ~-relevant c'
-  ... | sum~ c d =
-    let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
-    let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩) in
-    case M l r
+  -- applyCast M v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c') {A-sum _}
+  --     with ~-relevant c'
+  -- ... | sum~ c d =
+  --   let l = inl ((` Z) ⟨ cast A₁ B₁ ℓ c ⟩) in
+  --   let r = inr ((` Z) ⟨ cast A₂ B₂ ℓ d ⟩) in
+  --   case M l r
+  applyCast (inl V) v (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c~) {A-sum _}
+    with ~-relevant c~
+  ... | sum~ c d = inl (V ⟨ cast A₁ B₁ ℓ c ⟩)
+  applyCast (inr W) w (cast (A₁ `⊎ A₂) (B₁ `⊎ B₂) ℓ c~) {A-sum _}
+    with ~-relevant c~
+  ... | sum~ c d = inr (W ⟨ cast A₂ B₂ ℓ d ⟩)
 
   applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
@@ -492,12 +498,18 @@ n  -}
     with ~-relevant c~
   ... | pair~ c~fst c~snd = allsafe-cons (allsafe-cast (safe-ℓ≢ {c~ = c~fst} ℓ≢) allsafe-V)
                                          (allsafe-cast (safe-ℓ≢ {c~ = c~snd} ℓ≢) allsafe-W)
-  applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) allsafe with ~-relevant c~
-  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe-var))
-                                            (allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe-var))
-  applyCast-pres-allsafe (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) allsafe with ~-relevant c~
-  ... | sum~ c~l c~r = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe-var))
-                                            (allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe-var))
+  applyCast-pres-allsafe {V = inl V} {V-inl v} (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) (allsafe-inl allsafe)
+    with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-inl (allsafe-cast (safe-<: {c~ = c~l} sub-l) allsafe)
+  applyCast-pres-allsafe {V = inr W} {V-inr w} (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ c~)) (safe-<: (<:-⊎ sub-l sub-r)) (allsafe-inr allsafe)
+    with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-inr (allsafe-cast (safe-<: {c~ = c~r} sub-r) allsafe)
+  applyCast-pres-allsafe {V = inl V} {V-inl v} (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) (allsafe-inl allsafe)
+    with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-inl (allsafe-cast (safe-ℓ≢ {c~ = c~l} ℓ≢) allsafe)
+  applyCast-pres-allsafe {V = inr W} {V-inr w} (A-sum (cast (_ `⊎ _) (_ `⊎ _) ℓ′ c~)) (safe-ℓ≢ ℓ≢) (allsafe-inr allsafe)
+    with ~-relevant c~
+  ... | sum~ c~l c~r = allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe)
 
   {- A few lemmas to prove `catchup`. -}
 
@@ -653,7 +665,7 @@ n  -}
                        -- inl W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩
                        _ —→⟨ cast (V-inl w) {A-sum _} ⟩
                        -- case (inl W) (inl ((` Z) ⟨ cast ⋆ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast ⋆ B₂ ℓ d ⟩))
-                       _ —→⟨ β-caseL w ⟩
+                       -- _ —→⟨ β-caseL w ⟩
                        -- (inl (` Z ⟨ ⋆ ⇒ B₂ ⟩)) [ W ] ≡ inl (W ⟨ ⋆ ⇒ B₂ ⟩)
                        _ —→⟨ ξ (cast w {from-dyn-active B₁} ) ⟩
                        plug-cong F-inl rd*₁
@@ -675,7 +687,7 @@ n  -}
                        -- inr W ⟨ ⋆ ⊎ ⋆ ⇒ B₁ ⊎ B₂ ⟩
                        _ —→⟨ cast (V-inr w) {A-sum _} ⟩
                        -- case (inr W) (inl ((` Z) ⟨ cast ⋆ B₁ ℓ c ⟩)) (inr ((` Z) ⟨ cast ⋆ B₂ ℓ d ⟩))
-                       _ —→⟨ β-caseR w ⟩
+                       -- _ —→⟨ β-caseR w ⟩
                        -- (inr (` Z ⟨ ⋆ ⇒ B₂ ⟩)) [ W ] ≡ inr (W ⟨ ⋆ ⇒ B₂ ⟩)
                        _ —→⟨ ξ (cast w {from-dyn-active B₂} ) ⟩
                        plug-cong F-inr rd*₂
@@ -786,7 +798,7 @@ n  -}
               —↠
             inl (V ⟨ cast A C ℓ c~1 ⟩))
     applyCast-reduction-sum-left c~ v with ~-relevant c~
-    ... | sum~ c~1 c~2 = [ c~1 , _ —→⟨ β-caseL v ⟩ _ ∎ ]
+    ... | sum~ c~1 c~2 = [ c~1 , _ ∎ ]
 
     applyCast-reduction-sum-right : ∀ {Γ A B C D} {V : Γ ⊢ B} {ℓ}
       → (c~ : A `⊎ B ~ C `⊎ D)
@@ -796,7 +808,7 @@ n  -}
               —↠
             inr (V ⟨ cast B D ℓ c~2 ⟩))
     applyCast-reduction-sum-right c~ v with ~-relevant c~
-    ... | sum~ c~1 c~2 = [ c~2 , _ —→⟨ β-caseR v ⟩ _ ∎ ]
+    ... | sum~ c~1 c~2 = [ c~2 , _ ∎ ]
 
   applyCast-catchup (A-id _) vV vV′ lp1 lp2 lpV = [ _ , [ vV , [ _ ∎ , lpV ] ] ]
 
@@ -994,14 +1006,14 @@ n  -}
     let [ W , [ w , [ rd* , lpW ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV in
       [ inl W ,
         [ V-inl w ,
-          [ _ —→⟨ β-caseL v ⟩
+          [ -- _ —→⟨ β-caseL v ⟩
             _ —→⟨ ξ {F = F-inl} (cast v {a₁}) ⟩
             plug-cong F-inl rd* ,
             ⊑ᶜ-inl lp22 lpW ] ] ]
   ...   | inj₂ i₁ =
     [ inl (V ⟪ i₁ ⟫) ,
       [ V-inl (V-wrap v i₁) ,
-        [ _ —→⟨ β-caseL v ⟩
+        [ -- _ —→⟨ β-caseL v ⟩
           _ —→⟨ ξ {F = F-inl} (wrap v {i₁}) ⟩
           _ ∎ ,
           ⊑ᶜ-inl lp22 (⊑ᶜ-wrapl (⊑→lpit i₁ lp11 lp21) lpV) ] ] ]
@@ -1013,14 +1025,14 @@ n  -}
     let [ W , [ w , [ rd* , lpW ] ] ] = applyCast-catchup a₂ v v′ lp12 lp22 lpV in
       [ inr W ,
         [ V-inr w ,
-          [ _ —→⟨ β-caseR v ⟩
+          [ -- _ —→⟨ β-caseR v ⟩
             _ —→⟨ ξ {F = F-inr} (cast v {a₂}) ⟩
             plug-cong F-inr rd* ,
             ⊑ᶜ-inr lp21 lpW ] ] ]
   ...   | inj₂ i₂ =
     [ inr (V ⟪ i₂ ⟫) ,
       [ V-inr (V-wrap v i₂) ,
-        [ _ —→⟨ β-caseR v ⟩
+        [ -- _ —→⟨ β-caseR v ⟩
           _ —→⟨ ξ {F = F-inr} (wrap v {i₂}) ⟩
           _ ∎ ,
           ⊑ᶜ-inr lp21 (⊑ᶜ-wrapl (⊑→lpit i₂ lp12 lp22) lpV) ] ] ]
@@ -1102,11 +1114,11 @@ n  -}
     with ActiveOrInert c
   ...   | inj₁ a with a
   ...     | A-inj (cast (A `× B) ⋆ ℓ _) ng nd =
-    let [ G , [ g~ , rd* ] ] = applyCast-reduction-inj {ℓ = ℓ} (V-pair v₁ v₂) ng nd in
+    let [ G , [ g~ , rd*₁ ] ] = applyCast-reduction-inj {ℓ = ℓ} (V-pair v₁ v₂) ng nd in
     let [ _ , [ _ , rd*₂ ] ] = applyCast-reduction-pair {ℓ = ℓ} g~ v₁ v₂ in
       [ _ , [ _ —→⟨ cast (V-pair v₁ v₂) {A-inj _ ng nd} ⟩
-                 (↠-trans rd* (_ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _}) ⟩ plug-cong (F-cast _) rd*₂)) ,
-                 ⊑ᶜ-castl ground-pair-⊑ unk⊑ (⊑ᶜ-cons (⊑ᶜ-cast lp11 unk⊑ lpV₁) (⊑ᶜ-cast lp12 unk⊑ lpV₂)) ] ]
+                ↠-trans rd*₁ (_ —→⟨ ξ {F = F-cast _} (cast (V-pair v₁ v₂) {A-pair _}) ⟩ plug-cong (F-cast _) rd*₂) ,
+                ⊑ᶜ-castl ground-pair-⊑ unk⊑ (⊑ᶜ-cons (⊑ᶜ-cast lp11 unk⊑ lpV₁) (⊑ᶜ-cast lp12 unk⊑ lpV₂)) ] ]
   sim-cast {c = c} (V-pair v₁ v₂) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) unk⊑ (⊑ᶜ-cons lpV₁ lpV₂)
     | pair~ _ _ | inj₂ i with i
   ...     | I-inj G-Pair .c =
@@ -1116,10 +1128,40 @@ n  -}
   sim-cast {c = c} (V-pair v₁ v₂) (V-pair v₁′ v₂′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV₁ lpV₂)
     with ~-relevant c~′
   ... | pair~ c~1′ c~2′ with c
-  ...   | cast (A `× B) (C `× D) ℓ c~ with ~-relevant c~
-  ...     | pair~ c~1 c~2 =
-    let [ _ , [ _ , rd* ] ] = applyCast-reduction-pair (pair~ c~1 c~2) v₁ v₂ in
+  ...   | cast (A `× B) (C `× D) ℓ c~ =
+    let [ _ , [ _ , rd* ] ] = applyCast-reduction-pair (~-relevant c~) v₁ v₂ in
       [ _ , [ _ —→⟨ cast (V-pair v₁ v₂) {A-pair _} ⟩ rd* ,
               ⊑ᶜ-cons (⊑ᶜ-cast lp11 lp21 lpV₁) (⊑ᶜ-cast lp12 lp22 lpV₂) ] ]
 
-  sim-cast v v′ (A-sum c) lp1 lp2 lpV = {!!}
+  sim-cast (V-wrap v i) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Sum _) (⊑ᶜ-inl unk⊑ lpV))
+    with ~-relevant c~′
+  ... | sum~ _ _ with v
+  ...   | V-inl w =
+    [ _ , [ _ —→⟨ cast (V-wrap v (I-inj G-Sum _)) {A-id {a = A-Unk} _} ⟩ _ ∎ ,
+            ⊑ᶜ-wrapl (⊑→lpit i ground-sum-⊑ unk⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)) ] ]
+  sim-cast (V-wrap v i) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) unk⊑ (sum⊑ lp21 lp22) (⊑ᶜ-wrapl (lpit-inj G-Sum _) (⊑ᶜ-inl lp lpV))
+    with ~-relevant c~′
+  ... | sum~ _ _ =
+    [ _ , [ _ ∎ , ⊑ᶜ-castl unk⊑ (sum⊑ lp21 lp22) (⊑ᶜ-wrapl (lpit-inj G-Sum ground-sum-⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV))) ] ]
+  sim-cast {c = c} (V-inl v) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) unk⊑ (⊑ᶜ-inl lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with ActiveOrInert c
+  ...   | inj₁ a with a
+  ...     | A-inj (cast (A `⊎ B) ⋆ ℓ _) ng nd =
+    let [ G , [ g~ , rd*₁ ] ] = applyCast-reduction-inj {ℓ = ℓ} (V-inl v) ng nd in
+    let [ _ , rd*₂ ] = applyCast-reduction-sum-left {ℓ = ℓ} (~-relevant g~) v in
+      [ _ , [ _ —→⟨ cast (V-inl v) {A-inj _ ng nd} ⟩
+                ↠-trans rd*₁ (_ —→⟨ ξ {F = F-cast _} (cast (V-inl v) {A-sum _}) ⟩ plug-cong (F-cast _) rd*₂) ,
+                ⊑ᶜ-castl ground-sum-⊑ unk⊑ (⊑ᶜ-inl unk⊑ (⊑ᶜ-cast lp11 unk⊑ lpV)) ] ]
+  sim-cast {c = c} (V-inl v) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) unk⊑ (⊑ᶜ-inl lp lpV)
+    | sum~ _ _ | inj₂ i with i
+  ...     | I-inj G-Sum .c =
+    [ _ , [ _ —→⟨ wrap (V-inl v) {i} ⟩ _ ∎ ,
+            ⊑ᶜ-wrapl (⊑→lpit i (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)) ] ]
+  sim-cast {c = c} (V-inl v) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inl lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with c
+  ...   | cast (A `⊎ B) (C `⊎ D) ℓ c~ =
+    let [ _ , rd* ] = applyCast-reduction-sum-left {ℓ = ℓ} (~-relevant c~) v in
+      [ _ , [ _ —→⟨ cast (V-inl v) {A-sum _} ⟩ rd* , ⊑ᶜ-inl lp22 (⊑ᶜ-cast lp11 lp21 lpV) ] ]
+  sim-cast v (V-inr v′) (A-sum c) lp1 lp2 lpV = {!!}
