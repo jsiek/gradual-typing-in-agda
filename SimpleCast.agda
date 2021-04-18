@@ -108,6 +108,9 @@ module SimpleCast where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a c (inert x .c) = contradiction refl x
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (activeProj c j)
 
@@ -213,18 +216,12 @@ module SimpleCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
-  pcsp : PreCastStructWithPrecision
-  pcsp = record
-              { precast = pcs;
-                ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
-                ⟪_⟫⊑_ = ⟪_⟫⊑_;
-                _⊑⟪_⟫ = _⊑⟪_⟫
-              }
   pcss : PreCastStructWithSafety
   pcss = record
-             { pcsp = pcsp
+             { precast = pcs
              ; Safe = Safe
              ; domSafe = domSafe
              ; codSafe = codSafe

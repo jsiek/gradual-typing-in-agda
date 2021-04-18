@@ -518,6 +518,7 @@ n  -}
 
   cs : CastStruct
   cs = record {
+          pcss = pcss;
           applyCast = applyCast;
           applyCast-pres-allsafe = applyCast-pres-allsafe
         }
@@ -951,8 +952,7 @@ n  -}
         [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
       [ cons W₁ W₂ ,
         [ V-pair w₁ w₂ ,
-          [
-            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+          [ -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
             -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
@@ -963,8 +963,7 @@ n  -}
     let [ W₁ , [ w₁ , [ rd*₁ , lpW₁ ] ] ] = applyCast-catchup a₁ v v′ lp11 lp21 lpV in
       [ cons W₁ (W ⟪ i₂ ⟫) ,
         [ V-pair w₁ (V-wrap w i₂) ,
-          [
-            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+          [ -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
             -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (cast v {a₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
@@ -974,8 +973,7 @@ n  -}
     let [ W₂ , [ w₂ , [ rd*₂ , lpW₂ ] ] ] = applyCast-catchup a₂ w w′ lp12 lp22 lpW in
       [ cons (V ⟪ i₁ ⟫) W₂ ,
         [ V-pair (V-wrap v i₁) w₂ ,
-          [
-            -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+          [ -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
             -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
             _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
             _ —→⟨ ξ {F = F-×₁ _} (cast w {a₂}) ⟩
@@ -984,8 +982,7 @@ n  -}
   ...   | inj₂ i₁ | inj₂ i₂ =
     [ cons (V ⟪ i₁ ⟫) (W ⟪ i₂ ⟫) ,
       [ V-pair (V-wrap v i₁) (V-wrap w i₂) ,
-        [
-          -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
+        [ -- _ —→⟨ ξ {F = F-×₂ _} (ξ {F = F-cast _} (β-fst v w)) ⟩
           -- _ —→⟨ ξ {F = F-×₁ _} (ξ {F = F-cast _} (β-snd v w)) ⟩
           _ —→⟨ ξ {F = F-×₂ _} (wrap v {i₁}) ⟩
           _ —→⟨ ξ {F = F-×₁ _} (wrap w {i₂}) ⟩
@@ -1268,4 +1265,5 @@ n  -}
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
 
+  {- Instantiate the proof for the gradual guarantee. -}
   open import ParamGradualGuarantee csp
