@@ -1164,4 +1164,34 @@ n  -}
   ...   | cast (A `⊎ B) (C `⊎ D) ℓ c~ =
     let [ _ , rd* ] = applyCast-reduction-sum-left {ℓ = ℓ} (~-relevant c~) v in
       [ _ , [ _ —→⟨ cast (V-inl v) {A-sum _} ⟩ rd* , ⊑ᶜ-inl lp22 (⊑ᶜ-cast lp11 lp21 lpV) ] ]
-  sim-cast v (V-inr v′) (A-sum c) lp1 lp2 lpV = {!!}
+  sim-cast (V-wrap v i) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Sum _) (⊑ᶜ-inr unk⊑ lpV))
+    with ~-relevant c~′
+  ... | sum~ _ _ with v
+  ...   | V-inr w =
+    [ _ , [ _ —→⟨ cast (V-wrap v (I-inj G-Sum _)) {A-id {a = A-Unk} _} ⟩ _ ∎ ,
+            ⊑ᶜ-wrapl (⊑→lpit i ground-sum-⊑ unk⊑) (⊑ᶜ-inr unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)) ] ]
+  sim-cast (V-wrap v i) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) unk⊑ (sum⊑ lp21 lp22) (⊑ᶜ-wrapl (lpit-inj G-Sum _) (⊑ᶜ-inr lp lpV))
+    with ~-relevant c~′
+  ... | sum~ _ _ =
+    [ _ , [ _ ∎ , ⊑ᶜ-castl unk⊑ (sum⊑ lp21 lp22) (⊑ᶜ-wrapl (lpit-inj G-Sum ground-sum-⊑) (⊑ᶜ-inr unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV))) ] ]
+  sim-cast {c = c} (V-inr v) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) unk⊑ (⊑ᶜ-inr lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with ActiveOrInert c
+  ...   | inj₁ a with a
+  ...     | A-inj (cast (A `⊎ B) ⋆ ℓ _) ng nd =
+    let [ G , [ g~ , rd*₁ ] ] = applyCast-reduction-inj {ℓ = ℓ} (V-inr v) ng nd in
+    let [ _ , rd*₂ ] = applyCast-reduction-sum-right {ℓ = ℓ} (~-relevant g~) v in
+      [ _ , [ _ —→⟨ cast (V-inr v) {A-inj _ ng nd} ⟩
+                ↠-trans rd*₁ (_ —→⟨ ξ {F = F-cast _} (cast (V-inr v) {A-sum _}) ⟩ plug-cong (F-cast _) rd*₂) ,
+                ⊑ᶜ-castl ground-sum-⊑ unk⊑ (⊑ᶜ-inr unk⊑ (⊑ᶜ-cast lp12 unk⊑ lpV)) ] ]
+  sim-cast {c = c} (V-inr v) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) unk⊑ (⊑ᶜ-inr lp lpV)
+    | sum~ _ _ | inj₂ i with i
+  ...     | I-inj G-Sum .c =
+    [ _ , [ _ —→⟨ wrap (V-inr v) {i} ⟩ _ ∎ ,
+            ⊑ᶜ-wrapl (⊑→lpit i (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inr unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)) ] ]
+  sim-cast {c = c} (V-inr v) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inr lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with c
+  ...   | cast (A `⊎ B) (C `⊎ D) ℓ c~ =
+    let [ _ , rd* ] = applyCast-reduction-sum-right {ℓ = ℓ} (~-relevant c~) v in
+      [ _ , [ _ —→⟨ cast (V-inr v) {A-sum _} ⟩ rd* , ⊑ᶜ-inr lp21 (⊑ᶜ-cast lp12 lp22 lpV) ] ]
