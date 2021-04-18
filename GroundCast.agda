@@ -1195,3 +1195,48 @@ n  -}
   ...   | cast (A `⊎ B) (C `⊎ D) ℓ c~ =
     let [ _ , rd* ] = applyCast-reduction-sum-right {ℓ = ℓ} (~-relevant c~) v in
       [ _ , [ _ —→⟨ cast (V-inr v) {A-sum _} ⟩ rd* , ⊑ᶜ-inr lp21 (⊑ᶜ-cast lp12 lp22 lpV) ] ]
+
+  castr-wrap : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+    → Value V → (v′ : Value V′)
+    → (i′ : Inert c′)
+    → A ⊑ A′ → A ⊑ B′
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′
+      -----------------------------------------------------
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
+  castr-wrap v v′ (I-inj g′ _) lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ (I-inj g′ _) lpV
+  castr-wrap v v′ (I-fun _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (I-fun _) lpV
+  castr-wrap v v′ (I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
+    ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV
+
+  castr-cast : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
+    → Value V → (v′ : Value V′)
+    → (a′ : Active c′)
+    → A ⊑ A′ → A ⊑ B′
+    → ∅ , ∅ ⊢ V ⊑ᶜ V′
+      ------------------------------------------------------------
+    → ∅ , ∅ ⊢ V ⊑ᶜ applyCast V′ v′ c′ {a′}
+  castr-cast v v′ (A-id _) lp1 lp2 lpV = lpV
+  castr-cast v v′ (A-inj (cast A′ ⋆ _ _) ng nd) lp1 unk⊑ lpV
+    with ground A′ {nd}
+  ... | [ G′ , _ ] = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)
+  castr-cast v v′ (A-proj (cast ⋆ B′ _ _) nd) unk⊑ lp2 lpV
+    with ground? B′
+  ... | yes b′-g
+    with canonical⋆ _ v′
+  ...   | [ G′ , [ W′ , [ c′ , [ i′ , meq′ ] ] ] ] rewrite meq′
+    with gnd-eq? G′ B′ {inert-ground _ i′} {b′-g}
+  ...     | yes ap rewrite ap = value-⊑-wrap-inv v v′ lpV
+  ...     | no  ap = ⊑ᶜ-blame unk⊑
+  castr-cast v v′ (A-proj (cast ⋆ B′ _ _) nd) lp1 lp2 lpV | no b′-ng
+    with ground B′ {nd}
+  ...   | [ G′ , [ g′ , _ ] ] = ⊑ᶜ-castr unk⊑ unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpV)
+  castr-cast (V-wrap v i) (V-pair v′ w′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′))
+             unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) lpV)
+    with ~-relevant c~′
+  ... | pair~ _ _ with v | lpV
+  ...   | V-pair v₁ v₂ | ⊑ᶜ-cons lpV₁ lpV₂ =
+    ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-cons (⊑ᶜ-castr unk⊑ unk⊑ lpV₁) (⊑ᶜ-castr unk⊑ unk⊑ lpV₂))
+  castr-cast v (V-pair v′ w′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) lpV
+    with ~-relevant c~′
+  ... | pair~ _ _ = {!!}
+  castr-cast v v′ (A-sum c′) lp1 lp2 lpV = {!!}
