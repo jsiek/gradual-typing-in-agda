@@ -529,17 +529,10 @@ n  -}
 
   -}
 
-  import ParamCastReduction
-  module Red = ParamCastReduction cs
-  open Red
+  open import ParamCastReduction cs
 
   import GTLC2CC
   open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
-
-  -- Instantiate the proof of "compilation from GTLC to CC preserves precision".
-  open import CompilePresPrec pcsp
-  open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c)
-    using (compile-pres-prec) public
 
   -- Instantiate blame-subtyping theorem for `GroundCast`.
   open import ParamBlameSubtyping cs using (soundness-<:) public
@@ -1236,7 +1229,43 @@ n  -}
   ... | pair~ _ _ with v | lpV
   ...   | V-pair v₁ v₂ | ⊑ᶜ-cons lpV₁ lpV₂ =
     ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-cons (⊑ᶜ-castr unk⊑ unk⊑ lpV₁) (⊑ᶜ-castr unk⊑ unk⊑ lpV₂))
-  castr-cast v (V-pair v′ w′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) lpV
+  castr-cast (V-pair v w) (V-pair v′ w′) (A-pair (cast (A′ `× B′) (C′ `× D′) _ c~′)) (pair⊑ lp11 lp12) (pair⊑ lp21 lp22) (⊑ᶜ-cons lpV lpW)
     with ~-relevant c~′
-  ... | pair~ _ _ = {!!}
-  castr-cast v v′ (A-sum c′) lp1 lp2 lpV = {!!}
+  ... | pair~ _ _ = ⊑ᶜ-cons (⊑ᶜ-castr lp11 lp21 lpV) (⊑ᶜ-castr lp12 lp22 lpW)
+  castr-cast (V-wrap v i) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′))
+             unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with v | lpV
+  ...   | V-inl w | ⊑ᶜ-inl lp lpW = ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inl unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpW))
+  castr-cast (V-wrap v i) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′))
+             unk⊑ unk⊑ (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ with v | lpV
+  ...   | V-inr w | ⊑ᶜ-inr lp lpW = ⊑ᶜ-wrapl (⊑→lpit (I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑) (⊑ᶜ-inr unk⊑ (⊑ᶜ-castr unk⊑ unk⊑ lpW))
+  castr-cast (V-inl v) (V-inl v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inl lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ = ⊑ᶜ-inl lp22 (⊑ᶜ-castr lp11 lp21 lpV)
+  castr-cast (V-inr v) (V-inr v′) (A-sum (cast (A′ `⊎ B′) (C′ `⊎ D′) _ c~′)) (sum⊑ lp11 lp12) (sum⊑ lp21 lp22) (⊑ᶜ-inr lp lpV)
+    with ~-relevant c~′
+  ... | sum~ _ _ = ⊑ᶜ-inr lp21 (⊑ᶜ-castr lp12 lp22 lpV)
+
+
+  open import CastStructureWithPrecision
+  csp : CastStructWithPrecision
+  csp = record {
+          pcsp = pcsp;
+          applyCast = applyCast;
+          applyCast-pres-allsafe = applyCast-pres-allsafe;
+          -- ================================ --
+          applyCast-catchup = applyCast-catchup;
+          sim-cast = sim-cast;
+          sim-wrap = sim-wrap;
+          castr-cast = castr-cast;
+          castr-wrap = castr-wrap
+        }
+
+  {- Instantiate the proof of "compilation from GTLC to CC preserves precision". -}
+  open import CompilePresPrec pcsp
+  open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
+
+  open import ParamGradualGuarantee csp
