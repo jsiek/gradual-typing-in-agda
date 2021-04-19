@@ -330,6 +330,7 @@ module GroundInertX where
   lpti→⊑ (lpti-sum lp1 lp2) = [ lp1 , lp2 ]
 
   open import PreCastStructure
+  open import PreCastStructureWithSafety
   open import PreCastStructureWithPrecision
 
   pcs : PreCastStruct
@@ -366,7 +367,7 @@ module GroundInertX where
              }
   pcsp : PreCastStructWithPrecision
   pcsp = record {
-           pcss = pcss;
+           precast = pcs;
            ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
@@ -443,19 +444,20 @@ module GroundInertX where
   ...   | [ H , [ gH , c~ ] ] = allsafe-cast (safe-ℓ≢ {c~ = Sym~ c~} ℓ≢) (allsafe-cast (safe-ℓ≢ {c~ = unk~L} ℓ≢) allsafe)
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   {- We now instantiate the module ParamCastReduction and thereby prove type safety. -}
   open import ParamCastReduction cs
 
   {- Instantiate blame-subtyping theorem for `GroundCast`. -}
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public
+
 
 
   {- A few lemmas to prove `catchup`. -}
@@ -838,11 +840,8 @@ module GroundInertX where
 
   open import CastStructureWithPrecision
   csp : CastStructWithPrecision
-  csp = record {
-          pcsp = pcsp;
-          applyCast = applyCast;
-          applyCast-pres-allsafe = applyCast-pres-allsafe;
-          -- ================================ --
+  csp = record { pcsp = pcsp; applyCast = applyCast;
+          {------------------------------------}
           applyCast-catchup = applyCast-catchup;
           sim-cast = sim-cast;
           sim-wrap = sim-wrap;
@@ -854,4 +853,5 @@ module GroundInertX where
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
 
+  {- Instantiate the proof for the gradual guarantee. -}
   open import ParamGradualGuarantee csp

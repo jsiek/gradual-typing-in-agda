@@ -14,7 +14,6 @@ module CastStructure where
 
 import ParamCastCalculus
 import ParamCastAux
-import ParamCastSubtyping
 import EfficientParamCastAux
 
   {-
@@ -41,21 +40,13 @@ import EfficientParamCastAux
 
 record CastStruct : Set₁ where
   field
-    pcss : PreCastStructWithSafety
-  open PreCastStructWithSafety pcss public
+    precast : PreCastStruct
+  open PreCastStruct precast public
   open ParamCastCalculus Cast Inert
   open ParamCastAux precast
-  open ParamCastSubtyping pcss
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
-                 → ∀ {a : Active c} → Γ ⊢ B
-    {- The field is for blame-subtyping. -}
-    applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-      → (a : Active c)
-      → Safe c ℓ
-      → CastsAllSafe V ℓ
-        --------------------------------------
-      → CastsAllSafe (applyCast V vV c {a}) ℓ
+                    → ∀ {a : Active c} → Γ ⊢ B
 
 
 record EfficientCastStruct : Set₁ where

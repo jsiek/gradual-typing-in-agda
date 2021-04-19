@@ -12,8 +12,8 @@ module PreCastStructureWithPrecision where
 {- This record contains precision relations and corresponding lemmas. -}
 record PreCastStructWithPrecision : Set₁ where
   field
-    pcss : PreCastStructWithSafety
-  open PreCastStructWithSafety pcss public
+    precast : PreCastStruct
+  open PreCastStruct precast public
   infix 6 ⟪_⟫⊑⟪_⟫
   infix 6 ⟪_⟫⊑_
   infix 6 _⊑⟪_⟫

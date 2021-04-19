@@ -13,7 +13,7 @@ open import Data.Maybe
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructure
+open import PreCastStructureWithSafety
 
 
 

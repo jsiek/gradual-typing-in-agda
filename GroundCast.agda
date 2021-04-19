@@ -339,6 +339,7 @@ n  -}
 
    -}
   open import PreCastStructure
+  open import PreCastStructureWithSafety
   open import PreCastStructureWithPrecision
 
   pcs : PreCastStruct
@@ -375,7 +376,7 @@ n  -}
              }
   pcsp : PreCastStructWithPrecision
   pcsp = record {
-           pcss = pcss;
+           precast = pcs;
            ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
@@ -511,17 +512,16 @@ n  -}
     with ~-relevant c~
   ... | sum~ c~l c~r = allsafe-inr (allsafe-cast (safe-ℓ≢ {c~ = c~r} ℓ≢) allsafe)
 
-  {- A few lemmas to prove `catchup`. -}
 
   open import CastStructure
+  open import CastStructureWithSafety
   open import CastStructureWithPrecision
 
   cs : CastStruct
-  cs = record {
-          pcss = pcss;
-          applyCast = applyCast;
-          applyCast-pres-allsafe = applyCast-pres-allsafe
-        }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   {-
 
@@ -536,7 +536,7 @@ n  -}
   open GTLC2CC Cast Inert (λ A B ℓ {c} → cast A B ℓ c) public
 
   -- Instantiate blame-subtyping theorem for `GroundCast`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public
 
 
   {- A few lemmas to prove `catchup`. -}
@@ -1249,11 +1249,8 @@ n  -}
 
   open import CastStructureWithPrecision
   csp : CastStructWithPrecision
-  csp = record {
-          pcsp = pcsp;
-          applyCast = applyCast;
-          applyCast-pres-allsafe = applyCast-pres-allsafe;
-          -- ================================ --
+  csp = record { pcsp = pcsp ; applyCast = applyCast ;
+          {------------------------------------}
           applyCast-catchup = applyCast-catchup;
           sim-cast = sim-cast;
           sim-wrap = sim-wrap;

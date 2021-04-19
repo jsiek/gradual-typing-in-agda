@@ -8,7 +8,6 @@ open import CastStructure
 
 import ParamCastCalculus
 import ParamCastAux
-import ParamCastSubtyping
 import ParamCCPrecision
 
 
@@ -22,23 +21,14 @@ record CastStructWithPrecision : Set₁ where
   open PreCastStructWithPrecision pcsp public
   open ParamCastCalculus Cast Inert
   open ParamCastAux precast
-  open ParamCastSubtyping pcss
   open ParamCCPrecision pcsp
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
-    {- The field is for blame-subtyping. -}
-    applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-      → (a : Active c)
-      → Safe c ℓ
-      → CastsAllSafe V ℓ
-        --------------------------------------
-      → CastsAllSafe (applyCast V vV c {a}) ℓ
+
   cs : CastStruct
-  cs = record {
-         applyCast = applyCast;
-         applyCast-pres-allsafe = applyCast-pres-allsafe
-       }
+  cs = record { precast = precast; applyCast = applyCast }
+
   open ParamCastReduction cs
   field
     {- This field is for gradual guarantees.
@@ -51,7 +41,6 @@ record CastStructWithPrecision : Set₁ where
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
         -----------------------------------------------------------------------
       → ∃[ W ] ((Value W) × (applyCast V vV c {a} —↠ W) × (Γ , Γ′ ⊢ W ⊑ᶜ V′))
-
 
     sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
       → Value V → (v′ : Value V′)

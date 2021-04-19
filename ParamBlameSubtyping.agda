@@ -12,15 +12,14 @@ open import Data.Maybe
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructure
 open import CastStructure
+open import CastStructureWithSafety
 
 
 
-module ParamBlameSubtyping (cs : CastStruct) where
+module ParamBlameSubtyping (css : CastStructWithSafety) where
 
-open CastStruct cs
-
+open CastStructWithSafety css
 open import ParamCastCalculus Cast Inert
 open import ParamCastAux precast
 open import ParamCastSubtyping pcss
