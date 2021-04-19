@@ -197,6 +197,7 @@ module SimpleCast where
   ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
+  open import PreCastStructureWithSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -298,13 +299,13 @@ module SimpleCast where
                                         (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
   open ParamCastReduction cs public
@@ -313,4 +314,4 @@ module SimpleCast where
   open GTLC2CC Cast Inert (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
 
   -- Instantiate blame-subtyping theorem for `SimpleCast`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public

@@ -56,9 +56,6 @@ module GroundCoercions where
         ---------------------------
       → Cast (A ⇒ C)
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
-
   {-
 
   For the compilation of the GTLC to this cast calculus, we need a
@@ -130,9 +127,6 @@ module GroundCoercions where
 
   -}
 
-  import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
-
   {-
 
   To prepare for instantiating the ParamCastReduction module, we
@@ -156,6 +150,11 @@ module GroundCoercions where
     A-id : ∀{A a} → Active (id {A}{a})
     A-seq : ∀{A B C c d} → Active (cseq {A}{B}{C} c d)
 
+  import ParamCastCalculus
+  open ParamCastCalculus Cast Inert
+
+  import GTLC2CC
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → coerce A B {c} ℓ) public
 
   {-
 
@@ -234,6 +233,10 @@ module GroundCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a (inj ⋆ {()}) I-inj
+  idNotInert () (cfun _ _) I-fun
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j id = contradiction refl j
   projNotInert j (proj _ _) = ActiveNotInert A-proj
@@ -298,6 +301,7 @@ module GroundCoercions where
 
   -}
   open import PreCastStructure
+  open import PreCastStructureWithSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -322,6 +326,7 @@ module GroundCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
@@ -388,12 +393,12 @@ module GroundCoercions where
   ... | ⟨ G , ⟨ V′ , ⟨ _ , ⟨ I-inj {G} {g} , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with gnd-eq? G B {g} {gB}
   ...   | no _ = allsafe-blame-diff-ℓ ℓ≢
   ...   | yes refl with allsafe
-  ...     | allsafe-cast _ allsafe-V′ = allsafe-V′
+  ...     | allsafe-wrap _ allsafe-V′ = allsafe-V′
   applyCast-pres-allsafe A-pair (safe-cpair safe-c safe-d) allsafe =
     allsafe-cons (allsafe-cast safe-c (allsafe-fst allsafe)) (allsafe-cast safe-d (allsafe-snd allsafe))
   applyCast-pres-allsafe A-sum (safe-csum safe-c safe-d) allsafe =
-    allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast safe-c allsafe-var)))
-                         (allsafe-ƛ (allsafe-inr (allsafe-cast safe-d allsafe-var)))
+    allsafe-case allsafe (allsafe-inl (allsafe-cast safe-c allsafe-var))
+                         (allsafe-inr (allsafe-cast safe-d allsafe-var))
   applyCast-pres-allsafe A-id _ allsafe = allsafe
   applyCast-pres-allsafe A-seq (safe-cseq safe-c safe-d) allsafe = allsafe-cast safe-d (allsafe-cast safe-c allsafe)
 
@@ -403,16 +408,16 @@ module GroundCoercions where
   -}
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
   open ParamCastReduction cs public
 
   -- Instantiate blame-subtyping theorem for `GroundCoercion`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public
