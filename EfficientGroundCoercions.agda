@@ -101,8 +101,8 @@ module EfficientGroundCoercions where
 
   -}
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
 
   {-
 
@@ -194,8 +194,8 @@ module EfficientGroundCoercions where
    GTLC to λC.
 
   -}
-  import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
+  import GTLC2CCOrig
+  open GTLC2CCOrig Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
 
 
   {-
@@ -361,6 +361,10 @@ module EfficientGroundCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert A-Unk .(` (` _)) (I-intmd {i = ` ()} (I-gnd x))
+  idNotInert A-Base .(` (` idι)) (I-intmd {i = ` idι} (I-gnd ()))
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j id★ = contradiction refl j
   projNotInert j (G ?? x ⨟ x₁) = ActiveNotInert A-proj
@@ -393,10 +397,9 @@ module EfficientGroundCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
-
-  open import ParamCastAux pcs using (eta×; eta⊎)
 
   import EfficientParamCastAux
   open EfficientParamCastAux pcs

@@ -1175,8 +1175,8 @@ module AGT where
           → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
     error : (A : Type) → (B : Type) → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  module CastCalc = ParamCastCalculusOrig Cast
   open CastCalc
   
   {-
@@ -1326,6 +1326,11 @@ module AGT where
   ... | inj₁ eq rewrite eq = x ⟨ ι , ⟨ refl , refl ⟩ ⟩
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert A-Unk .(⋆ ⇒ _ ⇒ ⋆) (inert _ x) = contradiction refl x
+  idNotInert {` ι} A-Base .((` _) ⇒ ` _ ⇒ (` _)) (inert {B = .(` _)} {ab = base⊑} {base⊑} x _) =
+    contradiction ⟨ ι , ⟨ refl , refl ⟩ ⟩ x
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j (.⋆ ⇒ B ⇒ C) = ActiveNotInert activeA⋆
   projNotInert j (error .⋆ B) = ActiveNotInert activeError
@@ -1361,6 +1366,7 @@ module AGT where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
 

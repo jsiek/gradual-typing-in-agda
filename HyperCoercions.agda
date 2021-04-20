@@ -62,8 +62,8 @@ module HyperCoercions where
     cfail : ∀{A B} → Label → Inj (A ⇒ B)
 
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  module CastCalc = ParamCastCalculusOrig Cast
   open CastCalc
 
   coerce-to-gnd : (A : Type) → (B : Type) → {g : Ground B}
@@ -118,8 +118,8 @@ module HyperCoercions where
   coerce (A `⊎ B) (C `⊎ D) {sum~ c d} ℓ =
      𝜖 ↷ (coerce A C {c} ℓ +' coerce B D {d} ℓ) , 𝜖
 
-  import GTLC2CC
-  module Compile = GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+  import GTLC2CCOrig
+  module Compile = GTLC2CCOrig Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
 
   data InertMiddle : ∀ {A} → Middle A → Set where
     I-cfun : ∀{A B A' B'}{s : Cast (B ⇒ A)} {t : Cast (A' ⇒ B')}
@@ -209,6 +209,9 @@ module HyperCoercions where
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert () .(𝜖 ↷ _ ↣ _ , 𝜖) (I-mid I-cfun)
+
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j id★ = contradiction refl j
   projNotInert j (_ ↷ _ , _) (I-mid ())
@@ -246,10 +249,10 @@ module HyperCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
 
-  open import ParamCastAux pcs using (eta×; eta⊎)
 
   import EfficientParamCastAux
   open EfficientParamCastAux pcs

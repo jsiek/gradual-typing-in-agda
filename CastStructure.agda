@@ -13,6 +13,7 @@ open import Relation.Nullary using (¬_)
 module CastStructure where
 
 import ParamCastCalculus
+import ParamCastCalculusOrig
 import ParamCastAux
 import EfficientParamCastAux
 
@@ -53,7 +54,7 @@ record EfficientCastStruct : Set₁ where
   field
     precast : PreCastStruct
   open PreCastStruct precast public
-  open ParamCastCalculus Cast Inert
+  open ParamCastCalculusOrig Cast
   open EfficientParamCastAux precast
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
