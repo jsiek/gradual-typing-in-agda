@@ -263,6 +263,7 @@ module ParamCastAux (pcs : PreCastStruct) where
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
        case M l r
 
+
   {- Plug inversion lemmas: -}
   plug-inv-fst : ∀ {Γ A B C} {M : Γ ⊢ A `× B} {N : Γ ⊢ C}
     → (F : Frame C A)

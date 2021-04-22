@@ -1,7 +1,9 @@
-open import Types
+open import Types hiding (_⊔_)
 open import Variables
 open import PreCastStructure
 
+open import Data.Bool using (Bool; true; false)
+open import Data.Nat using (ℕ; _≤_; _⊔_; _+_)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -60,3 +62,49 @@ record EfficientCastStruct : Set₁ where
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
                  → ∀ {a : Active c} → Γ ⊢ B
     compose : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C)) → Cast (A ⇒ C)
+    height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+    compose-height : ∀{A B C} → (c : Cast (A ⇒ B)) → (d : Cast (B ⇒ C))
+                   → height (compose c d) ≤ (height c) ⊔ (height d)
+    applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+
+  c-height : ∀{Γ A} (M : Γ ⊢ A) → ℕ
+  c-height (` x) = 0
+  c-height (ƛ M) = c-height M
+  c-height (L · M) = c-height L ⊔ c-height M
+  c-height ($ x) = 0
+  c-height (if L M N) = c-height L ⊔ c-height M ⊔ c-height N
+  c-height (cons M N) = c-height M ⊔ c-height N
+  c-height (fst M) = c-height M
+  c-height (snd M) = c-height M
+  c-height (inl M) = c-height M
+  c-height (inr M) = c-height M
+  c-height (case L M N) = c-height L ⊔ c-height M ⊔ c-height N
+  c-height (M ⟨ c ⟩) = c-height M ⊔ height c
+  c-height (blame ℓ) = 0
+
+
+record EfficientCastStructHeight : Set₁ where
+  field
+    effcast : EfficientCastStruct
+  open EfficientCastStruct effcast public
+  open ParamCastCalculus Cast
+  open EfficientParamCastAux precast
+
+  field
+    applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
+    dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+    cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+    fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+    snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+    inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+    inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c

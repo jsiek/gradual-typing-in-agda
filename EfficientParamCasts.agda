@@ -209,6 +209,21 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
       → non_cast_ctx / (M ⟨ c ⟩) ⟨ d ⟩ —→ M ⟨ compose c d ⟩
 
 
+  infix  2 _/_—↠_
+  infixr 2 _/_—→⟨_⟩_
+  infix  3 _■
+
+  data _/_—↠_ : ∀ {Γ A} → ReductionCtx → (Γ ⊢ A) → (Γ ⊢ A) → Set  where
+    _■ : ∀ {Γ A}{ctx} (M : Γ ⊢ A)
+        -------------------------
+      → ctx / M —↠ M
+
+    _/_—→⟨_⟩_ : ∀ {Γ A} (ctx : ReductionCtx) (L : Γ ⊢ A) {M N : Γ ⊢ A} 
+      → ctx / L —→ M
+      → ctx / M —↠ N
+        ---------
+      → ctx / L —↠ N
+
   data Error : ∀ {Γ A} → Γ ⊢ A → Set where
 
     E-blame : ∀ {Γ}{A}{ℓ}

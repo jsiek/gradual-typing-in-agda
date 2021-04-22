@@ -1,4 +1,4 @@
-{- 
+{-
 
    The notion of hyper-coercions is an unpublished idea from Jeremy
    Siek and Andre Kuhlenschmidt, inspired by the super-coercions of
@@ -14,6 +14,11 @@
 module HyperCoercions where
 
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Data.Bool using (Bool; true; false)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_)
+  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-step;
+       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-monoˡ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n; n≤m⊔n; ⊔-idem)
+  open Data.Nat.Properties.≤-Reasoning
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -21,8 +26,8 @@ module HyperCoercions where
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
-     
-  open import Types
+
+  open import Types hiding (_⊔_)
   open import Variables
   open import Labels
 
@@ -62,6 +67,17 @@ module HyperCoercions where
     cfail : ∀{A B} → Label → Inj (A ⇒ B)
 
 
+  height-m : ∀{A B} → (c : Middle (A ⇒ B)) → ℕ
+
+  height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+  height id★ = 0
+  height (p ↷ m , i) = height-m m
+
+  height-m (id ι) = 0
+  height-m (c ↣ d) = suc ((height c) ⊔ (height d))
+  height-m (c ×' d) = suc ((height c) ⊔ (height d))
+  height-m (c +' d) = suc ((height c) ⊔ (height d))
+
   import ParamCastCalculusOrig
   module CastCalc = ParamCastCalculusOrig Cast
   open CastCalc
@@ -74,7 +90,7 @@ module HyperCoercions where
 
   coerce-to⋆ : (A : Type) → Label → Cast (A ⇒ ⋆)
   coerce-to⋆ A ℓ with eq-unk A
-  ... | yes eq rewrite eq = id★ 
+  ... | yes eq rewrite eq = id★
   ... | no neq with ground? A
   ...     | yes g =  𝜖 ↷ (coerce-to-gnd A A {g}{Refl~}{neq} ℓ) , !! {A} {g}
   ...     | no ng with ground A {neq}
@@ -118,8 +134,11 @@ module HyperCoercions where
   coerce (A `⊎ B) (C `⊎ D) {sum~ c d} ℓ =
      𝜖 ↷ (coerce A C {c} ℓ +' coerce B D {d} ℓ) , 𝜖
 
+
+  mkcast = (λ A B ℓ {c} → coerce A B {c} ℓ)
   import GTLC2CCOrig
-  module Compile = GTLC2CCOrig Cast (λ A B ℓ {c} → coerce A B {c} ℓ)
+  module Compile = GTLC2CCOrig Cast mkcast
+
 
   data InertMiddle : ∀ {A} → Middle A → Set where
     I-cfun : ∀{A B A' B'}{s : Cast (B ⇒ A)} {t : Cast (A' ⇒ B')}
@@ -136,19 +155,19 @@ module HyperCoercions where
   data Active : ∀ {A} → Cast A → Set where
     A-id★ : Active id★
     A-proj : ∀{A B C}{ℓ}{g : Ground A}{m : Middle (A ⇒ B)}{i : Inj (B ⇒ C)}
-           → Active ((?? ℓ) {A}{g} ↷ m , i)  
+           → Active ((?? ℓ) {A}{g} ↷ m , i)
     A-fail : ∀{A B C D}{ℓ}{p : Proj (A ⇒ B)}{m : Middle (B ⇒ C)}
-           → Active (p ↷ m , cfail {C} {D} ℓ)  
+           → Active (p ↷ m , cfail {C} {D} ℓ)
     A-mid : ∀{A B}{m : Middle (A ⇒ B)}
           → ActiveMiddle m
           → Active (𝜖 ↷ m , 𝜖)
-          
+
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{B G}{m : Middle (B ⇒ G)}{g : Ground G}
-          → Inert (𝜖 ↷ m , !! {G}{g})  
+          → Inert (𝜖 ↷ m , !! {G}{g})
     I-mid : ∀{A B}{m : Middle (A ⇒ B)}
           → InertMiddle m
-          → Inert (𝜖 ↷ m , 𝜖)  
+          → Inert (𝜖 ↷ m , 𝜖)
 
   ActiveOrInertMiddle : ∀{A} → (c : Middle A) → ActiveMiddle c ⊎ InertMiddle c
   ActiveOrInertMiddle {.(` _ ⇒ ` _)} (id ι) = inj₁ A-idι
@@ -176,16 +195,16 @@ module HyperCoercions where
 
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B A' B'}{c : Cast (B ⇒ A)}{d : Cast (A' ⇒ B')}
-          → Cross (𝜖 ↷ (c ↣ d) , 𝜖)    
+          → Cross (𝜖 ↷ (c ↣ d) , 𝜖)
     C-pair : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
-          → Cross (𝜖 ↷ (c ×' d) , 𝜖)    
+          → Cross (𝜖 ↷ (c ×' d) , 𝜖)
     C-sum : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
-          → Cross (𝜖 ↷ (c +' d) , 𝜖)    
+          → Cross (𝜖 ↷ (c +' d) , 𝜖)
 
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
   dom (𝜖 ↷ c ↣ d , 𝜖) C-fun = c
-  
+
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   cod (𝜖 ↷ c ↣ d , 𝜖) C-fun = d
@@ -193,7 +212,7 @@ module HyperCoercions where
   fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          → Cast (A₁ ⇒ A')
   fstC (𝜖 ↷ c ×' d , 𝜖) C-pair = c
-  
+
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   sndC (𝜖 ↷ c ×' d , 𝜖) C-pair = d
@@ -201,11 +220,11 @@ module HyperCoercions where
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
   inlC (𝜖 ↷ c +' d , 𝜖) C-sum = c
-  
+
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   inrC (𝜖 ↷ c +' d , 𝜖) C-sum = d
-  
+
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
 
@@ -228,9 +247,9 @@ module HyperCoercions where
   Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   Inert-Cross⊎ .(𝜖 ↷ _ , 𝜖) (I-mid ())
-  
+
   open import PreCastStructure
-  
+
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
@@ -323,20 +342,217 @@ module HyperCoercions where
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
   funCast M v (𝜖 ↷ (c ↣ d) , 𝜖) {I-mid I-cfun} N = (M · N ⟨ c ⟩) ⟨ d ⟩
-  
+
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (s ⨟ t) ≤ (height s) ⊔ (height t)
+
+  compose-height-m : ∀ {A B C} → (m₁ : Middle (A ⇒ B)) (m₂ : Middle (B ⇒ C))
+          → height-m (m₁ `⨟ m₂) ≤ height-m m₁ ⊔ height-m m₂
+
+  compose-height s id★ rewrite ⊔-identityʳ (height s) = ≤-refl
+  compose-height id★ (p ↷ m , i) = ≤-refl
+  compose-height (p₁ ↷ m₁ , 𝜖) (𝜖 ↷ m₂ , i₂) = compose-height-m m₁ m₂
+  compose-height (p₁ ↷ m₁ , !!{G = C}{g = gC})
+                 ((?? ℓ){H = D}{g = gD} ↷ m₂ , i₂)
+      with gnd-eq? C D {gC}{gD}
+  ... | no C≢D = m≤m⊔n (height-m m₁) _
+  ... | yes C≡D rewrite C≡D = compose-height-m m₁ m₂
+  compose-height (p₁ ↷ m₁ , cfail ℓ) (p₂ ↷ m₂ , i₂) = m≤m⊔n (height-m m₁) _
+
+  compose-height-⊔ : ∀{A B C D E F}(c : Cast (A ⇒ B))(c₁ : Cast (B ⇒ C))
+      (d : Cast (D ⇒ E))(d₁ : Cast (E ⇒ F))
+    → (IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁)
+    → (IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁)
+    → height (c ⨟ c₁) ⊔ height (d ⨟ d₁) ≤
+               (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+  compose-height-⊔ c c₁ d d₁ IH1 IH2 =
+     begin
+          height (c ⨟ c₁) ⊔ height (d ⨟ d₁)             ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+          (height c ⊔ height c₁) ⊔ (height d ⊔ height d₁) ≤⟨ ≤-reflexive (⊔-assoc (height c) (height c₁) (height d ⊔ height d₁)) ⟩
+          height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁)) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (sym (⊔-assoc (height c₁) _ _))) ⟩
+          height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height d))) ≤-refl) ⟩
+          height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (⊔-assoc (height d) _ _)) ⟩
+          height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁)) ≤⟨ ≤-reflexive (sym (⊔-assoc (height c) _ _)) ⟩
+          (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+     ∎
+
+  compose-height-m (id ι) (id .ι) = ≤-refl
+  compose-height-m (c ↣ d) (c₁ ↣ d₁) =
+      s≤s G
+      where
+      IH1 : height (c₁ ⨟ c) ≤ height c₁ ⊔ height c
+      IH1 = compose-height c₁ c
+
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁
+
+      G : height (c₁ ⨟ c) ⊔ height (d ⨟ d₁) ≤
+                (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+      G =
+        begin
+          height (c₁ ⨟ c) ⊔ height (d ⨟ d₁)             ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+          (height c₁ ⊔ height c) ⊔ (height d ⊔ height d₁) ≤⟨ ⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height c))) ≤-refl ⟩
+          (height c ⊔ height c₁) ⊔ (height d ⊔ height d₁) ≤⟨ ≤-reflexive (⊔-assoc (height c) (height c₁) (height d ⊔ height d₁)) ⟩
+          height c ⊔ (height c₁ ⊔ (height d ⊔ height d₁)) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (sym (⊔-assoc (height c₁) _ _))) ⟩
+          height c ⊔ ((height c₁ ⊔ height d) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (⊔-mono-≤ (≤-reflexive (⊔-comm (height c₁) (height d))) ≤-refl) ⟩
+          height c ⊔ ((height d ⊔ height c₁) ⊔ height d₁) ≤⟨ ⊔-monoʳ-≤ (height c) (≤-reflexive (⊔-assoc (height d) _ _)) ⟩
+          height c ⊔ (height d ⊔ (height c₁ ⊔ height d₁)) ≤⟨ ≤-reflexive (sym (⊔-assoc (height c) _ _)) ⟩
+          (height c ⊔ height d) ⊔ (height c₁ ⊔ height d₁)
+          ∎
+
+  compose-height-m (c ×' d) (c₁ ×' d₁) =
+      s≤s (compose-height-⊔ c c₁ d d₁ IH1 IH2)
+      where
+      IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁
+      IH1 = compose-height c c₁
+
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁
+  compose-height-m (c +' d) (c₁ +' d₁) =
+      s≤s (compose-height-⊔ c c₁ d d₁ IH1 IH2)
+      where
+      IH1 : height (c ⨟ c₁) ≤ height c ⊔ height c₁
+      IH1 = compose-height c c₁
+
+      IH2 : height (d ⨟ d₁) ≤ height d ⊔ height d₁
+      IH2 = compose-height d d₁
 
   open import CastStructure
+
+  applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+  applyCastOK {c = id★} {n} {A-id★} Mok v = ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {M = M}{c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v
+      with canonical⋆ M v
+  ... | ⟨ A' , ⟨ V , ⟨ c , ⟨ i , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq
+      with Mok
+  ... | castOK {n = n₁} Vok lt =
+      ⟨ (suc n₁) , ⟨ (castOK Vok lt) , (s≤s (≤-step (≤-step ≤-refl))) ⟩ ⟩
+  applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {n} {A-mid A-cpair} Mok v =
+     ⟨ zero , ⟨ consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n) , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ +' _) , .𝜖} {n} {A-mid A-csum} Mok v =
+     ⟨ zero , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))) )
+                            (lamOK (inrOK (castulOK varOK (s≤s z≤n))))) , z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(id _) , .𝜖} {n} {A-mid A-idι} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
 
   ecs : EfficientCastStruct
   ecs = record
              { precast = pcs
              ; applyCast = applyCast
              ; compose = _⨟_
+             ; height = height
+             ; compose-height = compose-height
+             ; applyCastOK = λ{Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a}
              }
-             
+  open EfficientCastStruct ecs using (c-height)
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
+  applyCast-height {v = v} {id★} {A-id★} = m≤m⊔n _ _
+  applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , inj)} {A-proj}
+      with canonical⋆ V v
+  ... | ⟨ A' , ⟨ V' , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
+      begin
+        c-height V' ⊔ height (c ⨟ (?? ℓ {g = g} ↷ m , inj))
+        ≤⟨ ⊔-monoʳ-≤ (c-height V') (compose-height c _) ⟩
+        c-height V' ⊔ (height c ⊔ height (?? ℓ {g = g} ↷ m , inj))
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V') _ _)) ⟩
+        (c-height V' ⊔ height c) ⊔ height-m m
+      ∎
+  applyCast-height {v = v} {x ↷ x₁ , .(cfail _)} {A-fail} = z≤n
+  applyCast-height {V = V}{v} {.𝜖 ↷ (c ×' d) , .𝜖} {A-mid A-cpair} =
+    begin
+      (c-height V ⊔ height c) ⊔ (c-height V ⊔ height d)
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _) ⟩
+      c-height V ⊔ (height c ⊔ (c-height V ⊔ height d))
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (sym (⊔-assoc (height c) _ _))) ⟩
+      c-height V ⊔ ((height c ⊔ c-height V) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (⊔-monoˡ-≤ (height d) (≤-reflexive (⊔-comm (height c) _))) ⟩
+      c-height V ⊔ ((c-height V ⊔ height c) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (⊔-assoc (c-height V) _ _)) ⟩
+      c-height V ⊔ (c-height V ⊔ (height c ⊔ height d))
+      ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+      (c-height V ⊔ c-height V) ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoˡ-≤ (height c ⊔ height d) (≤-reflexive (⊔-idem (c-height V))) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+  applyCast-height {V = V}{v} {.𝜖 ↷ (c +' d) , .𝜖} {A-mid A-csum} =
+    begin
+      (c-height V ⊔ height c) ⊔ height d
+      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _ ) ⟩
+      c-height V ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎
+  applyCast-height {v = v} {.𝜖 ↷ .(id _) , .𝜖} {A-mid A-idι} = m≤m⊔n _ _
+
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+  dom-height {c = pr ↷ c ↣ d , inj} {C-fun} = ≤-step (m≤m⊔n _ _)
+
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+  cod-height {c = c} {C-fun} = ≤-step (n≤m⊔n _ _)
+
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+  fst-height {c = c}{C-pair} = ≤-step (m≤m⊔n _ _)
+
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+  snd-height {c = c}{C-pair} = ≤-step (n≤m⊔n _ _)
+
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+  inlC-height {c = c}{C-sum} = ≤-step (m≤m⊔n _ _)
+
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c
+  inrC-height {c = c}{C-sum} = ≤-step (n≤m⊔n _ _)
+
+
+  ecsh : EfficientCastStructHeight
+  ecsh = record
+              { effcast = ecs
+              ; applyCast-height = (λ {Γ}{A}{B}{V}{v}{c}{a} → applyCast-height{Γ}{A}{B}{V}{v}{c}{a})
+              ; dom-height = (λ {A}{B}{C}{D}{c}{x} → dom-height{A}{B}{C}{D}{c}{x})
+              ; cod-height = (λ {A}{B}{C}{D}{c}{x} → cod-height{A}{B}{C}{D}{c}{x})
+              ; fst-height = (λ {A}{B}{C}{D}{c}{x} → fst-height{A}{B}{C}{D}{c}{x})
+              ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
+              ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
+              ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
+              }
+
+  import PreserveHeight
+  module PH = PreserveHeight ecsh
+
+  preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —→ M′ → c-height M′ ≤ c-height M
+  preserve-height M—→M′ = PH.preserve-height M—→M′
+
+
+  import SpaceEfficient
+  module SE = SpaceEfficient ecs
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
+
+  module EC = SE.EfficientCompile mkcast
+
+  open import GTLC
+
+  compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
+  compile-efficient d ul = EC.compile-efficient d ul
 
   data PreType : Type → Set where
     P-Base : ∀{ι} → PreType (` ι)
@@ -357,9 +573,9 @@ module HyperCoercions where
   not-pre-unk {A ⇒ B} {np} = ⊥-elim (contradiction P-Fun np)
   not-pre-unk {A `× B} {np} = ⊥-elim (contradiction P-Pair np)
   not-pre-unk {A `⊎ B} {np} = ⊥-elim (contradiction P-Sum np)
-  
+
   make-id : (A : Type) → Cast (A ⇒ A)
-  
+
   make-id-p : (A : Type) → {p : PreType A} → Middle (A ⇒ A)
   make-id-p (` ι) {P-Base} = id ι
   make-id-p (A ⇒ B) {P-Fun} = make-id A ↣ make-id B
@@ -371,11 +587,11 @@ module HyperCoercions where
   ... | yes p = 𝜖 ↷ make-id-p A {p} , 𝜖
   ... | no np rewrite not-pre-unk {A}{np} = id★
 
-  right-id : ∀{A B : Type}{c : Cast (A ⇒ B)} 
+  right-id : ∀{A B : Type}{c : Cast (A ⇒ B)}
            → c ⨟ make-id B ≡ c
-  left-id : ∀{A B : Type}{c : Cast (A ⇒ B)} 
+  left-id : ∀{A B : Type}{c : Cast (A ⇒ B)}
            → make-id A ⨟ c ≡ c
-           
+
   right-id-m-p : ∀{A B : Type}{m : Middle (A ⇒ B)} {p : PreType B}
            → m `⨟ make-id-p B {p} ≡ m
   right-id-m-p {.(` ι)} {` ι} {id .ι} {P-Base} = refl
@@ -383,9 +599,9 @@ module HyperCoercions where
       rewrite left-id {B}{A} {c} | right-id {A'}{C}{d} = refl
   right-id-m-p {A `× A'} {B `× C} {c ×' d} {P-Pair}
       rewrite right-id {A}{B} {c} | right-id {A'}{C}{d} = refl
-  right-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum} 
+  right-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum}
       rewrite right-id {A}{B} {c} | right-id {A'}{C}{d} = refl
-      
+
   right-id-p : ∀{A B : Type}{c : Cast (A ⇒ B)} {p : PreType B}
            → c ⨟ (𝜖 ↷ make-id-p B {p} , 𝜖) ≡ c
   right-id-p {A} {` ι} {_↷_,_ {B = B} p₁ m₁ 𝜖} {P-Base}
@@ -397,7 +613,7 @@ module HyperCoercions where
   right-id-p {A} {B `× C} {_↷_,_ {B = B₁ `× B₂} p₁ (c ×' d) 𝜖} {P-Pair}
       rewrite right-id {B₁}{B}{c} | right-id {B₂}{C}{d} = refl
   right-id-p {A} {B `× C} {p₁ ↷ m₁ , cfail ℓ} {P-Pair} = refl
-  right-id-p {A} {B `⊎ C} {_↷_,_ {B = B₁ `⊎ B₂} p₁ (c +' d) 𝜖} {P-Sum} 
+  right-id-p {A} {B `⊎ C} {_↷_,_ {B = B₁ `⊎ B₂} p₁ (c +' d) 𝜖} {P-Sum}
       rewrite right-id {B₁}{B}{c} | right-id {B₂}{C}{d} = refl
   right-id-p {A} {B `⊎ C} {p₁ ↷ m₁ , cfail ℓ} {P-Sum} = refl
 
@@ -421,7 +637,7 @@ module HyperCoercions where
       rewrite right-id {B}{A} {c} | left-id {A'}{C}{d} = refl
   left-id-m-p {A `× A'} {B `× C} {c ×' d} {P-Pair}
       rewrite left-id {A}{B} {c} | left-id {A'}{C}{d} = refl
-  left-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum} 
+  left-id-m-p {A `⊎ A'} {B `⊎ C} {c +' d} {P-Sum}
       rewrite left-id {A}{B} {c} | left-id {A'}{C}{d} = refl
 
   left-id-p : ∀{A B : Type}{c : Cast (A ⇒ B)} {p : PreType A}
@@ -430,7 +646,7 @@ module HyperCoercions where
      rewrite left-id-m-p {` ι}{C}{m₁}{P-Base} = refl
   left-id-p {A ⇒ C} {B} {_↷_,_ {C = D ⇒ E} 𝜖 (c ↣ d) i₁} {P-Fun}
      rewrite right-id {D}{A}{c} | left-id {C}{E}{d} = refl
-  left-id-p {A `× C} {B} {_↷_,_ {C = D `× E} 𝜖 (c ×' d) i₁} {P-Pair} 
+  left-id-p {A `× C} {B} {_↷_,_ {C = D `× E} 𝜖 (c ×' d) i₁} {P-Pair}
      rewrite left-id {A}{D}{c} | left-id {C}{E}{d} = refl
   left-id-p {A `⊎ C} {B} {_↷_,_ {C = D `⊎ E} 𝜖 (c +' d) i₁} {P-Sum}
      rewrite left-id {A}{D}{c} | left-id {C}{E}{d} = refl
@@ -535,7 +751,7 @@ module HyperCoercions where
   ...      | yes m12'
            with consis-ground-eq m12' g1 g2
   ...      | refl = ⊥-elim (contradiction m12' m12)
-  
+
   assoc (p₁ ↷ m₁ , !! {g = g1})
         (?? ℓ {g = g2} ↷ m₂ , !! {g = g3}) ((?? ℓ'){g = g4} ↷ m₃ , i₃)
       | no m12 | yes m23
@@ -553,7 +769,7 @@ module HyperCoercions where
       with (m₁ `⨟ m₂) ⌣' m₃
   ... | no m123
       with m₂ ⌣' m₃
-  ... | no m23 
+  ... | no m23
       with m₁ ⌣' m₂ {- weird repetition needed -}
   ... | no m12' = ⊥-elim (contradiction m12 m12')
   ... | yes m12'

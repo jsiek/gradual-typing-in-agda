@@ -17,7 +17,7 @@ module ParamCastCalculus (Cast : Type → Set) (Inert : ∀ {A} → Cast A → S
 open import Variables
 open import Labels
 open import Data.Nat
-open import Data.Bool
+open import Data.Bool using (Bool; true; false)
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong; cong₂; cong-app)

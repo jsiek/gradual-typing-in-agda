@@ -1,16 +1,16 @@
 module Types where
 
-  open import Data.Bool
+  open import Data.Bool using (Bool; true; false)
   open import Data.Empty using () renaming (⊥ to Bot)
   open import Data.Empty.Irrelevant using (⊥-elim)
   open import Data.Integer using (ℤ)
-  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_)
+  open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_) renaming (_⊔_ to _∨_)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Unit renaming (⊤ to Top)
-  open import Primitives renaming (Prim to PrimD; Void to ⊥; rep to prim-rep;
-     Label to DenotLabel)
+  open import PrimitiveTypes
+     renaming (Prim to PrimD; Void to ⊥; rep to prim-rep; Label to DenotLabel)
      public
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
@@ -38,6 +38,13 @@ module Types where
     _`×_ : Type → Type → Type
     _`⊎_ : Type → Type → Type
 
+
+  height-t : Type → ℕ
+  height-t ⋆ = 0
+  height-t (` B) = 0
+  height-t (A ⇒ B) = suc (height-t A ∨ height-t B)
+  height-t (A `× B) = suc (height-t A ∨ height-t B)
+  height-t (A `⊎ B) = suc (height-t A ∨ height-t B)
 
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆
@@ -185,7 +192,7 @@ module Types where
 
   ⊑LBase : ∀{A ι} → A ⊑ ` ι →  A ≡ (` ι) ⊎ A ≡ ⋆
   ⊑LBase {⋆} {ι} unk⊑ = inj₂ refl
-  ⊑LBase {` ι} {ι} base⊑ = inj₁ refl
+  ⊑LBase {` ι₁} {ι₂} base⊑ = inj₁ refl
 
   ⊑L⇒ : ∀{A B₁ B₂} → A ⊑ (B₁ ⇒ B₂)
         → A ≡ ⋆ ⊎ Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ]
@@ -522,6 +529,13 @@ module Types where
   eq-unk (A ⇒ A₁) = no (λ ())
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
+
+  eq-unk-relevant : ∀{A} → .(A ≢ ⋆) → (A ≢ ⋆)
+  eq-unk-relevant {A} A≢⋆
+      with eq-unk A
+  ... | yes A≡⋆ = ⊥-elim (A≢⋆ A≡⋆)
+  ... | no neq = neq
+  
 
 {-
   ~⇒L : ∀{A B A' B'} → .((A ⇒ B) ~ (A' ⇒ B')) → A ~ A'

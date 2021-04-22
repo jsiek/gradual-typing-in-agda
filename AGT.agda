@@ -5,7 +5,12 @@ module AGT where
   open import Labels
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
-  open import Data.Nat using (ℕ; zero; suc)
+  open import Data.Bool using (Bool; true; false)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
+  open import Data.Nat.Properties
+    using (⊔-mono-≤; ⊔-monoˡ-≤; ⊔-monoʳ-≤; ≤-trans; ≤-refl; ≤-reflexive;
+    m≤m⊔n; n≤m⊔n; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
+    ⊔-identityˡ; ⊔-identityʳ)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -1389,10 +1394,157 @@ module AGT where
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
   applyCast M (EfficientParamCastAux.S-val x) .(⋆ ⇒ _ ⇒ _) {activeA⋆} =
-    ⊥-elim (simple⋆ M x refl)
-  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} = M ⟨ compose c d ⟩
+      ⊥-elim (simple⋆ M x refl)
+  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} =
+      M ⟨ compose c d ⟩
   applyCast M v (error _ _) {activeError} = blame (pos zero)
   
+  height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+  height (_ ⇒ B ⇒ _) = height-t B
+  height (error _ _) = 0
+
+  ⊑-height-≤ : ∀{A B} → A ⊑ B → height-t A ≤ height-t B
+  ⊑-height-≤ {.⋆} {B} unk⊑ = z≤n
+  ⊑-height-≤ {.(` _)} {.(` _)} base⊑ = z≤n
+  ⊑-height-≤ {.(_ ⇒ _)} {.(_ ⇒ _)} (fun⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+  ⊑-height-≤ {.(_ `× _)} {.(_ `× _)} (pair⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+  ⊑-height-≤ {.(_ `⊎ _)} {.(_ `⊎ _)} (sum⊑ A⊑B A⊑B₁) = s≤s (⊔-mono-≤ (⊑-height-≤ A⊑B) (⊑-height-≤ A⊑B₁))
+
+  height-lb : ∀{BB' B B' : Type}
+     → (∀ {C' : Type} → ub C' B B' → BB' ⊑ C')
+     → B ~ B'
+     → B ⊑ BB' → B' ⊑ BB'
+     → height-t BB' ≤ height-t B ∨ height-t B'
+  height-lb {BB} {.⋆} {B'} lb unk~L B⊑BB' B'⊑BB' =
+     let xx = lb {B'} ⟨ unk⊑ , Refl⊑ ⟩ in
+     ⊑-height-≤ xx
+  height-lb {BB} {B} {.⋆} lb unk~R B⊑BB' B'⊑BB' =
+     let xx = lb {B} ⟨ Refl⊑ , unk⊑ ⟩ in
+     ≤-trans (m≤m⊔n _ _) (⊔-mono-≤ (⊑-height-≤ xx) ≤-refl)
+  height-lb {BB} {(` ι)} {.(` _)} lb base~ B⊑BB' B'⊑BB' =
+    let xx = lb {` ι} ⟨ Refl⊑ , Refl⊑ ⟩ in
+    ⊑-height-≤ xx 
+  height-lb {BB1 ⇒ BB2} {B1 ⇒ B2} {B1' ⇒ B2'} lb (fun~ B~B' B~B'') (fun⊑ B⊑BB' B⊑BB'') (fun⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G (Sym~ B~B') B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' ⇒ BB2} ⟨ (fun⊑ B1'⊑C' B⊑BB'') , fun⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | fun⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 ⇒ C'} ⟨ (fun⊑ B⊑BB' B2'⊑C') , fun⊑ B'⊑BB' B2⊑C' ⟩
+    ... | fun⊑ xx yy = yy
+    
+  height-lb {BB1 `× BB2} {B1 `× B2} {B1' `× B2'} lb (pair~ B~B' B~B'')
+    (pair⊑ B⊑BB' B⊑BB'') (pair⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G B~B' B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' `× BB2} ⟨ (pair⊑ B1'⊑C' B⊑BB'') , pair⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | pair⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 `× C'} ⟨ (pair⊑ B⊑BB' B2'⊑C') , pair⊑ B'⊑BB' B2⊑C' ⟩
+    ... | pair⊑ xx yy = yy
+    
+  height-lb {BB1 `⊎ BB2} {B1 `⊎ B2} {B1' `⊎ B2'} lb (sum~ B~B' B~B'')
+    (sum⊑ B⊑BB' B⊑BB'') (sum⊑ B'⊑BB' B'⊑BB'') =
+    let IH1 = height-lb {BB1}{B1}{B1'} G B~B' B⊑BB' B'⊑BB' in
+    let IH2 = height-lb {BB2}{B2}{B2'} H B~B'' B⊑BB'' B'⊑BB'' in
+    s≤s
+      (begin
+         height-t BB1 ∨ height-t BB2
+         ≤⟨ ⊔-mono-≤ IH1 IH2 ⟩
+         (height-t B1 ∨ height-t B1') ∨ (height-t B2 ∨ height-t B2')
+         ≤⟨ ≤-reflexive (⊔-assoc (height-t B1) _ _) ⟩
+         height-t B1 ∨ (height-t B1' ∨ (height-t B2 ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (sym (⊔-assoc (height-t B1') _ _))) ⟩
+         height-t B1 ∨ ((height-t B1' ∨ height-t B2) ∨ height-t B2')
+         ≤⟨ ≤-reflexive ((cong (λ X → height-t B1 ∨ (X ∨ height-t B2')) (⊔-comm (height-t B1') _))) ⟩
+         height-t B1 ∨ ((height-t B2 ∨ height-t B1') ∨ height-t B2')
+         ≤⟨ ≤-reflexive (cong (λ X → height-t B1 ∨ X) (⊔-assoc (height-t B2) _ _)) ⟩
+         height-t B1 ∨ (height-t B2 ∨ (height-t B1' ∨ height-t B2'))
+         ≤⟨ ≤-reflexive (sym (⊔-assoc (height-t B1) _ _)) ⟩
+         (height-t B1 ∨ height-t B2) ∨ (height-t B1' ∨ height-t B2')
+      ∎)
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    G : {C' : Type} → ub C' B1 B1' → BB1 ⊑ C'
+    G {C'} ⟨ B1'⊑C' , B1⊑C' ⟩ 
+        with lb {C' `⊎ BB2} ⟨ (sum⊑ B1'⊑C' B⊑BB'') , sum⊑ B1⊑C' B'⊑BB'' ⟩
+    ... | sum⊑ xx yy = xx
+
+    H : {C' : Type} → ub C' B2 B2' → BB2 ⊑ C'
+    H {C'} ⟨ B2'⊑C' , B2⊑C' ⟩ 
+        with lb {BB1 `⊎ C'} ⟨ (sum⊑ B⊑BB' B2'⊑C') , sum⊑ B'⊑BB' B2⊑C' ⟩
+    ... | sum⊑ xx yy = yy
+
+  compose-height : ∀ {A B C} → (s : Cast (A ⇒ B)) (t : Cast (B ⇒ C))
+     → height (compose s t) ≤ (height s) ∨ (height t)
+  compose-height (_ ⇒ B ⇒ _) (_ ⇒ B' ⇒ _)
+      with B `~ B'
+  ... | no nc = z≤n
+  ... | yes B~B'
+      with (B `⊔ B') {B~B'}
+  ... | ⟨ B⊔B' , ⟨ ⟨ B⊑B⊔B' , B'⊑B⊔B' ⟩ , lb ⟩ ⟩ =
+      height-lb lb B~B' B⊑B⊔B' B'⊑B⊔B'
+  compose-height (_ ⇒ B ⇒ _) (error _ _) = z≤n
+  compose-height (error _ _) (_ ⇒ B ⇒ _) = z≤n
+  compose-height (error _ _) (error _ _) = z≤n
+
+  applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
+          → n ∣ false ⊢ M ok → (v : Value M)
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
+  applyCastOK {M = M} {.((` _) ⇒ ` _ ⇒ (` _))} {n} {activeId} Mok v =
+      ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {M = M} {.(error _ _)} {n} {activeError} Mok v =
+      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  applyCastOK {M = M} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} Mok (S-val x) =
+      ⊥-elim (simple⋆ M x refl)
+  applyCastOK {M = V ⟨ .(_ ⇒ _ ⇒ ⋆) ⟩} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} (castOK {n = n₁} Vok lt)
+      (V-cast {i = inert x x₁} sv) =
+      ⟨ suc n₁ , ⟨ (castOK Vok lt) , s≤s (≤-step (≤-step ≤-refl)) ⟩ ⟩
+     
   open import CastStructure
 
   ecs : EfficientCastStruct
@@ -1400,11 +1552,142 @@ module AGT where
              { precast = pcs
              ; applyCast = applyCast
              ; compose = compose
+             ; height = height
+             ; compose-height = compose-height
+             ; applyCastOK = λ{Γ}{A}{B}{M}{c}{n}{a} → applyCastOK{Γ}{A}{B}{M}{c}{n}{a}
              }
              
+  open EfficientCastStruct ecs using (c-height)
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
+  lub-height : ∀{B₁ B₂}{c} → height-t ((B₁ ⊔ B₂){c}) ≤ height-t B₁ ∨ height-t B₂
+  lub-height {B₁}{B₂}{c}
+      with (B₁ `⊔ B₂){c}
+  ... | ⟨ C , ⟨ ⟨ b1c , b2c ⟩ , lub ⟩ ⟩ = height-lb lub c b1c b2c
+
+  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+        {a : Active c}
+      → c-height (applyCast V v c {a}) ≤ c-height V ∨ height c
+  applyCast-height {V = V} {v} {.((` _) ⇒ ` _ ⇒ (` _))} {activeId} =
+      ≤-reflexive (sym (⊔-identityʳ _))
+  applyCast-height {V = V} {v} {.(error _ _)} {activeError} = z≤n
+  applyCast-height {V = V} {S-val x} {.(⋆ ⇒ _ ⇒ _)} {activeA⋆} =
+      ⊥-elim (simple⋆ V x refl)
+  applyCast-height {Γ}{⋆}{B}{V = V ⟨ (A ⇒ B₁ ⇒ ⋆){ab1}{cb1} ⟩} {V-cast {i = inert x y} sv}
+      {(⋆ ⇒ B₂ ⇒ B){ab}{cb}} {activeA⋆}
+      with B₁ `~ B₂
+  ... | yes c =
+      begin
+        c-height V ∨ height-t (proj₁ ((B₁ `⊔ B₂){c}))
+        ≤⟨ ⊔-mono-≤ ≤-refl (lub-height {B₁}{B₂}{c}) ⟩
+        c-height V ∨ (height-t B₁ ∨ height-t B₂)
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+        c-height V ∨ height-t B₁ ∨ height-t B₂
+      ∎
+    where open Data.Nat.Properties.≤-Reasoning
+  ... | no c =
+      begin
+        c-height V ∨ 0
+        ≤⟨ ⊔-mono-≤ ≤-refl z≤n ⟩
+        c-height V ∨ (height-t B₁ ∨ height-t B₂)
+        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
+        c-height V ∨ height-t B₁ ∨ height-t B₂      
+      ∎
+    where open Data.Nat.Properties.≤-Reasoning
+    
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (dom c x) ≤ height c
+  dom-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun}
+      with ⊑R⇒ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩
+      with ab
+  ... | fun⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
+  
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+       → height (cod c x) ≤ height c
+  cod-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun} 
+      with ⊑R⇒ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | fun⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (fstC c x) ≤ height c
+  fst-height {c = (.(_ `× _) ⇒ .(_ `× _) ⇒ .(_ `× _)){ab}{cb}} {C-pair}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | pair⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
+  
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+       → height (sndC c x) ≤ height c
+  snd-height {c = (.(_ `× _) ⇒ .(_ `× _) ⇒ .(_ `× _)){ab}{cb}} {C-pair}
+      with ⊑R× cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | pair⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inlC c x) ≤ height c
+  inlC-height {c = (.(_ `⊎ _) ⇒ .(_ `⊎ _) ⇒ .(_ `⊎ _)){ab}{cb}} {C-sum}
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩  
+      with ab
+  ... | sum⊑ ab1 ab2 = ≤-step (m≤m⊔n _ _)
+  
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+       → height (inrC c x) ≤ height c
+  inrC-height {c = (.(_ `⊎ _) ⇒ .(_ `⊎ _) ⇒ .(_ `⊎ _)){ab}{cb}} {C-sum}
+      with ⊑R⊎ cb
+  ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
+      with ab
+  ... | sum⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  
+
+  ecsh : EfficientCastStructHeight
+  ecsh = record
+              { effcast = ecs
+              ; applyCast-height = (λ {Γ}{A}{B}{V}{v}{c}{a} → applyCast-height{Γ}{A}{B}{V}{v}{c}{a})
+              ; dom-height = (λ {A}{B}{C}{D}{c}{x} → dom-height{A}{B}{C}{D}{c}{x})
+              ; cod-height = (λ {A}{B}{C}{D}{c}{x} → cod-height{A}{B}{C}{D}{c}{x})
+              ; fst-height = (λ {A}{B}{C}{D}{c}{x} → fst-height{A}{B}{C}{D}{c}{x})
+              ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
+              ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
+              ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
+              }
+
+  import PreserveHeight
+  module PH = PreserveHeight ecsh
+
+  preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —→ M′ → c-height M′ ≤ c-height M
+  preserve-height M—→M′ = PH.preserve-height M—→M′
+
+
+  import SpaceEfficient
+  module SE = SpaceEfficient ecs
+
+  preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —→ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok × m ≤ 2 + n
+  preserve-ok Mok M—→M′ = SE.preserve-ok Mok M—→M′
+
+  make-cast : (A B : Type) → Label → {c : A ~ B} → EfficientCastStruct.Cast ecs (A ⇒ B)
+  make-cast A B ℓ {c}
+      with (A `⊔ B){c}
+  ... | ⟨ A⊔B , ⟨ ⟨ ac , bc ⟩ , lub ⟩ ⟩ = (A ⇒ A⊔B ⇒ B){ac}{bc}
+
+  module EC = SE.EfficientCompile make-cast
+
+  open import GTLC
+  import GTLC2CCOrig
+  module Compile = GTLC2CCOrig Cast make-cast
+
+  compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
+      → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
+  compile-efficient d ul = EC.compile-efficient d ul
+  
   {-
 
    Alternative idea about evidence.  Use consistency judgements!

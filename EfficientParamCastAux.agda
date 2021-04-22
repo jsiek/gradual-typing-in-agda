@@ -34,7 +34,7 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
   -}
 
   data Value : ∀ {Γ A} → Γ ⊢ A → Set
-  
+
   data SimpleValue : ∀ {Γ A} → Γ ⊢ A → Set where
 
     V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
@@ -88,12 +88,43 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
   canonical⋆ (M ⟨ _ ⟩) (V-cast{A = A}{B = B}{V = V}{c = c}{i = i} v) =
     ⟨ A , ⟨ V , ⟨ c , ⟨ i , ⟨ refl , simple⋆ M v ⟩ ⟩ ⟩ ⟩ ⟩
 
-  simple-base : ∀ {Γ ι} → (M : Γ ⊢ ` ι) → SimpleValue M 
+  simple-base : ∀ {Γ ι} → (M : Γ ⊢ ` ι) → SimpleValue M
      → Σ[ k ∈ rep-base ι ] Σ[ f ∈ Prim (` ι) ] M ≡ ($ k){f}
   simple-base (($ k){f}) V-const = ⟨ k , ⟨ f , refl ⟩ ⟩
 
+  rename-value : ∀ {Γ Δ A} (M : Γ ⊢ A) (ρ : ∀{B} → Γ ∋ B → Δ ∋ B)
+        → Value M → Value (rename ρ M)
+  rename-simple : ∀ {Γ Δ A} (M : Γ ⊢ A) (ρ : ∀{B} → Γ ∋ B → Δ ∋ B)
+        → SimpleValue M → SimpleValue (rename ρ M)
+  rename-simple (ƛ N) ρ V-ƛ = V-ƛ
+  rename-simple ($_ r {p}) ρ V-const = V-const
+  rename-simple (cons M N) ρ (V-pair x x₁) =
+     (V-pair (rename-value M ρ x) (rename-value N ρ x₁))
+  rename-simple (inl M) ρ (V-inl x) = (V-inl (rename-value M ρ x))
+  rename-simple (inr M) ρ (V-inr x) = (V-inr (rename-value M ρ x))
 
-  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B) 
+  rename-value M ρ (S-val sM) = S-val (rename-simple M ρ sM)
+  rename-value (V ⟨ c ⟩) ρ (V-cast {i = i} sV) =
+     V-cast {i = i} (rename-simple V ρ sV)
+
+  subst-value : ∀ {Γ Δ A} (M : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
+        → Value M → Value (subst σ M)
+
+  subst-simple : ∀ {Γ Δ A} (M : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
+        → SimpleValue M → SimpleValue (subst σ M)
+  subst-simple (ƛ N) σ V-ƛ = V-ƛ
+  subst-simple ($_ r {p}) σ V-const = V-const
+  subst-simple (cons M N) σ (V-pair x x₁) =
+     V-pair (subst-value M σ x) (subst-value N σ x₁)
+  subst-simple (inl M) σ (V-inl x) = V-inl (subst-value M σ x)
+  subst-simple (inr M) σ (V-inr x) = V-inr (subst-value M σ x)
+
+  subst-value M σ (S-val x) = S-val (subst-simple M σ x)
+  subst-value (M ⟨ c ⟩) σ (V-cast {i = i} x) =
+     V-cast {i = i} (subst-simple M σ x)
+
+
+  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B)
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
        → (x : Cross c)
        → Γ ⊢ C ⇒ D
