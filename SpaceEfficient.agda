@@ -40,8 +40,8 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   open EfficientCastStruct ecs
   open EfficientParamCasts ecs
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
   open import EfficientParamCastAux precast
 
   simple→ok0 : ∀{Γ A}{M : Γ ⊢ A}{n}
@@ -380,7 +380,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
     where
 
     open import GTLC
-    open import GTLC2CC Cast cast
+    open import GTLC2CCOrig Cast cast
 
     compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
         → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (compile M d) ok × k ≤ 1

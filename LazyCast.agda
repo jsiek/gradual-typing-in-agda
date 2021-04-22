@@ -18,10 +18,6 @@ module LazyCast where
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
-
   data Inert : ∀ {A} → Cast A → Set where
     inert : ∀{A} → A ≢ ⋆ → (c : Cast (A ⇒ ⋆)) → Inert c
 
@@ -32,6 +28,10 @@ module LazyCast where
     activePair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
     activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
     activeErr : ∀ {A B} → (c : Cast (A ⇒ B)) → ¬ (A ⌣ B) → Active c
+
+  import ParamCastCalculus
+  module CastCalc = ParamCastCalculus Cast Inert
+  open CastCalc
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert (cast ⋆ B ℓ) with eq-unk B
@@ -60,6 +60,11 @@ module LazyCast where
   ...    | unk⌣R = inj₂ (inert (λ ()) (cast (A₁ `⊎ A₂) ⋆ ℓ))
   ...    | sum⌣{A' = A'}{B' = B'} =
              inj₁ (activeSum (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ))
+
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (activeId c) (inert neq .c) = neq refl
+  ActiveNotInert (activeProj c neq) (inert _ .c) = neq refl
+  ActiveNotInert (activeErr c neq) (inert _ .c) = neq unk⌣R
 
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
@@ -104,6 +109,12 @@ module LazyCast where
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
+
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a c (inert x .c) = contradiction refl x
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j c = ActiveNotInert (activeProj c j)
 
   open import Subtyping using (_<:₁_)
   open _<:₁_
@@ -153,6 +164,7 @@ module LazyCast where
   inrSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
+  open import PreCastStructureWithSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -160,6 +172,7 @@ module LazyCast where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
@@ -171,6 +184,8 @@ module LazyCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record
@@ -202,7 +217,7 @@ module LazyCast where
   applyCast {Γ} M v (cast (A `⊎ B) (A' `⊎ B') ℓ) {activeSum _} =
      let l = inl ((` Z) ⟨ cast A A' ℓ ⟩) in
      let r = inr ((` Z) ⟨ cast B B' ℓ ⟩) in
-     case M (ƛ l) (ƛ r)
+     case M l r
   applyCast {Γ} {A} {B} M v (cast A B ℓ) {activeErr .(cast A B ℓ) x} =
      blame ℓ
 
@@ -216,7 +231,7 @@ module LazyCast where
   applyCast-pres-allsafe {vV = vV} (activeProj (cast ⋆ .⋆ ℓ) ⋆≢⋆) (safe-<: T<:⋆) = contradiction refl ⋆≢⋆
   applyCast-pres-allsafe {vV = vV} (activeProj (cast ⋆ B ℓ′) x) (safe-ℓ≢ ℓ≢) allsafe with canonical⋆ _ vV
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with allsafe
-  ...   | allsafe-cast _ allsafe-M′ = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
+  ...   | allsafe-wrap _ allsafe-M′ = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
   applyCast-pres-allsafe (activeFun _) (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe =
     allsafe-ƛ (allsafe-cast (safe-<: sub-cod) (allsafe-· (rename-pres-allsafe S_ allsafe)
                                                          (allsafe-cast (safe-<: sub-dom) allsafe-var)))
@@ -230,11 +245,11 @@ module LazyCast where
     allsafe-cons (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-fst allsafe))
                                (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-snd allsafe))
   applyCast-pres-allsafe (activeSum _) (safe-<: (<:-⊎ sub-l sub-r)) allsafe =
-    allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var)))
-                                    (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var)))
+    allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var))
+                         (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var))
   applyCast-pres-allsafe (activeSum _) (safe-ℓ≢ ℓ≢) allsafe =
-    allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
-                                    (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
+    allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
+                         (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
   applyCast-pres-allsafe (activeErr .(cast _ ⋆ _) ¬c⌣) (safe-<: T<:⋆) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ unk⌣R)
   applyCast-pres-allsafe (activeErr .(cast (` _) (` _) _) ¬c⌣) (safe-<: <:-B) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ base⌣)
   applyCast-pres-allsafe (activeErr .(cast (_ `× _) (_ `× _) _) ¬c⌣) (safe-<: (<:-× x x₁)) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ pair⌣)
@@ -243,19 +258,19 @@ module LazyCast where
   applyCast-pres-allsafe (activeErr .(cast _ _ _) ¬c⌣) (safe-ℓ≢ ℓ≢) allsafe = allsafe-blame-diff-ℓ ℓ≢
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
   open ParamCastReduction cs public
 
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → (cast A B ℓ)) public
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → (cast A B ℓ)) public
 
   -- Instantiate blame-subtyping theorem for `LazyCast`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public

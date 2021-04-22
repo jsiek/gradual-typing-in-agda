@@ -101,8 +101,8 @@ module EfficientGroundCoercions where
 
   -}
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
 
   {-
 
@@ -194,10 +194,11 @@ module EfficientGroundCoercions where
    GTLC to λC.
 
   -}
+
   mkcast = (λ A B ℓ {c} → coerce A B {c} ℓ)
-  
-  import GTLC2CC
-  open GTLC2CC Cast mkcast public
+
+  import GTLC2CCOrig
+  open GTLC2CCOrig Cast mkcast public
 
 
   {-
@@ -309,6 +310,17 @@ module EfficientGroundCoercions where
   ... | inj₁ a = inj₁ (A-intmd a)
   ... | inj₂ j = inj₂ (I-intmd j)
 
+  ActiveNotInertGnd : ∀ {A} {c : gCast A} → ActivegCast c → InertgCast c → Bot
+  ActiveNotInertGnd A-cpair ()
+  ActiveNotInertGnd A-csum ()
+  ActiveNotInertGnd A-idι ()
+
+  ActiveNotInertiCast : ∀ {A} {c : iCast A} → ActiveiCast c → InertiCast c → Bot
+  ActiveNotInertiCast (A-gnd a) (I-gnd i) = ActiveNotInertGnd a i
+
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (A-intmd a) (I-intmd i) = ActiveNotInertiCast a i
+
 
   data Cross : ∀ {A} → Cast A → Set where
     C-cross : ∀{A B}{g : gCast (A ⇒ B)} → Cross (` ` g)
@@ -352,6 +364,15 @@ module EfficientGroundCoercions where
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
+
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert A-Unk .(` (` _)) (I-intmd {i = ` ()} (I-gnd x))
+  idNotInert A-Base .(` (` idι)) (I-intmd {i = ` idι} (I-gnd ()))
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id★ = contradiction refl j
+  projNotInert j (G ?? x ⨟ x₁) = ActiveNotInert A-proj
+  projNotInert j (` x) (I-intmd (I-gnd ()))
   
   {-
 
@@ -368,6 +389,7 @@ module EfficientGroundCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
@@ -379,9 +401,9 @@ module EfficientGroundCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
              }
-
-  open import ParamCastAux pcs using (eta×; eta⊎)
 
   import EfficientParamCastAux
   open EfficientParamCastAux pcs

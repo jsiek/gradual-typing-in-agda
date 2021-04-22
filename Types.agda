@@ -478,36 +478,6 @@ module Types where
   ⊑Base→~Base unk⊑ = unk~L
   ⊑Base→~Base base⊑ = base~
 
-{-
-  base-eq? : (A : Base) → (B : Base) 
-          → Dec (A ≡ B)
-  base-eq? Nat Nat = yes refl
-  base-eq? Nat Int = no (λ ())
-  base-eq? Nat 𝔹 = no (λ ())
-  base-eq? Nat Unit = no (λ ())
-  base-eq? Nat ⊥ = no (λ ())
-  base-eq? Int Nat = no (λ ())
-  base-eq? Int Int = yes refl
-  base-eq? Int 𝔹 = no (λ ())
-  base-eq? Int Unit = no (λ ())
-  base-eq? Int ⊥ = no (λ ())
-  base-eq? 𝔹 Nat = no (λ ())
-  base-eq? 𝔹 Int = no (λ ())
-  base-eq? 𝔹 𝔹 = yes refl
-  base-eq? 𝔹 Unit = no (λ ())
-  base-eq? 𝔹 ⊥ = no (λ ())
-  base-eq? Unit Nat = no (λ ())
-  base-eq? Unit Int = no (λ ())
-  base-eq? Unit 𝔹 = no (λ ())
-  base-eq? Unit Unit = yes refl
-  base-eq? Unit ⊥ = no (λ ())
-  base-eq? ⊥ Nat = no (λ ())
-  base-eq? ⊥ Int = no (λ ())
-  base-eq? ⊥ 𝔹 = no (λ ())
-  base-eq? ⊥ Unit = no (λ ())
-  base-eq? ⊥ ⊥ = yes refl
--}
-
   _`~_ : (A : Type) → (B : Type) → Dec (A ~ B)
   ⋆ `~ B = yes unk~L
   (` ι) `~ ⋆ = yes unk~R
@@ -753,21 +723,6 @@ module Types where
   ¬⌣ii : ∀{ι ι'} → ¬ ι ≡ ι' → ¬ (` ι ⌣ ` ι')
   ¬⌣ii neq base⌣ = neq refl
 
-{-
-  consis-eq : ∀{A B} (c : A ~ B)→ (d : A ~ B) → c ≡ d
-  consis-eq {⋆} {⋆} unk~L unk~L = {!!}
-  consis-eq {⋆} {⋆} unk~L unk~R = {!!}
-  consis-eq {⋆} {⋆} unk~R d = {!!}
-  consis-eq {⋆} {` x} c d = {!!}
-  consis-eq {⋆} {B ⇒ B₁} c d = {!!}
-  consis-eq {⋆} {B `× B₁} c d = {!!}
-  consis-eq {⋆} {B `⊎ B₁} c d = {!!}
-  consis-eq {` x} {B} c d = {!!}
-  consis-eq {A ⇒ A₁} {B} c d = {!!}
-  consis-eq {A `× A₁} {B} c d = {!!}
-  consis-eq {A `⊎ A₁} {B} c d = {!!}
--}
-
   ⨆ : ∀{A B : Type} → (c : A ~ B) → Type
   ⨆ {.⋆} {B} unk~L = B
   ⨆ {A} {.⋆} unk~R = A
@@ -797,3 +752,288 @@ module Types where
   ⨆~ (fun~ aa bb) = fun~ (Sym~ (~⨆ aa)) (⨆~ bb)
   ⨆~ (pair~ aa bb) = pair~ (⨆~ aa) (⨆~ bb)
   ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
+
+  {- Type matching -}
+  data _▹_⇒_ : Type → Type → Type → Set where
+    match⇒⇒ : ∀{A B} → (A ⇒ B) ▹ A ⇒ B
+    match⇒⋆ : ⋆ ▹ ⋆ ⇒ ⋆
+
+  data _▹_×_ : Type → Type → Type → Set where
+    match×× : ∀{A B} → (A `× B) ▹ A × B
+    match×⋆ : ⋆ ▹ ⋆ × ⋆
+
+  data _▹_⊎_ : Type → Type → Type → Set where
+    match⊎⊎ : ∀{A B} → (A `⊎ B) ▹ A ⊎ B
+    match⊎⋆ : ⋆ ▹ ⋆ ⊎ ⋆
+
+  ▹⇒⊑ : ∀{C A B} → C ▹ A ⇒ B → C ⊑ A ⇒ B
+  ▹⇒⊑ match⇒⇒ = fun⊑ Refl⊑ Refl⊑
+  ▹⇒⊑ match⇒⋆ = unk⊑
+
+  ▹×⊑ : ∀{C A B} → C ▹ A × B → C ⊑ A `× B
+  ▹×⊑ match×× = pair⊑ Refl⊑ Refl⊑
+  ▹×⊑ match×⋆ = unk⊑
+
+  ▹⊎⊑ : ∀{C A B} → C ▹ A ⊎ B → C ⊑ A `⊎ B
+  ▹⊎⊑ match⊎⊎ = sum⊑ Refl⊑ Refl⊑
+  ▹⊎⊑ match⊎⋆ = unk⊑
+
+  ▹⇒-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ ⇒ A₂) → (m′ : A′ ▹ A₁′ ⇒ A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹⇒-pres-prec match⇒⇒ match⇒⇒ (fun⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹⇒-pres-prec match⇒⇒ match⇒⋆ ()
+  ▹⇒-pres-prec match⇒⋆ match⇒⇒ lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹⇒-pres-prec match⇒⋆ match⇒⋆ lp = ⟨ unk⊑ , unk⊑ ⟩
+
+  ▹×-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ × A₂) → (m′ : A′ ▹ A₁′ × A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹×-pres-prec match×× match×× (pair⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹×-pres-prec match×× match×⋆ = λ ()
+  ▹×-pres-prec match×⋆ match×× lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹×-pres-prec match×⋆ match×⋆ lp = ⟨ lp , lp ⟩
+
+  ▹⊎-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
+    → (m : A ▹ A₁ ⊎ A₂) (m′ : A′ ▹ A₁′ ⊎ A₂′)
+    → A ⊑ A′
+      --------------------
+    → A₁ ⊑ A₁′ × A₂ ⊑ A₂′
+  ▹⊎-pres-prec match⊎⊎ match⊎⊎ (sum⊑ lp₁ lp₂) = ⟨ lp₁ , lp₂ ⟩
+  ▹⊎-pres-prec match⊎⋆ match⊎⊎ lp = ⟨ unk⊑ , unk⊑ ⟩
+  ▹⊎-pres-prec match⊎⋆ match⊎⋆ lp = ⟨ lp , lp ⟩
+
+  ⨆-pres-prec : ∀ {A A′ B B′}
+    → (aa : A ~ A′) → (bb : B ~ B′)
+    → A ⊑ B
+    → A′ ⊑ B′
+      -------------
+    → ⨆ aa ⊑ ⨆ bb
+  ⨆-pres-prec unk~L unk~L unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L unk~R unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L base~ unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (fun~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (pair~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (sum~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R unk~L unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R unk~R unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R base~ unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (fun~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (pair~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (sum~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L unk~L unk⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~L base~ unk⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~L unk~L unk⊑ (fun⊑ lp₁ lp₂) = fun⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (fun~ aa bb) unk⊑ (fun⊑ lp₁ lp₂) =
+    fun⊑ (⨆-pres-prec unk~R aa lp₁ unk⊑) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~L unk~L unk⊑ (pair⊑ lp₁ lp₂) = pair⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (pair~ aa bb) unk⊑ (pair⊑ lp₁ lp₂) =
+    pair⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~L unk~L unk⊑ (sum⊑ lp₁ lp₂) = sum⊑ lp₁ lp₂
+  ⨆-pres-prec unk~L (sum~ aa bb) unk⊑ (sum⊑ lp₁ lp₂) =
+    sum⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~L bb unk⊑ lp₂)
+  ⨆-pres-prec unk~R unk~R base⊑ unk⊑ = base⊑
+  ⨆-pres-prec unk~R base~ base⊑ unk⊑ = base⊑
+  ⨆-pres-prec base~ base~ base⊑ base⊑ = base⊑
+  ⨆-pres-prec unk~R unk~R (fun⊑ lp₁ lp₂) unk⊑ = fun⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (fun~ aa bb) (fun⊑ lp₁ lp₂) unk⊑ =
+    fun⊑ (⨆-pres-prec unk~L aa unk⊑ lp₁) (⨆-pres-prec unk~R bb lp₂ unk⊑)
+  ⨆-pres-prec (fun~ aa₁ aa₂) (fun~ bb₁ bb₂) (fun⊑ lpa₁ lpa₂) (fun⊑ lpb₁ lpb₂) =
+    fun⊑ (⨆-pres-prec aa₁ bb₁ lpb₁ lpa₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+  ⨆-pres-prec unk~R unk~R (pair⊑ lp₁ lp₂) unk⊑ = pair⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (pair~ bb₁ bb₂) (pair⊑ lp₁ lp₂) unk⊑ =
+    pair⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+  ⨆-pres-prec (pair~ aa₁ aa₂) (pair~ bb₁ bb₂) (pair⊑ lpa₁ lpa₂) (pair⊑ lpb₁ lpb₂) =
+    pair⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+  ⨆-pres-prec unk~R unk~R (sum⊑ lp₁ lp₂) unk⊑ = sum⊑ lp₁ lp₂
+  ⨆-pres-prec unk~R (sum~ bb₁ bb₂) (sum⊑ lp₁ lp₂) unk⊑ =
+    sum⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
+  ⨆-pres-prec (sum~ aa₁ aa₂) (sum~ bb₁ bb₂) (sum⊑ lpa₁ lpa₂) (sum⊑ lpb₁ lpb₂) =
+    sum⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+
+  -- If two types are consistent then their less precise counterparts are consistent too.
+  lp-consis : ∀ {A A′ B B′}
+    → A′ ~ B′
+    → A ⊑ A′ → B ⊑ B′
+      -----------------
+    → A ~ B
+  lp-consis unk~L unk⊑ lpB = unk~L
+  lp-consis unk~R unk⊑ lpB = unk~L
+  lp-consis unk~R base⊑ unk⊑ = unk~R
+  lp-consis unk~R (fun⊑ _ _) unk⊑ = unk~R
+  lp-consis unk~R (pair⊑ _ _) unk⊑ = unk~R
+  lp-consis unk~R (sum⊑ _ _) unk⊑ = unk~R
+  lp-consis base~ unk⊑ lpB = unk~L
+  lp-consis base~ base⊑ unk⊑ = unk~R
+  lp-consis base~ base⊑ base⊑ = base~
+  lp-consis (fun~ c~ c~₁) unk⊑ lpB = unk~L
+  lp-consis (fun~ c~ c~₁) (fun⊑ lpA lpA₁) unk⊑ = unk~R
+  lp-consis (fun~ c~₁ c~₂) (fun⊑ lpA₁ lpA₂) (fun⊑ lpB₁ lpB₂) = fun~ (lp-consis c~₁ lpB₁ lpA₁) (lp-consis c~₂ lpA₂ lpB₂)
+  lp-consis (pair~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consis (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consis (pair~ c~₁ c~₂) (pair⊑ lpA₁ lpA₂) (pair⊑ lpB₁ lpB₂) = pair~ (lp-consis c~₁ lpA₁ lpB₁) (lp-consis c~₂ lpA₂ lpB₂)
+  lp-consis (sum~ c~₁ c~₂) unk⊑ lpB = unk~L
+  lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) unk⊑ = unk~R
+  lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpB₂) = sum~ (lp-consis c~₁ lpA₁ lpB₁) (lp-consis c~₂ lpA₂ lpB₂)
+
+  lp-¬⋆ : ∀ {T T′}
+    → T ≢ ⋆ → T ⊑ T′
+      ---------------
+    → T′ ≢ ⋆
+  lp-¬⋆ nd unk⊑ = contradiction refl nd
+  lp-¬⋆ nd base⊑ = nd
+  lp-¬⋆ nd (fun⊑ lp lp₁) = λ ()
+  lp-¬⋆ nd (pair⊑ lp lp₁) = λ ()
+  lp-¬⋆ nd (sum⊑ lp lp₁) = λ ()
+
+  {- Suppose G₁ , G₂ are ground types,
+    A   ~  B
+    ⊔|     ⊔|
+    G₁  ≡  G₂
+  -}
+  lp-consis-ground-eq : ∀ {A B G₁ G₂}
+    → Ground G₁ → Ground G₂
+    → A ~ B
+    → G₁ ⊑ A → G₂ ⊑ B
+      -----------------
+    → G₁ ≡ G₂
+  lp-consis-ground-eq g1 g2 unk~L unk⊑ unk⊑ = refl
+  lp-consis-ground-eq () g2 unk~L unk⊑ base⊑
+  lp-consis-ground-eq () g2 unk~L unk⊑ (fun⊑ lp2 lp3)
+  lp-consis-ground-eq () g2 unk~L unk⊑ (pair⊑ lp2 lp3)
+  lp-consis-ground-eq () g2 unk~L unk⊑ (sum⊑ lp2 lp3)
+  lp-consis-ground-eq g1 () unk~R base⊑ unk⊑
+  lp-consis-ground-eq g1 () unk~R (fun⊑ lp1 lp3) unk⊑
+  lp-consis-ground-eq g1 () unk~R (pair⊑ lp1 lp3) unk⊑
+  lp-consis-ground-eq g1 () unk~R (sum⊑ lp1 lp3) unk⊑
+  lp-consis-ground-eq g1 g2 base~ base⊑ base⊑ = refl
+  lp-consis-ground-eq G-Fun G-Fun (fun~ c c₁) lp1 lp2 = refl
+  lp-consis-ground-eq G-Pair G-Pair (pair~ c c₁) lp1 lp2 = refl
+  lp-consis-ground-eq G-Sum G-Sum (sum~ c c₁) lp1 lp2 = refl
+
+  {- Suppose B ≢ ⋆ (otherwise G₁ and G₂ may not be consistent), we have:
+    A  ~  B  ~  C
+    ⊔|          ⊔|
+    G₁    ≡     G₂
+  -}
+  lp-double-consis-ground-eq : ∀ {A B C G₁ G₂}
+    → Ground G₁ → Ground G₂
+    → A ~ B → B ~ C
+    → G₁ ⊑ A → G₂ ⊑ C
+    → B ≢ ⋆
+      -----------------
+    → G₁ ≡ G₂
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L base⊑ base⊑ neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 base~ base~ base⊑ base⊑ neq = refl
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L base⊑ (fun⊑ lp2 lp3) neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L base⊑ (pair⊑ lp2 lp3) neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L base⊑ (sum⊑ lp2 lp3) neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (fun⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~R (fun⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 () (fun~ c1 c3) unk~R (fun⊑ lp1 lp3) unk⊑ neq
+  lp-double-consis-ground-eq G-Fun G-Fun (fun~ c1 c3) (fun~ c2 c4) (fun⊑ lp1 lp3) (fun⊑ lp2 lp4) neq = refl
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) base⊑ neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (fun⊑ lp2 lp4) neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) neq = contradiction refl neq
+  lp-double-consis-ground-eq G-Pair G-Pair (pair~ c1 c3) c2 (pair⊑ lp1 lp3) (pair⊑ lp2 lp4) neq = refl
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (pair⊑ lp1 lp3) (sum⊑ lp2 lp4) neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~L (sum⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~R (sum⊑ lp1 lp3) lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 () (sum~ c1 c3) unk~R (sum⊑ lp1 lp3) unk⊑ neq
+  lp-double-consis-ground-eq G-Sum G-Sum (sum~ c1 c3) (sum~ c2 c4) (sum⊑ lp1 lp3) (sum⊑ lp2 lp4) neq = refl
+  lp-double-consis-ground-eq g1 () c1 unk~R base⊑ unk⊑ neq
+  lp-double-consis-ground-eq g1 g2 unk~R unk~R (pair⊑ _ _) lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~L unk~L unk⊑ lp2 neq = contradiction refl neq
+  lp-double-consis-ground-eq g1 g2 unk~L unk~R unk⊑ unk⊑ neq = refl
+  lp-double-consis-ground-eq () g2 unk~L base~ unk⊑ lp2 neq
+  lp-double-consis-ground-eq () g2 unk~L (fun~ c2 c3) unk⊑ lp2 neq
+  lp-double-consis-ground-eq () g2 unk~L (pair~ c2 c3) unk⊑ lp2 neq
+  lp-double-consis-ground-eq () g2 unk~L (sum~ c2 c3) unk⊑ lp2 neq
+
+  -- The ground type ⋆ ⇒ ⋆ sits at the bottom of the precision lattice of all function types.
+  ground-fun-⊑ : ∀ {A B} → ⋆ ⇒ ⋆ ⊑ A ⇒ B
+  ground-fun-⊑ = fun⊑ unk⊑ unk⊑
+
+  ground-pair-⊑ : ∀ {A B} → ⋆ `× ⋆ ⊑ A `× B
+  ground-pair-⊑ = pair⊑ unk⊑ unk⊑
+
+  ground-sum-⊑ : ∀ {A B} → ⋆ `⊎ ⋆ ⊑ A `⊎ B
+  ground-sum-⊑ = sum⊑ unk⊑ unk⊑
+
+  -- A type that is less precise than a ground type and not ⋆ must also be ground.
+  ⊑G-nd-ground : ∀ {A G}
+    → Ground G → A ⊑ G  → A ≢ ⋆
+      -----------------------------
+    → Ground A
+  ⊑G-nd-ground G-Base unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Base base⊑ x = G-Base
+  ⊑G-nd-ground G-Fun unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Fun (fun⊑ unk⊑ unk⊑) x = G-Fun
+  ⊑G-nd-ground G-Pair unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Pair (pair⊑ unk⊑ unk⊑) x = G-Pair
+  ⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
+
+  nd⋢⋆ : ∀ {A} → A ≢ ⋆ → ¬ A ⊑ ⋆
+  nd⋢⋆ nd unk⊑ = contradiction refl nd
+
+  -- A ground type cannot be ⋆
+  ground-nd : ∀ {G} → Ground G → G ≢ ⋆
+  ground-nd G-Base ()
+  ground-nd G-Fun ()
+  ground-nd G-Pair ()
+  ground-nd G-Sum ()
+
+  -- Relax on precision by using the ground type G instead of A, suppose G ~ A.
+  ⊑-ground-relax : ∀ {A B G}
+    → Ground G
+    → A ⊑ B → A ~ G → A ≢ ⋆
+      ------------------------
+    → G ⊑ B
+  ⊑-ground-relax _ unk⊑ unk~L nd = contradiction refl nd
+  ⊑-ground-relax _ base⊑ base~ nd = base⊑
+  ⊑-ground-relax G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+  ⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+  ⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
+  ⊑-ground-consis : ∀ {G A B}
+    → Ground G
+    → G ⊑ A → A ~ B → B ≢ ⋆
+      ------------------------
+    → G ⊑ B
+  ⊑-ground-consis G-Base base⊑ unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Base base⊑ base~ nd = base⊑
+  ⊑-ground-consis G-Fun (fun⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
+  ⊑-ground-consis G-Pair (pair⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
+  ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+
+  -- Suppose G ≡ ground A and H ≡ ground B
+  ⊑-ground-monotone : ∀ {A B G H}
+    → A ≢ ⋆ → B ≢ ⋆ → ¬ Ground A → ¬ Ground B
+    → Ground G → Ground H
+    → A ~ G → B ~ H
+    → A ⊑ B
+      ---------
+    → G ⊑ H
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng g h c1 c2 unk⊑ = contradiction refl a-nd
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng g h c1 c2 base⊑ = contradiction G-Base a-ng
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Fun G-Fun _ _ (fun⊑ lp1 lp2) = fun⊑ unk⊑ unk⊑
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Pair G-Pair _ _ (pair⊑ lp1 lp2) = pair⊑ unk⊑ unk⊑
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Sum G-Sum _ _ (sum⊑ lp1 lp2) = sum⊑ unk⊑ unk⊑
+
+  ground-⊑-eq : ∀ {G H}
+    → Ground G → Ground H
+    → G ⊑ H
+      ------
+    → G ≡ H
+  ground-⊑-eq G-Base G-Base base⊑ = refl
+  ground-⊑-eq G-Fun G-Fun (fun⊑ _ _) = refl
+  ground-⊑-eq G-Pair G-Pair (pair⊑ _ _) = refl
+  ground-⊑-eq G-Sum G-Sum (sum⊑ _ _) = refl

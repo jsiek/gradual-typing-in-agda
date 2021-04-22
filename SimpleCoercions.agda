@@ -5,6 +5,7 @@ module SimpleCoercions where
   open import Variables
   open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
+  open import Relation.Nullary.Negation using (contradiction)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
@@ -28,10 +29,6 @@ module SimpleCoercions where
         -----------------------------------------
       → Cast ((A `⊎ A') ⇒ (B `⊎ B'))
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
-
   coerce : (A : Type) → (B : Type) → ∀ {c : A ~ B} → Label → Cast (A ⇒ B)
   coerce .⋆ B {unk~L} ℓ with eq-unk B
   ... | yes eq rewrite eq = id {⋆} {A-Unk}
@@ -45,7 +42,7 @@ module SimpleCoercions where
   coerce (A `× B) (A' `× B') {pair~ c c₁} ℓ =
     cpair (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)
   coerce (A `⊎ B) (A' `⊎ B') {sum~ c c₁} ℓ =
-    csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)  
+    csum (coerce A A' {c} ℓ ) (coerce B B' {c₁} ℓ)
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A i} → Inert (inj A {i})
@@ -57,6 +54,10 @@ module SimpleCoercions where
     A-sum : ∀{A B A' B' c d} → Active (csum {A}{B}{A'}{B'} c d)
     A-id : ∀{A a} → Active (id {A}{a})
 
+  import ParamCastCalculus
+  module CastCalc = ParamCastCalculus Cast Inert
+  open CastCalc
+
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert id = inj₁ A-id
   ActiveOrInert (inj A) = inj₂ I-inj
@@ -65,11 +66,18 @@ module SimpleCoercions where
   ActiveOrInert (cpair c c₁) = inj₁ A-pair
   ActiveOrInert (csum c c₁) = inj₁ A-sum
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert A-proj ()
+  ActiveNotInert A-fun ()
+  ActiveNotInert A-pair ()
+  ActiveNotInert A-sum ()
+  ActiveNotInert A-id ()
+
   data Cross : ∀ {A} → Cast A → Set where
-    C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)    
+    C-fun : ∀{A B A' B' c d} → Cross (cfun {A}{B}{A'}{B'} c d)
     C-pair : ∀{A B A' B' c d} → Cross (cpair {A}{B}{A'}{B'} c d)
     C-sum : ∀{A B A' B' c d} → Cross (csum {A}{B}{A'}{B'} c d)
-    
+
   Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   Inert-Cross⇒ c ()
@@ -105,10 +113,17 @@ module SimpleCoercions where
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   inrC (csum c d) x = d
-  
+
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a (inj ⋆ {i}) I-inj = contradiction refl i
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j id = contradiction refl j
+  projNotInert j (inj .⋆) = contradiction refl j
+  projNotInert j (proj B x) = ActiveNotInert A-proj
 
   data Safe : ∀ {A} → Cast A → Label → Set where
 
@@ -159,6 +174,7 @@ module SimpleCoercions where
   inrSafe (safe-csum safe-c safe-d) x = safe-d
 
   open import PreCastStructure
+  open import PreCastStructureWithSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -166,6 +182,7 @@ module SimpleCoercions where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
@@ -177,6 +194,8 @@ module SimpleCoercions where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record
@@ -230,31 +249,31 @@ module SimpleCoercions where
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
   ...   | no _ = allsafe-blame-diff-ℓ ℓ≢
   ...   | yes A′~B with allsafe
-  ...     | (allsafe-cast _ allsafe-M′) = allsafe-cast (coerce-safe A′~B ℓ≢) allsafe-M′
+  ...     | (allsafe-wrap _ allsafe-M′) = allsafe-cast (coerce-safe A′~B ℓ≢) allsafe-M′
   applyCast-pres-allsafe A-fun (safe-cfun safe-c safe-d) allsafe =
     allsafe-ƛ (allsafe-cast safe-d (allsafe-· (rename-pres-allsafe S_ allsafe) (allsafe-cast safe-c allsafe-var)))
   applyCast-pres-allsafe A-pair (safe-cpair safe-c safe-d) allsafe =
     allsafe-cons (allsafe-cast safe-c (allsafe-fst allsafe))
                  (allsafe-cast safe-d (allsafe-snd allsafe))
   applyCast-pres-allsafe A-sum (safe-csum safe-c safe-d) allsafe =
-    allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast safe-c allsafe-var)))
-                         (allsafe-ƛ (allsafe-inr (allsafe-cast safe-d allsafe-var)))
+    allsafe-case allsafe (allsafe-inl (allsafe-cast safe-c allsafe-var))
+                         (allsafe-inr (allsafe-cast safe-d allsafe-var))
   applyCast-pres-allsafe A-id safe allsafe = allsafe
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
   open ParamCastReduction cs public
 
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → coerce A B {c} ℓ) public
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → coerce A B {c} ℓ) public
 
   -- Instantiate blame-subtyping theorem for `SimpleCoercion`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public

@@ -13,7 +13,7 @@ open import Data.Maybe
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructure
+open import PreCastStructureWithSafety
 
 
 
@@ -23,7 +23,7 @@ module ParamCastSubtyping (pcs : PreCastStructWithSafety) where
 open PreCastStructWithSafety pcs
 
 import ParamCastCalculus
-open ParamCastCalculus Cast
+open ParamCastCalculus Cast Inert
 
 
 
@@ -35,6 +35,12 @@ data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wher
     → CastsAllSafe M ℓ
       -------------------------------------
     → CastsAllSafe (M ⟨ c ⟩) ℓ
+
+  allsafe-wrap : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {i : Inert c} {ℓ}
+    → Safe c ℓ
+    → CastsAllSafe M ℓ
+      -------------------------------------
+    → CastsAllSafe (M ⟪ i ⟫) ℓ
 
   allsafe-var : ∀ {Γ A} {x : Γ ∋ A} {ℓ}
       ------------------------------
@@ -88,7 +94,7 @@ data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set wher
       ----------------------------------
     → CastsAllSafe (inr {A = A} N) ℓ
 
-  allsafe-case : ∀ {Γ A B C} {L : Γ ⊢ A `⊎ B} {M : Γ ⊢ A ⇒ C} {N : Γ ⊢ B ⇒ C} {ℓ}
+  allsafe-case : ∀ {Γ A B C} {L : Γ ⊢ A `⊎ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C} {ℓ}
     → CastsAllSafe L ℓ
     → CastsAllSafe M ℓ
     → CastsAllSafe N ℓ
@@ -116,8 +122,9 @@ rename-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {ℓ}
     ----------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (rename ρ M) ℓ
 rename-pres-allsafe ρ (allsafe-cast safe allsafe) = allsafe-cast safe (rename-pres-allsafe ρ allsafe)
+rename-pres-allsafe ρ (allsafe-wrap safe allsafe) = allsafe-wrap safe (rename-pres-allsafe ρ allsafe)
 rename-pres-allsafe ρ allsafe-var = allsafe-var
-rename-pres-allsafe ρ (allsafe-ƛ allsafe) = allsafe-ƛ (rename-pres-allsafe (λ {X} → ext ρ) allsafe)
+rename-pres-allsafe ρ (allsafe-ƛ allsafe) = allsafe-ƛ (rename-pres-allsafe (ext ρ) allsafe)
 rename-pres-allsafe ρ (allsafe-· allsafe-L allsafe-M) =
   allsafe-· (rename-pres-allsafe ρ allsafe-L) (rename-pres-allsafe ρ allsafe-M)
 rename-pres-allsafe ρ allsafe-prim = allsafe-prim
@@ -131,8 +138,8 @@ rename-pres-allsafe ρ (allsafe-snd allsafe) = allsafe-snd (rename-pres-allsafe 
 rename-pres-allsafe ρ (allsafe-inl allsafe) = allsafe-inl (rename-pres-allsafe ρ allsafe)
 rename-pres-allsafe ρ (allsafe-inr allsafe) = allsafe-inr (rename-pres-allsafe ρ allsafe)
 rename-pres-allsafe ρ (allsafe-case allsafe-L allsafe-M allsafe-N) =
-  allsafe-case (rename-pres-allsafe ρ allsafe-L) (rename-pres-allsafe ρ allsafe-M)
-               (rename-pres-allsafe ρ allsafe-N)
+  allsafe-case (rename-pres-allsafe ρ allsafe-L) (rename-pres-allsafe (ext ρ) allsafe-M)
+                                                 (rename-pres-allsafe (ext ρ) allsafe-N)
 rename-pres-allsafe ρ (allsafe-blame-diff-ℓ ℓ≢ℓ′) = allsafe-blame-diff-ℓ ℓ≢ℓ′
 
 {- NOTE:
@@ -154,6 +161,7 @@ subst-pres-allsafe : ∀ {Γ Δ A} {M : Γ ⊢ A} {σ : Subst Γ Δ} {ℓ}
     ---------------------------------------------------
   → CastsAllSafe M ℓ → CastsAllSafe (subst σ M) ℓ
 subst-pres-allsafe allsafe-σ (allsafe-cast safe allsafe) = allsafe-cast safe (subst-pres-allsafe allsafe-σ allsafe)
+subst-pres-allsafe allsafe-σ (allsafe-wrap safe allsafe) = allsafe-wrap safe (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-var {x = x}) = allsafe-σ x
 -- Need to prove that `exts σ` satisfies `allsafe-σ` .
 subst-pres-allsafe allsafe-σ (allsafe-ƛ allsafe) = allsafe-ƛ (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe)
@@ -169,8 +177,8 @@ subst-pres-allsafe allsafe-σ (allsafe-snd allsafe) = allsafe-snd (subst-pres-al
 subst-pres-allsafe allsafe-σ (allsafe-inl allsafe) = allsafe-inl (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-inr allsafe) = allsafe-inr (subst-pres-allsafe allsafe-σ allsafe)
 subst-pres-allsafe allsafe-σ (allsafe-case allsafe-L allsafe-M allsafe-N) =
-  allsafe-case (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe allsafe-σ allsafe-M)
-                                                        (subst-pres-allsafe allsafe-σ allsafe-N)
+  allsafe-case (subst-pres-allsafe allsafe-σ allsafe-L) (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe-M)
+                                                        (subst-pres-allsafe (exts-allsafe allsafe-σ) allsafe-N)
 subst-pres-allsafe allsafe-σ (allsafe-blame-diff-ℓ ℓ≢ℓ′) = allsafe-blame-diff-ℓ ℓ≢ℓ′
 
 subst-zero-allafe : ∀ {Γ A} {M : Γ ⊢ A} {ℓ}

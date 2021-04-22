@@ -18,10 +18,6 @@ module SimpleCast where
   data Cast : Type → Set where
     _⇒⟨_⟩_ : (A : Type) → Label → (B : Type) → {c : A ~ B } → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
-  open CastCalc
-
   data Inert : ∀ {A} → Cast A → Set where
     inert : ∀{A} → A ≢ ⋆ → (c : Cast (A ⇒ ⋆)) → Inert c
 
@@ -30,7 +26,11 @@ module SimpleCast where
     activeProj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
     activeFun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Active c
     activePair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
-    activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c    
+    activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
+
+  import ParamCastCalculus
+  module CastCalc = ParamCastCalculus Cast Inert
+  open CastCalc
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert ((.⋆ ⇒⟨ ℓ ⟩ B) {unk~L}) with eq-unk B
@@ -48,11 +48,15 @@ module SimpleCast where
   ActiveOrInert (((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)) {sum~ c d}) =
       inj₁ (activeSum ((A₁ `⊎ A₂) ⇒⟨ ℓ ⟩ (B₁ `⊎ B₂)))
 
+  ActiveNotInert : ∀ {A} {c : Cast A} → (a : Active c) → ¬ Inert c
+  ActiveNotInert (activeId c) (inert neq .c) = neq refl
+  ActiveNotInert (activeProj c neq) (inert _ .c) = neq refl
+
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
     C-pair : ∀{A B C D} → (c : Cast ((A `× B) ⇒ (C `× D))) → Cross c
     C-sum : ∀{A B C D} → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D))) → Cross c
-    
+
   Inert-Cross⇒ : ∀{A C D} → (c : Cast (A ⇒ (C ⇒ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ ⇒ A₂
   Inert-Cross⇒ c ()
@@ -64,12 +68,12 @@ module SimpleCast where
   Inert-Cross⊎ : ∀{A C D} → (c : Cast (A ⇒ (C `⊎ D))) → (i : Inert c)
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   Inert-Cross⊎ c ()
-  
+
   dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          → Cast (A' ⇒ A₁)
   dom (((A ⇒ B) ⇒⟨ ℓ ⟩ (C ⇒ D)){c}) x
       with ~-relevant c
-  ... | fun~ c' d' = (C ⇒⟨ ℓ ⟩ A) {c = c'} 
+  ... | fun~ c' d' = (C ⇒⟨ ℓ ⟩ A) {c = c'}
 
   cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
@@ -81,28 +85,57 @@ module SimpleCast where
          → Cast (A₁ ⇒ A')
   fstC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x
       with ~-relevant c
-  ... | pair~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'} 
+  ... | pair~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'}
 
   sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   sndC (((A `× B) ⇒⟨ ℓ ⟩ (C `× D)){c}) x
       with ~-relevant c
-  ... | pair~ c' d' = (B ⇒⟨ ℓ ⟩ D){d'} 
+  ... | pair~ c' d' = (B ⇒⟨ ℓ ⟩ D){d'}
 
   inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          → Cast (A₁ ⇒ A')
   inlC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x
       with ~-relevant c
-  ... | sum~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'} 
+  ... | sum~ c' d' = (A ⇒⟨ ℓ ⟩ C){c'}
 
   inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
          →  Cast (A₂ ⇒ B')
   inrC (((A `⊎ B) ⇒⟨ ℓ ⟩ (C `⊎ D)){c}) x
       with ~-relevant c
   ... | sum~ c' d' = (B ⇒⟨ ℓ ⟩ D){d'}
-  
+
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert c ()
+
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert a c (inert x .c) = contradiction refl x
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j c = ActiveNotInert (activeProj c j)
+
+  {- Here we define the precision relation for casts: -}
+  infix 6 ⟪_⟫⊑⟪_⟫
+  data ⟪_⟫⊑⟪_⟫ : ∀ {A A′ B B′} → {c : Cast (A ⇒ B)} → {c′ : Cast (A′ ⇒ B′)}
+                               → (i : Inert c) → (i′ : Inert c′) → Set where
+    -- Inert injections
+    lpii-inj : ∀ {A A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
+       → (nd : A ≢ ⋆) → (nd′ : A′ ≢ ⋆)
+       → A ⊑ A′
+         --------------------------------
+       → ⟪ inert nd c ⟫⊑⟪ inert nd′ c′ ⟫
+
+  infix 6 ⟪_⟫⊑_
+  data ⟪_⟫⊑_ : ∀ {A B} → {c : Cast (A ⇒ B)} → Inert c → Type → Set where
+    -- Inert injections
+    lpit-inj : ∀ {A A′} {c : Cast (A ⇒ ⋆)}
+      → (nd : A ≢ ⋆)
+      → A ⊑ A′
+        --------------------
+      → ⟪ inert nd c ⟫⊑ A′
+
+  infix 6 _⊑⟪_⟫
+  data _⊑⟪_⟫ : ∀ {A′ B′} → {c′ : Cast (A′ ⇒ B′)} → Type → Inert c′ → Set where
 
   open import Subtyping using (_<:₁_)
   open _<:₁_
@@ -164,13 +197,15 @@ module SimpleCast where
   ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
-  
+  open import PreCastStructureWithSafety
+
   pcs : PreCastStruct
   pcs = record
              { Cast = Cast
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
@@ -182,6 +217,8 @@ module SimpleCast where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
              }
   pcss : PreCastStructWithSafety
   pcss = record
@@ -208,13 +245,13 @@ module SimpleCast where
          with canonical⋆ M v
   ...  | ⟨ A' , ⟨ M' , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A' `~ B
   ...    | yes ap-b = M' ⟨ (A' ⇒⟨ ℓ ⟩ B) {ap-b} ⟩
-  ...    | no ap-b = blame ℓ  
+  ...    | no ap-b = blame ℓ
   {- Wrap -}
   applyCast {Γ} {A₁ ⇒ A₂} {B₁ ⇒ B₂} M v ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c})
       {activeFun .((_ ⇒ _) ⇒⟨ ℓ ⟩ (_ ⇒ _))} =
       eta⇒ M (((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)) {c})
           (C-fun ((A₁ ⇒ A₂) ⇒⟨ ℓ ⟩ (B₁ ⇒ B₂)))
-  {- Cast Pair -}                   
+  {- Cast Pair -}
   applyCast{Γ}{A₁ `× A₂}{B₁ `× B₂}M v ((_ ⇒⟨ ℓ ⟩ _){c}){activePair(_ ⇒⟨ ℓ ⟩ _)} =
        eta× M (((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)){c})
           (C-pair ((A₁ `× A₂) ⇒⟨ ℓ ⟩ (B₁ `× B₂)))
@@ -235,7 +272,7 @@ module SimpleCast where
   ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with A′ `~ B
   ...   | no _  = allsafe-blame-diff-ℓ ℓ≢
   ...   | yes _ with allsafe
-  ...     | (allsafe-cast _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
+  ...     | (allsafe-wrap _ allsafe-M′) = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
   applyCast-pres-allsafe (activeFun ((.(_ ⇒ _) ⇒⟨ ℓ ⟩ .(_ ⇒ _)) {c~})) (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe
     with ~-relevant c~
   ... | fun~ _ _ = allsafe-ƛ (allsafe-cast (safe-<: sub-cod) (allsafe-· (rename-pres-allsafe S_ allsafe)
@@ -254,27 +291,27 @@ module SimpleCast where
                                  (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-snd allsafe))
   applyCast-pres-allsafe (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) (safe-<: (<:-⊎ sub-l sub-r)) allsafe
     with ~-relevant c~
-  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var)))
-                                        (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var)))
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var))
+                                        (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var))
   applyCast-pres-allsafe (activeSum ((.(_ `⊎ _) ⇒⟨ ℓ ⟩ .(_ `⊎ _)) {c~})) (safe-ℓ≢ ℓ≢) allsafe
     with ~-relevant c~
-  ... | sum~ _ _ = allsafe-case allsafe (allsafe-ƛ (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
-                                        (allsafe-ƛ (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
+  ... | sum~ _ _ = allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
+                                        (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
 
   open import CastStructure
+  open import CastStructureWithSafety
 
   cs : CastStruct
-  cs = record
-             { pcss = pcss
-             ; applyCast = applyCast
-             ; applyCast-pres-allsafe = applyCast-pres-allsafe
-             }
+  cs = record { precast = pcs ; applyCast = applyCast }
+
+  css : CastStructWithSafety
+  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
   open ParamCastReduction cs public
 
   import GTLC2CC
-  open GTLC2CC Cast (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
+  open GTLC2CC Cast Inert (λ A B ℓ {c} → (A ⇒⟨ ℓ ⟩ B) {c}) public
 
   -- Instantiate blame-subtyping theorem for `SimpleCast`.
-  open import ParamBlameSubtyping cs using (soundness-<:) public
+  open import ParamBlameSubtyping css using (soundness-<:) public

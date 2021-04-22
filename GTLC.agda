@@ -15,29 +15,6 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Relation.Binary.PropositionalEquality
    using (_≡_; refl; trans; sym; cong; cong-app)
 
-data _▹_⇒_ : Type → Type → Type → Set where
-  match⇒⇒ : ∀{A B} → (A ⇒ B) ▹ A ⇒ B
-  match⇒⋆ : ⋆ ▹ ⋆ ⇒ ⋆
-
-▹⇒⊑ : ∀{C A B} → C ▹ A ⇒ B → C ⊑ A ⇒ B
-▹⇒⊑ match⇒⇒ = fun⊑ Refl⊑ Refl⊑
-▹⇒⊑ match⇒⋆ = unk⊑
-
-data _▹_×_ : Type → Type → Type → Set where
-  match×× : ∀{A B} → (A `× B) ▹ A × B
-  match×⋆ : ⋆ ▹ ⋆ × ⋆
-
-▹×⊑ : ∀{C A B} → C ▹ A × B → C ⊑ A `× B
-▹×⊑ match×× = pair⊑ Refl⊑ Refl⊑
-▹×⊑ match×⋆ = unk⊑
-
-data _▹_⊎_ : Type → Type → Type → Set where
-  match⊎⊎ : ∀{A B} → (A `⊎ B) ▹ A ⊎ B
-  match⊎⋆ : ⋆ ▹ ⋆ ⊎ ⋆
-
-▹⊎⊑ : ∀{C A B} → C ▹ A ⊎ B → C ⊑ A `⊎ B
-▹⊎⊑ match⊎⊎ = sum⊑ Refl⊑ Refl⊑
-▹⊎⊑ match⊎⋆ = unk⊑
 
 {-
   Syntax
@@ -103,7 +80,7 @@ data _∋_⦂_ : Context → ℕ → Type → Set where
     → Γ ∋ n ⦂ A
       -----------------
     → (Γ , B) ∋ suc n ⦂ A
-    
+
 infix  4  _⊢G_⦂_
 data _⊢G_⦂_ : Context → Term → Type → Set where
 
@@ -142,7 +119,7 @@ data _⊢G_⦂_ : Context → Term → Type → Set where
     → Γ ⊢G M ⦂ A  →  Γ ⊢G N ⦂ B
       -------------------------
     → Γ ⊢G ⟦ M , N ⟧ ⦂ A `× B
-  
+
   ⊢fst : ∀ {Γ A A₁ A₂}{M}{ℓ}
     → Γ ⊢G M ⦂ A
     → A ▹ A₁ × A₂
@@ -223,7 +200,7 @@ data _⊢G_ : Context → Type → Set where
     → Γ ⊢G A  →  Γ ⊢G B
       -----------------------
     → Γ ⊢G A `× B
-    
+
   fst : ∀ {Γ A A₁ A₂}
     → Γ ⊢G A
     → Label
@@ -250,14 +227,12 @@ data _⊢G_ : Context → Type → Set where
       -----------------------
     → Γ ⊢G A `⊎ B
 
-  case : ∀{Γ A A₁ A₂ B B₁ B₂ C C₁ C₂}
+  case : ∀{Γ A A₁ A₂ B₁ B₂ C₁ C₂}
     → Γ ⊢G A
-    → Γ ⊢G B
-    → Γ ⊢G C
+    → Γ , B₁ ⊢G B₂
+    → Γ , C₁ ⊢G C₂
     → Label
     → {ma : A ▹ A₁ ⊎ A₂ }
-    → {mb : B ▹ B₁ ⇒ B₂ }
-    → {mc : C ▹ C₁ ⇒ C₂ }
     → {ab : A₁ ~ B₁}
     → {ac : A₂ ~ C₁}
     → {bc : B₂ ~ C₂}
@@ -267,6 +242,3 @@ data _⊢G_ : Context → Type → Set where
 -}
 
 {- Examples -}
-
-
-

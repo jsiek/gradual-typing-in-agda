@@ -23,8 +23,8 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
 
   open PreCastStruct pcs
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
 
   {-
 
@@ -34,7 +34,7 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
   -}
 
   data Value : ∀ {Γ A} → Γ ⊢ A → Set
-  
+
   data SimpleValue : ∀ {Γ A} → Γ ⊢ A → Set where
 
     V-ƛ : ∀ {Γ A B} {N : Γ , A ⊢ B}
@@ -75,8 +75,8 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
 
   simple⋆ : ∀ {Γ A} → (M : Γ ⊢ A) → (SimpleValue M) → A ≢ ⋆
   simple⋆ .(ƛ _) V-ƛ = λ ()
-  simple⋆ ((ParamCastCalculus.$ k) {P-Base}) V-const = λ ()
-  simple⋆ ((ParamCastCalculus.$ k) {P-Fun f}) V-const = λ ()
+  simple⋆ (($ k) {P-Base}) V-const = λ ()
+  simple⋆ (($ k) {P-Fun f}) V-const = λ ()
   simple⋆ .(cons _ _) (V-pair x x₁) = λ ()
   simple⋆ .(inl _) (V-inl x) = λ ()
   simple⋆ .(inr _) (V-inr x) = λ ()
@@ -88,7 +88,7 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
   canonical⋆ (M ⟨ _ ⟩) (V-cast{A = A}{B = B}{V = V}{c = c}{i = i} v) =
     ⟨ A , ⟨ V , ⟨ c , ⟨ i , ⟨ refl , simple⋆ M v ⟩ ⟩ ⟩ ⟩ ⟩
 
-  simple-base : ∀ {Γ ι} → (M : Γ ⊢ ` ι) → SimpleValue M 
+  simple-base : ∀ {Γ ι} → (M : Γ ⊢ ` ι) → SimpleValue M
      → Σ[ k ∈ rep-base ι ] Σ[ f ∈ Prim (` ι) ] M ≡ ($ k){f}
   simple-base (($ k){f}) V-const = ⟨ k , ⟨ f , refl ⟩ ⟩
 
@@ -102,14 +102,14 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
      (V-pair (rename-value M ρ x) (rename-value N ρ x₁))
   rename-simple (inl M) ρ (V-inl x) = (V-inl (rename-value M ρ x))
   rename-simple (inr M) ρ (V-inr x) = (V-inr (rename-value M ρ x))
-  
+
   rename-value M ρ (S-val sM) = S-val (rename-simple M ρ sM)
   rename-value (V ⟨ c ⟩) ρ (V-cast {i = i} sV) =
      V-cast {i = i} (rename-simple V ρ sV)
 
   subst-value : ∀ {Γ Δ A} (M : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
         → Value M → Value (subst σ M)
-        
+
   subst-simple : ∀ {Γ Δ A} (M : Γ ⊢ A) (σ : ∀{B} → Γ ∋ B → Δ ⊢ B)
         → SimpleValue M → SimpleValue (subst σ M)
   subst-simple (ƛ N) σ V-ƛ = V-ƛ
@@ -118,7 +118,31 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
      V-pair (subst-value M σ x) (subst-value N σ x₁)
   subst-simple (inl M) σ (V-inl x) = V-inl (subst-value M σ x)
   subst-simple (inr M) σ (V-inr x) = V-inr (subst-value M σ x)
-  
+
   subst-value M σ (S-val x) = S-val (subst-simple M σ x)
   subst-value (M ⟨ c ⟩) σ (V-cast {i = i} x) =
      V-cast {i = i} (subst-simple M σ x)
+
+
+  eta⇒ : ∀ {Γ A B C D} → (M : Γ ⊢ A ⇒ B)
+       → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
+       → (x : Cross c)
+       → Γ ⊢ C ⇒ D
+  eta⇒ M c x =
+     ƛ (((rename S_ M) · ((` Z) ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
+
+  eta× : ∀ {Γ A B C D} → (M : Γ ⊢ A `× B)
+       → (c : Cast ((A `× B) ⇒ (C `× D)))
+       → (x : Cross c)
+       → Γ ⊢ C `× D
+  eta× M c x =
+     cons (fst M ⟨ fstC c x ⟩) (snd M ⟨ sndC c x ⟩)
+
+  eta⊎ : ∀ {Γ A B C D} → (M : Γ ⊢ A `⊎ B)
+       → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
+       → (x : Cross c)
+       → Γ ⊢ C `⊎ D
+  eta⊎ M c x =
+     let l = inl ((` Z) ⟨ inlC c x ⟩) in
+     let r = inr ((` Z) ⟨ inrC c x ⟩) in
+     case M (ƛ l) (ƛ r)

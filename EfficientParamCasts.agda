@@ -23,8 +23,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
 
   open EfficientCastStruct ecs
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
 
   import EfficientParamCastAux
   open EfficientParamCastAux precast

@@ -3,15 +3,14 @@ open import Variables
 open import Labels
 open import Data.Nat using (ℕ; zero; suc)
 
-module GTLC2CC
+module GTLC2CCOrig
   (Cast : Type → Set)
-  (Inert : ∀ {A} → Cast A → Set)
   (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
   where
 
   open import GTLC
-  open import ParamCastCalculus Cast Inert
-
+  open import ParamCastCalculusOrig Cast
+  
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -53,51 +52,4 @@ module GTLC2CC
       let L' = (compile L d₁) ⟨ cast A (B₁ `⊎ C₁) ℓ {A~B1C1} ⟩ in
       let M' = (compile M d₂) ⟨ cast B₂ (⨆ B2~C2) ℓ {~⨆ B2~C2} ⟩ in
       let N' = (compile N d₃) ⟨ cast C₂ (⨆ B2~C2) ℓ {⨆~ B2~C2} ⟩ in
-      case L' M' N'
-
-
-{-
-  compile (` x) = ` x
-  compile (ƛ A ˙ M) = ƛ (compile M)
-  compile (_·_at_ {Γ}{A}{A₁}{A₂}{B} L M ℓ {m}{cn}) =
-     let L' = (compile L) ⟨ cast A (A₁ ⇒ A₂) ℓ {consis (▹⇒⊑ m) Refl⊑} ⟩ in
-     let M' = (compile M) ⟨ cast B A₁ ℓ {Sym~ cn} ⟩ in
-     L' · M'
-  compile ($_ k {p}) = ($ k) {p}
-  compile (if {Γ}{A}{A'}{B} L M N ℓ {bb}{c}) =
-     let L' = (compile L) ⟨ cast B (` 𝔹) ℓ {bb} ⟩ in
-     let M' = (compile M) ⟨ cast A (⨆ c) ℓ {~⨆ c} ⟩ in
-     let N' = (compile N) ⟨ cast A' (⨆ c) ℓ {⨆~ c} ⟩ in
-     if L' M' N'
-  compile (cons L M) =
-     let L' = compile L in
-     let M' = compile M in
-     cons L' M'
-  compile (fst {Γ}{A}{A₁}{A₂} M ℓ {m}) =
-     let M' = (compile M) ⟨ cast A (A₁ `× A₂) ℓ {consis (▹×⊑ m) Refl⊑} ⟩ in
-     fst M'
-  compile (snd {Γ}{A}{A₁}{A₂} M ℓ {m}) =
-     let M' = (compile M) ⟨ cast A (A₁ `× A₂) ℓ {consis (▹×⊑ m) Refl⊑} ⟩ in
-     snd M'
-  compile (inl B M) = inl (compile M)
-  compile (inr A M) = inr (compile M)
-  compile (case {Γ}{A}{A₁}{A₂}{B₁}{B₂}{C₁}{C₂} L M N ℓ
-            {ma}{ab}{ac}{bc}) =
-        let L' = (compile L) ⟨ cast A (A₁ `⊎ A₂) ℓ {consis (▹⊎⊑ ma) Refl⊑} ⟩
-                             ⟨ cast (A₁ `⊎ A₂) (B₁ `⊎ C₁) ℓ {sum~ ab ac} ⟩ in
-        let M' = (compile M) ⟨ cast B₂ (⨆ bc) ℓ {~⨆ bc} ⟩ in
-        let N' = (compile N) ⟨ cast C₂ (⨆ bc) ℓ {⨆~ bc} ⟩ in
-          case L' M' N'
--}
-
-
-{-
-  open import GTLC-materialize
-
-  compile-mat : ∀ {Γ M A} → (Γ ⊢m M ⦂ A) → Σ[ A' ∈ Type ] Γ ⊢ A' × A' ⊑ A
-  compile-mat d
-      with mat-impl-trad d
-  ... | ⟨ A' , ⟨ d' , lt ⟩ ⟩ =
-        ⟨ A' , ⟨ (compile d') , lt ⟩ ⟩
-
--}
+      case L' (ƛ M') (ƛ N')

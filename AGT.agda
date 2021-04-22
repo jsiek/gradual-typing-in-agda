@@ -1180,8 +1180,8 @@ module AGT where
           → {ab : A ⊑ B } → {cb : C ⊑ B} → Cast (A ⇒ C)
     error : (A : Type) → (B : Type) → Cast (A ⇒ B)
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  module CastCalc = ParamCastCalculusOrig Cast
   open CastCalc
   
   {-
@@ -1236,6 +1236,10 @@ module AGT where
       with ⊑RBase cb
   ... | b=c rewrite b=c = inj₁ activeId
   ActiveOrInert {.(A ⇒ B)} (error A B) = inj₁ activeError
+
+  ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
+  ActiveNotInert (activeId {ι}) (inert ¬x _) = ¬x ⟨ ι , ⟨ refl , refl ⟩ ⟩
+  ActiveNotInert activeA⋆ (inert _ neq) = neq refl
 
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A₁ A₂ B₁ B₂ C₁ C₂ ab cb}
@@ -1327,6 +1331,15 @@ module AGT where
   ... | inj₁ eq rewrite eq = x ⟨ ι , ⟨ refl , refl ⟩ ⟩
   ... | inj₂ eq⋆ = contradiction eq⋆ A≢⋆
 
+  idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
+  idNotInert A-Unk .(⋆ ⇒ _ ⇒ ⋆) (inert _ x) = contradiction refl x
+  idNotInert {` ι} A-Base .((` _) ⇒ ` _ ⇒ (` _)) (inert {B = .(` _)} {ab = base⊑} {base⊑} x _) =
+    contradiction ⟨ ι , ⟨ refl , refl ⟩ ⟩ x
+
+  projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
+  projNotInert j (.⋆ ⇒ B ⇒ C) = ActiveNotInert activeA⋆
+  projNotInert j (error .⋆ B) = ActiveNotInert activeError
+
 {-  
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → A ≢ ⋆ → ¬ Inert c
   baseNotInert ((A ⇒ B ⇒ (` ι)){ab}{cb}) A≢⋆ (inert p)
@@ -1346,6 +1359,7 @@ module AGT where
              ; Inert = Inert
              ; Active = Active
              ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
              ; Cross = Cross
              ; Inert-Cross⇒ = Inert-Cross⇒
              ; Inert-Cross× = Inert-Cross×
@@ -1357,6 +1371,8 @@ module AGT where
              ; inlC = inlC
              ; inrC = inrC
              ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
              }
 
   import EfficientParamCastAux
@@ -1665,8 +1681,8 @@ module AGT where
   module EC = SE.EfficientCompile make-cast
 
   open import GTLC
-  import GTLC2CC
-  module Compile = GTLC2CC Cast make-cast
+  import GTLC2CCOrig
+  module Compile = GTLC2CCOrig Cast make-cast
 
   compile-efficient : ∀{Γ A} (M : Term) (d : Γ ⊢G M ⦂ A) (ul : Bool)
       → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1

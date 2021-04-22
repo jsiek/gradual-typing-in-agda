@@ -15,16 +15,16 @@ open import Relation.Nullary using (¬_)
 module CastStructure where
 
 import ParamCastCalculus
+import ParamCastCalculusOrig
 import ParamCastAux
-import ParamCastSubtyping
 import EfficientParamCastAux
 
   {-
 
   We need a few operations to define reduction in a generic way.
   In particular, we need parameters that say how to reduce casts and
-  how to eliminate values wrapped in casts. 
-  * The applyCast parameter, applies an Active cast to a value. 
+  how to eliminate values wrapped in casts.
+  * The applyCast parameter, applies an Active cast to a value.
   * The funCast parameter applies a function wrapped in an inert cast
     to an argument.
   * The fstCast and sndCast parameters take the first or second part
@@ -40,32 +40,23 @@ import EfficientParamCastAux
   parameters of the same module.
 
   -}
-  
+
 record CastStruct : Set₁ where
   field
-    pcss : PreCastStructWithSafety
-  open PreCastStructWithSafety pcss public
-  open ParamCastCalculus Cast
+    precast : PreCastStruct
+  open PreCastStruct precast public
+  open ParamCastCalculus Cast Inert
   open ParamCastAux precast
-  open ParamCastSubtyping pcss
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))
-                 → ∀ {a : Active c} → Γ ⊢ B
-    {- NOTE:
-      The fields below are for blame-subtyping.
-    -}
-    applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-      → (a : Active c)
-      → Safe c ℓ
-      → CastsAllSafe V ℓ
-      → CastsAllSafe (applyCast V vV c {a}) ℓ
+                    → ∀ {a : Active c} → Γ ⊢ B
 
 
 record EfficientCastStruct : Set₁ where
   field
     precast : PreCastStruct
   open PreCastStruct precast public
-  open ParamCastCalculus Cast
+  open ParamCastCalculusOrig Cast
   open EfficientParamCastAux precast
   field
     applyCast : ∀{Γ A B} → (M : Γ ⊢ A) → Value M → (c : Cast (A ⇒ B))

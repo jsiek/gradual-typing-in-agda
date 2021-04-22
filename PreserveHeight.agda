@@ -24,8 +24,8 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
   open EfficientCastStructHeight ecs
   open EfficientParamCasts (EfficientCastStructHeight.effcast ecs)
 
-  import ParamCastCalculus
-  open ParamCastCalculus Cast
+  import ParamCastCalculusOrig
+  open ParamCastCalculusOrig Cast
   open import EfficientParamCastAux precast
 
   plug-height : ∀ {Γ A B} (M : Γ ⊢ A) (M′ : Γ ⊢ A) (F : Frame A B)
