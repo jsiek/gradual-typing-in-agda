@@ -142,62 +142,62 @@ module SimpleCast where
   infix 5 _<:_
   _<:_ = _<:₁_
 
-  data Safe : ∀ {A} → Cast A → Label → Set where
+  data CastBlameSafe : ∀ {A} → Cast A → Label → Set where
 
     safe-<: : ∀ {S T} {c~ : S ~ T} {ℓ}
       → S <: T
         ----------------------------
-      → Safe ((S ⇒⟨ ℓ ⟩ T) {c~}) ℓ
+      → CastBlameSafe ((S ⇒⟨ ℓ ⟩ T) {c~}) ℓ
 
     safe-ℓ≢ : ∀ {S T} {c~ : S ~ T} {ℓ ℓ′}
       → ℓ ≢̂ ℓ′
         -----------------------------
-      → Safe ((S ⇒⟨ ℓ′ ⟩ T) {c~}) ℓ
+      → CastBlameSafe ((S ⇒⟨ ℓ′ ⟩ T) {c~}) ℓ
 
-  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (dom c x) ℓ
-  domSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  domBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (dom c x) ℓ
+  domBlameSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
   ... | fun~ _ _ = safe-<: sub-dom
-  domSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  domBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | fun~ _ _ = safe-ℓ≢ ℓ≢
 
-  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (cod c x) ℓ
-  codSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
+  codBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (cod c x) ℓ
+  codBlameSafe (safe-<: {c~ = c~} (<:-⇒ sub-dom sub-cod)) x with ~-relevant c~
   ... | fun~ _ _ = safe-<: sub-cod
-  codSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  codBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | fun~ _ _ = safe-ℓ≢ ℓ≢
 
-  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (fstC c x) ℓ
-  fstSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  fstBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (fstC c x) ℓ
+  fstBlameSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
   ... | pair~ _ _ = safe-<: sub-fst
-  fstSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  fstBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | pair~ _ _ = safe-ℓ≢ ℓ≢
 
-  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (sndC c x) ℓ
-  sndSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
+  sndBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (sndC c x) ℓ
+  sndBlameSafe (safe-<: {c~ = c~} (<:-× sub-fst sub-snd)) x with ~-relevant c~
   ... | pair~ _ _ = safe-<: sub-snd
-  sndSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  sndBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | pair~ _ _ = safe-ℓ≢ ℓ≢
 
-  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (inlC c x) ℓ
-  inlSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  inlBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (inlC c x) ℓ
+  inlBlameSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
   ... | sum~ _ _ = safe-<: sub-l
-  inlSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  inlBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
-  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (inrC c x) ℓ
-  inrSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
+  inrBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (inrC c x) ℓ
+  inrBlameSafe (safe-<: {c~ = c~} (<:-⊎ sub-l sub-r)) x with ~-relevant c~
   ... | sum~ _ _ = safe-<: sub-r
-  inrSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
+  inrBlameSafe (safe-ℓ≢ {c~ = c~} ℓ≢) x with ~-relevant c~
   ... | sum~ _ _ = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
-  open import PreCastStructureWithSafety
+  open import PreCastStructureWithBlameSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -220,16 +220,16 @@ module SimpleCast where
              ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
-  pcss : PreCastStructWithSafety
+  pcss : PreCastStructWithBlameSafety
   pcss = record
              { precast = pcs
-             ; Safe = Safe
-             ; domSafe = domSafe
-             ; codSafe = codSafe
-             ; fstSafe = fstSafe
-             ; sndSafe = sndSafe
-             ; inlSafe = inlSafe
-             ; inrSafe = inrSafe
+             ; CastBlameSafe = CastBlameSafe
+             ; domBlameSafe = domBlameSafe
+             ; codBlameSafe = codBlameSafe
+             ; fstBlameSafe = fstBlameSafe
+             ; sndBlameSafe = sndBlameSafe
+             ; inlBlameSafe = inlBlameSafe
+             ; inrBlameSafe = inrBlameSafe
              }
 
   import ParamCastAux
@@ -262,7 +262,7 @@ module SimpleCast where
 
   applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
-    → Safe c ℓ
+    → CastBlameSafe c ℓ
     → CastsAllSafe V ℓ
       --------------------------------------
     → CastsAllSafe (applyCast V vV c {a}) ℓ
@@ -299,12 +299,12 @@ module SimpleCast where
                                         (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
 
   open import CastStructure
-  open import CastStructureWithSafety
+  open import CastStructureWithBlameSafety
 
   cs : CastStruct
   cs = record { precast = pcs ; applyCast = applyCast }
 
-  css : CastStructWithSafety
+  css : CastStructWithBlameSafety
   css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction
