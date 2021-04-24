@@ -1,6 +1,6 @@
 open import Types
 open import Variables
-open import PreCastStructureWithSafety
+open import PreCastStructureWithBlameSafety
 open import CastStructure
 
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
@@ -12,17 +12,17 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (¬_)
 
 
-module CastStructureWithSafety where
+module CastStructureWithBlameSafety where
 
 import ParamCastCalculus
 import ParamCastAux
 import ParamCastSubtyping
 import EfficientParamCastAux
 
-record CastStructWithSafety : Set₁ where
+record CastStructWithBlameSafety : Set₁ where
   field
-    pcss : PreCastStructWithSafety
-  open PreCastStructWithSafety pcss public
+    pcss : PreCastStructWithBlameSafety
+  open PreCastStructWithBlameSafety pcss public
   open ParamCastCalculus Cast Inert
   open ParamCastAux precast
   open ParamCastSubtyping pcss
@@ -32,7 +32,7 @@ record CastStructWithSafety : Set₁ where
     {- The field is for blame-subtyping. -}
     applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
       → (a : Active c)
-      → Safe c ℓ
+      → CastBlameSafe c ℓ
       → CastsAllSafe V ℓ
         --------------------------------------
       → CastsAllSafe (applyCast V vV c {a}) ℓ

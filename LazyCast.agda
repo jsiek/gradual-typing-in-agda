@@ -121,50 +121,50 @@ module LazyCast where
   infix 5 _<:_
   _<:_ = _<:₁_
 
-  data Safe : ∀ {A} → Cast A → Label → Set where
+  data CastBlameSafe : ∀ {A} → Cast A → Label → Set where
 
     safe-<: : ∀ {S T} {ℓ}
       → S <: T
         ----------------------------
-      → Safe (cast S T ℓ) ℓ
+      → CastBlameSafe (cast S T ℓ) ℓ
 
     safe-ℓ≢ : ∀ {S T} {ℓ ℓ′}
       → ℓ ≢̂ ℓ′
         -----------------------------
-      → Safe (cast S T ℓ′) ℓ
+      → CastBlameSafe (cast S T ℓ′) ℓ
 
-  domSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (dom c x) ℓ
-  domSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-dom
-  domSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  domBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (dom c x) ℓ
+  domBlameSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-dom
+  domBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
-  codSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (cod c x) ℓ
-  codSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-cod
-  codSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  codBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (cod c x) ℓ
+  codBlameSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-cod
+  codBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
-  fstSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (fstC c x) ℓ
-  fstSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-fst
-  fstSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  fstBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (fstC c x) ℓ
+  fstBlameSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-fst
+  fstBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
-  sndSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (sndC c x) ℓ
-  sndSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-snd
-  sndSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  sndBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (sndC c x) ℓ
+  sndBlameSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-snd
+  sndBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
-  inlSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (inlC c x) ℓ
-  inlSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-l
-  inlSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  inlBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (inlC c x) ℓ
+  inlBlameSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-l
+  inlBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
-  inrSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → Safe c ℓ → (x : Cross c)
-            → Safe (inrC c x) ℓ
-  inrSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-r
-  inrSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
+  inrBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
+            → CastBlameSafe (inrC c x) ℓ
+  inrBlameSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-r
+  inrBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
 
   open import PreCastStructure
-  open import PreCastStructureWithSafety
+  open import PreCastStructureWithBlameSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -187,16 +187,16 @@ module LazyCast where
              ; idNotInert = idNotInert
              ; projNotInert = projNotInert
              }
-  pcss : PreCastStructWithSafety
+  pcss : PreCastStructWithBlameSafety
   pcss = record
              { precast = pcs
-             ; Safe = Safe
-             ; domSafe = domSafe
-             ; codSafe = codSafe
-             ; fstSafe = fstSafe
-             ; sndSafe = sndSafe
-             ; inlSafe = inlSafe
-             ; inrSafe = inrSafe
+             ; CastBlameSafe = CastBlameSafe
+             ; domBlameSafe = domBlameSafe
+             ; codBlameSafe = codBlameSafe
+             ; fstBlameSafe = fstBlameSafe
+             ; sndBlameSafe = sndBlameSafe
+             ; inlBlameSafe = inlBlameSafe
+             ; inrBlameSafe = inrBlameSafe
              }
 
   import ParamCastAux
@@ -223,7 +223,7 @@ module LazyCast where
 
   applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
     → (a : Active c)
-    → Safe c ℓ
+    → CastBlameSafe c ℓ
     → CastsAllSafe V ℓ
       --------------------------------------
     → CastsAllSafe (applyCast V vV c {a}) ℓ
@@ -258,12 +258,12 @@ module LazyCast where
   applyCast-pres-allsafe (activeErr .(cast _ _ _) ¬c⌣) (safe-ℓ≢ ℓ≢) allsafe = allsafe-blame-diff-ℓ ℓ≢
 
   open import CastStructure
-  open import CastStructureWithSafety
+  open import CastStructureWithBlameSafety
 
   cs : CastStruct
   cs = record { precast = pcs ; applyCast = applyCast }
 
-  css : CastStructWithSafety
+  css : CastStructWithBlameSafety
   css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
 
   import ParamCastReduction

@@ -13,14 +13,14 @@ open import Data.Maybe
 open import Types
 open import Variables
 open import Labels
-open import PreCastStructureWithSafety
+open import PreCastStructureWithBlameSafety
 
 
 
 -- Module definition - parameterized by `PreCastStruct` .
-module ParamCastSubtyping (pcs : PreCastStructWithSafety) where
+module ParamCastSubtyping (pcs : PreCastStructWithBlameSafety) where
 
-open PreCastStructWithSafety pcs
+open PreCastStructWithBlameSafety pcs
 
 import ParamCastCalculus
 open ParamCastCalculus Cast Inert
@@ -31,13 +31,13 @@ open ParamCastCalculus Cast Inert
 data CastsAllSafe : ∀ {Γ A} → (M : Γ ⊢ A) → (ℓ : Label) → Set where
 
   allsafe-cast : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {ℓ}
-    → Safe c ℓ
+    → CastBlameSafe c ℓ
     → CastsAllSafe M ℓ
       -------------------------------------
     → CastsAllSafe (M ⟨ c ⟩) ℓ
 
   allsafe-wrap : ∀ {Γ S T} {M : Γ ⊢ S} {c : Cast (S ⇒ T)} {i : Inert c} {ℓ}
-    → Safe c ℓ
+    → CastBlameSafe c ℓ
     → CastsAllSafe M ℓ
       -------------------------------------
     → CastsAllSafe (M ⟪ i ⟫) ℓ
