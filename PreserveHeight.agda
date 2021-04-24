@@ -3,7 +3,7 @@ open import Labels
 open import Variables
 open import CastStructure
 import EfficientParamCasts
-open import Data.Nat {-using (ℕ; _≤_; _⊔_; z≤n; s≤s)-}
+open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Nat.Solver
 open Data.Nat.Properties.≤-Reasoning
@@ -207,9 +207,9 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
   preserve-height (β{N = N}{W = W} vW) = subst-height N W
   preserve-height δ = z≤n
   preserve-height β-if-true = m≤m⊔n _ _
-  preserve-height β-if-false = n≤m⊔n _ _
+  preserve-height β-if-false = m≤n⊔m _ _
   preserve-height (β-fst vV vW) = m≤m⊔n _ _
-  preserve-height (β-snd vV vW) = n≤m⊔n _ _
+  preserve-height (β-snd vV vW) = m≤n⊔m _ _
   preserve-height (β-caseL {V = V}{L}{M} vV) =
     begin
       c-height L ⊔ c-height V       ≤⟨ ≤-reflexive (⊔-comm (c-height L) _) ⟩ 
@@ -230,7 +230,7 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
       c-height V ⊔ ((c-height W ⊔ height (dom c x)) ⊔ height (cod c x))
         ≤⟨ ⊔-monoʳ-≤  (c-height V) (≤-reflexive (⊔-assoc (c-height W) _ _)) ⟩
       c-height V ⊔ (c-height W ⊔ (height (dom c x) ⊔ height (cod c x)))
-        ≤⟨ ⊔-monoʳ-≤  (c-height V) (⊔-monoʳ-≤ (c-height W) (⊔-least dom-height
+        ≤⟨ ⊔-monoʳ-≤  (c-height V) (⊔-monoʳ-≤ (c-height W) (⊔-lub dom-height
                                                                     cod-height)) ⟩
       c-height V ⊔ (c-height W ⊔ height c)
         ≤⟨ ⊔-monoʳ-≤  (c-height V) (≤-reflexive (⊔-comm (c-height W) _)) ⟩
@@ -269,7 +269,7 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
       c-height V ⊔ ((height (inlC c x) ⊔ height (inrC c x))
               ⊔ (c-height (rename S_ W₁) ⊔ c-height (rename S_ W₂)))
       ≤⟨ ⊔-monoʳ-≤ (c-height V) (⊔-monoˡ-≤ (c-height (rename S_ W₁) ⊔ c-height (rename S_ W₂))
-                 (⊔-least inlC-height inrC-height)) ⟩
+                 (⊔-lub inlC-height inrC-height)) ⟩
       c-height V ⊔ (height c ⊔ (c-height (rename S_ W₁) ⊔ c-height (rename S_ W₂)))
       ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
       (c-height V ⊔ height c) ⊔ (c-height (rename S_ W₁) ⊔ c-height (rename S_ W₂))
