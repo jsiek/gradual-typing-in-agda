@@ -15,10 +15,11 @@ module HyperCoercions where
 
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
   open import Data.Bool using (Bool; true; false)
-  open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_; _*_)
   open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-step;
-       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-monoˡ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n; n≤m⊔n; ⊔-idem)
+       ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-monoˡ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n; m≤n⊔m; ⊔-idem; +-mono-≤; +-comm; *-monoʳ-≤)
   open Data.Nat.Properties.≤-Reasoning
+  open import Data.Nat.Solver
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -26,7 +27,7 @@ module HyperCoercions where
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
-
+  open import Pow2
   open import Types hiding (_⊔_)
   open import Variables
   open import Labels
@@ -499,7 +500,7 @@ module HyperCoercions where
 
   cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (cod c x) ≤ height c
-  cod-height {c = c} {C-fun} = ≤-step (n≤m⊔n _ _)
+  cod-height {c = c} {C-fun} = ≤-step (m≤n⊔m _ _)
 
   fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
        → height (fstC c x) ≤ height c
@@ -507,7 +508,7 @@ module HyperCoercions where
 
   snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
        → height (sndC c x) ≤ height c
-  snd-height {c = c}{C-pair} = ≤-step (n≤m⊔n _ _)
+  snd-height {c = c}{C-pair} = ≤-step (m≤n⊔m _ _)
 
   inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inlC c x) ≤ height c
@@ -515,8 +516,111 @@ module HyperCoercions where
 
   inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inrC c x) ≤ height c
-  inrC-height {c = c}{C-sum} = ≤-step (n≤m⊔n _ _)
+  inrC-height {c = c}{C-sum} = ≤-step (m≤n⊔m _ _)
 
+  msize : ∀{A B} (c : Middle (A ⇒ B)) → ℕ
+  psize : ∀{A B} (c : Proj (A ⇒ B)) → ℕ
+  isize : ∀{A B} (c : Inj (A ⇒ B)) → ℕ
+  
+  csize : ∀{A B} (c : Cast (A ⇒ B)) → ℕ
+  csize id★ = 0
+  csize (p ↷ m , i) = 2 + psize p + msize m + isize i
+  msize (id ι) = 0
+  msize (c ↣ d) = 1 + csize c + csize d
+  msize (c ×' d) = 1 + csize c + csize d
+  msize (c +' d) = 1 + csize c + csize d
+  psize 𝜖 = 0
+  psize (?? ℓ) = 1
+  isize 𝜖 = 0
+  isize !! = 1
+  isize (cfail ℓ) = 0
+
+  psize-height : ∀{A B} (c : Proj (A ⇒ B)) →  psize c ≤ 1
+  psize-height 𝜖 = z≤n
+  psize-height (?? ℓ) = s≤s z≤n
+  
+  isize-height : ∀{A B} (c : Inj (A ⇒ B)) → isize c ≤ 1
+  isize-height 𝜖 = z≤n
+  isize-height !! = s≤s z≤n
+  isize-height (cfail ℓ) = z≤n
+  
+  msize-height : ∀{A B} (c : Middle (A ⇒ B)) → 9 + msize c ≤ 9 * pow2 (height-m c)
+  csize-height : ∀{A B} (c : Cast (A ⇒ B)) → 5 + csize c ≤ 9 * pow2 (height c)
+  
+  csize-height id★ = s≤s (s≤s (s≤s (s≤s (s≤s z≤n))))
+  csize-height (p ↷ m , i) =
+    let IH = msize-height m in
+    begin
+      5 + csize (p ↷ m , i)
+    ≤⟨ ≤-reflexive refl ⟩
+      ((7 + psize p) + msize m) + isize i
+    ≤⟨ +-mono-≤ (+-mono-≤ {u = msize m} (+-mono-≤ ≤-refl (psize-height p)) ≤-refl) (isize-height i)  ⟩
+      (8 + msize m) + 1
+    ≤⟨ ≤-reflexive (+-comm _ 1) ⟩
+      9 + msize m
+    ≤⟨ msize-height m ⟩
+      9 * pow2 (height-m m)
+    ≤⟨ ≤-reflexive refl ⟩
+      9 * pow2 (height (p ↷ m , i))
+    ∎
+  msize-height (id ι) = ≤-refl
+  msize-height (c ↣ d) =
+    let IH1 = csize-height c in
+    let IH2 = csize-height d in
+    begin
+        (10 + csize c) + csize d
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → ((con 10 :+ x) :+ y) := (con 5 :+ x) :+ (con 5 :+ y)) refl (csize c) (csize d))  ⟩
+        (5 + csize c) + (5 + csize d)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        9 * pow2 (height c) + 9 * pow2 (height d)
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤m⊔n (height c) (height d))))
+                  (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤n⊔m (height c) (height d)))) ⟩
+        9 * pow2 (height c ⊔ height d) + 9 * pow2 (height c ⊔ height d)
+      ≤⟨ ≤-reflexive (solve 1 (λ x → con 9 :* x :+ con 9 :* x := con 9 :* (con 2 :* x)) refl (pow2 (height c ⊔ height d)) ) ⟩
+        9 * (2 * pow2 (height c ⊔ height d))
+      ≤⟨ ≤-reflexive refl ⟩
+        9 * pow2 (suc ((height c) ⊔ (height d)))
+    ∎
+    where
+    open +-*-Solver
+  msize-height (c ×' d) =
+    let IH1 = csize-height c in
+    let IH2 = csize-height d in
+    begin
+        (10 + csize c) + csize d
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → ((con 10 :+ x) :+ y) := (con 5 :+ x) :+ (con 5 :+ y)) refl (csize c) (csize d))  ⟩
+        (5 + csize c) + (5 + csize d)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        9 * pow2 (height c) + 9 * pow2 (height d)
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤m⊔n (height c) (height d))))
+                  (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤n⊔m (height c) (height d)))) ⟩
+        9 * pow2 (height c ⊔ height d) + 9 * pow2 (height c ⊔ height d)
+      ≤⟨ ≤-reflexive (solve 1 (λ x → con 9 :* x :+ con 9 :* x := con 9 :* (con 2 :* x)) refl (pow2 (height c ⊔ height d)) ) ⟩
+        9 * (2 * pow2 (height c ⊔ height d))
+      ≤⟨ ≤-reflexive refl ⟩
+        9 * pow2 (suc ((height c) ⊔ (height d)))
+    ∎
+    where
+    open +-*-Solver
+  msize-height (c +' d) =
+    let IH1 = csize-height c in
+    let IH2 = csize-height d in
+    begin
+        (10 + csize c) + csize d
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → ((con 10 :+ x) :+ y) := (con 5 :+ x) :+ (con 5 :+ y)) refl (csize c) (csize d))  ⟩
+        (5 + csize c) + (5 + csize d)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        9 * pow2 (height c) + 9 * pow2 (height d)
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤m⊔n (height c) (height d))))
+                  (*-monoʳ-≤ 9 (pow2-mono-≤ (m≤n⊔m (height c) (height d)))) ⟩
+        9 * pow2 (height c ⊔ height d) + 9 * pow2 (height c ⊔ height d)
+      ≤⟨ ≤-reflexive (solve 1 (λ x → con 9 :* x :+ con 9 :* x := con 9 :* (con 2 :* x)) refl (pow2 (height c ⊔ height d)) ) ⟩
+        9 * (2 * pow2 (height c ⊔ height d))
+      ≤⟨ ≤-reflexive refl ⟩
+        9 * pow2 (suc ((height c) ⊔ (height d)))
+    ∎
+    where
+    open +-*-Solver
 
   ecsh : EfficientCastStructHeight
   ecsh = record

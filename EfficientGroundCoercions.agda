@@ -19,21 +19,22 @@ module EfficientGroundCoercions where
 
   open import Agda.Primitive using ()
   open import Data.Bool using (Bool; true; false)
+  open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
+  open import Data.Empty.Irrelevant renaming (⊥-elim to ⊥-elimi)
   open import Data.Nat
   open import Data.Nat.Solver
   open import Data.Nat.Properties
-  open import Types hiding (_⊔_)
-  open import Variables
-  open import Labels
-  open import Relation.Nullary using (¬_; Dec; yes; no)
-  open import Relation.Nullary.Negation using (contradiction)
-  open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
-  open import Data.Empty.Irrelevant renaming (⊥-elim to ⊥-elimi)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
       renaming (_,_ to ⟨_,_⟩)
+  open import Labels
+  open import Pow2
+  open import Relation.Nullary using (¬_; Dec; yes; no)
+  open import Relation.Nullary.Negation using (contradiction)
   import Relation.Binary.PropositionalEquality as Eq
   open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  open import Types hiding (_⊔_)
+  open import Variables
 
   data iCast : Type → Set
   data gCast : Type → Set
@@ -709,18 +710,6 @@ module EfficientGroundCoercions where
   inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inrC c x) ≤ height c
   inrC-height {c = ` (` (c +' d))}{C-cross} = ≤-step (m≤n⊔m _ _)
-
-  pow2 : ℕ → ℕ
-  pow2 0 = 1
-  pow2 (suc n) = 2 * pow2 n
-
-  pow2-pos : ∀ n → 1 ≤ pow2 n
-  pow2-pos zero = s≤s z≤n
-  pow2-pos (suc n) = let IH = pow2-pos n in ≤-trans IH (m≤m+n _ _)
-
-  pow2-mono-≤ : ∀{n m} → n ≤ m → pow2 n ≤ pow2 m
-  pow2-mono-≤ {n}{m} z≤n = pow2-pos m
-  pow2-mono-≤ (s≤s n≤m) = +-mono-≤ (pow2-mono-≤ n≤m) (+-mono-≤ (pow2-mono-≤ n≤m) z≤n)
 
   isize : ∀{A B} (c : iCast (A ⇒ B)) → ℕ
   gsize : ∀{A B} (c : gCast (A ⇒ B)) → ℕ
