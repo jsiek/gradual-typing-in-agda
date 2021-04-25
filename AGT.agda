@@ -3,14 +3,16 @@ module AGT where
   open import Agda.Primitive renaming (_⊔_ to _⊍_)
   open import Types
   open import Labels
+  open import Pow2
   open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Bool using (Bool; true; false)
-  open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; z≤n; s≤s) renaming (_⊔_ to _∨_)
+  open import Data.Nat using (ℕ; zero; suc; _≤_; _+_; _*_; z≤n; s≤s) renaming (_⊔_ to _∨_)
   open import Data.Nat.Properties
     using (⊔-mono-≤; ⊔-monoˡ-≤; ⊔-monoʳ-≤; ≤-trans; ≤-refl; ≤-reflexive;
-    m≤m⊔n; n≤m⊔n; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
-    ⊔-identityˡ; ⊔-identityʳ)
+    m≤m⊔n; m≤n⊔m; ⊔-assoc; ⊔-comm; ≤-step; ⊔-idem;
+    ⊔-identityˡ; ⊔-identityʳ; +-mono-≤; *-monoʳ-≤)
+  open import Data.Nat.Solver
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
   open import Relation.Binary.PropositionalEquality
@@ -1610,7 +1612,7 @@ module AGT where
       with ⊑R⇒ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
       with ab
-  ... | fun⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  ... | fun⊑ ab1 ab2 = ≤-step (m≤n⊔m _ _)
   
   fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
        → height (fstC c x) ≤ height c
@@ -1626,7 +1628,7 @@ module AGT where
       with ⊑R× cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
       with ab
-  ... | pair⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  ... | pair⊑ ab1 ab2 = ≤-step (m≤n⊔m _ _)
   
   inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inlC c x) ≤ height c
@@ -1642,8 +1644,44 @@ module AGT where
       with ⊑R⊎ cb
   ... | ⟨ B₁ , ⟨ B₂ , ⟨ refl , ⟨ c1⊑b1 , c2⊑b2 ⟩ ⟩ ⟩ ⟩ 
       with ab
-  ... | sum⊑ ab1 ab2 = ≤-step (n≤m⊔n _ _)
+  ... | sum⊑ ab1 ab2 = ≤-step (m≤n⊔m _ _)
   
+  csize : ∀{A B} (c : Cast (A ⇒ B)) → ℕ
+  csize (_ ⇒ B ⇒ _) = size-t B
+  csize (error _ _) = 0
+
+  size-t-height-t : ∀ (A : Type) → 1 + size-t A ≤ 2 * pow2 (height-t A)
+  size-t-height-t ⋆ = {!!}
+  size-t-height-t (` ι) = {!!}
+  size-t-height-t (A ⇒ B) =
+    let IH1 = size-t-height-t A in
+    let IH2 = size-t-height-t B in
+    begin
+        1 + size-t (A ⇒ B)
+      ≤⟨ ≤-reflexive refl ⟩
+        2 + size-t A + size-t B
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 2 :+ x :+ y := (con 1 :+ x) :+ (con 1 :+ y)) refl (size-t A) (size-t B)) ⟩
+        (1 + size-t A) + (1 + size-t B)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        (2 * pow2 (height-t A)) + (2 * (pow2 (height-t B)))
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤m⊔n (height-t A) _))) (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤n⊔m (height-t A) _))) ⟩
+        (2 * pow2 (height-t A ∨ height-t B)) + (2 * (pow2 (height-t A ∨ height-t B)))
+      ≤⟨ ≤-reflexive {!!} ⟩
+        2 * (2 * pow2 ((height-t A) ∨ (height-t B)))
+      ≤⟨ ≤-reflexive refl ⟩
+        2 * pow2 (1 + ((height-t A) ∨ (height-t B)))
+      ≤⟨ ≤-reflexive refl ⟩
+        2 * pow2 (height-t (A ⇒ B))
+    ∎
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    open +-*-Solver
+  size-t-height-t (A `× B) = {!!}
+  size-t-height-t (A `⊎ B) = {!!}
+  
+  csize-height : ∀{A B} (c : Cast (A ⇒ B)) → 5 + csize c ≤ 9 * pow2 (height c)
+  csize-height c = {!!}
+
 
   ecsh : EfficientCastStructHeight
   ecsh = record
