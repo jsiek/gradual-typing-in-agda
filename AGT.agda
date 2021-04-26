@@ -1651,8 +1651,8 @@ module AGT where
   csize (error _ _) = 0
 
   size-t-height-t : ∀ (A : Type) → 1 + size-t A ≤ 2 * pow2 (height-t A)
-  size-t-height-t ⋆ = {!!}
-  size-t-height-t (` ι) = {!!}
+  size-t-height-t ⋆ = s≤s z≤n
+  size-t-height-t (` ι) = s≤s z≤n
   size-t-height-t (A ⇒ B) =
     let IH1 = size-t-height-t A in
     let IH2 = size-t-height-t B in
@@ -1666,8 +1666,8 @@ module AGT where
         (2 * pow2 (height-t A)) + (2 * (pow2 (height-t B)))
       ≤⟨ +-mono-≤ (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤m⊔n (height-t A) _))) (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤n⊔m (height-t A) _))) ⟩
         (2 * pow2 (height-t A ∨ height-t B)) + (2 * (pow2 (height-t A ∨ height-t B)))
-      ≤⟨ ≤-reflexive {!!} ⟩
-        2 * (2 * pow2 ((height-t A) ∨ (height-t B)))
+      ≤⟨ ≤-reflexive (solve 1 (λ x → x :+ x := con 2 :* x) refl (2 * pow2 (height-t A ∨ height-t B))) ⟩
+        2 * (2 * pow2 (height-t A ∨ height-t B))
       ≤⟨ ≤-reflexive refl ⟩
         2 * pow2 (1 + ((height-t A) ∨ (height-t B)))
       ≤⟨ ≤-reflexive refl ⟩
@@ -1676,12 +1676,48 @@ module AGT where
     where
     open Data.Nat.Properties.≤-Reasoning
     open +-*-Solver
-  size-t-height-t (A `× B) = {!!}
-  size-t-height-t (A `⊎ B) = {!!}
+  size-t-height-t (A `× B) =
+    let IH1 = size-t-height-t A in
+    let IH2 = size-t-height-t B in
+    begin
+        2 + size-t A + size-t B
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 2 :+ x :+ y := (con 1 :+ x) :+ (con 1 :+ y)) refl (size-t A) (size-t B)) ⟩
+        (1 + size-t A) + (1 + size-t B)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        (2 * pow2 (height-t A)) + (2 * (pow2 (height-t B)))
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤m⊔n (height-t A) _))) (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤n⊔m (height-t A) _))) ⟩
+        (2 * pow2 (height-t A ∨ height-t B)) + (2 * (pow2 (height-t A ∨ height-t B)))
+      ≤⟨ ≤-reflexive (solve 1 (λ x → x :+ x := con 2 :* x) refl (2 * pow2 (height-t A ∨ height-t B))) ⟩
+        2 * (2 * pow2 (height-t A ∨ height-t B))
+      ≤⟨ ≤-reflexive refl ⟩
+        2 * pow2 (1 + ((height-t A) ∨ (height-t B)))
+    ∎
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    open +-*-Solver
+  size-t-height-t (A `⊎ B) =
+    let IH1 = size-t-height-t A in
+    let IH2 = size-t-height-t B in
+    begin
+        2 + size-t A + size-t B
+      ≤⟨ ≤-reflexive (solve 2 (λ x y → con 2 :+ x :+ y := (con 1 :+ x) :+ (con 1 :+ y)) refl (size-t A) (size-t B)) ⟩
+        (1 + size-t A) + (1 + size-t B)
+      ≤⟨ +-mono-≤ IH1 IH2 ⟩
+        (2 * pow2 (height-t A)) + (2 * (pow2 (height-t B)))
+      ≤⟨ +-mono-≤ (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤m⊔n (height-t A) _))) (*-monoʳ-≤ 2 (pow2-mono-≤ (m≤n⊔m (height-t A) _))) ⟩
+        (2 * pow2 (height-t A ∨ height-t B)) + (2 * (pow2 (height-t A ∨ height-t B)))
+      ≤⟨ ≤-reflexive (solve 1 (λ x → x :+ x := con 2 :* x) refl (2 * pow2 (height-t A ∨ height-t B))) ⟩
+        2 * (2 * pow2 (height-t A ∨ height-t B))
+      ≤⟨ ≤-reflexive refl ⟩
+        2 * pow2 (1 + ((height-t A) ∨ (height-t B)))
+    ∎
+    where
+    open Data.Nat.Properties.≤-Reasoning
+    open +-*-Solver
   
-  csize-height : ∀{A B} (c : Cast (A ⇒ B)) → 5 + csize c ≤ 9 * pow2 (height c)
-  csize-height c = {!!}
-
+  csize-height : ∀{A B} (c : Cast (A ⇒ B)) → 1 + csize c ≤ 2 * pow2 (height c)
+  csize-height (_ ⇒ B ⇒ _) = size-t-height-t B
+  csize-height (error _ _) = s≤s z≤n
 
   ecsh : EfficientCastStructHeight
   ecsh = record
