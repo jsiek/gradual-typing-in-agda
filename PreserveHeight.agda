@@ -385,6 +385,44 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
     where
     open +-*-Solver
 
+  *-distrib-suc : ∀(x y : ℕ) → x + x * y ≡ x * (suc y)
+  *-distrib-suc x y = (solve 2 (λ x y → x :+ x :* y := x :* (con 1 :+ y)) refl x y)
+    where open +-*-Solver
+
+  real-size-tsize-three : ∀{Γ A B C} (L : Γ ⊢ C) (M : Γ ⊢ A) (N : Γ ⊢ B)
+    → real-size L ≤ k * pow2 (c-height L) * tsize L
+    → real-size M ≤ k * pow2 (c-height M) * tsize M
+    → real-size N ≤ k * pow2 (c-height N) * tsize N
+    → suc (real-size L + real-size M + real-size N)
+      ≤ k * pow2 (c-height L ⊔ c-height M ⊔ c-height N) * suc (tsize L + tsize M + tsize N)
+  real-size-tsize-three L M N IH1 IH2 IH3 = 
+    begin
+       suc (real-size L + real-size M + real-size N)
+    ≤⟨ s≤s (+-mono-≤ (+-mono-≤ IH1 IH2) IH3) ⟩
+       suc ((k * pow2 (c-height L) * tsize L) + (k * pow2 (c-height M) * tsize M) + (k * pow2 (c-height N) * tsize N))
+    ≤⟨ s≤s (+-mono-≤ (+-mono-≤ (*-mono-≤ (*-mono-≤ (≤-refl{x = k}) (pow2-mono-≤ L≤LMN)) ≤-refl)
+                               (*-mono-≤ (*-mono-≤ (≤-refl{x = k}) (pow2-mono-≤ M≤LMN)) ≤-refl))
+                               (*-mono-≤ (*-mono-≤ (≤-refl{x = k}) (pow2-mono-≤ N≤LMN)) ≤-refl)) ⟩
+       suc ((k * pow2 (c-height L ⊔ c-height M ⊔ c-height N) * tsize L)
+            + (k * pow2 (c-height L ⊔ c-height M ⊔ c-height N) * tsize M)
+            + (k * pow2 (c-height L ⊔ c-height M ⊔ c-height N) * tsize N))
+    ≤⟨ s≤s (≤-reflexive (solve 4 (λ x y z w → x :* y :+ x :* z :+ x :* w := x :* (y :+ z :+ w)) refl (k * pow2 (c-height L ⊔ c-height M ⊔ c-height N)) (tsize L) (tsize M) (tsize N))) ⟩
+       suc ((k * pow2 (c-height L ⊔ c-height M ⊔ c-height N)) * (tsize L + tsize M + tsize N))
+    ≤⟨ +-mono-≤ (*-mono-≤ k-pos (pow2-pos (c-height L ⊔ c-height M ⊔ c-height N))) ≤-refl ⟩
+       k * pow2 (c-height L ⊔ c-height M ⊔ c-height N)
+       + (k * pow2 (c-height L ⊔ c-height M ⊔ c-height N)) * (tsize L + tsize M + tsize N)
+    ≤⟨ ≤-reflexive (*-distrib-suc (k * pow2 (c-height L ⊔ c-height M ⊔ c-height N)) _) ⟩
+       k * pow2 (c-height L ⊔ c-height M ⊔ c-height N) * suc (tsize L + tsize M + tsize N)
+    ∎
+    where
+    open +-*-Solver
+    L≤LMN : c-height L ≤ c-height L ⊔ c-height M ⊔ c-height N
+    L≤LMN = ≤-trans (m≤m⊔n (c-height L) (c-height M)) (m≤m⊔n (c-height L ⊔ c-height M) _)
+    M≤LMN : c-height M ≤ c-height L ⊔ c-height M ⊔ c-height N
+    M≤LMN = ≤-trans (m≤n⊔m (c-height L) (c-height M)) (m≤m⊔n (c-height L ⊔ c-height M) _)
+    N≤LMN : c-height N ≤ c-height L ⊔ c-height M ⊔ c-height N
+    N≤LMN = ≤-trans ((m≤n⊔m (c-height M) (c-height N))) (≤-trans (m≤n⊔m (c-height L) (c-height M ⊔ c-height N)) (≤-reflexive (sym (⊔-assoc (c-height L) (c-height M) (c-height N)))))
+
   real-size-tsize : ∀{Γ A} (M : Γ ⊢ A)
     → real-size M ≤ (k * pow2 (c-height M)) * tsize M
   real-size-tsize (` x) =
@@ -401,13 +439,15 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
       ≤⟨ *-mono-≤ (*-mono-≤ k-pos ≤-refl) (tsize-pos{Γ}{A} ($_ lit{f})) ⟩
       (k * 1) * tsize {Γ}{A} ($_ lit {f})
     ∎
-  real-size-tsize (if L M N) = {!!}
+  real-size-tsize (if L M N) =
+    real-size-tsize-three L M N (real-size-tsize L) (real-size-tsize M) (real-size-tsize N)
   real-size-tsize (cons M N) = real-size-tsize-two M N (real-size-tsize M) (real-size-tsize N)
   real-size-tsize (fst M) = real-size-tsize-one M (real-size-tsize M)
   real-size-tsize (snd M) = real-size-tsize-one M (real-size-tsize M)
   real-size-tsize (inl M) = real-size-tsize-one M (real-size-tsize M)
   real-size-tsize (inr M) = real-size-tsize-one M (real-size-tsize M)
-  real-size-tsize (case L M N) = {!!}
+  real-size-tsize (case L M N) =
+    real-size-tsize-three L M N (real-size-tsize L) (real-size-tsize M) (real-size-tsize N)
   real-size-tsize (M ⟨ c ⟩) =
     let IH = real-size-tsize M in
     begin
