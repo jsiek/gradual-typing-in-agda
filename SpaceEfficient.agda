@@ -362,6 +362,14 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
      compose-casts =
      ⟨ suc n , ⟨ (castOK Mok lt1) , (s≤s (≤-step (≤-step (≤-step ≤-refl)))) ⟩ ⟩
 
+  multi-preserve-ok : ∀{Γ A}{M M′ : Γ ⊢ A}{ctx : ReductionCtx}{n}
+          → n ∣ false ⊢ M ok  →  ctx / M —↠ M′
+          → Σ[ m ∈ ℕ ] m ∣ false ⊢ M′ ok
+  multi-preserve-ok {Γ}{A}{M}{ctx = ctx}{n} Mok (M ■) = ⟨ n , Mok ⟩
+  multi-preserve-ok {Γ}{A}{M}{ctx = ctx}{n} Mok (ct / M —→⟨ M→M₂ ⟩ M₂→M′)
+      with preserve-ok Mok M→M₂
+  ... | ⟨ m₁ , ⟨ M₂ok , lt₁ ⟩ ⟩ = multi-preserve-ok M₂ok M₂→M′
+
   compress-casts : ∀{A}{M : ∅ ⊢ A}{n}
           → n ∣ false ⊢ M ok
           → Σ[ N ∈ (∅ ⊢ A) ] Σ[ k ∈ ℕ ]

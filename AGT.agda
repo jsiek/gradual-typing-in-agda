@@ -1729,6 +1729,8 @@ module AGT where
               ; snd-height = (λ {A}{B}{C}{D}{c}{x} → snd-height{A}{B}{C}{D}{c}{x})
               ; inlC-height = (λ {A}{B}{C}{D}{c}{x} → inlC-height{A}{B}{C}{D}{c}{x})
               ; inrC-height = (λ {A}{B}{C}{D}{c}{x} → inrC-height{A}{B}{C}{D}{c}{x})
+              ; size = csize
+              ; size-height = ⟨ 1 , ⟨ 2 , ⟨ s≤s z≤n , (λ {A}{B}c → csize-height c) ⟩ ⟩ ⟩
               }
 
   import PreserveHeight

@@ -3,7 +3,7 @@ open import Variables
 open import PreCastStructure
 
 open import Data.Bool using (Bool; true; false)
-open import Data.Nat using (ℕ; _≤_; _⊔_; _+_)
+open import Data.Nat using (ℕ; _≤_; _⊔_; _+_; _*_)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -11,6 +11,7 @@ open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Binary.PropositionalEquality
    using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Relation.Nullary using (¬_)
+open import Pow2
 
 module CastStructure where
 
@@ -108,3 +109,7 @@ record EfficientCastStructHeight : Set₁ where
        → height (inlC c x) ≤ height c
     inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
        → height (inrC c x) ≤ height c
+    size : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
+    size-height : Σ[ c1 ∈ ℕ ] Σ[ c2 ∈ ℕ ] 1 ≤ c2 ×
+        ∀{A B}(c : Cast (A ⇒ B)) → c1 + size c ≤ c2 * pow2 (height c) 
+

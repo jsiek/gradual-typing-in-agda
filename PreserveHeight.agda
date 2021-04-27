@@ -1,8 +1,10 @@
+
 open import Types hiding (_⊔_)
 open import Labels
 open import Variables
 open import CastStructure
 import EfficientParamCasts
+open import Data.Bool using (true; false)
 open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Nat.Solver
@@ -12,6 +14,7 @@ open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+open import Pow2
 
 {-
 
@@ -285,3 +288,191 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
       c-height M ⊔ (height c ⊔ height d) ≤⟨ ≤-reflexive (sym (⊔-assoc(c-height M) _ _)) ⟩
       (c-height M ⊔ height c) ⊔ height d
     ∎
+
+  multi-preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
+       → ctx / M —↠ M′ → c-height M′ ≤ c-height M
+  multi-preserve-height {M = M}(M ■) = ≤-refl
+  multi-preserve-height {M = M}{M′} (ct / M —→⟨ M→M₂ ⟩ M—↠M′) =
+      let x = preserve-height M→M₂ in
+      let IH = multi-preserve-height M—↠M′ in
+      ≤-trans IH x
+
+  open import SpaceEfficient effcast
+
+  csize = EfficientCastStructHeight.size ecs
+  tsize = ParamCastCalculusOrig.size Cast
+
+  real-size : ∀{Γ A} → Γ ⊢ A → ℕ
+  real-size (` x) = 1
+  real-size (ƛ M) = suc (real-size M)
+  real-size (L · M) = suc (real-size L + real-size M)
+  real-size ($ x) = 1
+  real-size (if L M N) = suc (real-size L + real-size M + real-size N)
+  real-size (cons M N) = suc (real-size M + real-size N)
+  real-size (fst M) = suc (real-size M)
+  real-size (snd M) = suc (real-size M)
+  real-size (inl M) = suc (real-size M)
+  real-size (inr M) = suc (real-size M)
+  real-size (case L M N) = suc (real-size L + real-size M + real-size N)
+  real-size (M ⟨ c ⟩) = csize c + (real-size M)
+  real-size (blame ℓ) = 1
+
+  k : ℕ
+  k = proj₁ (proj₂ (size-height))
+
+  j : ℕ
+  j = proj₁ (size-height)
+
+  k-pos : 1 ≤ k
+  k-pos = proj₁ (proj₂ (proj₂ (size-height)))
+
+  k-size-height : ∀{A B}(c : Cast (A ⇒ B)) → j + csize c ≤ k * pow2 (height c)
+  k-size-height = proj₂ (proj₂ (proj₂ (size-height)))
+
+  tsize-pos : ∀{Γ A} (M : Γ ⊢ A) → 1 ≤ tsize M
+  tsize-pos (` x) = s≤s z≤n
+  tsize-pos (ƛ M) = s≤s z≤n
+  tsize-pos (L · M) = s≤s z≤n
+  tsize-pos ($ k) = s≤s z≤n
+  tsize-pos (if L M N) = s≤s z≤n
+  tsize-pos (cons M M₁) = s≤s z≤n
+  tsize-pos (fst M) = s≤s z≤n
+  tsize-pos (snd M) = s≤s z≤n
+  tsize-pos (inl M) = s≤s z≤n
+  tsize-pos (inr M) = s≤s z≤n
+  tsize-pos (case L M N) = s≤s z≤n
+  tsize-pos (M ⟨ c ⟩) = s≤s z≤n
+  tsize-pos (blame ℓ) = s≤s z≤n
+
+  real-size-tsize-one : ∀{Γ A} (M : Γ ⊢ A) 
+    → real-size M ≤ k * pow2 (c-height M) * tsize M
+    → suc (real-size M) ≤ k * pow2 (c-height M) * suc (tsize M)
+  real-size-tsize-one M IH =
+      begin
+        suc (real-size M)
+        ≤⟨ s≤s IH ⟩
+        suc (k * pow2 (c-height M) * tsize M)
+        ≤⟨ +-mono-≤ {x = 1}{y = k * pow2 (c-height M)} (*-mono-≤ k-pos (pow2-pos (c-height M))) ≤-refl ⟩
+        k * pow2 (c-height M) + (k * pow2 (c-height M)) * (tsize M)
+        ≤⟨ ≤-reflexive (solve 2 (λ x y → x :+ x :* y := x :* (con 1 :+ y)) refl (k * pow2 (c-height M)) (tsize M)) ⟩
+        k * pow2 (c-height M) * suc (tsize M)
+      ∎ 
+      where
+      open +-*-Solver
+
+  real-size-tsize-two : ∀{Γ A B} (M : Γ ⊢ A) (N : Γ ⊢ B)
+    → real-size M ≤ k * pow2 (c-height M) * tsize M
+    → real-size N ≤ k * pow2 (c-height N) * tsize N
+    → suc (real-size M + real-size N) ≤ k * pow2 (c-height M ⊔ c-height N) * suc (tsize M + tsize N)
+  real-size-tsize-two M N IH1 IH2 =
+    begin
+      suc (real-size M + real-size N)
+    ≤⟨ s≤s (+-mono-≤ IH1 IH2) ⟩
+      suc (((k * pow2 (c-height M)) * tsize M) + ((k * pow2 (c-height N)) * tsize N))
+    ≤⟨ s≤s (+-mono-≤ (*-mono-≤{x = (k * pow2 (c-height M))}{y = (k * pow2 (c-height M ⊔ c-height N))}{u = tsize M}{v = tsize M}
+                              (*-mono-≤{x = k}{y = k} ≤-refl (pow2-mono-≤ ((m≤m⊔n (c-height M) (c-height N))))) ≤-refl)
+                     (*-mono-≤{u = tsize N}
+                             (*-mono-≤{x = k}{y = k}{u = pow2 (c-height N)} ≤-refl
+                                   (pow2-mono-≤{n = c-height N}{m = c-height M ⊔ c-height N} (m≤n⊔m _ _))) ≤-refl)) ⟩
+      suc (((k * pow2 (c-height M ⊔ c-height N)) * tsize M) + ((k * pow2 (c-height M ⊔ c-height N)) * tsize N))
+    ≤⟨ s≤s (≤-reflexive (solve 3 (λ x y z → x :* y :+ x :* z := x :* (y :+ z)) refl ((k * pow2 (c-height M ⊔ c-height N))) (tsize M) (tsize N))) ⟩
+      suc ((k * pow2 (c-height M ⊔ c-height N)) * (tsize M + tsize N))
+    ≤⟨ +-mono-≤ (*-mono-≤ k-pos (pow2-pos (c-height M ⊔ c-height N))) ≤-refl ⟩
+      (k * pow2 (c-height M ⊔ c-height N)) + (k * pow2 (c-height M ⊔ c-height N)) * (tsize M + tsize N)
+    ≤⟨ ≤-reflexive (solve 2 (λ x y → x :+ x :* y := x :* (con 1 :+ y)) refl (k * pow2 (c-height M ⊔ c-height N)) (tsize M + tsize N)) ⟩
+      (k * pow2 (c-height M ⊔ c-height N)) * suc (tsize M + tsize N)
+    ∎
+    where
+    open +-*-Solver
+
+  real-size-tsize : ∀{Γ A} (M : Γ ⊢ A)
+    → real-size M ≤ (k * pow2 (c-height M)) * tsize M
+  real-size-tsize (` x) =
+    begin
+      (1 * 1) * 1
+      ≤⟨ *-mono-≤ (*-mono-≤ k-pos ≤-refl) (tsize-pos (` x)) ⟩
+      (k * 1) * tsize (` x)
+    ∎
+  real-size-tsize (ƛ M) = real-size-tsize-one M (real-size-tsize M)
+  real-size-tsize (M · N) = real-size-tsize-two M N (real-size-tsize M) (real-size-tsize N)
+  real-size-tsize {Γ}{A} ($_ lit {f}) =
+    begin
+      (1 * 1) * 1
+      ≤⟨ *-mono-≤ (*-mono-≤ k-pos ≤-refl) (tsize-pos{Γ}{A} ($_ lit{f})) ⟩
+      (k * 1) * tsize {Γ}{A} ($_ lit {f})
+    ∎
+  real-size-tsize (if L M N) = {!!}
+  real-size-tsize (cons M N) = real-size-tsize-two M N (real-size-tsize M) (real-size-tsize N)
+  real-size-tsize (fst M) = real-size-tsize-one M (real-size-tsize M)
+  real-size-tsize (snd M) = real-size-tsize-one M (real-size-tsize M)
+  real-size-tsize (inl M) = real-size-tsize-one M (real-size-tsize M)
+  real-size-tsize (inr M) = real-size-tsize-one M (real-size-tsize M)
+  real-size-tsize (case L M N) = {!!}
+  real-size-tsize (M ⟨ c ⟩) =
+    let IH = real-size-tsize M in
+    begin
+      csize c + real-size M
+    ≤⟨ +-mono-≤ ≤-refl IH ⟩
+      csize c + (k * pow2 (c-height M) * tsize M)
+    ≤⟨ +-mono-≤ (≤-trans (m≤n+m (csize c) j) (k-size-height c)) ≤-refl ⟩      
+      (k * pow2 (height c)) + ((k * pow2 (c-height M)) * tsize M)
+    ≤⟨ +-mono-≤ (*-mono-≤{x = k} ≤-refl (pow2-mono-≤ {n = height c}{m = (c-height M ⊔ height c)} (m≤n⊔m _ _))) (*-mono-≤ (*-mono-≤{x = k} ≤-refl (pow2-mono-≤{n = c-height M}{m = c-height M ⊔ height c} (m≤m⊔n _ _))) ≤-refl) ⟩      
+      k * pow2 (c-height M ⊔ height c) + (k * pow2 (c-height M ⊔ height c)) * (tsize M)
+    ≤⟨ ≤-reflexive (solve 3 (λ x y z → x :* y :+ x :* y :* z := x :* y :* (con 1 :+ z)) refl k (pow2 (c-height M ⊔ height c)) (tsize M)) ⟩      
+      (k * pow2 (c-height M ⊔ height c)) * suc (tsize M)
+    ≤⟨ ≤-refl ⟩      
+      k * pow2 (c-height (M ⟨ c ⟩)) * tsize (M ⟨ c ⟩)
+    ∎
+    where
+    open +-*-Solver
+  real-size-tsize (blame ℓ) =
+    begin
+      (1 * 1) * 1
+      ≤⟨ *-mono-≤ (*-mono-≤ k-pos ≤-refl) ≤-refl ⟩
+      (k * 1) * 1
+    ∎
+
+  module SpaceTheorem
+    (cast : (A : Type) → (B : Type) → Label → {c : A ~ B } → Cast (A ⇒ B))
+    where
+
+    open import GTLC
+    open import GTLC2CCOrig Cast cast
+    open EfficientCompile cast
+
+    space-consumption : ∀{Γ M A}  (d : Γ ⊢G M ⦂ A)
+      → Σ[ c1 ∈ ℕ ] Σ[ c2 ∈ ℕ ] ∀ (M' : Γ ⊢ A) {ctx}
+      → (ctx / (compile M d) —↠ M')
+      → real-size M' ≤ c1 + c2 * ideal-size M'
+    space-consumption {Γ}{M}{A} d
+        with compile-efficient M d false
+    ... | ⟨ n , ⟨ cMok  , k≤1 ⟩ ⟩ =
+      ⟨ c1 , ⟨ c2 , G ⟩ ⟩
+      where
+      open +-*-Solver
+      c1 = (k * pow2 (c-height (compile M d))) * 3
+      c2 = (k * pow2 (c-height (compile M d))) * 10
+      G : (M' : (Cast ParamCastCalculusOrig.⊢ Γ) A) {ctx : ReductionCtx} →
+                     ctx / compile M d —↠ M' →
+                     real-size M' ≤ c1 + c2 * ideal-size M'
+      G M' {ct} rd
+          with multi-preserve-ok cMok rd
+      ... | ⟨ m , M'ok ⟩ =
+          let siM' : tsize M' ≤ m + 10 * ideal-size M'
+              siM' = size-OK M'ok in
+          let rsM' : real-size M' ≤ (k * pow2 (c-height M')) * tsize M'
+              rsM' = real-size-tsize M' in
+          let pH = multi-preserve-height rd in
+          begin
+            real-size M'
+          ≤⟨ real-size-tsize M' ⟩ 
+            (k * pow2 (c-height M')) * tsize M'
+          ≤⟨ *-mono-≤ {x = (k * pow2 (c-height M'))} ≤-refl siM' ⟩
+            (k * pow2 (c-height M')) * (m + 10 * ideal-size M')
+          ≤⟨ ≤-reflexive (*-distribˡ-+ (k * pow2 (c-height M')) _ _) ⟩
+            (k * pow2 (c-height M')) * m + (k * pow2 (c-height M')) * (10 * ideal-size M')
+          ≤⟨ ≤-reflexive (solve 3 (λ x y z → x :+ (y :* (con 10 :* z)) := x :+ ((y :* con 10) :* z)) refl ((k * pow2 (c-height M')) * m) (k * pow2 (c-height M')) (ideal-size M')) ⟩
+            (k * pow2 (c-height M')) * m + ((k * pow2 (c-height M')) * 10) * ideal-size M'
+          ≤⟨ +-mono-≤ (*-mono-≤ (*-mono-≤ {x = k} ≤-refl (pow2-mono-≤ pH)) (OK→3 M'ok)) (*-mono-≤ {x = k * pow2 (c-height M') * 10}{y = c2}{u = ideal-size M'}{v = ideal-size M'} (*-mono-≤{u = 10}{v = 10} (*-mono-≤{x = k}{y = k} ≤-refl (pow2-mono-≤ pH)) ≤-refl) ≤-refl) ⟩
+            c1 + c2 * ideal-size M'
+          ∎
