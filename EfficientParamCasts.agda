@@ -171,9 +171,9 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
       → any_ctx / case (inr V) L M —→ M · V
 
     cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
-      → (v : Value V) → {a : Active c}
+      → (v : SimpleValue V) → {a : Active c}
         ----------------------------
-      → non_cast_ctx / V ⟨ c ⟩ —→ applyCast V v c {a}
+      → non_cast_ctx / V ⟨ c ⟩ —→ applyCast V (S-val v) c {a}
 
     fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
         {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))} 
@@ -414,8 +414,12 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   progress (M ⟨ c ⟩)
       | done V
         with ActiveOrInert c
-  ...   | inj₁ a = step (cast V {a})
-  ...   | inj₂ i
+  ...   | inj₁ a
+        with V
+  ...   | S-val sV = step (cast sV {a})
+  ...   | V-cast {c = d}{i} sV = step compose-casts
+  progress (M ⟨ c ⟩)
+      | done V | inj₂ i
           with V
   ...     | S-val sV = done (V-cast {i = i} sV)
   ...     | V-cast {c = c'} V' = step compose-casts

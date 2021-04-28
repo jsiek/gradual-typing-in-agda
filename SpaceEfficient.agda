@@ -355,7 +355,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   preserve-ok {ctx = non_cast_ctx} (castOK blameOK lt) ξ-cast-blame =
      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
   preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (cast v)
-      with applyCastOK Mok v
+      with applyCastOK Mok (S-val v)
   ... | ⟨ m , ⟨ acOK , lt2 ⟩ ⟩ =    
         ⟨ m , ⟨ acOK , ≤-step lt2 ⟩ ⟩
   preserve-ok {ctx = non_cast_ctx} (castOK (castOK {n = n} Mok lt1) lt2)
