@@ -44,40 +44,6 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   open ParamCastCalculusOrig Cast
   open import EfficientParamCastAux precast
 
-  simple→ok0 : ∀{Γ A}{M : Γ ⊢ A}{n}
-    → SimpleValue M → n ∣ false ⊢ M ok → n ≡ 0
-  simple→ok0 V-ƛ (lamOK Mok) = refl
-  simple→ok0 V-const litOK = refl
-  simple→ok0 (V-pair x x₁) (consOK y z) = refl
-  simple→ok0 (V-inl x) (inlOK y) = refl
-  simple→ok0 (V-inr x) (inrOK y) = refl
-
-  value→ok1 : ∀{Γ A}{M : Γ ⊢ A}{n}
-    → Value M → n ∣ false ⊢ M ok → n ≤ 1
-  value→ok1 (S-val x) Mok
-      with simple→ok0 x Mok
-  ... | refl = z≤n
-  value→ok1 (V-cast vV) (castOK Vok z) 
-      with simple→ok0 vV Vok
-  ... | refl = s≤s z≤n
-
-  value-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
-    → Value M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
-
-  simple-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
-    → SimpleValue M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
-  simple-strengthen-ok V-ƛ (lamOK Nok) = lamOK Nok
-  simple-strengthen-ok V-const litOK = litOK
-  simple-strengthen-ok (V-pair x x₁) (consOK a b) =
-     consOK (value-strengthen-ok x a) (value-strengthen-ok x₁ b)
-  simple-strengthen-ok (V-inl x) (inlOK a) = inlOK (value-strengthen-ok x a)
-  simple-strengthen-ok (V-inr x) (inrOK a) = inrOK (value-strengthen-ok x a)
-
-  value-strengthen-ok (S-val x) Mok = simple-strengthen-ok x Mok
-  value-strengthen-ok (V-cast x) (castOK Mok lt) =
-    let Mok2 = (simple-strengthen-ok x Mok) in
-    castulOK Mok2 (value→ok1 (S-val x) Mok)
-
   weaken-OK-ul : ∀{Γ A}{M : Γ ⊢ A}{n}
        → n ∣ true ⊢ M ok  →  n ∣ false ⊢ M ok
   weaken-OK-ul (castulOK Mok lt) =
@@ -355,7 +321,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   preserve-ok {ctx = non_cast_ctx} (castOK blameOK lt) ξ-cast-blame =
      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
   preserve-ok {ctx = non_cast_ctx} (castOK Mok lt) (cast v)
-      with applyCastOK Mok (S-val v)
+      with applyCastOK Mok v
   ... | ⟨ m , ⟨ acOK , lt2 ⟩ ⟩ =    
         ⟨ m , ⟨ acOK , ≤-step lt2 ⟩ ⟩
   preserve-ok {ctx = non_cast_ctx} (castOK (castOK {n = n} Mok lt1) lt2)
