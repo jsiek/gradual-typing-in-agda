@@ -173,7 +173,7 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
     cast : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)}
       → (v : SimpleValue V) → {a : Active c}
         ----------------------------
-      → non_cast_ctx / V ⟨ c ⟩ —→ applyCast V (S-val v) c {a}
+      → non_cast_ctx / V ⟨ c ⟩ —→ applyCast V v c {a}
 
     fun-cast : ∀ {Γ A' B' A₁ A₂} {V : Γ ⊢ A₁ ⇒ A₂} {W : Γ ⊢ A'}
         {c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))} 

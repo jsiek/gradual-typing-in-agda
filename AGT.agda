@@ -1392,13 +1392,10 @@ module AGT where
   compose (error A B) (error B C) = (error A C)
   compose (error A B) (B ⇒ B' ⇒ C) = (error A C)
 
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (SimpleValue M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v .(_ ⇒ _ ⇒ _) {activeId} = M
-  applyCast M (EfficientParamCastAux.S-val x) .(⋆ ⇒ _ ⇒ _) {activeA⋆} =
-      ⊥-elim (simple⋆ M x refl)
-  applyCast (M ⟨ c ⟩) (V-cast {i = inert x A≢⋆} sv) d {activeA⋆} =
-      M ⟨ compose c d ⟩
+  applyCast M v .(⋆ ⇒ _ ⇒ _) {activeA⋆} = ⊥-elim (simple⋆ M v refl)
   applyCast M v (error _ _) {activeError} = blame (pos zero)
   
   height : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
@@ -1535,18 +1532,15 @@ module AGT where
   compose-height (error _ _) (error _ _) = z≤n
 
   applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
-          → n ∣ false ⊢ M ok → (v : Value M)
+          → n ∣ false ⊢ M ok → (v : SimpleValue M)
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
   applyCastOK {M = M} {.((` _) ⇒ ` _ ⇒ (` _))} {n} {activeId} Mok v =
       ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
   applyCastOK {M = M} {.(error _ _)} {n} {activeError} Mok v =
       ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
-  applyCastOK {M = M} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} Mok (S-val x) =
-      ⊥-elim (simple⋆ M x refl)
-  applyCastOK {M = V ⟨ .(_ ⇒ _ ⇒ ⋆) ⟩} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} (castOK {n = n₁} Vok lt)
-      (V-cast {i = inert x x₁} sv) =
-      ⟨ suc n₁ , ⟨ (castOK Vok lt) , s≤s (≤-step (≤-step ≤-refl)) ⟩ ⟩
-     
+  applyCastOK {M = M} {.(⋆ ⇒ _ ⇒ _)} {n} {activeA⋆} Mok v =
+      ⊥-elim (simple⋆ M v refl)
+
   open import CastStructure
 
   ecs : EfficientCastStruct
@@ -1568,36 +1562,15 @@ module AGT where
       with (B₁ `⊔ B₂){c}
   ... | ⟨ C , ⟨ ⟨ b1c , b2c ⟩ , lub ⟩ ⟩ = height-lb lub c b1c b2c
 
-  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+  applyCast-height : ∀{Γ}{A B}{V}{v : SimpleValue {Γ} V}{c : Cast (A ⇒ B)}
         {a : Active c}
       → c-height (applyCast V v c {a}) ≤ c-height V ∨ height c
   applyCast-height {V = V} {v} {.((` _) ⇒ ` _ ⇒ (` _))} {activeId} =
       ≤-reflexive (sym (⊔-identityʳ _))
   applyCast-height {V = V} {v} {.(error _ _)} {activeError} = z≤n
-  applyCast-height {V = V} {S-val x} {.(⋆ ⇒ _ ⇒ _)} {activeA⋆} =
+  applyCast-height {V = V} {x} {.(⋆ ⇒ _ ⇒ _)} {activeA⋆} =
       ⊥-elim (simple⋆ V x refl)
-  applyCast-height {Γ}{⋆}{B}{V = V ⟨ (A ⇒ B₁ ⇒ ⋆){ab1}{cb1} ⟩} {V-cast {i = inert x y} sv}
-      {(⋆ ⇒ B₂ ⇒ B){ab}{cb}} {activeA⋆}
-      with B₁ `~ B₂
-  ... | yes c =
-      begin
-        c-height V ∨ height-t (proj₁ ((B₁ `⊔ B₂){c}))
-        ≤⟨ ⊔-mono-≤ ≤-refl (lub-height {B₁}{B₂}{c}) ⟩
-        c-height V ∨ (height-t B₁ ∨ height-t B₂)
-        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
-        c-height V ∨ height-t B₁ ∨ height-t B₂
-      ∎
-    where open Data.Nat.Properties.≤-Reasoning
-  ... | no c =
-      begin
-        c-height V ∨ 0
-        ≤⟨ ⊔-mono-≤ ≤-refl z≤n ⟩
-        c-height V ∨ (height-t B₁ ∨ height-t B₂)
-        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
-        c-height V ∨ height-t B₁ ∨ height-t B₂      
-      ∎
-    where open Data.Nat.Properties.≤-Reasoning
-    
+
   dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (dom c x) ≤ height c
   dom-height {c = (.(_ ⇒ _) ⇒ .(_ ⇒ _) ⇒ .(_ ⇒ _)){ab}{cb}} {C-fun}

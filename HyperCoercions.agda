@@ -16,7 +16,7 @@ module HyperCoercions where
   open import Data.Empty using (⊥-elim) renaming (⊥ to Bot)
   open import Data.Bool using (Bool; true; false)
   open import Data.Nat using (ℕ; zero; suc; _≤_; _⊔_; z≤n; s≤s; _+_; _*_)
-  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-step;
+  open import Data.Nat.Properties using (⊔-identityʳ; ≤-refl; ≤-reflexive; ≤-trans; ≤-step;
        ⊔-mono-≤; ⊔-monoʳ-≤; ⊔-monoˡ-≤; ⊔-comm; ⊔-assoc; m≤m⊔n; m≤n⊔m; ⊔-idem; +-mono-≤; +-comm; *-monoʳ-≤)
   open Data.Nat.Properties.≤-Reasoning
   open import Data.Nat.Solver
@@ -327,18 +327,17 @@ module HyperCoercions where
   ... | yes C≡D rewrite C≡D = p₁ ↷ (m₁ `⨟ m₂) , i₂
   (p₁ ↷ m₁ , cfail ℓ) ⨟ (p₂ ↷ m₂ , i₂) = p₁ ↷ m₁ , cfail ℓ
 
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
+  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (SimpleValue M) → (c : Cast (A ⇒ B))
             → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v id★ {A-id★} =
       M
   applyCast M v (p ↷ m , cfail ℓ) {A-fail} = blame ℓ
-  applyCast M v c {A-mid A-cpair} = eta× M c C-pair
-  applyCast M v c {A-mid A-csum} = eta⊎ M c C-sum
-  applyCast M v (𝜖 ↷ id ι , 𝜖) {A-mid A-idι} = M
-  applyCast M v ((?? ℓ) {g = g} ↷ m , i) {A-proj}
-      with canonical⋆ M v
-  ... | ⟨ A' , ⟨ M' , ⟨ c , ⟨ i' , ⟨ refl , _ ⟩ ⟩ ⟩ ⟩ ⟩ =
-        M' ⟨ c ⨟ ((?? ℓ) {g = g} ↷ m , i) ⟩
+  applyCast (cons V W) v (𝜖 ↷ s ×' t , 𝜖) {A-mid A-cpair} =
+      cons (V ⟨ s ⟩) (W ⟨ t ⟩)  
+  applyCast (inl V) v (𝜖 ↷ s +' t , 𝜖) {A-mid A-csum} = inl (V ⟨ s ⟩)
+  applyCast (inr V) v (𝜖 ↷ s +' t , 𝜖) {A-mid A-csum} = inr (V ⟨ t ⟩)
+  applyCast ($_ k {f}) (V-const) (𝜖 ↷ id ι , 𝜖) {A-mid A-idι} = $_ k {f}
+  applyCast (M ⟨ s ⟩) () ((?? ℓ) {g = g} ↷ m , i) {A-proj} 
 
   funCast : ∀ {Γ A A' B'} → (M : Γ ⊢ A) → SimpleValue M
           → (c : Cast (A ⇒ (A' ⇒ B'))) → ∀ {i : Inert c} → Γ ⊢ A' → Γ ⊢ B'
@@ -421,22 +420,34 @@ module HyperCoercions where
   open import CastStructure
 
   applyCastOK : ∀{Γ A B}{M : Γ ⊢ A}{c : Cast (A ⇒ B)}{n}{a}
-          → n ∣ false ⊢ M ok → (v : Value M)
+          → n ∣ false ⊢ M ok → (v : SimpleValue M)
           → Σ[ m ∈ ℕ ] m ∣ false ⊢ applyCast M v c {a} ok × m ≤ 2 + n
-  applyCastOK {c = id★} {n} {A-id★} Mok v = ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
-  applyCastOK {M = M}{c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v
-      with canonical⋆ M v
-  ... | ⟨ A' , ⟨ V , ⟨ c , ⟨ i , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq
-      with Mok
-  ... | castOK {n = n₁} Vok lt =
-      ⟨ (suc n₁) , ⟨ (castOK Vok lt) , (s≤s (≤-step (≤-step ≤-refl))) ⟩ ⟩
-  applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v = ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
-  applyCastOK {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {n} {A-mid A-cpair} Mok v =
-     ⟨ zero , ⟨ consOK (castOK (fstOK Mok) z≤n) (castOK (sndOK Mok) z≤n) , z≤n ⟩ ⟩
-  applyCastOK {c = .𝜖 ↷ .(_ +' _) , .𝜖} {n} {A-mid A-csum} Mok v =
-     ⟨ zero , ⟨ (caseOK Mok (lamOK (inlOK (castulOK varOK (s≤s z≤n))) )
-                            (lamOK (inrOK (castulOK varOK (s≤s z≤n))))) , z≤n ⟩ ⟩
-  applyCastOK {c = .𝜖 ↷ .(id _) , .𝜖} {n} {A-mid A-idι} Mok v = ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
+  applyCastOK {c = id★} {n} {A-id★} Mok v =
+      ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
+  applyCastOK {M = M}{c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v =
+      ⊥-elim (simple⋆ M v refl)
+  applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v =
+      ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
+  applyCastOK {M = cons V W} {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {.0} {A-mid A-cpair}
+      (consOK Mok Nok) (V-pair vV vW) =
+      let n≤1 = value→ok1 vV Mok in
+      let m≤1 = value→ok1 vW Nok in
+      ⟨ zero ,
+      ⟨ (consOK (castOK Mok (≤-trans n≤1 (s≤s z≤n)))
+                (castOK Nok (≤-trans m≤1 (s≤s z≤n)))) ,
+        z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ +' _) , .𝜖} {n} {A-mid A-csum} (inlOK Mok) (V-inl x)=
+      let n≤1 = value→ok1 x Mok in
+      ⟨ zero ,
+      ⟨ (inlOK (castOK Mok (≤-trans n≤1 (s≤s z≤n)))) ,
+        z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(_ +' _) , .𝜖} {n} {A-mid A-csum} (inrOK Mok) (V-inr x)=
+      let n≤1 = value→ok1 x Mok in
+      ⟨ zero ,
+      ⟨ (inrOK (castOK Mok (≤-trans n≤1 (s≤s z≤n)))) ,
+        z≤n ⟩ ⟩
+  applyCastOK {c = .𝜖 ↷ .(id _) , .𝜖} {n} {A-mid A-idι} Mok V-const =
+      ⟨ n , ⟨ Mok , (≤-step (≤-step ≤-refl)) ⟩ ⟩
 
   ecs : EfficientCastStruct
   ecs = record
@@ -451,48 +462,45 @@ module HyperCoercions where
   import EfficientParamCasts
   open EfficientParamCasts ecs public
 
-  applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
+  applyCast-height : ∀{Γ}{A B}{V}{v : SimpleValue {Γ} V}{c : Cast (A ⇒ B)}
         {a : Active c}
       → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
   applyCast-height {v = v} {id★} {A-id★} = m≤m⊔n _ _
-  applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , inj)} {A-proj}
-      with canonical⋆ V v
-  ... | ⟨ A' , ⟨ V' , ⟨ c , ⟨ i' , ⟨ meq , xx ⟩ ⟩ ⟩ ⟩ ⟩ rewrite meq =
-      begin
-        c-height V' ⊔ height (c ⨟ (?? ℓ {g = g} ↷ m , inj))
-        ≤⟨ ⊔-monoʳ-≤ (c-height V') (compose-height c _) ⟩
-        c-height V' ⊔ (height c ⊔ height (?? ℓ {g = g} ↷ m , inj))
-        ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V') _ _)) ⟩
-        (c-height V' ⊔ height c) ⊔ height-m m
-      ∎
+  applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , inj)} {A-proj} =
+      ⊥-elim (simple⋆ V v refl)
   applyCast-height {v = v} {x ↷ x₁ , .(cfail _)} {A-fail} = z≤n
-  applyCast-height {V = V}{v} {.𝜖 ↷ (c ×' d) , .𝜖} {A-mid A-cpair} =
+  applyCast-height {V = cons V W} {V-pair vV vW} {.𝜖 ↷ c ×' d , .𝜖}
+      {A-mid A-cpair} =
     begin
-      (c-height V ⊔ height c) ⊔ (c-height V ⊔ height d)
+        (c-height V ⊔ height c) ⊔ (c-height W ⊔ height d)
       ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _) ⟩
-      c-height V ⊔ (height c ⊔ (c-height V ⊔ height d))
+        c-height V ⊔ (height c ⊔ (c-height W ⊔ height d))
       ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (sym (⊔-assoc (height c) _ _))) ⟩
-      c-height V ⊔ ((height c ⊔ c-height V) ⊔ height d)
+        c-height V ⊔ ((height c ⊔ c-height W) ⊔ height d)
       ≤⟨ ⊔-monoʳ-≤ (c-height V) (⊔-monoˡ-≤ (height d) (≤-reflexive (⊔-comm (height c) _))) ⟩
-      c-height V ⊔ ((c-height V ⊔ height c) ⊔ height d)
-      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (⊔-assoc (c-height V) _ _)) ⟩
-      c-height V ⊔ (c-height V ⊔ (height c ⊔ height d))
+        c-height V ⊔ ((c-height W ⊔ height c) ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-reflexive (⊔-assoc (c-height W) _ _)) ⟩
+        c-height V ⊔ (c-height W ⊔ (height c ⊔ height d))
       ≤⟨ ≤-reflexive (sym (⊔-assoc (c-height V) _ _)) ⟩
-      (c-height V ⊔ c-height V) ⊔ (height c ⊔ height d)
-      ≤⟨ ⊔-monoˡ-≤ (height c ⊔ height d) (≤-reflexive (⊔-idem (c-height V))) ⟩
-      c-height V ⊔ (height c ⊔ height d)
-      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
-      c-height V ⊔ suc (height c ⊔ height d)
-    ∎
-  applyCast-height {V = V}{v} {.𝜖 ↷ (c +' d) , .𝜖} {A-mid A-csum} =
+        (c-height V ⊔ c-height W) ⊔ (height c ⊔ height d)
+      ≤⟨ ⊔-monoʳ-≤ (c-height V ⊔ c-height W) (≤-step ≤-refl) ⟩ 
+        (c-height V ⊔ c-height W) ⊔ suc (height c ⊔ height d)
+    ∎ 
+  applyCast-height {V = inl V} {V-inl x} {.𝜖 ↷ c +' d , .𝜖} {A-mid A-csum} =
     begin
-      (c-height V ⊔ height c) ⊔ height d
-      ≤⟨ ≤-reflexive (⊔-assoc (c-height V) _ _ ) ⟩
-      c-height V ⊔ (height c ⊔ height d)
-      ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step ≤-refl) ⟩
+      c-height V ⊔ height c
+    ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step (m≤m⊔n _ _)) ⟩
       c-height V ⊔ suc (height c ⊔ height d)
-    ∎
-  applyCast-height {v = v} {.𝜖 ↷ .(id _) , .𝜖} {A-mid A-idι} = m≤m⊔n _ _
+    ∎ 
+  applyCast-height {V = inr V} {V-inr x} {.𝜖 ↷ c +' d , .𝜖} {A-mid A-csum} =
+    begin
+      c-height V ⊔ height d
+    ≤⟨ ⊔-monoʳ-≤ (c-height V) (≤-step (m≤n⊔m _ _)) ⟩
+      c-height V ⊔ suc (height c ⊔ height d)
+    ∎ 
+  applyCast-height {V = $_ x {f}} {v = V-const} {𝜖 ↷ id ι , 𝜖} {A-mid A-idι} =
+    ≤-refl
+
 
   dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
        → height (dom c x) ≤ height c
