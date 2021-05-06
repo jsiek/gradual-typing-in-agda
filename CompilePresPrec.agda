@@ -1,6 +1,6 @@
 open import Data.Nat using (ℕ; zero; suc)
 open import Relation.Binary.PropositionalEquality using (_≡_; _≢_; refl; cong)
-open import Data.Product using (_×_; proj₁; proj₂) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
 
 open import Types
 open import Variables
@@ -8,6 +8,7 @@ open import Labels
 open import GTLC
 
 open import PreCastStructureWithPrecision
+
 
 module CompilePresPrec
   (pcsp : PreCastStructWithPrecision)

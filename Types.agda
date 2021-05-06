@@ -46,6 +46,13 @@ module Types where
   height-t (A `× B) = suc (height-t A ∨ height-t B)
   height-t (A `⊎ B) = suc (height-t A ∨ height-t B)
 
+  size-t : Type → ℕ
+  size-t ⋆ = 0
+  size-t (` ι) = 0
+  size-t (A ⇒ B) = 1 + size-t A + size-t B
+  size-t (A `× B) = 1 + size-t A + size-t B
+  size-t (A `⊎ B) = 1 + size-t A + size-t B
+
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆
     A-Base : ∀{ι} → Atomic (` ι)

@@ -3,7 +3,7 @@ open import PreCastStructure
 open import Data.Nat
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Bool
+open import Data.Bool using (true; false)
 open import Variables
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
@@ -146,3 +146,37 @@ module EfficientParamCastAux (pcs : PreCastStruct) where
      let l = inl ((` Z) ⟨ inlC c x ⟩) in
      let r = inr ((` Z) ⟨ inrC c x ⟩) in
      case M (ƛ l) (ƛ r)
+
+  simple→ok0 : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → SimpleValue M → n ∣ false ⊢ M ok → n ≡ 0
+  simple→ok0 V-ƛ (lamOK Mok) = refl
+  simple→ok0 V-const litOK = refl
+  simple→ok0 (V-pair x x₁) (consOK y z) = refl
+  simple→ok0 (V-inl x) (inlOK y) = refl
+  simple→ok0 (V-inr x) (inrOK y) = refl
+
+  value→ok1 : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → Value M → n ∣ false ⊢ M ok → n ≤ 1
+  value→ok1 (S-val x) Mok
+      with simple→ok0 x Mok
+  ... | refl = z≤n
+  value→ok1 (V-cast vV) (castOK Vok z) 
+      with simple→ok0 vV Vok
+  ... | refl = s≤s z≤n
+
+  value-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → Value M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
+
+  simple-strengthen-ok : ∀{Γ A}{M : Γ ⊢ A}{n}
+    → SimpleValue M → n ∣ false ⊢ M ok → n ∣ true ⊢ M ok
+  simple-strengthen-ok V-ƛ (lamOK Nok) = lamOK Nok
+  simple-strengthen-ok V-const litOK = litOK
+  simple-strengthen-ok (V-pair x x₁) (consOK a b) =
+     consOK (value-strengthen-ok x a) (value-strengthen-ok x₁ b)
+  simple-strengthen-ok (V-inl x) (inlOK a) = inlOK (value-strengthen-ok x a)
+  simple-strengthen-ok (V-inr x) (inrOK a) = inrOK (value-strengthen-ok x a)
+
+  value-strengthen-ok (S-val x) Mok = simple-strengthen-ok x Mok
+  value-strengthen-ok (V-cast x) (castOK Mok lt) =
+    let Mok2 = (simple-strengthen-ok x Mok) in
+    castulOK Mok2 (value→ok1 (S-val x) Mok)
