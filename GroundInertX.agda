@@ -853,6 +853,5 @@ module GroundInertX where
   open import CompilePresPrec pcsp
   open CompilePresPrecProof (λ A B ℓ {c} → cast A B ℓ c) using (compile-pres-prec) public
 
-  {- Instantiate the proof for the gradual guarantees. -}
-  open StaticGradualGuarantee
+  {- Instantiate the proof for the gradual guarantee. -}
   open import ParamGradualGuarantee csp
