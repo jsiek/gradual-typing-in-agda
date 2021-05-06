@@ -668,6 +668,16 @@ module HyperCoercions where
       → Σ[ k ∈ ℕ ] k ∣ ul ⊢ (Compile.compile M d) ok × k ≤ 1
   compile-efficient d ul = EC.compile-efficient d ul
 
+  module ST = PH.SpaceTheorem mkcast
+  open PH using (real-size)
+  open GTLC2CCOrig Cast mkcast using (compile)
+
+  space-consumption : ∀{Γ M A}  (d : Γ ⊢G M ⦂ A)
+    → Σ[ c1 ∈ ℕ ] Σ[ c2 ∈ ℕ ] ∀ (M' : Γ ⊢ A) {ctx}
+    → (ctx / (compile M d) —↠ M')
+    → real-size M' ≤ c1 + c2 * ideal-size M'
+  space-consumption {Γ}{M}{A} d = ST.space-consumption d
+
   data PreType : Type → Set where
     P-Base : ∀{ι} → PreType (` ι)
     P-Fun : ∀{A B} → PreType (A ⇒ B)

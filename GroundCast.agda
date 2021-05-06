@@ -44,7 +44,7 @@ module GroundCast where
   For λB, there are two kinds of inert casts, those from a ground
   type to ⋆ and those between two function types.
 
-n  -}
+  -}
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A} → Ground A → (c : Cast (A ⇒ ⋆)) → Inert c
@@ -65,9 +65,6 @@ n  -}
     A-proj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
     A-pair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
     A-sum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
-
-  import ParamCastCalculus
-  open ParamCastCalculus Cast Inert public
 
   {-
 
@@ -188,6 +185,36 @@ n  -}
 
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (A-proj c j)
+
+  open import PreCastStructure
+
+  pcs : PreCastStruct
+  pcs = record
+             { Cast = Cast
+             ; Inert = Inert
+             ; Active = Active
+             ; ActiveOrInert = ActiveOrInert
+             ; ActiveNotInert = ActiveNotInert
+             ; Cross = Cross
+             ; Inert-Cross⇒ = Inert-Cross⇒
+             ; Inert-Cross× = Inert-Cross×
+             ; Inert-Cross⊎ = Inert-Cross⊎
+             ; dom = dom
+             ; cod = cod
+             ; fstC = fstC
+             ; sndC = sndC
+             ; inlC = inlC
+             ; inrC = inrC
+             ; baseNotInert = baseNotInert
+             ; idNotInert = idNotInert
+             ; projNotInert = projNotInert
+             }
+             
+  import ParamCastAux
+  open ParamCastAux pcs
+  
+  import ParamCastCalculus
+  open ParamCastCalculus Cast Inert public
 
   open import Subtyping using (_<:₃_)
   open _<:₃_
@@ -332,37 +359,7 @@ n  -}
   lpti→⊑ (lpti-fun lp1 lp2) = [ lp1 , lp2 ]
 
 
-  {-
-
-   We take the first step of instantiating the reduction semantics of
-   the Parametric Cast Calculus by applying the ParamCastAux module.
-
-   -}
-  open import PreCastStructure
   open import PreCastStructureWithBlameSafety
-  open import PreCastStructureWithPrecision
-
-  pcs : PreCastStruct
-  pcs = record
-             { Cast = Cast
-             ; Inert = Inert
-             ; Active = Active
-             ; ActiveOrInert = ActiveOrInert
-             ; ActiveNotInert = ActiveNotInert
-             ; Cross = Cross
-             ; Inert-Cross⇒ = Inert-Cross⇒
-             ; Inert-Cross× = Inert-Cross×
-             ; Inert-Cross⊎ = Inert-Cross⊎
-             ; dom = dom
-             ; cod = cod
-             ; fstC = fstC
-             ; sndC = sndC
-             ; inlC = inlC
-             ; inrC = inrC
-             ; baseNotInert = baseNotInert
-             ; idNotInert = idNotInert
-             ; projNotInert = projNotInert
-             }
   pcss : PreCastStructWithBlameSafety
   pcss = record
              { precast = pcs
@@ -374,6 +371,7 @@ n  -}
              ; inlBlameSafe = inlBlameSafe
              ; inrBlameSafe = inrBlameSafe
              }
+  open import PreCastStructureWithPrecision
   pcsp : PreCastStructWithPrecision
   pcsp = record {
            precast = pcs;
@@ -388,8 +386,6 @@ n  -}
            lpti→⊑ = lpti→⊑
          }
 
-  import ParamCastAux
-  open ParamCastAux pcs
   open import ParamCastSubtyping pcss
 
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A
