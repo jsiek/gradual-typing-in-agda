@@ -139,7 +139,7 @@ Formalizations of Gradually Typed Languages in Agda
    _Refined Criteria_ (Siek, Vitousek, Cimini, and Boyland 2015).
    ("lazy UD" with inert cross cast)
 
-* [GroundCoercion](./GroundCast.agda): Type safety of λC (Siek,
+* [GroundCoercion](./GroundCoercion.agda): Type safety of λC (Siek,
    Thiemann, Wadler 2015). ("lazy UD" of Siek, Garcia, and Taha 2009)
 
 * [EfficientGroundCoercions](./EfficientGroundCoercions.agda):
