@@ -27,11 +27,13 @@ record PreCastStructWithPrecision : Set₁ where
     {- ****** The definitions above need to satisfy the following lemmas: ****** -}
     {- If an inert injection is less precise than another inert cast,
        the latter must also be an injection from the same type. -}
+    {-       
     inj-⊑-inj : ∀ {A A′ B′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
       → (i : Inert c) → (i′ : Inert c′)
       → ⟪ i ⟫⊑⟪ i′ ⟫
         --------------------
       → (A′ ≡ A) × (B′ ≡ ⋆)
+    -}
     {- Dynamic type ⋆ is never less precise than any inert cast. -}
     {-
     ⋆-⋢-inert : ∀ {A′ B′} {c′ : Cast (A′ ⇒ B′)}

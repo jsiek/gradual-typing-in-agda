@@ -69,10 +69,10 @@ catchup v′ (⊑ᶜ-castl {c = c} lp1 lp2 lpM)
   -- this is the more involved case so we prove it in a separate lemma
   with cast-catchup {c = c} vV v′ lp1 lp2 lpV
 ...   | ⟨ W , ⟨ vW , ⟨ rd*₂ , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ ↠-trans (plug-cong (F-cast _) rd*₁) rd*₂ , lpW ⟩ ⟩ ⟩
-catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM)
+catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM imp)
   -- just recur in all 3 wrap cases
   with catchup v′ lpM
-... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrap lp lpW ⟩ ⟩ ⟩
+... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrap lp lpW imp ⟩ ⟩ ⟩
 catchup v′ (⊑ᶜ-wrapl {i = i} lp lpM)
   with catchup v′ lpM
 ... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrapl lp lpW ⟩ ⟩ ⟩
@@ -103,7 +103,7 @@ rename-pres-prec f (⊑ᶜ-case lpL lp1 lp2 lpM lpN) =
 rename-pres-prec f (⊑ᶜ-cast lp1 lp2 lpM)  = ⊑ᶜ-cast  lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castl lp1 lp2 lpM) = ⊑ᶜ-castl lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-castr lp1 lp2 lpM) = ⊑ᶜ-castr lp1 lp2 (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-wrap lpi lpM)  = ⊑ᶜ-wrap  lpi (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrap lpi lpM imp)  = ⊑ᶜ-wrap  lpi (rename-pres-prec f lpM) imp
 rename-pres-prec f (⊑ᶜ-wrapl lpi lpM) = ⊑ᶜ-wrapl lpi (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-wrapr lpi lpM A≢⋆) = ⊑ᶜ-wrapr lpi (rename-pres-prec f lpM) A≢⋆
 rename-pres-prec f (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
@@ -138,7 +138,7 @@ S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-iso {A = A} {A′}) lpM
 ⊑ᶜ→⊑ lp* (⊑ᶜ-cast lp1 lp2 lpM) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-castl lp1 lp2 lpM) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2
-⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM) = proj₂ (lpii→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM imp) = proj₂ (lpii→⊑ lpi)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-wrapl lpi lpM) = proj₂ (lpit→⊑ lpi)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM A≢⋆) = proj₂ (lpti→⊑ lpi)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-blame lp) = lp
@@ -182,7 +182,7 @@ subst-pres-prec lps (⊑ᶜ-case lpL lp1 lp2 lpM lpN) =
 subst-pres-prec lps (⊑ᶜ-cast lp1 lp2 lpN)  = ⊑ᶜ-cast  lp1 lp2 (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-castl lp1 lp2 lpN) = ⊑ᶜ-castl lp1 lp2 (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-castr lp1 lp2 lpN) = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-wrap lpi lpN)  = ⊑ᶜ-wrap  lpi (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrap lpi lpN imp)  = ⊑ᶜ-wrap  lpi (subst-pres-prec lps lpN) imp
 subst-pres-prec lps (⊑ᶜ-wrapl lpi lpN) = ⊑ᶜ-wrapl lpi (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-wrapr lpi lpN A≢⋆) = ⊑ᶜ-wrapr lpi (subst-pres-prec lps lpN) A≢⋆
 subst-pres-prec lps (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
@@ -369,7 +369,7 @@ private
     → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
       ------------------------------------------------------------------
     → ∃[ M ] ((fst V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (fst V′) ⟨ fstC c′ x′ ⟩))
-  sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV)
+  sim-fst-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV imp)
     with lpii→⊑ lpii
   ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ =
@@ -407,7 +407,7 @@ private
     → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
       ------------------------------------------------------------------
     → ∃[ M ] ((snd V —↠ M) × (∅ , ∅ ⊢ M ⊑ᶜ (snd V′) ⟨ sndC c′ x′ ⟩))
-  sim-snd-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV)
+  sim-snd-wrap-v (V-wrap {V = V} {c} v i) v′ i′ x′ (⊑ᶜ-wrap lpii lpV imp)
     with lpii→⊑ lpii
   ... | ⟨ unk⊑ , pair⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ =
@@ -448,7 +448,7 @@ private
     → ∃[ K ] ((case V M N —↠ K) ×
                (∅ , ∅ ⊢ K ⊑ᶜ case V′ (rename (ext S_) M′ [ ` Z ⟨ inlC c′ x′ ⟩ ])
                                      (rename (ext S_) N′ [ ` Z ⟨ inrC c′ x′ ⟩ ])))
-  sim-case-wrap-v {A₂′ = A₂′} {B₂′} (V-wrap v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrap lpii lpV) lpM lpN
+  sim-case-wrap-v {A₂′ = A₂′} {B₂′} (V-wrap v i) v′ i′ x′ lp1 lp2 (⊑ᶜ-wrap lpii lpV imp) lpM lpN
     with lpii→⊑ lpii
   ... | ⟨ unk⊑ , sum⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ sum⊑ {A = A₁} {B = B₁} lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
@@ -593,7 +593,7 @@ private
     → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ W ⊑ᶜ W′
       ----------------------------------------------------------------------------------
     → ∃[ N ] ((V · W —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩))
-  sim-app-wrap-v {W = W} (V-wrap {c = c} v i) w v′ w′ i′ x′ (⊑ᶜ-wrap {M = V} lpii lpV) lpW
+  sim-app-wrap-v {W = W} (V-wrap {c = c} v i) w v′ w′ i′ x′ (⊑ᶜ-wrap {M = V} lpii lpV imp) lpW
     with lpii→⊑ lpii
   ... | ⟨ unk⊑ , fun⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ fun⊑ lp₁₁ lp₁₂ , fun⊑ lp₂₁ lp₂₂ ⟩ =

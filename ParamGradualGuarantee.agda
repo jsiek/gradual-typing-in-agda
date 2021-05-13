@@ -156,16 +156,17 @@ gradual-guarantee-wrap : ∀ {A A′ B B′} {M : ∅ ⊢ A} {M′ : ∅ ⊢ A�
   → ⟪ i ⟫⊑⟪ i′ ⟫ → ∅ , ∅ ⊢ M ⊑ᶜ M′
   → M₁ ≡ M ⟪ i ⟫ → M₁′ ≡ M′ ⟪ i′ ⟫
   → M₁′ —→ M₂′
+  → (B ≡ ⋆ → B′ ≡ ⋆)
     ---------------------------------------------
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
-gradual-guarantee-wrap {i = i} lpi lpM refl eq2 (ξ {F = F-wrap _} rd)
+gradual-guarantee-wrap {i = i} lpi lpM refl eq2 (ξ {F = F-wrap _} rd) imp
   with plug-inv-wrap-M eq2
 ... | ⟨ refl , refl ⟩
   with plug-inv-wrap-i eq2
 ...   | ⟨ refl , refl ⟩
   with gradual-guarantee lpM rd
-...     | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟪ i ⟫ , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrap lpi lpM₂ ⟩ ⟩
-gradual-guarantee-wrap {M = M} {i = i} lpi lpM refl eq2 (ξ-blame {F = F-wrap _})
+...     | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟪ i ⟫ , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrap lpi lpM₂ imp ⟩ ⟩
+gradual-guarantee-wrap {M = M} {i = i} lpi lpM refl eq2 (ξ-blame {F = F-wrap _}) imp
   with plug-inv-wrap-M eq2
 ... | ⟨ refl , refl ⟩
   with plug-inv-wrap-i eq2
@@ -305,7 +306,7 @@ gradual-guarantee (⊑ᶜ-castl {c = c} lp1 lp2 lpM) rd
   with gradual-guarantee lpM rd
 ... | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp1 lp2 lpM₂ ⟩ ⟩
 gradual-guarantee (⊑ᶜ-castr lp1 lp2 lpM) rd = gradual-guarantee-castr lp1 lp2 lpM refl rd
-gradual-guarantee (⊑ᶜ-wrap lpi lpM) rd = gradual-guarantee-wrap lpi lpM refl refl rd
+gradual-guarantee (⊑ᶜ-wrap lpi lpM imp) rd = gradual-guarantee-wrap lpi lpM refl refl rd imp
 gradual-guarantee (⊑ᶜ-wrapl {i = i} lpi lpM) rd
   with gradual-guarantee lpM rd
 ... | ⟨ M₂ , ⟨ rd* , lpM₂ ⟩ ⟩ = ⟨ M₂ ⟪ i ⟫ , ⟨ plug-cong (F-wrap i) rd* , ⊑ᶜ-wrapl lpi lpM₂ ⟩ ⟩
