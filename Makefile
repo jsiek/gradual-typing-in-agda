@@ -6,7 +6,7 @@ AGDA = Labels.agda Types.agda Variables.agda \
 	GTLC.agda GTLC2CC.agda \
 	PreCastStructure.agda CastStructure.agda \
 	ParamCastCalculus.agda ParamCastReduction.agda EfficientParamCasts.agda \
-	GroundCast.agda GroundCoercions.agda \
+	GroundCast.agda GroundInertX.agda GroundCoercions.agda \
 	SpaceEfficient.agda PreserveHeight.agda EfficientGroundCoercions.agda \
 	SimpleCast.agda SimpleFunCast.agda SimpleCoercions.agda \
 	LazyCast.agda LazyCoercions.agda \

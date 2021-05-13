@@ -35,7 +35,7 @@ value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrap lpii lpW)
 value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl lpit lpV)
   with lpit→⊑ lpit
 ... | ⟨ unk⊑ , unk⊑ ⟩ = contradiction i (idNotInert A-Unk _)
-value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}
 
 wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
   → A′ ≢ ⋆
@@ -46,7 +46,7 @@ wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cas
 wrap-⊑-value-inv nd v w (⊑ᶜ-wrap lpii lpV) with inj-⊑-inj _ _ lpii
 ... | ⟨ refl , refl ⟩ = contradiction refl nd
 wrap-⊑-value-inv nd v w (⊑ᶜ-wrapl _ lpV) = lpV
-wrap-⊑-value-inv nd v w (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+wrap-⊑-value-inv nd v w (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}
 
 wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
                     {i : Inert c} {i′ : Inert c′}
@@ -58,4 +58,4 @@ wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrap _ lpV) = lpV
 wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl lpit lpV)
   with lpit→⊑ lpit
 ... | ⟨ unk⊑ , unk⊑ ⟩ = contradiction i (idNotInert A-Unk _)
-wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}

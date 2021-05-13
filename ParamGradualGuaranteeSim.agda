@@ -76,9 +76,9 @@ catchup (V-wrap v′ i′) (⊑ᶜ-wrap {i = i} lp lpM)
 catchup v′ (⊑ᶜ-wrapl {i = i} lp lpM)
   with catchup v′ lpM
 ... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W ⟪ i ⟫ , ⟨ V-wrap vW i , ⟨ plug-cong (F-wrap _) rd* , ⊑ᶜ-wrapl lp lpW ⟩ ⟩ ⟩
-catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM)
+catchup (V-wrap v′ _) (⊑ᶜ-wrapr lp lpM A≢⋆)
   with catchup v′ lpM
-... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW ⟩ ⟩ ⟩
+... | ⟨ W , ⟨ vW , ⟨ rd* , lpW ⟩ ⟩ ⟩ = ⟨ W , ⟨ vW , ⟨ rd* , ⊑ᶜ-wrapr lp lpW A≢⋆ ⟩ ⟩ ⟩
 
 {- Renaming preserves term precision. -}
 rename-pres-prec : ∀ {Γ Γ′ Δ Δ′ A A′} {ρ : Rename Γ Δ} {ρ′ : Rename Γ′ Δ′} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
@@ -105,7 +105,7 @@ rename-pres-prec f (⊑ᶜ-castl lp1 lp2 lpM) = ⊑ᶜ-castl lp1 lp2 (rename-pre
 rename-pres-prec f (⊑ᶜ-castr lp1 lp2 lpM) = ⊑ᶜ-castr lp1 lp2 (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-wrap lpi lpM)  = ⊑ᶜ-wrap  lpi (rename-pres-prec f lpM)
 rename-pres-prec f (⊑ᶜ-wrapl lpi lpM) = ⊑ᶜ-wrapl lpi (rename-pres-prec f lpM)
-rename-pres-prec f (⊑ᶜ-wrapr lpi lpM) = ⊑ᶜ-wrapr lpi (rename-pres-prec f lpM)
+rename-pres-prec f (⊑ᶜ-wrapr lpi lpM A≢⋆) = ⊑ᶜ-wrapr lpi (rename-pres-prec f lpM) A≢⋆
 rename-pres-prec f (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
 
 S-pres-prec : ∀ {Γ Γ′ A A′ B B′} {M : Γ ⊢ B} {M′ : Γ′ ⊢ B′}
@@ -140,7 +140,7 @@ S-pres-prec {A = A} {A′} lpM = rename-pres-prec (S-iso {A = A} {A′}) lpM
 ⊑ᶜ→⊑ lp* (⊑ᶜ-castr lp1 lp2 lpM) = lp2
 ⊑ᶜ→⊑ lp* (⊑ᶜ-wrap lpi lpM) = proj₂ (lpii→⊑ lpi)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-wrapl lpi lpM) = proj₂ (lpit→⊑ lpi)
-⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM) = proj₂ (lpti→⊑ lpi)
+⊑ᶜ→⊑ lp* (⊑ᶜ-wrapr lpi lpM A≢⋆) = proj₂ (lpti→⊑ lpi)
 ⊑ᶜ→⊑ lp* (⊑ᶜ-blame lp) = lp
 
 {- Substitution precision implies term precision: σ ⊑ σ′ → σ x ⊑ σ y if x ≡ y . -}
@@ -184,7 +184,7 @@ subst-pres-prec lps (⊑ᶜ-castl lp1 lp2 lpN) = ⊑ᶜ-castl lp1 lp2 (subst-pre
 subst-pres-prec lps (⊑ᶜ-castr lp1 lp2 lpN) = ⊑ᶜ-castr lp1 lp2 (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-wrap lpi lpN)  = ⊑ᶜ-wrap  lpi (subst-pres-prec lps lpN)
 subst-pres-prec lps (⊑ᶜ-wrapl lpi lpN) = ⊑ᶜ-wrapl lpi (subst-pres-prec lps lpN)
-subst-pres-prec lps (⊑ᶜ-wrapr lpi lpN) = ⊑ᶜ-wrapr lpi (subst-pres-prec lps lpN)
+subst-pres-prec lps (⊑ᶜ-wrapr lpi lpN A≢⋆) = ⊑ᶜ-wrapr lpi (subst-pres-prec lps lpN) A≢⋆
 subst-pres-prec lps (⊑ᶜ-blame lp) = ⊑ᶜ-blame lp
 
 
@@ -383,7 +383,7 @@ private
   ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
     let x = proj₁ (Inert-Cross× _ i) in
       ⟨ M ⟨ fstC c x ⟩ , ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp₁₁ lp₂₁ lpM ⟩ ⟩
-  sim-fst-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV)
+  sim-fst-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV A≢⋆)
     with lpti→⊑ lpti
   ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ = ⟨ fst V , ⟨ fst V ∎ , ⊑ᶜ-castr lp₁₁ lp₂₁ (⊑ᶜ-fst lpV) ⟩ ⟩
 
@@ -421,7 +421,7 @@ private
   ...   | ⟨ M , ⟨ rd* , lpM ⟩ ⟩ =
     let x = proj₁ (Inert-Cross× _ i) in
       ⟨ M ⟨ sndC c x ⟩ , ⟨ _ —→⟨ snd-cast v {x} ⟩ plug-cong (F-cast _) rd* , ⊑ᶜ-castl lp₁₂ lp₂₂ lpM ⟩ ⟩
-  sim-snd-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV)
+  sim-snd-wrap-v {V = V} v v′ i′ x′ (⊑ᶜ-wrapr lpti lpV A≢⋆)
     with lpti→⊑ lpti
   ... | ⟨ pair⊑ lp₁₁ lp₁₂ , pair⊑ lp₂₁ lp₂₂ ⟩ = ⟨ snd V , ⟨ snd V ∎ , ⊑ᶜ-castr lp₁₂ lp₂₂ (⊑ᶜ-snd lpV) ⟩ ⟩
 
@@ -473,7 +473,7 @@ private
     lpN† : (∅ , B₁) , (∅ , B₂′) ⊢ rename (ext S_) N [ ` Z ⟨ inrC c x ⟩ ] ⊑ᶜ N′
     lpN† = cast-Z-⊑ lp2 lp4 lpN
   sim-case-wrap-v {A = A} {B} {A₁′ = A₁′} {B₁′} {M = M} {N} {M′ = M′} {N′} {c′}
-                  v v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapr lpti lpV) lpM lpN
+                  v v′ i′ x′ lp1 lp2 (⊑ᶜ-wrapr lpti lpV A≢⋆) lpM lpN
     with lpti→⊑ lpti
   ... | ⟨ sum⊑ lp₁₁ lp₁₂ , sum⊑ lp₂₁ lp₂₂ ⟩ =
     ⟨ _ , ⟨ _ ∎ , ⊑ᶜ-case lpV lp₁₁ lp₁₂ lpM† lpN† ⟩ ⟩
@@ -610,7 +610,7 @@ private
       ⟨ N ⟨ cod c x ⟩ ,
         ⟨ _ —→⟨ fun-cast v w {x} ⟩ ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ {v}) rd*₁)) (plug-cong (F-cast _) rd*₂) ,
           ⊑ᶜ-castl lp₁₂ lp₂₂ lpN ⟩ ⟩
-  sim-app-wrap-v {V = V} {W} v w v′ w′ i′ x′ (⊑ᶜ-wrapr lpti lpV) lpW
+  sim-app-wrap-v {V = V} {W} v w v′ w′ i′ x′ (⊑ᶜ-wrapr lpti lpV A≢⋆) lpW
     with lpti→⊑ lpti
   ... | ⟨ fun⊑ lp₁₁ lp₁₂ , fun⊑ lp₂₁ lp₂₂ ⟩ =
     ⟨ V · W , ⟨ V · W ∎ , ⊑ᶜ-castr lp₁₂ lp₂₂ (⊑ᶜ-· lpV (⊑ᶜ-castr lp₂₁ lp₁₁ lpW)) ⟩ ⟩

@@ -324,11 +324,13 @@ module GroundCast where
     → (A′ ≡ A) × (B′ ≡ ⋆)
   inj-⊑-inj .(I-inj g _) .(I-inj g _) (lpii-inj g) = [ refl , refl ]
 
+{-
   ⋆-⋢-inert : ∀ {A′ B′} {c′ : Cast (A′ ⇒ B′)}
     → (i′ : Inert c′)
       ----------------
     → ¬ (⋆ ⊑⟪ i′ ⟫)
   ⋆-⋢-inert _ = λ ()
+-}
 
   ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
     → (i : Inert c)
@@ -379,7 +381,7 @@ module GroundCast where
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
            inj-⊑-inj = inj-⊑-inj;
-           ⋆-⋢-inert = ⋆-⋢-inert;
+{-           ⋆-⋢-inert = ⋆-⋢-inert; -}
            ⊑→lpit = ⊑→lpit;
            lpii→⊑ = lpii→⊑;
            lpit→⊑ = lpit→⊑;
@@ -718,7 +720,7 @@ module GroundCast where
       with ground-⊑-eq g g′ lp
     ... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV
     dyn-value-⊑-wrap v v′ (Inert.I-fun (cast .(_ ⇒ _) .(_ ⇒ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpV) =
-      ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) lpV)
+      ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) lpV λ ())
 
     applyCast-⊑-wrap : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
       → (v : Value V) → Value V′
@@ -740,7 +742,7 @@ module GroundCast where
       with ground _ {nd}
     ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
       ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
-                                               (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV))
+                                               (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV) λ ())
     -- Proj
     applyCast-⊑-wrap v v′ (A-proj (cast .⋆ B _ _) nd) (I-inj x _) _ unk⊑ lpV = contradiction refl nd
     applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-fun _) _ unk⊑ lpV = contradiction refl nd
@@ -750,14 +752,14 @@ module GroundCast where
       with canonical⋆ _ v
     ...   | [ G , [ W , [ c₁ , [ i₁ , meq ] ] ] ] rewrite meq
       with gnd-eq? G (A ⇒ B) {inert-ground _ i₁} {G-Fun}
-    ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+    ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV) λ ()
     ...     | no  ap with lpV
     ...       | ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpW = contradiction refl ap
     applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) nd) (I-fun _) _ (fun⊑ lp1 lp2) lpV | no ng
       with ground _ {nd}
     ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
       ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
-                                                         (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV))
+                                                         (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV) λ ())
 
 
   private
@@ -1056,7 +1058,7 @@ module GroundCast where
   ... | inj₁ a = [ _ , [ _ —→⟨ cast v {a} ⟩ _ ∎ , applyCast-⊑-wrap v v′ a (Inert.I-fun _) (fun⊑ lp1 lp2) unk⊑ lpV ] ]
   ... | inj₂ (Inert.I-inj G-Fun _) =
     [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Fun c} ⟩ _ ∎ ,
-            ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV) ] ]
+            ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV λ ()) ] ]
   sim-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
     [ _ , [ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV ] ]
 
@@ -1192,7 +1194,7 @@ module GroundCast where
   castr-wrap v v′ (I-inj g′ _) lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ (I-inj g′ _) lpV
   castr-wrap v v′ (I-fun _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (I-fun _) lpV
   castr-wrap v v′ (I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
-    ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV
+    ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV λ ()
 
   castr-cast : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
     → Value V → (v′ : Value V′)

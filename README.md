@@ -112,7 +112,9 @@ Formalizations of Gradually Typed Languages in Agda
 
 * **The gradual guarantee:** We define this theorem as a simulation between 
    less precise and more precise terms.
-   
+
+    - [ParamCCPrecision](./ParamCCPrecision.agda): 
+	   The definition of precision for the Parameterized Cast Calculus.
     - [ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda):
        This module is parameterized by `PreCastStructWithPrecision` and 
        contains inversion lemmas about less precise and more precise values,
