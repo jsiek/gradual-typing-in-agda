@@ -47,18 +47,21 @@ gradual-guarantee-cons : ∀ {A A′ B B′} {M : ∅ ⊢ A} {N : ∅ ⊢ B}
   → M₁′ —→ M₂′
     -----------------------------------------------
   → ∃[ M₂ ] ((M₁ —↠ M₂) × (∅ , ∅ ⊢ M₂ ⊑ᶜ M₂′))
-gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ {F = F-×₁ _} rd)
-  with plug-inv-cons₁ eq2
+gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ {F = F-×₁ _ vM} rd)
+  with plug-inv-cons₁ {vM = vM} eq2
 ... | ⟨ refl , refl ⟩
+  with catchup vM lpM
+... | ⟨ V , ⟨  vV , ⟨ M→V , lpV ⟩ ⟩ ⟩ 
   with gradual-guarantee lpN rd
-...   | ⟨ N₁ , ⟨ rd* , lpN₁ ⟩ ⟩ = ⟨ cons M N₁ , ⟨ plug-cong (F-×₁ M) rd* , ⊑ᶜ-cons lpM lpN₁ ⟩ ⟩
+...   | ⟨ N₁ , ⟨ rd* , lpN₁ ⟩ ⟩ rewrite eq2 =
+    ⟨ cons V N₁ , ⟨ ↠-trans (plug-cong (F-×₂ N) M→V) (plug-cong (F-×₁ V vV) rd*) , ⊑ᶜ-cons lpV lpN₁ ⟩ ⟩
 gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ {F = F-×₂ _} rd)
   with plug-inv-cons₂ eq2
 ... | ⟨ refl , refl ⟩
   with gradual-guarantee lpM rd
 ...   | ⟨ M₁ , ⟨ rd* , lpM₁ ⟩ ⟩ = ⟨ cons M₁ N , ⟨ plug-cong (F-×₂ N) rd* , ⊑ᶜ-cons lpM₁ lpN ⟩ ⟩
-gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ-blame {F = F-×₁ _})
-  with plug-inv-cons₁ eq2
+gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ-blame {F = F-×₁ _ vM})
+  with plug-inv-cons₁ {vM = vM} eq2
 ... | ⟨ refl , refl ⟩ = ⟨ cons M N , ⟨ cons M N ∎ , ⊑ᶜ-blame (pair⊑ (⊑ᶜ→⊑ ⊑*-∅ lpM) (⊑ᶜ→⊑ ⊑*-∅ lpN)) ⟩ ⟩
 gradual-guarantee-cons {M = M} {N} lpM lpN refl eq2 (ξ-blame {F = F-×₂ _})
   with plug-inv-cons₂ eq2

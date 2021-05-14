@@ -296,9 +296,9 @@ module ParamCastReduction (cs : CastStruct) where
   ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
   ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
   ... | done V with progress M₂
-  ...    | step {N} R' = step (ξ {F = F-×₁ M₁} R')
+  ...    | step {N} R' = step (ξ {F = F-×₁ M₁ V} R')
   ...    | done V' = done (V-pair V V')
-  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁})
+  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁ V})
   progress (fst {Γ}{A}{B} M) with progress M
   ... | step {N} R = step (ξ {F = F-fst} R)
   ... | error E-blame = step (ξ-blame{F = F-fst})
@@ -350,7 +350,7 @@ module ParamCastReduction (cs : CastStruct) where
   plug-not-blame {F = ParamCastAux.F-·₁ _} ()
   plug-not-blame {F = ParamCastAux.F-·₂ _} ()
   plug-not-blame {F = ParamCastAux.F-if _ _} ()
-  plug-not-blame {F = ParamCastAux.F-×₁ _} ()
+  plug-not-blame {F = ParamCastAux.F-×₁ _ _} ()
   plug-not-blame {F = ParamCastAux.F-×₂ _} ()
   plug-not-blame {F = ParamCastAux.F-fst} ()
   plug-not-blame {F = ParamCastAux.F-snd} ()
@@ -417,9 +417,9 @@ module ParamCastReduction (cs : CastStruct) where
       → M′ —→ M → M′ ≡ inr V → Value M′ → Data.Empty.⊥
     V-wrap⌿→ : ∀ {Γ A B} {V : Γ ⊢ A} {c : Cast (A ⇒ B)} {i : Inert c} {M′ M}
       → M′ —→ M → M′ ≡ V ⟪ i ⟫ → Value M′ → Data.Empty.⊥
-  V-pair⌿→ (ξ {F = F-×₁ _} rd) refl (V-pair vV vW) = V⌿→ vW rd
+  V-pair⌿→ (ξ {F = F-×₁ _ _} rd) refl (V-pair vV vW) = V⌿→ vW rd
   V-pair⌿→ (ξ {F = F-×₂ _} rd) refl (V-pair vV vW) = V⌿→ vV rd
-  V-pair⌿→ (ξ-blame {F = F-×₁ _}) refl (V-pair vV vW) = contradiction vW blame-not-value
+  V-pair⌿→ (ξ-blame {F = F-×₁ _ _}) refl (V-pair vV vW) = contradiction vW blame-not-value
   V-pair⌿→ (ξ-blame {F = F-×₂ _}) refl (V-pair vV vW) = contradiction vV blame-not-value
   V-ƛ⌿→ (ξ rd) eq = plug-not-ƛ eq
   V-ƛ⌿→ ξ-blame eq = plug-not-ƛ eq

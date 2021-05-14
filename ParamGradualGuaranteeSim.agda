@@ -56,7 +56,7 @@ catchup (V-pair v′₁ v′₂) (⊑ᶜ-cons lpM₁ lpM₂)
   with catchup v′₁ lpM₁ | catchup v′₂ lpM₂
 ... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ₘ , lpVₘ ⟩ ⟩ ⟩ | ⟨ Vₙ , ⟨ vₙ , ⟨ rd⋆ₙ , lpVₙ ⟩ ⟩ ⟩ =
   ⟨ cons Vₘ Vₙ , ⟨ V-pair vₘ vₙ ,
-                   ⟨ ↠-trans (plug-cong (F-×₂ _) rd⋆ₘ) (plug-cong (F-×₁ _) rd⋆ₙ) , ⊑ᶜ-cons lpVₘ lpVₙ ⟩ ⟩ ⟩
+                   ⟨ ↠-trans (plug-cong (F-×₂ _) rd⋆ₘ) (plug-cong (F-×₁ _ vₘ) rd⋆ₙ) , ⊑ᶜ-cons lpVₘ lpVₙ ⟩ ⟩ ⟩
 catchup (V-inl v′) (⊑ᶜ-inl lp lpM)
   with catchup v′ lpM
 ... | ⟨ Vₘ , ⟨ vₘ , ⟨ rd⋆ , lpVₘ ⟩ ⟩ ⟩ = ⟨ inl Vₘ , ⟨ V-inl vₘ , ⟨ plug-cong F-inl rd⋆ , ⊑ᶜ-inl lp lpVₘ ⟩ ⟩ ⟩
