@@ -53,7 +53,8 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
       → Frame {Γ} (` 𝔹) A
 
     F-×₁ : ∀ {Γ A B}
-      → Γ ⊢ A
+      → (M : Γ ⊢ A)
+      → Value M
       → Frame {Γ} B (A `× B)
 
     F-×₂ : ∀ {Γ A B}
@@ -81,7 +82,7 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   plug L (F-·₁ M)      = L · M
   plug M (F-·₂ L)      = L · M
   plug L (F-if M N)    = if L M N
-  plug L (F-×₁ M)      = cons M L
+  plug L (F-×₁ M vM)   = cons M L
   plug M (F-×₂ L)      = cons M L
   plug M (F-fst)      = fst M
   plug M (F-snd)      = snd M
@@ -355,9 +356,9 @@ module EfficientParamCasts (ecs : EfficientCastStruct) where
   ... | step R = step (ξ {F = F-×₂ M₂} R)
   ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
   ... | done V with progress M₂
-  ...    | step R = step (ξ {F = F-×₁ M₁} R)
+  ...    | step R = step (ξ {F = F-×₁ M₁ V} R)
   ...    | done V' = done (S-val (V-pair V V'))
-  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁})
+  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁ V})
   progress (fst M)
       with progress M
   ... | step R = step (ξ {F = F-fst} R)

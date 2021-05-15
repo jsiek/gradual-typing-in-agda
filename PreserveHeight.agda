@@ -37,7 +37,7 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
   plug-height M M′ (F-·₁ x) M′≤M = ⊔-mono-≤ M′≤M ≤-refl
   plug-height M M′ (F-·₂ M₁) M′≤M = ⊔-mono-≤ ≤-refl M′≤M
   plug-height M M′ (F-if x x₁) M′≤M = ⊔-mono-≤ (⊔-mono-≤ M′≤M ≤-refl) ≤-refl
-  plug-height M M′ (F-×₁ x) M′≤M = ⊔-mono-≤ ≤-refl M′≤M
+  plug-height M M′ (F-×₁ x _) M′≤M = ⊔-mono-≤ ≤-refl M′≤M
   plug-height M M′ (F-×₂ x) M′≤M = ⊔-mono-≤ M′≤M ≤-refl
   plug-height M M′ F-fst M′≤M = M′≤M
   plug-height M M′ F-snd M′≤M = M′≤M
