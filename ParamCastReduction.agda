@@ -296,9 +296,9 @@ module ParamCastReduction (cs : CastStruct) where
   ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
   ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
   ... | done V with progress M₂
-  ...    | step {N} R' = step (ξ {F = F-×₁ M₁} R')
+  ...    | step {N} R' = step (ξ {F = F-×₁ M₁ {V}} R')
   ...    | done V' = done (V-pair V V')
-  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁})
+  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁ {V}})
   progress (fst {Γ}{A}{B} M) with progress M
   ... | step {N} R = step (ξ {F = F-fst} R)
   ... | error E-blame = step (ξ-blame{F = F-fst})

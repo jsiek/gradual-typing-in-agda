@@ -179,26 +179,6 @@ module PreserveHeight (ecs : EfficientCastStructHeight) where
     SH Z = ≤-refl
     SH (S ∋x) = z≤n
 
-
-{-
-  module PreserveHeightParams
-    (applyCast-height : ∀{Γ}{A B}{V}{v : Value {Γ} V}{c : Cast (A ⇒ B)}
-        {a : Active c}
-      → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c)
-    (dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
-       → height (dom c x) ≤ height c)
-    (cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
-       → height (cod c x) ≤ height c)
-    (fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
-       → height (fstC c x) ≤ height c)
-    (snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
-       → height (sndC c x) ≤ height c)
-    (inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
-       → height (inlC c x) ≤ height c)
-    (inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
-       → height (inrC c x) ≤ height c)
-      where
--}
   preserve-height : ∀ {Γ A} {M M′ : Γ ⊢ A} {ctx : ReductionCtx}
        → ctx / M —→ M′ → c-height M′ ≤ c-height M
   preserve-height (ξ {M = M₁}{M₁′}{F} M₁—→M₁′) =

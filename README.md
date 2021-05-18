@@ -8,8 +8,9 @@ Formalizations of Gradually Typed Languages in Agda
 
 * [Labels](./Labels.agda): Definition of blame labels.
 
-* [PrimitiveTypes](./PrimitiveTypes.agda) and [Types](./Types.agda): Definition of gradual types and
-   operators on them, such as precision, consistency, etc.
+* [PrimitiveTypes](./PrimitiveTypes.agda) and [Types](./Types.agda):
+   Definition of gradual types and operators on them, such as
+   precision, consistency, etc.
 
 * [Variables](./Variables.agda): Definition of variables as de
    Bruijn indices.

@@ -155,13 +155,29 @@ module HyperCoercions where
 
   data Active : ∀ {A} → Cast A → Set where
     A-id★ : Active id★
-    A-proj : ∀{A B C}{ℓ}{g : Ground A}{m : Middle (A ⇒ B)}{i : Inj (B ⇒ C)}
-           → Active ((?? ℓ) {A}{g} ↷ m , i)
+    A-proj : ∀{A B}{ℓ}{g : Ground A}{m : Middle (A ⇒ B)}
+           → Active ((?? ℓ) {A}{g} ↷ m , 𝜖)
+    A-proj-inj : ∀{A B}{ℓ}{g : Ground A}{m : Middle (A ⇒ B)}{gB : Ground B}
+           → Active ((?? ℓ) {A}{g} ↷ m , !! {g = gB})
     A-fail : ∀{A B C D}{ℓ}{p : Proj (A ⇒ B)}{m : Middle (B ⇒ C)}
            → Active (p ↷ m , cfail {C} {D} ℓ)
     A-mid : ∀{A B}{m : Middle (A ⇒ B)}
           → ActiveMiddle m
           → Active (𝜖 ↷ m , 𝜖)
+
+  ActiveMiddleNotRel : ∀{A}{c : Middle A} (a1 : ActiveMiddle c) (a2 : ActiveMiddle c) → a1 ≡ a2
+  ActiveMiddleNotRel A-cpair A-cpair = refl
+  ActiveMiddleNotRel A-csum A-csum = refl 
+  ActiveMiddleNotRel A-idι A-idι = refl
+  
+  ActiveNotRel : ∀{A}{c : Cast A} (a1 : Active c) (a2 : Active c) → a1 ≡ a2
+  ActiveNotRel A-id★ A-id★ = refl
+  ActiveNotRel A-proj A-proj = refl 
+  ActiveNotRel A-proj-inj A-proj-inj = refl 
+  ActiveNotRel A-fail A-fail = refl
+  ActiveNotRel (A-mid m1) (A-mid m2)
+      with ActiveMiddleNotRel m1 m2
+  ... | refl = refl
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{B G}{m : Middle (B ⇒ G)}{g : Ground G}
@@ -169,6 +185,15 @@ module HyperCoercions where
     I-mid : ∀{A B}{m : Middle (A ⇒ B)}
           → InertMiddle m
           → Inert (𝜖 ↷ m , 𝜖)
+
+  InertMiddleNotRel : ∀{A}{c : Middle A} (i1 : InertMiddle c)(i2 : InertMiddle c) → i1 ≡ i2
+  InertMiddleNotRel I-cfun I-cfun = refl
+  
+  InertNotRel : ∀{A}{c : Cast A} (i1 : Inert c)(i2 : Inert c) → i1 ≡ i2
+  InertNotRel I-inj I-inj = refl
+  InertNotRel (I-mid m1) (I-mid m2)
+      with InertMiddleNotRel m1 m2
+  ... | refl = refl
 
   ActiveOrInertMiddle : ∀{A} → (c : Middle A) → ActiveMiddle c ⊎ InertMiddle c
   ActiveOrInertMiddle {.(` _ ⇒ ` _)} (id ι) = inj₁ A-idι
@@ -184,7 +209,9 @@ module HyperCoercions where
   ... | inj₂ i = inj₂ (I-mid i)
   ActiveOrInert {A ⇒ .⋆} (𝜖 ↷ m , !!) = inj₂ I-inj
   ActiveOrInert {A ⇒ D} (𝜖 ↷ m , (cfail ℓ)) = inj₁ A-fail
-  ActiveOrInert {.⋆ ⇒ D} ((?? x) ↷ m , i) = inj₁ A-proj
+  ActiveOrInert {.⋆ ⇒ D} (?? x ↷ m , 𝜖) = inj₁ A-proj
+  ActiveOrInert {.⋆ ⇒ .⋆} (?? x ↷ m , !!) = inj₁ A-proj-inj
+  ActiveOrInert {.⋆ ⇒ D} (?? x ↷ m , cfail x₁) = inj₁ A-fail
 
   ActiveNotInertMiddle : ∀ {A} {c : Middle A} → ActiveMiddle c → InertMiddle c → Bot
   ActiveNotInertMiddle A-cpair ()
@@ -202,29 +229,29 @@ module HyperCoercions where
     C-sum : ∀{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
           → Cross (𝜖 ↷ (c +' d) , 𝜖)
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          → Cast (A' ⇒ A₁)
-  dom (𝜖 ↷ c ↣ d , 𝜖) C-fun = c
+  dom (𝜖 ↷ c ↣ d , 𝜖) x = c
 
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  cod (𝜖 ↷ c ↣ d , 𝜖) C-fun = d
+  cod (𝜖 ↷ c ↣ d , 𝜖) x = d
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
-  fstC (𝜖 ↷ c ×' d , 𝜖) C-pair = c
+  fstC (𝜖 ↷ c ×' d , 𝜖) x = c
 
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  sndC (𝜖 ↷ c ×' d , 𝜖) C-pair = d
+  sndC (𝜖 ↷ c ×' d , 𝜖) x = d
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
-  inlC (𝜖 ↷ c +' d , 𝜖) C-sum = c
+  inlC (𝜖 ↷ c +' d , 𝜖) x = c
 
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  inrC (𝜖 ↷ c +' d , 𝜖) C-sum = d
+  inrC (𝜖 ↷ c +' d , 𝜖) x = d
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert {A} {ι} .(𝜖 ↷ _ , 𝜖) (I-mid ())
@@ -271,6 +298,8 @@ module HyperCoercions where
              ; baseNotInert = baseNotInert
              ; idNotInert = idNotInert
              ; projNotInert = projNotInert
+             ; InertNotRel = InertNotRel
+             ; ActiveNotRel = ActiveNotRel
              }
 
 
@@ -426,6 +455,8 @@ module HyperCoercions where
       ⟨ n , ⟨ Mok , ≤-step (≤-step ≤-refl) ⟩ ⟩
   applyCastOK {M = M}{c = .(?? _) ↷ m , inj} {n} {A-proj} Mok v =
       ⊥-elim (simple⋆ M v refl)
+  applyCastOK {M = M}{c = .(?? _) ↷ m , !!{g = gB}} {n} {A-proj-inj} Mok v =
+      ⊥-elim (simple⋆ M v refl)
   applyCastOK {c = pr ↷ m , cfail ℓ} {n} {A-fail} Mok v =
       ⟨ zero , ⟨ blameOK , z≤n ⟩ ⟩
   applyCastOK {M = cons V W} {c = .𝜖 ↷ .(_ ×' _) , .𝜖} {.0} {A-mid A-cpair}
@@ -468,6 +499,8 @@ module HyperCoercions where
   applyCast-height {v = v} {id★} {A-id★} = m≤m⊔n _ _
   applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , inj)} {A-proj} =
       ⊥-elim (simple⋆ V v refl)
+  applyCast-height {V = V}{v} {(?? ℓ {g = g} ↷ m , !!{g = g'})} {A-proj-inj} =
+      ⊥-elim (simple⋆ V v refl)
   applyCast-height {v = v} {x ↷ x₁ , .(cfail _)} {A-fail} = z≤n
   applyCast-height {V = cons V W} {V-pair vV vW} {.𝜖 ↷ c ×' d , .𝜖}
       {A-mid A-cpair} =
@@ -502,29 +535,29 @@ module HyperCoercions where
     ≤-refl
 
 
-  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} .{x : Cross c}
        → height (dom c x) ≤ height c
-  dom-height {c = pr ↷ c ↣ d , inj} {C-fun} = ≤-step (m≤m⊔n _ _)
+  dom-height {c = 𝜖 ↷ c ↣ d , 𝜖} {x} = ≤-step (m≤m⊔n _ _)
 
-  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))} .{x : Cross c}
        → height (cod c x) ≤ height c
-  cod-height {c = c} {C-fun} = ≤-step (m≤n⊔m _ _)
+  cod-height {c = 𝜖 ↷ c ↣ d , 𝜖} {x} = ≤-step (m≤n⊔m _ _)
 
-  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)} .{x : Cross c}
        → height (fstC c x) ≤ height c
-  fst-height {c = c}{C-pair} = ≤-step (m≤m⊔n _ _)
+  fst-height {c = 𝜖 ↷ c ×' d , 𝜖}{x} = ≤-step (m≤m⊔n _ _)
 
-  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)} .{x : Cross c}
        → height (sndC c x) ≤ height c
-  snd-height {c = c}{C-pair} = ≤-step (m≤n⊔m _ _)
+  snd-height {c = 𝜖 ↷ c ×' d , 𝜖}{x} = ≤-step (m≤n⊔m _ _)
 
-  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)} .{x : Cross c}
        → height (inlC c x) ≤ height c
-  inlC-height {c = c}{C-sum} = ≤-step (m≤m⊔n _ _)
+  inlC-height {c = 𝜖 ↷ c +' d , 𝜖}{x} = ≤-step (m≤m⊔n _ _)
 
-  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)} .{x : Cross c}
        → height (inrC c x) ≤ height c
-  inrC-height {c = c}{C-sum} = ≤-step (m≤n⊔m _ _)
+  inrC-height {c = 𝜖 ↷ c +' d , 𝜖}{x} = ≤-step (m≤n⊔m _ _)
 
   msize : ∀{A B} (c : Middle (A ⇒ B)) → ℕ
   psize : ∀{A B} (c : Proj (A ⇒ B)) → ℕ

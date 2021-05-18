@@ -57,7 +57,7 @@ data _⊢_ : Context → Type → Set where
 
   $_ : ∀ {Γ A}
     → rep A
-    → {f : Prim A}
+    → {f : Prim A}       {- todo: change side condition to irrelevant -}
       -----
     → Γ ⊢ A
 
@@ -104,6 +104,9 @@ data _⊢_ : Context → Type → Set where
       --------------
     → Γ ⊢ B
 
+  {- I would prefer that the cast be an explicit
+     parameter and that Inert c be an implicit,
+     "irrelevant" parameter, as in .{ i : Inert c}. -Jeremy -}
   _⟪_⟫ : ∀ {Γ A B} {c : Cast (A ⇒ B)}
     → Γ ⊢ A
     → Inert c
