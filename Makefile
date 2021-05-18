@@ -13,7 +13,7 @@ AGDA = Labels.agda Types.agda Variables.agda \
 	GroundCoercions.agda GroundCoercionsBlame.agda \
 	SimpleCast.agda SimpleCastBlame.agda \
 	SimpleFunCast.agda SimpleFunCastBlame.agda \
-	SimpleCoercions.agda \
+	SimpleCoercions.agda SimpleCoercionsBlame.agda \
 	LazyCast.agda LazyCastBlame.agda \
 	LazyCoercions.agda LazyCoercionsBlame.agda \
 	EfficientParamCasts.agda SpaceEfficient.agda PreserveHeight.agda \
