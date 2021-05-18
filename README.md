@@ -74,6 +74,9 @@ Formalizations of Gradually Typed Languages in Agda
    rules and proof of type safety for the Parameterized Cast
    Calculus, parameterized over a `CastStruct`.
 
+* [ParamCastDeterministic](./ParamCastDeterministic.agda):
+   A proof that reduction is deterministic.
+
 * [EfficientParamCastAux](./EfficientParamCastAux.agda): defines
    `SimpleValue`, `Value`, and proves a canonical forms lemma for type
    dynamic. This module is parameterized over `PreCastStruct`.
@@ -84,15 +87,17 @@ Formalizations of Gradually Typed Languages in Agda
    is parameterized over `EfficientCastStruct`.  This module includes
    a proof of progress.
 
-* [PreserveHeight](./PreserveHeight.agda): Proves that the height
-   of the casts in a program do not increase during reduction.  Their
-   size is bounded by their height, so this result contributes to the
-   proof of space efficiency.
+* **Space-efficiency theorem:**
 
-* [SpaceEfficient](./SpaceEfficient.agda): A proof that the
-   space-efficient reduction relation really is space efficient.  That
-   is, the casts that can accumulate during reduction only multiply
-   the size of the program by a constant.
+    - [PreserveHeight](./PreserveHeight.agda): Proves that the height
+       of the casts in a program do not increase during reduction.  Their
+       size is bounded by their height, so this result contributes to the
+       proof of space efficiency.
+
+    - [SpaceEfficient](./SpaceEfficient.agda): A proof that the
+       space-efficient reduction relation really is space efficient.  That
+       is, the casts that can accumulate during reduction only multiply
+       the size of the program by a constant.
 
 * **Blame-subtyping theorem:**
 
