@@ -152,6 +152,10 @@ Formalizations of Gradually Typed Languages in Agda
    Type safety of λS (Siek, Thiemann, Wadler 2015).
    ("lazy UD" of Siek, Garcia, and Taha 2009)
 
+* [HyperCoercions](./HyperCoercions.agda): A alternative to
+   λS that optimizes the coercion representation by removing
+   indirections. ("lazy UD")
+
 * [SimpleCast](./SimpleCast.agda): Type safety of the cast
    calculus of Siek and Taha (2006). (Called "partially-eager D" by
    Siek, Garcia, and Taha 2009).
@@ -180,10 +184,6 @@ Formalizations of Gradually Typed Languages in Agda
 
 * [GroundMachine](./GroundMachine.agda): The abstract machine
    instantiated with the coercions from λS. ("lazy UD")
-
-* [HyperCoercions](./HyperCoercions.agda): A alternative to
-   λS that optimizes the coercion representation by removing
-   indirections. ("lazy UD")
 
 * [EquivCast](./EquivCast.agda): Proof of equivalence (simulation)
    between two instances of the Parameterized Cast Calculus.
