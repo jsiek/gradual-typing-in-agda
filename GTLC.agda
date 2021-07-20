@@ -1,7 +1,7 @@
 
 module GTLC where
 
-open import Syntax hiding (_∋_⦂_; _,_)
+open import Syntax hiding (_∋_⦂_)
 open import Types public
 open import Variables public
 open import Labels public
