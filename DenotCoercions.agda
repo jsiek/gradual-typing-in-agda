@@ -137,6 +137,21 @@ data _↝⟦_⟧↝_ : ∀ {A B} → Value → Cast (A ⇒ B) → Value → Set 
   𝒞-cseq-≲-2 c₁ c₂ D v wfv ⟨ w , ⟨ wfw , ⟨ ⟨ u , ⟨ wfu , ⟨ Du , cst1 ⟩ ⟩ ⟩ , cst2 ⟩ ⟩ ⟩ =
       ⟨ u , ⟨ wfu , ⟨ Du , ⟦cseq⟧ wfw cst1 cst2 ⟩ ⟩ ⟩
 
+𝒞-assoc-≃ : ∀ {A B C D : Type} (c : Cast (A ⇒ B)) (d : Cast (B ⇒ C)) (e : Cast (C ⇒ D))
+   (V : 𝒫 Value)
+  → 𝒞 (cseq (cseq c d) e) V ≃ 𝒞 (cseq c (cseq d e)) V
+𝒞-assoc-≃ {A}{B}{C}{D} c d e V =
+  let b : 𝒞 (cseq (cseq c d) e) V ≃ 𝒞 e (𝒞 (cseq c d) V)
+      b = 𝒞-cseq-≃ (cseq c d) e V  in
+  let x : 𝒞 e (𝒞 (cseq c d) V) ≃ 𝒞 e (𝒞 d (𝒞 c V))
+      x = 𝒞-cong e (𝒞-cseq-≃ c d V) in
+  let w : 𝒞 (cseq d e) (𝒞 c V) ≃ 𝒞 (cseq c (cseq d e)) V
+      w = ≃-sym (𝒞-cseq-≃ c (cseq d e) V) in
+  let v : 𝒞 e (𝒞 d (𝒞 c V)) ≃ 𝒞 (cseq d e) (𝒞 c V)
+      v = ≃-sym (𝒞-cseq-≃ d e (𝒞 c V)) in
+  ≃-trans (≃-trans b x) (≃-trans v w)
+
+
 𝒞-fun-cast : ∀{A B C D}(c : Cast((A ⇒ B) ⇒ (C ⇒ D)))(x : Cross c)(D₁ D₂ : 𝒫 Value)
   → (𝒞 c D₁) ▪ D₂  ≃  𝒞 (cod c x) (D₁ ▪ (𝒞 (dom c x) D₂))
 𝒞-fun-cast {A}{B}{C}{D} c x D₁ D₂ = equal (𝒞-fun-cast-1 c x) (𝒞-fun-cast-2 c x)
