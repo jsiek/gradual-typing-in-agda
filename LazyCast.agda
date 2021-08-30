@@ -2,9 +2,6 @@ module LazyCast where
 
   open import Data.Nat
   open import Data.Bool
-  open import Types
-  open import Variables
-  open import Labels
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
   open import Relation.Binary.PropositionalEquality
@@ -13,25 +10,85 @@ module LazyCast where
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Empty using (⊥; ⊥-elim)
+  open import Data.Empty.Irrelevant renaming (⊥-elim to ⊥-elimi)
+  
+  open import Types
+  open import Variables
+  open import Labels
   import ParamCastReduction
 
   data Cast : Type → Set where
     cast : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
 
   data Inert : ∀ {A} → Cast A → Set where
-    inert : ∀{A} → A ≢ ⋆ → (c : Cast (A ⇒ ⋆)) → Inert c
+    inert : ∀{A} → .(A ≢ ⋆) → (c : Cast (A ⇒ ⋆)) → Inert c
+
+  InertNotRel : ∀{A}{c : Cast A} (i1 : Inert c)(i2 : Inert c) → i1 ≡ i2
+  InertNotRel (inert x _) (inert x₁ _) = refl
 
   data Active : ∀ {A} → Cast A → Set where
     activeId : ∀{A} → {a : Atomic A} → (c : Cast (A ⇒ A)) → Active c
-    activeProj : ∀{B} → (c : Cast (⋆ ⇒ B)) → B ≢ ⋆ → Active c
+    activeProj : ∀{B} → (c : Cast (⋆ ⇒ B)) → .(B ≢ ⋆) → Active c
     activeFun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Active c
     activePair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
     activeSum : ∀{A B A' B'} → (c : Cast ((A `⊎ B) ⇒ (A' `⊎ B'))) → Active c
-    activeErr : ∀ {A B} → (c : Cast (A ⇒ B)) → ¬ (A ⌣ B) → Active c
+    activeErr : ∀ {A B} → (c : Cast (A ⇒ B)) → .(nsc : ¬ (A ⌣ B)) → Active c
 
-  import ParamCastCalculus
-  module CastCalc = ParamCastCalculus Cast Inert
-  open CastCalc
+  {- Yuck! Is there a nice short proof of ActiveNotRel? -}
+  ActiveNotRel : ∀{A}{c : Cast A} (a1 : Active c) (a2 : Active c) → a1 ≡ a2
+  ActiveNotRel {⋆ ⇒ ⋆} (activeId {a = a1} _) (activeId {a = a2} _)
+      with AtomicNotRel a1 a2
+  ... | refl = refl
+  ActiveNotRel {⋆ ⇒ ⋆} (activeId _) (activeProj _ x) = ⊥-elimi (x refl)
+  ActiveNotRel {⋆ ⇒ ⋆} (activeId _) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ ⋆} (activeProj _ x) a2 = ⊥-elimi (x refl)
+  ActiveNotRel {⋆ ⇒ ⋆} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ ` x} (activeProj _ x₁) (activeProj _ x₂) = refl
+  ActiveNotRel {⋆ ⇒ ` x} (activeProj _ x₁) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ ` x} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeProj _ x) (activeProj _ x₁) = refl
+  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ B `× B₁} (activeProj _ x) (activeProj _ x₁) = refl
+  ActiveNotRel {⋆ ⇒ B `× B₁} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ B `× B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeProj _ x) (activeProj _ x₁) = refl
+  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {` x ⇒ ⋆} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣R)
+  ActiveNotRel {` x ⇒ ` .x} (activeId {a = a1} _) (activeId {a = a2} _)
+      with AtomicNotRel a1 a2
+  ... | refl = refl
+  ActiveNotRel {` x ⇒ ` .x} (activeId _) (activeErr _ nsc) = ⊥-elimi (nsc base⌣)
+  ActiveNotRel {` x ⇒ ` .x} (activeErr _ nsc) (activeId _) = ⊥-elimi (nsc base⌣)
+  ActiveNotRel {` x ⇒ ` x₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {` x ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {` x ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {` x ⇒ B `⊎ B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeFun _) (activeFun _) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeFun _) (activeErr _ nsc) = ⊥-elimi (nsc fun⌣)
+  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeFun _) = ⊥-elimi (nsc fun⌣)
+  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {(A ⇒ A₁) ⇒ B `⊎ B₁} (activeErr _ nsc₁) (activeErr _ nsc) = refl
+  ActiveNotRel {A `× A₁ ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `× A₁ ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `× A₁ ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activePair _) (activePair _) = refl
+  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activePair _) (activeErr _ nsc) = ⊥-elimi (nsc pair⌣)
+  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc pair⌣)
+  ActiveNotRel {A `× A₁ ⇒ B `⊎ B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeSum _) (activeSum _) = refl
+  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeSum _) (activeErr _ nsc) = ⊥-elimi (nsc sum⌣)
+  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc sum⌣)
+  
+  open import ParamCastCalculus Cast Inert public
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
   ActiveOrInert (cast ⋆ B ℓ) with eq-unk B
@@ -62,9 +119,9 @@ module LazyCast where
              inj₁ (activeSum (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ))
 
   ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
-  ActiveNotInert (activeId c) (inert neq .c) = neq refl
-  ActiveNotInert (activeProj c neq) (inert _ .c) = neq refl
-  ActiveNotInert (activeErr c neq) (inert _ .c) = neq unk⌣R
+  ActiveNotInert (activeId c) (inert neq .c) = ⊥-elimi (neq refl)
+  ActiveNotInert (activeProj c neq) (inert _ .c) = ⊥-elimi (neq refl)
+  ActiveNotInert (activeErr c neq) (inert _ .c) = ⊥-elimi (neq unk⌣R)
 
   data Cross : ∀ {A} → Cast A → Set where
     C-fun : ∀{A B C D} → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → Cross c
@@ -83,27 +140,27 @@ module LazyCast where
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   Inert-Cross⊎ c ()
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          → Cast (A' ⇒ A₁)
   dom (cast (A ⇒ B) (C ⇒ D) ℓ) x = cast C A ℓ
 
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
   cod (cast (A ⇒ B) (C ⇒ D) ℓ) x = cast B D ℓ
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
   fstC (cast (A `× B) (C `× D) ℓ) x = cast A C ℓ
 
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
   sndC (cast (A `× B) (C `× D) ℓ) x = cast B D ℓ
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
   inlC (cast (A `⊎ B) (C `⊎ D) ℓ) x = cast A C ℓ
 
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
   inrC (cast (A `⊎ B) (C `⊎ D) ℓ) x = cast B D ℓ
 
@@ -111,60 +168,12 @@ module LazyCast where
   baseNotInert c ()
 
   idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
-  idNotInert a c (inert x .c) = contradiction refl x
+  idNotInert a c (inert x .c) = ⊥-elimi (x refl)
 
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (activeProj c j)
 
-  open import Subtyping using (_<:₁_)
-  open _<:₁_
-  infix 5 _<:_
-  _<:_ = _<:₁_
-
-  data CastBlameSafe : ∀ {A} → Cast A → Label → Set where
-
-    safe-<: : ∀ {S T} {ℓ}
-      → S <: T
-        ----------------------------
-      → CastBlameSafe (cast S T ℓ) ℓ
-
-    safe-ℓ≢ : ∀ {S T} {ℓ ℓ′}
-      → ℓ ≢̂ ℓ′
-        -----------------------------
-      → CastBlameSafe (cast S T ℓ′) ℓ
-
-  domBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (dom c x) ℓ
-  domBlameSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-dom
-  domBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
-  codBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ ⇒ S₂) ⇒ (T₁ ⇒ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (cod c x) ℓ
-  codBlameSafe (safe-<: (<:-⇒ sub-dom sub-cod)) x = safe-<: sub-cod
-  codBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
-  fstBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (fstC c x) ℓ
-  fstBlameSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-fst
-  fstBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
-  sndBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `× S₂) ⇒ (T₁ `× T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (sndC c x) ℓ
-  sndBlameSafe (safe-<: (<:-× sub-fst sub-snd)) x = safe-<: sub-snd
-  sndBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
-  inlBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (inlC c x) ℓ
-  inlBlameSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-l
-  inlBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
-  inrBlameSafe : ∀ {S₁ S₂ T₁ T₂} {c : Cast ((S₁ `⊎ S₂) ⇒ (T₁ `⊎ T₂))} {ℓ} → CastBlameSafe c ℓ → (x : Cross c)
-            → CastBlameSafe (inrC c x) ℓ
-  inrBlameSafe (safe-<: (<:-⊎ sub-l sub-r)) x = safe-<: sub-r
-  inrBlameSafe (safe-ℓ≢ ℓ≢) x = safe-ℓ≢ ℓ≢
-
   open import PreCastStructure
-  open import PreCastStructureWithBlameSafety
 
   pcs : PreCastStruct
   pcs = record
@@ -186,22 +195,11 @@ module LazyCast where
              ; baseNotInert = baseNotInert
              ; idNotInert = idNotInert
              ; projNotInert = projNotInert
-             }
-  pcss : PreCastStructWithBlameSafety
-  pcss = record
-             { precast = pcs
-             ; CastBlameSafe = CastBlameSafe
-             ; domBlameSafe = domBlameSafe
-             ; codBlameSafe = codBlameSafe
-             ; fstBlameSafe = fstBlameSafe
-             ; sndBlameSafe = sndBlameSafe
-             ; inlBlameSafe = inlBlameSafe
-             ; inrBlameSafe = inrBlameSafe
+             ; InertNotRel = InertNotRel
+             ; ActiveNotRel = ActiveNotRel
              }
 
-  import ParamCastAux
-  open ParamCastAux pcs
-  open import ParamCastSubtyping pcss
+  open import ParamCastAux pcs public
 
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
               → ∀ {a : Active c} → Γ ⊢ B
@@ -221,56 +219,13 @@ module LazyCast where
   applyCast {Γ} {A} {B} M v (cast A B ℓ) {activeErr .(cast A B ℓ) x} =
      blame ℓ
 
-  applyCast-pres-allsafe : ∀ {Γ A B} {V : Γ ⊢ A} {vV : Value V} {c : Cast (A ⇒ B)} {ℓ}
-    → (a : Active c)
-    → CastBlameSafe c ℓ
-    → CastsAllSafe V ℓ
-      --------------------------------------
-    → CastsAllSafe (applyCast V vV c {a}) ℓ
-  applyCast-pres-allsafe (activeId (cast A A ℓ)) safe allsafe = allsafe
-  applyCast-pres-allsafe {vV = vV} (activeProj (cast ⋆ .⋆ ℓ) ⋆≢⋆) (safe-<: T<:⋆) = contradiction refl ⋆≢⋆
-  applyCast-pres-allsafe {vV = vV} (activeProj (cast ⋆ B ℓ′) x) (safe-ℓ≢ ℓ≢) allsafe with canonical⋆ _ vV
-  ... | ⟨ A′ , ⟨ M′ , ⟨ _ , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq with allsafe
-  ...   | allsafe-wrap _ allsafe-M′ = allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-M′
-  applyCast-pres-allsafe (activeFun _) (safe-<: (<:-⇒ sub-dom sub-cod)) allsafe =
-    allsafe-ƛ (allsafe-cast (safe-<: sub-cod) (allsafe-· (rename-pres-allsafe S_ allsafe)
-                                                         (allsafe-cast (safe-<: sub-dom) allsafe-var)))
-  applyCast-pres-allsafe (activeFun _) (safe-ℓ≢ ℓ≢) allsafe =
-    allsafe-ƛ (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-· (rename-pres-allsafe S_ allsafe)
-                                                    (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var)))
-  applyCast-pres-allsafe (activePair _) (safe-<: (<:-× sub-fst sub-snd)) allsafe =
-    allsafe-cons (allsafe-cast (safe-<: sub-fst) (allsafe-fst allsafe))
-                               (allsafe-cast (safe-<: sub-snd) (allsafe-snd allsafe))
-  applyCast-pres-allsafe (activePair _) (safe-ℓ≢ ℓ≢) allsafe =
-    allsafe-cons (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-fst allsafe))
-                               (allsafe-cast (safe-ℓ≢ ℓ≢) (allsafe-snd allsafe))
-  applyCast-pres-allsafe (activeSum _) (safe-<: (<:-⊎ sub-l sub-r)) allsafe =
-    allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-<: sub-l) allsafe-var))
-                         (allsafe-inr (allsafe-cast (safe-<: sub-r) allsafe-var))
-  applyCast-pres-allsafe (activeSum _) (safe-ℓ≢ ℓ≢) allsafe =
-    allsafe-case allsafe (allsafe-inl (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
-                         (allsafe-inr (allsafe-cast (safe-ℓ≢ ℓ≢) allsafe-var))
-  applyCast-pres-allsafe (activeErr .(cast _ ⋆ _) ¬c⌣) (safe-<: T<:⋆) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ unk⌣R)
-  applyCast-pres-allsafe (activeErr .(cast (` _) (` _) _) ¬c⌣) (safe-<: <:-B) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ base⌣)
-  applyCast-pres-allsafe (activeErr .(cast (_ `× _) (_ `× _) _) ¬c⌣) (safe-<: (<:-× x x₁)) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ pair⌣)
-  applyCast-pres-allsafe (activeErr .(cast (_ `⊎ _) (_ `⊎ _) _) ¬c⌣) (safe-<: (<:-⊎ x x₁)) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ sum⌣)
-  applyCast-pres-allsafe (activeErr .(cast (_ ⇒ _) (_ ⇒ _) _) ¬c⌣) (safe-<: (<:-⇒ x x₁)) allsafe = allsafe-blame-diff-ℓ (λ _ → ¬c⌣ fun⌣)
-  applyCast-pres-allsafe (activeErr .(cast _ _ _) ¬c⌣) (safe-ℓ≢ ℓ≢) allsafe = allsafe-blame-diff-ℓ ℓ≢
-
   open import CastStructure
-  open import CastStructureWithBlameSafety
 
   cs : CastStruct
   cs = record { precast = pcs ; applyCast = applyCast }
 
-  css : CastStructWithBlameSafety
-  css = record { pcss = pcss ; applyCast = applyCast ; applyCast-pres-allsafe = applyCast-pres-allsafe }
+  open import ParamCastReduction cs public
+  open import ParamCastDeterministic cs public
 
-  import ParamCastReduction
-  open ParamCastReduction cs public
+  open import GTLC2CC Cast Inert (λ A B ℓ {c} → (cast A B ℓ)) public
 
-  import GTLC2CC
-  open GTLC2CC Cast Inert (λ A B ℓ {c} → (cast A B ℓ)) public
-
-  -- Instantiate blame-subtyping theorem for `LazyCast`.
-  open import ParamBlameSubtyping css using (soundness-<:) public

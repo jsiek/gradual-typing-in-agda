@@ -8,8 +8,9 @@ Formalizations of Gradually Typed Languages in Agda
 
 * [Labels](./Labels.agda): Definition of blame labels.
 
-* [PrimitiveTypes](./PrimitiveTypes.agda) and [Types](./Types.agda): Definition of gradual types and
-   operators on them, such as precision, consistency, etc.
+* [PrimitiveTypes](./PrimitiveTypes.agda) and [Types](./Types.agda):
+   Definition of gradual types and operators on them, such as
+   precision, consistency, etc.
 
 * [Variables](./Variables.agda): Definition of variables as de
    Bruijn indices.
@@ -73,6 +74,9 @@ Formalizations of Gradually Typed Languages in Agda
    rules and proof of type safety for the Parameterized Cast
    Calculus, parameterized over a `CastStruct`.
 
+* [ParamCastDeterministic](./ParamCastDeterministic.agda):
+   A proof that reduction is deterministic.
+
 * [EfficientParamCastAux](./EfficientParamCastAux.agda): defines
    `SimpleValue`, `Value`, and proves a canonical forms lemma for type
    dynamic. This module is parameterized over `PreCastStruct`.
@@ -83,15 +87,17 @@ Formalizations of Gradually Typed Languages in Agda
    is parameterized over `EfficientCastStruct`.  This module includes
    a proof of progress.
 
-* [PreserveHeight](./PreserveHeight.agda): Proves that the height
-   of the casts in a program do not increase during reduction.  Their
-   size is bounded by their height, so this result contributes to the
-   proof of space efficiency.
+* **Space-efficiency theorem:**
 
-* [SpaceEfficient](./SpaceEfficient.agda): A proof that the
-   space-efficient reduction relation really is space efficient.  That
-   is, the casts that can accumulate during reduction only multiply
-   the size of the program by a constant.
+    - [PreserveHeight](./PreserveHeight.agda): Proves that the height
+       of the casts in a program do not increase during reduction.  Their
+       size is bounded by their height, so this result contributes to the
+       proof of space efficiency.
+
+    - [SpaceEfficient](./SpaceEfficient.agda): A proof that the
+       space-efficient reduction relation really is space efficient.  That
+       is, the casts that can accumulate during reduction only multiply
+       the size of the program by a constant.
 
 * **Blame-subtyping theorem:**
 
@@ -148,6 +154,10 @@ Formalizations of Gradually Typed Languages in Agda
    Type safety of λS (Siek, Thiemann, Wadler 2015).
    ("lazy UD" of Siek, Garcia, and Taha 2009)
 
+* [HyperCoercions](./HyperCoercions.agda): A alternative to
+   λS that optimizes the coercion representation by removing
+   indirections. ("lazy UD")
+
 * [SimpleCast](./SimpleCast.agda): Type safety of the cast
    calculus of Siek and Taha (2006). (Called "partially-eager D" by
    Siek, Garcia, and Taha 2009).
@@ -176,10 +186,6 @@ Formalizations of Gradually Typed Languages in Agda
 
 * [GroundMachine](./GroundMachine.agda): The abstract machine
    instantiated with the coercions from λS. ("lazy UD")
-
-* [HyperCoercions](./HyperCoercions.agda): A alternative to
-   λS that optimizes the coercion representation by removing
-   indirections. ("lazy UD")
 
 * [EquivCast](./EquivCast.agda): Proof of equivalence (simulation)
    between two instances of the Parameterized Cast Calculus.

@@ -57,6 +57,10 @@ module Types where
     A-Unk : Atomic ⋆
     A-Base : ∀{ι} → Atomic (` ι)
 
+  AtomicNotRel : ∀{A} (a1 : Atomic A) (a2 : Atomic A) → a1 ≡ a2
+  AtomicNotRel {.⋆} A-Unk A-Unk = refl
+  AtomicNotRel {.(` _)} A-Base A-Base = refl
+
   base? : (A : Type) → Dec (Σ[ ι ∈ Base ] A ≡ ` ι)
   base? ⋆ = no G
     where G : ¬ Σ-syntax Base (λ ι → ⋆ ≡ ` ι)
@@ -632,6 +636,12 @@ module Types where
     G-Fun : Ground (⋆ ⇒ ⋆)
     G-Pair : Ground (⋆ `× ⋆)
     G-Sum : Ground (⋆ `⊎ ⋆)
+
+  GroundNotRel : ∀{A} (g1 : Ground A)(g2 : Ground A) → g1 ≡ g2
+  GroundNotRel {.(` _)} G-Base G-Base = refl
+  GroundNotRel {.(⋆ ⇒ ⋆)} G-Fun G-Fun = refl
+  GroundNotRel {.(⋆ `× ⋆)} G-Pair G-Pair = refl
+  GroundNotRel {.(⋆ `⊎ ⋆)} G-Sum G-Sum = refl
 
   not-ground⋆ : ¬ Ground ⋆
   not-ground⋆ ()

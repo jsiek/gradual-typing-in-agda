@@ -242,6 +242,20 @@ module EfficientGroundCoercions where
           → InertiCast i
           → Inert (` i)
 
+  InertgNotRel : ∀{A}{c : gCast A} (i1 : InertgCast c)(i2 : InertgCast c) → i1 ≡ i2
+  InertgNotRel I-cfun I-cfun = refl
+
+  InertiNotRel : ∀{A}{c : iCast A} (i1 : InertiCast c)(i2 : InertiCast c) → i1 ≡ i2
+  InertiNotRel I-inj I-inj = refl
+  InertiNotRel (I-gnd g1) (I-gnd g2)
+      with InertgNotRel g1 g2
+  ... | refl = refl
+  
+  InertNotRel : ∀{A}{c : Cast A} (i1 : Inert c)(i2 : Inert c) → i1 ≡ i2
+  InertNotRel (I-intmd i1) (I-intmd i2)
+      with InertiNotRel i1 i2
+  ... | refl = refl
+
   {-
 
    The other three ground coercions are active.
@@ -266,7 +280,7 @@ module EfficientGroundCoercions where
     A-gnd : ∀{A B}{g : gCast (A ⇒ B)}
           → ActivegCast g
           → ActiveiCast (` g)
-    A-cfail : ∀{A B G H ℓ nd}
+    A-cfail : ∀{A B G H ℓ } .{nd}
           → ActiveiCast (cfail {A}{B} G H ℓ {nd})
 
   {-
@@ -283,6 +297,24 @@ module EfficientGroundCoercions where
     A-intmd : ∀{A B}{i : iCast (A ⇒ B)}
           → ActiveiCast i
           → Active (` i)
+
+  ActivegNotRel : ∀{A}{c : gCast A} (a1 : ActivegCast c) (a2 : ActivegCast c) → a1 ≡ a2
+  ActivegNotRel A-cpair A-cpair = refl
+  ActivegNotRel A-csum A-csum = refl
+  ActivegNotRel A-idι A-idι = refl
+  
+  ActiveiNotRel : ∀{A}{c : iCast A} (a1 : ActiveiCast c) (a2 : ActiveiCast c) → a1 ≡ a2
+  ActiveiNotRel (A-gnd g1) (A-gnd g2)
+      with ActivegNotRel g1 g2
+  ... | refl = refl
+  ActiveiNotRel A-cfail A-cfail = refl
+  
+  ActiveNotRel : ∀{A}{c : Cast A} (a1 : Active c) (a2 : Active c) → a1 ≡ a2
+  ActiveNotRel A-id★ A-id★ = refl
+  ActiveNotRel A-proj A-proj = refl
+  ActiveNotRel (A-intmd i1) (A-intmd i2)
+      with ActiveiNotRel i1 i2
+  ... | refl = refl
 
   {-
 
@@ -340,29 +372,29 @@ module EfficientGroundCoercions where
               → Cross c × Σ[ A₁ ∈ Type ] Σ[ A₂ ∈ Type ] A ≡ A₁ `⊎ A₂
   Inert-Cross⊎ .(` (` _)) (I-intmd (I-gnd ()))
 
-  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  dom : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          → Cast (A' ⇒ A₁)
-  dom (` (` (c ↣ d))) C-cross = c
+  dom (` (` (c ↣ d))) x = c
   
-  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → Cross c
+  cod : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ ⇒ A₂) ⇒ (A' ⇒ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  cod (` (` (s ↣ t))) C-cross = t
+  cod (` (` (s ↣ t))) x = t
 
-  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  fstC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
-  fstC (` (` (c ×' d))) C-cross = c
+  fstC (` (` (c ×' d))) x = c
   
-  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → Cross c
+  sndC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `× A₂) ⇒ (A' `× B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  sndC (` (` (c ×' d))) C-cross = d
+  sndC (` (` (c ×' d))) x = d
 
-  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inlC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          → Cast (A₁ ⇒ A')
-  inlC (` (` (c +' d))) C-cross = c
+  inlC (` (` (c +' d))) x = c
   
-  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → Cross c
+  inrC : ∀{A₁ A₂ A' B'} → (c : Cast ((A₁ `⊎ A₂) ⇒ (A' `⊎ B'))) → .(Cross c)
          →  Cast (A₂ ⇒ B')
-  inrC (` (` (c +' d))) C-cross = d
+  inrC (` (` (c +' d))) x = d
 
   baseNotInert : ∀ {A ι} → (c : Cast (A ⇒ ` ι)) → ¬ Inert c
   baseNotInert (` .(` _)) (I-intmd (I-gnd ()))
@@ -405,6 +437,8 @@ module EfficientGroundCoercions where
              ; baseNotInert = baseNotInert
              ; idNotInert = idNotInert
              ; projNotInert = projNotInert
+             ; InertNotRel = InertNotRel
+             ; ActiveNotRel = ActiveNotRel
              }
 
   import EfficientParamCastAux
@@ -680,29 +714,29 @@ module EfficientGroundCoercions where
     where open ≤-Reasoning
   applyCast-height {v = v} {` cfail G H x} {a} = z≤n
   
-  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+  dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}.{x : Cross c}
        → height (dom c x) ≤ height c
-  dom-height {c = ` (` (c ↣ d))} {C-cross} = ≤-step (m≤m⊔n _ _)
+  dom-height {c = ` (` (c ↣ d))} {x} = ≤-step (m≤m⊔n _ _)
   
-  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+  cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}.{x : Cross c}
        → height (cod c x) ≤ height c
-  cod-height {c = ` (` (c ↣ d))} {C-cross} = ≤-step (m≤n⊔m _ _)
+  cod-height {c = ` (` (c ↣ d))} {x} = ≤-step (m≤n⊔m _ _)
   
-  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+  fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}.{x : Cross c}
        → height (fstC c x) ≤ height c
-  fst-height {c = ` (` (c ×' d))}{C-cross} = ≤-step (m≤m⊔n _ _)
+  fst-height {c = ` (` (c ×' d))}{x} = ≤-step (m≤m⊔n _ _)
   
-  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+  snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}.{x : Cross c}
        → height (sndC c x) ≤ height c
-  snd-height {c = ` (` (c ×' d))}{C-cross} = ≤-step (m≤n⊔m _ _)
+  snd-height {c = ` (` (c ×' d))}{x} = ≤-step (m≤n⊔m _ _)
   
-  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+  inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}.{x : Cross c}
        → height (inlC c x) ≤ height c
-  inlC-height {c = ` (` (c +' d))}{C-cross} = ≤-step (m≤m⊔n _ _)
+  inlC-height {c = ` (` (c +' d))}{x} = ≤-step (m≤m⊔n _ _)
   
-  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+  inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}.{x : Cross c}
        → height (inrC c x) ≤ height c
-  inrC-height {c = ` (` (c +' d))}{C-cross} = ≤-step (m≤n⊔m _ _)
+  inrC-height {c = ` (` (c +' d))}{x} = ≤-step (m≤n⊔m _ _)
 
   isize : ∀{A B} (c : iCast (A ⇒ B)) → ℕ
   gsize : ∀{A B} (c : gCast (A ⇒ B)) → ℕ

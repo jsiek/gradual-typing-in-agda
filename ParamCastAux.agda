@@ -280,6 +280,7 @@ module ParamCastAux (pcs : PreCastStruct) where
     → Σ[ eq ∈ C ≡ A `× B ] (subst-eq (λ □ → Frame □ B) eq F ≡ F-snd) × (subst-eq (λ □ → Γ ⊢ □) eq N ≡ M)
   plug-inv-snd F-snd refl = ⟨ refl , ⟨ refl , refl ⟩ ⟩
 
+
   plug-inv-cons₁ : ∀ {Γ A B} {M M′ : Γ ⊢ A} {L L′ : Γ ⊢ B}{vM : Value M}
     → plug L (F-×₁ M vM) ≡ cons M′ L′
       -----------------------------

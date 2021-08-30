@@ -97,17 +97,17 @@ record EfficientCastStructHeight : Set₁ where
     applyCast-height : ∀{Γ}{A B}{V}{v : SimpleValue {Γ} V}{c : Cast (A ⇒ B)}
         {a : Active c}
       → c-height (applyCast V v c {a}) ≤ c-height V ⊔ height c
-    dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+    dom-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}.{x : Cross c}
        → height (dom c x) ≤ height c
-    cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}{x : Cross c}
+    cod-height : ∀{A B C D}{c : Cast ((A ⇒ B) ⇒ (C ⇒ D))}.{x : Cross c}
        → height (cod c x) ≤ height c
-    fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+    fst-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}.{x : Cross c}
        → height (fstC c x) ≤ height c
-    snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}{x : Cross c}
+    snd-height : ∀{A B C D}{c : Cast (A `× B ⇒ C `× D)}.{x : Cross c}
        → height (sndC c x) ≤ height c
-    inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+    inlC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}.{x : Cross c}
        → height (inlC c x) ≤ height c
-    inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}{x : Cross c}
+    inrC-height : ∀{A B C D}{c : Cast (A `⊎ B ⇒ C `⊎ D)}.{x : Cross c}
        → height (inrC c x) ≤ height c
     size : ∀{A B} → (c : Cast (A ⇒ B)) → ℕ
     size-height : Σ[ c1 ∈ ℕ ] Σ[ c2 ∈ ℕ ] 1 ≤ c2 ×
