@@ -3,15 +3,21 @@ open import PreCastStructure
 open import CastStructure
 open import Labels
 open import Data.Nat
-open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
+open import Data.Product
+  using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
+  renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Data.Maybe
 open import Variables
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app) renaming (subst to subst-eq)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+  renaming (subst to subst-eq)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Utils using (case_of_)
+
 
 {-
 
@@ -246,101 +252,108 @@ module ParamCastReduction (cs : CastStruct) where
 
   progress : ∀ {A} → (M : ∅ ⊢ A) → Progress M
   progress (` ())
-  progress (ƛ M) = done V-ƛ
-  progress (_·_ {∅}{A}{B} M₁ M₂)
-      with progress M₁
-  ... | step R = step (ξ {F = F-·₁ M₂} R)
-  ... | error E-blame = step (ξ-blame {F = F-·₁ M₂})
-  ... | done V₁
-          with progress M₂
-  ...     | step R' = step (ξ {F = (F-·₂ M₁){V₁}} R')
-  ...     | error E-blame = step (ξ-blame {F = (F-·₂ M₁){V₁}})
-  ...     | done V₂ with V₁
-  ...         | V-ƛ = step (β V₂)
-  ...         | V-wrap {∅}{A = A'}{B = A ⇒ B}{V}{c} v i
-              with Inert-Cross⇒ c i
-  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                  step (fun-cast v V₂ {x})
-  progress (_·_ {∅}{A}{B} M₁ M₂) | done V₁ | done V₂
-              | V-const {k = k₁} {f = f₁} with V₂
-  ...             | V-const {k = k₂} {f = f₂} =
-                    step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
-  ...             | V-ƛ = contradiction f₁ ¬P-Fun
-  ...             | V-pair v w = contradiction f₁ ¬P-Pair
-  ...             | V-inl v = contradiction f₁ ¬P-Sum
-  ...             | V-inr v = contradiction f₁ ¬P-Sum
-  ...             | V-wrap {∅}{A'}{A}{W}{c} w i =
-                     contradiction i (G f₁)
-                     where G : Prim (A ⇒ B) → ¬ Inert c
-                           G (P-Fun f₁) ic = baseNotInert c ic
   progress ($ k) = done V-const
-  progress (if L M N) with progress L
-  ... | step {L'} R = step (ξ{F = F-if M N} R)
-  ... | error E-blame = step (ξ-blame{F = F-if M N})
-  ... | done (V-const {k = true}) = step β-if-true
-  ... | done (V-const {k = false}) = step β-if-false
-  ... | done (V-wrap {c = c} v i) =
-          contradiction i (baseNotInert c)
-
-  progress (_⟨_⟩ {∅}{A}{B} M c) with progress M
-  ... | step {N} R = step (ξ{F = F-cast c} R)
-  ... | error E-blame = step (ξ-blame{F = F-cast c})
-  ... | done v with ActiveOrInert c
-  ...    | inj₁ a = step (cast v {a})
-  ...    | inj₂ i = step (wrap v {i})
-  progress (_⟪_⟫ {∅}{A}{B}{c} M i) with progress M
-  ... | step R = step (ξ {F = F-wrap i} R)
-  ... | error E-blame = step (ξ-blame {F = F-wrap i})
-  ... | done v = done (V-wrap v i)
-  progress {C₁ `× C₂} (cons M₁ M₂) with progress M₁
-  ... | step {N} R = step (ξ {F = F-×₂ M₂} R)
-  ... | error E-blame = step (ξ-blame {F = F-×₂ M₂})
-  ... | done V with progress M₂
-  ...    | step {N} R' = step (ξ {F = F-×₁ M₁ V} R')
-  ...    | done V' = done (V-pair V V')
-  ...    | error E-blame = step (ξ-blame{F = F-×₁ M₁ V})
-  progress (fst {Γ}{A}{B} M) with progress M
-  ... | step {N} R = step (ξ {F = F-fst} R)
-  ... | error E-blame = step (ξ-blame{F = F-fst})
-  ... | done V
-          with V
-  ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₁} (β-fst v w)
-  ...     | V-const {k = ()}
-  ...     | V-wrap {c = c} v i
-              with Inert-Cross× c i
-  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (fst-cast {c = c} v {x})
-  progress (snd {Γ}{A}{B} M) with progress M
-  ... | step {N} R = step (ξ {F = F-snd} R)
-  ... | error E-blame = step (ξ-blame{F = F-snd})
-  ... | done V with V
-  ...     | V-pair {V = V₁}{W = V₂} v w = step {N = V₂} (β-snd v w)
-  ...     | V-const {k = ()}
-  ...     | V-wrap {c = c} v i
-              with Inert-Cross× c i
-  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (snd-cast {c = c} v {x})
-  progress (inl M) with progress M
-  ... | step R = step (ξ {F = F-inl} R)
-  ... | error E-blame = step (ξ-blame {F = F-inl})
-  ... | done V = done (V-inl V)
-
-  progress (inr M) with progress M
-  ... | step R = step (ξ {F = F-inr} R)
-  ... | error E-blame = step (ξ-blame {F = F-inr})
-  ... | done V = done (V-inr V)
-
-  progress (case L M N) with progress L
-  ... | step R = step (ξ {F = F-case M N} R)
-  ... | error E-blame = step (ξ-blame {F = F-case M N})
-  ... | done V with V
-  ...    | V-const {k = ()}
-  ...    | V-inl v = step (β-caseL v)
-  ...    | V-inr v = step (β-caseR v)
-  ...    | V-wrap {c = c} v i
-              with Inert-Cross⊎ c i
-  ...         | ⟨ x , ⟨ A₁' , ⟨ A₂' , refl ⟩ ⟩ ⟩ =
-                step (case-cast {c = c} v {x})
+  progress (ƛ M) = done V-ƛ
+  progress (_·_ {∅} {A} {B} M₁ M₂) =
+    case progress M₁ of λ where
+      (step R) → step (ξ {F = F-·₁ M₂} R)
+      (error E-blame) → step (ξ-blame {F = F-·₁ M₂})
+      (done V₁) →
+        case progress M₂ of λ where
+          (step R′) → step (ξ {F = (F-·₂ M₁) {V₁}} R′)
+          (error E-blame) → step (ξ-blame {F = (F-·₂ M₁) {V₁}})
+          (done V₂) →
+            case V₁ of λ where
+              V-ƛ → step (β V₂)
+              (V-wrap {∅} {B = A ⇒ B} {V} {c} v i) →
+                case Inert-Cross⇒ c i of λ where
+                  ⟨ x , ⟨ A₁′ , ⟨ A₂′ , refl ⟩ ⟩ ⟩ → step (fun-cast v V₂ {x})
+              (V-const {k = k₁} {f = f₁}) →
+                case V₂ of λ where
+                  V-ƛ → contradiction f₁ ¬P-Fun
+                  (V-const {k = k₂} {f = f₂}) → step (δ {ab = f₁} {a = f₂} {b = P-Fun2 f₁})
+                  (V-pair v w) → contradiction f₁ ¬P-Pair
+                  (V-inl v) → contradiction f₁ ¬P-Sum
+                  (V-inr v) → contradiction f₁ ¬P-Sum
+                  (V-wrap {∅} {c = c} w i) →
+                    let G : Prim (A ⇒ B) → ¬ Inert c
+                        G = λ { (P-Fun _) ic → baseNotInert c ic } in
+                      contradiction i (G f₁)
+  progress (if L M N) =
+    case progress L of λ where
+      (step R) → step (ξ {F = F-if M N} R)
+      (error E-blame) → step (ξ-blame {F = F-if M N})
+      (done v) →
+        case v of λ where
+          (V-const {k = true}) → step β-if-true
+          (V-const {k = false}) → step β-if-false
+          (V-wrap {c = c} v i) → contradiction i (baseNotInert c)
+  progress (M ⟨ c ⟩) =
+    case progress M of λ where
+      (step {N} R) → step (ξ{F = F-cast c} R)
+      (error E-blame) → step (ξ-blame{F = F-cast c})
+      (done v) →
+        case ActiveOrInert c of λ where
+          (inj₁ a) → step (cast v {a})
+          (inj₂ i) → step (wrap v {i})
+  progress (M ⟪ i ⟫) =
+    case progress M of λ where
+      (step R) → step (ξ {F = F-wrap i} R)
+      (error E-blame) → step (ξ-blame {F = F-wrap i})
+      (done v) → done (V-wrap v i)
+  progress (cons M₁ M₂) =
+    case progress M₁ of λ where
+      (step R) → step (ξ {F = F-×₂ M₂} R)
+      (error E-blame) → step (ξ-blame {F = F-×₂ M₂})
+      (done V) →
+        case progress M₂ of λ where
+          (step R′) → step (ξ {F = F-×₁ M₁ V} R′)
+          (done V′) → done (V-pair V V′)
+          (error E-blame) → step (ξ-blame {F = F-×₁ M₁ V})
+  progress (fst M) =
+    case progress M of λ where
+      (step R) → step (ξ {F = F-fst} R)
+      (error E-blame) → step (ξ-blame {F = F-fst})
+      (done V) →
+        case V of λ where
+          (V-const {k = ()})
+          (V-pair {V = V₁} {W = V₂} v w) → step {N = V₁} (β-fst v w)
+          (V-wrap {c = c} v i) →
+            case Inert-Cross× c i of λ where
+              ⟨ x , ⟨ A₁′ , ⟨ A₂′ , refl ⟩ ⟩ ⟩ → step (fst-cast {c = c} v {x})
+  progress (snd M) =
+    case progress M of λ where
+      (step R) → step (ξ {F = F-snd} R)
+      (error E-blame) → step (ξ-blame {F = F-snd})
+      (done V) →
+        case V of λ where
+          (V-const {k = ()})
+          (V-pair {V = V₁} {W = V₂} v w) → step {N = V₂} (β-snd v w)
+          (V-wrap {c = c} v i) →
+            case Inert-Cross× c i of λ where
+              ⟨ x , ⟨ A₁′ , ⟨ A₂′ , refl ⟩ ⟩ ⟩ → step (snd-cast {c = c} v {x})
+  progress (inl M) =
+    case progress M of λ where
+      (step R) → step (ξ {F = F-inl} R)
+      (error E-blame) → step (ξ-blame {F = F-inl})
+      (done V) → done (V-inl V)
+  progress (inr M) =
+    case progress M of λ where
+      (step R) → step (ξ {F = F-inr} R)
+      (error E-blame) → step (ξ-blame {F = F-inr})
+      (done V) → done (V-inr V)
+  progress (case L M N) =
+    case progress L of λ where
+      (step R) → step (ξ {F = F-case M N} R)
+      (error E-blame) → step (ξ-blame {F = F-case M N})
+      (done V) →
+        case V of λ where
+          (V-const {k = ()})
+          (V-inl v) → step (β-caseL v)
+          (V-inr v) → step (β-caseR v)
+          (V-wrap {c = c} v i) →
+            case Inert-Cross⊎ c i of λ where
+              ⟨ x , ⟨ A₁′ , ⟨ A₂′ , refl ⟩ ⟩ ⟩ → step (case-cast {c = c} v {x})
   progress (blame ℓ) = error E-blame
 
 
