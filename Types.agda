@@ -5,7 +5,7 @@ module Types where
   open import Data.Empty.Irrelevant using (⊥-elim)
   open import Data.Integer using (ℤ)
   open import Data.Nat using (ℕ; zero; suc; _+_; _*_; _^_; _∸_) renaming (_⊔_ to _∨_)
-  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
+  open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
      renaming (_,_ to ⟨_,_⟩)
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Unit renaming (⊤ to Top)
@@ -16,11 +16,13 @@ module Types where
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
+  open import Utils using (case_of_; case_return_of_)
 
   infix  7 _⇒_
   infix  9 _`×_
   infix  8 _`⊎_
   infix 10 `_
+  infix 10 Ref_
 
 {-
   data Base : Set where
@@ -37,6 +39,7 @@ module Types where
     _⇒_ : Type → Type → Type
     _`×_ : Type → Type → Type
     _`⊎_ : Type → Type → Type
+    Ref_ : Type → Type
 
 
   height-t : Type → ℕ
@@ -45,6 +48,7 @@ module Types where
   height-t (A ⇒ B) = suc (height-t A ∨ height-t B)
   height-t (A `× B) = suc (height-t A ∨ height-t B)
   height-t (A `⊎ B) = suc (height-t A ∨ height-t B)
+  height-t (Ref A)  = suc (height-t A)
 
   size-t : Type → ℕ
   size-t ⋆ = 0
@@ -52,6 +56,7 @@ module Types where
   size-t (A ⇒ B) = 1 + size-t A + size-t B
   size-t (A `× B) = 1 + size-t A + size-t B
   size-t (A `⊎ B) = 1 + size-t A + size-t B
+  size-t (Ref A)  = 1 + size-t A
 
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆
@@ -61,20 +66,23 @@ module Types where
   AtomicNotRel {.⋆} A-Unk A-Unk = refl
   AtomicNotRel {.(` _)} A-Base A-Base = refl
 
-  base? : (A : Type) → Dec (Σ[ ι ∈ Base ] A ≡ ` ι)
-  base? ⋆ = no G
-    where G : ¬ Σ-syntax Base (λ ι → ⋆ ≡ ` ι)
-          G ⟨ _ , () ⟩
+  base? : (A : Type) → Dec (∃[ ι ] A ≡ ` ι)
   base? (` ι) = yes ⟨ ι , refl ⟩
-  base? (A ⇒ A₁) =  no G
-    where G : ¬ Σ-syntax Base (λ ι → A ⇒ A₁ ≡ ` ι)
-          G ⟨ _ , () ⟩
-  base? (A `× A₁) =  no G
-    where G : ¬ Σ-syntax Base (λ ι → A `× A₁ ≡ ` ι)
-          G ⟨ _ , () ⟩
-  base? (A `⊎ A₁) =  no G
-    where G : ¬ Σ-syntax Base (λ ι → A `⊎ A₁ ≡ ` ι)
-          G ⟨ _ , () ⟩
+  base? ⋆ = no G
+    where G : ¬ (∃[ ι ] ⋆ ≡ ` ι)
+          G ()
+  base? (A ⇒ B) =  no G
+    where G : ¬ (∃[ ι ] A ⇒ B ≡ ` ι)
+          G ()
+  base? (A `× B) =  no G
+    where G : ¬ (∃[ ι ] A `× B ≡ ` ι)
+          G ()
+  base? (A `⊎ B) =  no G
+    where G : ¬ (∃[ ι ] A `⊎ B ≡ ` ι)
+          G ()
+  base? (Ref A) = no G
+    where G : ¬ (∃[ ι ] Ref A ≡ ` ι)
+          G ()
 
   rep-base : Base → Set
   rep-base = base-rep
@@ -89,9 +97,10 @@ module Types where
   rep : Type → Set
   rep ⋆ = Bot
   rep (` ι) = rep-base ι
-  rep (t₁ ⇒ t₂) = (rep t₁) → (rep t₂)
-  rep (t₁ `× t₂) = Bot
-  rep (t `⊎ t₁) = Bot
+  rep (A ⇒ B) = (rep A) → (rep B)
+  rep (A `× B) = Bot
+  rep (A `⊎ B) = Bot
+  rep (Ref A)  = Bot
 
   data Prim : Type → Set where
     P-Base : ∀{ι} → Prim (` ι)
@@ -125,17 +134,22 @@ module Types where
   P-Fun2 (P-Fun b) = b
 
   prim? : (A : Type) → Dec (Prim A)
-  prim? ⋆ = no (λ ())
   prim? (` x) = yes P-Base
-  prim? (A ⇒ B) with prim? B
-  ... | no pb = no λ x → contradiction (P-Fun2 x) pb
-  prim? (⋆ ⇒ B) | yes pb = no (λ ())
-  prim? (` x ⇒ B) | yes pb = yes (P-Fun pb)
-  prim? ((A ⇒ A₁) ⇒ B) | yes pb = no (λ ())
-  prim? (A `× A₁ ⇒ B) | yes pb = no (λ ())
-  prim? (A `⊎ A₁ ⇒ B) | yes pb = no (λ ())
-  prim? (A `× A₁) = no (λ ())
-  prim? (A `⊎ A₁) = no (λ ())
+  prim? (A ⇒ B) =
+    case prim? B of λ where
+      (yes pb) →
+        case A return (λ A → Dec (Prim (A ⇒ B))) of λ where
+          (` ι) → yes (P-Fun pb)
+          ⋆ → no λ ()
+          (A₁ ⇒ A₂) → no λ ()
+          (A₁ `× A₂) → no λ ()
+          (A₁ `⊎ A₂) → no λ ()
+          (Ref A) → no λ ()
+      (no ¬pb) → no λ pab → contradiction (P-Fun2 pab) ¬pb
+  prim? ⋆ = no (λ ())
+  prim? (A `× A₁) = no λ ()
+  prim? (A `⊎ A₁) = no λ ()
+  prim? (Ref A) = no λ ()
 
   ¬P-Fun : ∀{A B C} → ¬ Prim ((A ⇒ B) ⇒ C)
   ¬P-Fun ()
@@ -171,12 +185,18 @@ module Types where
         ---------------
       → A `⊎ B ⊑ A' `⊎ B'
 
+    ref⊑ : ∀ {A A'}
+      → A ⊑ A'
+        ---------------
+      → Ref A ⊑ Ref A'
+
   Refl⊑ : ∀{A} → A ⊑ A
   Refl⊑ {⋆} = unk⊑
   Refl⊑ {` ι} = base⊑
   Refl⊑ {A ⇒ A₁} = fun⊑ Refl⊑ Refl⊑
   Refl⊑ {A `× A₁} = pair⊑ Refl⊑ Refl⊑
   Refl⊑ {A `⊎ A₁} = sum⊑ Refl⊑ Refl⊑
+  Refl⊑ {Ref A} = ref⊑ Refl⊑
 
   Trans⊑ : ∀ {A B C} → A ⊑ B → B ⊑ C → A ⊑ C
   Trans⊑ unk⊑ b = unk⊑
@@ -184,6 +204,7 @@ module Types where
   Trans⊑ (fun⊑ a a₁) (fun⊑ b b₁) = fun⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (pair⊑ a a₁) (pair⊑ b b₁) = pair⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (sum⊑ a a₁) (sum⊑ b b₁) = sum⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
+  Trans⊑ (ref⊑ a) (ref⊑ b) = ref⊑ (Trans⊑ a b)
 
   AntiSym⊑ : ∀ {A B} → A ⊑ B → B ⊑ A → A ≡ B
   AntiSym⊑ unk⊑ unk⊑ = refl
@@ -194,6 +215,7 @@ module Types where
     cong₂ (_`×_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
   AntiSym⊑ (sum⊑ a a₁) (sum⊑ b b₁) =
     cong₂ (_`⊎_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
+  AntiSym⊑ (ref⊑ a) (ref⊑ b) = cong Ref_ (AntiSym⊑ a b)
 
   ⊑L⋆ : ∀{A} → A ⊑ ⋆ → A ≡ ⋆
   ⊑L⋆ {⋆} unk⊑ = refl
