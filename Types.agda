@@ -724,12 +724,14 @@ module Types where
     G-Fun : Ground (⋆ ⇒ ⋆)
     G-Pair : Ground (⋆ `× ⋆)
     G-Sum : Ground (⋆ `⊎ ⋆)
+    G-Ref : Ground (Ref ⋆)
 
-  GroundNotRel : ∀{A} (g1 : Ground A)(g2 : Ground A) → g1 ≡ g2
+  GroundNotRel : ∀ {A} → (g1 g2 : Ground A) → g1 ≡ g2
   GroundNotRel {.(` _)} G-Base G-Base = refl
   GroundNotRel {.(⋆ ⇒ ⋆)} G-Fun G-Fun = refl
   GroundNotRel {.(⋆ `× ⋆)} G-Pair G-Pair = refl
   GroundNotRel {.(⋆ `⊎ ⋆)} G-Sum G-Sum = refl
+  GroundNotRel {.(Ref ⋆)} G-Ref G-Ref = refl
 
   not-ground⋆ : ¬ Ground ⋆
   not-ground⋆ ()
@@ -758,6 +760,7 @@ module Types where
   ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~L unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
   ground (A `⊎ A₁) {nd} = ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , sum~ unk~R unk~R ⟩ ⟩
+  ground (Ref A) {nd} = ⟨ Ref ⋆ , ⟨ G-Ref , ref~ unk~R ⟩ ⟩
 
   ground? : (A : Type) → Dec (Ground A)
   ground? ⋆ = no λ x → contradiction x not-ground⋆
@@ -774,6 +777,9 @@ module Types where
   ... | yes eq1 | yes eq2 rewrite eq1 | eq2 = yes G-Fun
   ... | yes eq1 | no eq2 rewrite eq1 = no λ x → ground⇒2 x eq2
   ... | no eq1 | _ = no λ x → ground⇒1 x eq1
+  ground? (Ref A) with eq-unk A
+  ... | yes eq rewrite eq = yes G-Ref
+  ... | no neq = no λ { G-Ref → contradiction refl neq }
 
   gnd-eq? : (A : Type) → (B : Type) → {a : Ground A} → {b : Ground B}
           → Dec (A ≡ B)
