@@ -531,6 +531,12 @@ module Types where
     →  ¬ ((A `⊎ A') ~ (B `⊎ B'))
   ¬~sR {A} {B} {A'} {B'} d1 (sum~ c c₁) = d1 c₁
 
+  ¬~r : ∀ {A B}
+    → ¬ (A ~ B)
+      -------------------
+    → ¬ (Ref A ~ Ref B)
+  ¬~r d (ref~ c) = d c
+
   ⊑Base→~Base : ∀{A ι} → A ⊑ ` ι → A ~ ` ι
   ⊑Base→~Base unk⊑ = unk~L
   ⊑Base→~Base base⊑ = base~
@@ -546,33 +552,48 @@ module Types where
   (` ι) `~ (B ⇒ B₁) = no (λ ())
   (` ι) `~ (B `× B₁) = no (λ ())
   (` ι) `~ (B `⊎ B₁) = no (λ ())
+  (` ι) `~ (Ref B) = no (λ ())
   (A ⇒ A₁) `~ ⋆ = yes unk~R
-  (A ⇒ A₁) `~ (` ι) = no (λ ())
   (A ⇒ A₁) `~ (B ⇒ B₁)
       with A `~ B | A₁ `~ B₁
   ... | yes ab | yes a1b1 = yes (fun~ (Sym~ ab) a1b1)
   ... | yes ab | no a1b1 = no (¬~fR a1b1)
   ... | no ab  | _ = no (¬~fL ab)
+  (A ⇒ A₁) `~ (` ι) = no (λ ())
   (A ⇒ A₁) `~ (B `× B₁) = no (λ ())
   (A ⇒ A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `~ (Ref B) = no (λ ())
   (A `× A₁) `~ ⋆ = yes unk~R
-  (A `× A₁) `~ (` ι) = no (λ ())
-  (A `× A₁) `~ (B ⇒ B₁) = no (λ ())
   (A `× A₁) `~ (B `× B₁)
       with A `~ B | A₁ `~ B₁
   ... | yes ab | yes a1b1 = yes (pair~ ab a1b1)
   ... | yes ab | no a1b1 = no (¬~pR a1b1)
   ... | no ab  | _ = no (¬~pL ab)
+  (A `× A₁) `~ (` ι) = no (λ ())
+  (A `× A₁) `~ (B ⇒ B₁) = no (λ ())
   (A `× A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `~ (Ref B) = no (λ ())
   (A `⊎ A₁) `~ ⋆ = yes unk~R
-  (A `⊎ A₁) `~ (` ι) = no (λ ())
-  (A `⊎ A₁) `~ (B ⇒ B₁) = no (λ ())
-  (A `⊎ A₁) `~ (B `× B₁) = no (λ ())
   (A `⊎ A₁) `~ (B `⊎ B₁)
       with A `~ B | A₁ `~ B₁
   ... | yes ab | yes a1b1 = yes (sum~ ab a1b1)
   ... | yes ab | no a1b1 = no (¬~sR a1b1)
   ... | no ab  | _ = no (¬~sL ab)
+  (A `⊎ A₁) `~ (` ι) = no (λ ())
+  (A `⊎ A₁) `~ (B ⇒ B₁) = no (λ ())
+  (A `⊎ A₁) `~ (B `× B₁) = no (λ ())
+  (A `⊎ A₁) `~ (Ref B) = no (λ ())
+  (Ref A) `~ ⋆ = yes unk~R
+  (Ref A) `~ (Ref B)
+    with A `~ B
+  ... | yes ab = yes (ref~ ab)
+  ... | no nab = no (¬~r nab)
+  (Ref A) `~ (` ι) = no (λ ())
+  (Ref A) `~ (B ⇒ B₁) = no (λ ())
+  (Ref A) `~ (B `× B₁) = no (λ ())
+  (Ref A) `~ (B `⊎ B₁) = no (λ ())
+
+
 
   ~-relevant : ∀{A B} → .(A ~ B) → A ~ B
   ~-relevant {A}{B} A~B
@@ -586,6 +607,7 @@ module Types where
   eq-unk (A ⇒ A₁) = no (λ ())
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
+  eq-unk (Ref A) = no λ ()
 
   eq-unk-relevant : ∀{A} → .(A ≢ ⋆) → (A ≢ ⋆)
   eq-unk-relevant {A} A≢⋆
@@ -637,21 +659,31 @@ module Types where
   infix 6 _⌣_
   data _⌣_ : Type → Type → Set where
     unk⌣L : ∀ {A} → ⋆ ⌣ A
+
     unk⌣R : ∀ {A} → A ⌣ ⋆
+
     base⌣ : ∀{ι} → ` ι ⌣ ` ι
-    fun⌣ : ∀{A B A' B'}
+
+    fun⌣ : ∀ {A B A' B'}
         -------------------
       → (A ⇒ B) ⌣ (A' ⇒ B')
-    pair⌣ : ∀{A B A' B'}
+
+    pair⌣ : ∀ {A B A' B'}
         -------------------
       → (A `× B) ⌣ (A' `× B')
-    sum⌣ : ∀{A B A' B'}
+
+    sum⌣ : ∀ {A B A' B'}
         -------------------
       → (A `⊎ B) ⌣ (A' `⊎ B')
 
+    ref⌣ : ∀ {A A'}
+         -------------------
+      → (Ref A) ⌣ (Ref A')
+
+
   _`⌣_ : (A : Type) → (B : Type) → Dec (A ⌣ B)
   ⋆ `⌣ B = yes unk⌣L
-  (` x) `⌣ ⋆ = yes unk⌣R
+  (` ι) `⌣ ⋆ = yes unk⌣R
   (` ι) `⌣ (` ι')
       with base-eq? ι ι'
   ... | yes eq rewrite eq = yes base⌣
@@ -661,21 +693,31 @@ module Types where
   (` ι) `⌣ (B ⇒ B₁) = no (λ ())
   (` ι) `⌣ (B `× B₁) = no (λ ())
   (` ι) `⌣ (B `⊎ B₁) = no (λ ())
+  (` ι) `⌣ (Ref B) = no λ ()
   (A ⇒ A₁) `⌣ ⋆ = yes unk⌣R
   (A ⇒ A₁) `⌣ (` x) = no (λ ())
   (A ⇒ A₁) `⌣ (B ⇒ B₁) = yes fun⌣
   (A ⇒ A₁) `⌣ (B `× B₁) = no (λ ())
   (A ⇒ A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `⌣ (Ref B) = no λ ()
   (A `× A₁) `⌣ ⋆ = yes unk⌣R
   (A `× A₁) `⌣ (` x) = no (λ ())
   (A `× A₁) `⌣ (B ⇒ B₁) = no (λ ())
   (A `× A₁) `⌣ (B `× B₁) = yes pair⌣
   (A `× A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `⌣ (Ref B) = no λ ()
   (A `⊎ A₁) `⌣ ⋆ = yes unk⌣R
   (A `⊎ A₁) `⌣ (` x) = no (λ ())
   (A `⊎ A₁) `⌣ (B ⇒ B₁) = no (λ ())
   (A `⊎ A₁) `⌣ (B `× B₁) = no (λ ())
   (A `⊎ A₁) `⌣ (B `⊎ B₁) = yes sum⌣
+  (A `⊎ A₁) `⌣ (Ref B) = no λ ()
+  (Ref A) `⌣ ⋆ = yes unk⌣R
+  (Ref A) `⌣ (` x) = no λ ()
+  (Ref A) `⌣ (B ⇒ B₁) = no λ ()
+  (Ref A) `⌣ (B `× B₁) = no λ ()
+  (Ref A) `⌣ (B `⊎ B₁) = no λ ()
+  (Ref A) `⌣ (Ref B) = yes ref⌣
 
   data Ground : Type → Set where
     G-Base : ∀{ι} → Ground (` ι)
