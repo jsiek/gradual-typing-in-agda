@@ -25,7 +25,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
 
-open import Syntax hiding (_∋_⦂_; _,_)
+open import Syntax hiding (_∋_⦂_)
 
 {-
 
@@ -84,18 +84,6 @@ pattern case_of_⇒_∣_⇒_ L A M B N =
   (op-case A B) ⦅ cons (ast L) (cons (bind (ast M)) (cons (bind (ast N)) nil)) ⦆
 pattern _⟨_⟩ M c = (op-cast c) ⦅ cons (ast M) nil ⦆
 pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
-
--- May need to put this into `Variables` at some point. - Tianyu
-data _∋_⦂_ : Context → ℕ → Type → Set where
-
-  Z : ∀ {Γ A}
-      -------------
-    → (Γ , A) ∋ 0 ⦂ A
-
-  S_ : ∀ {Γ A B n}
-    → Γ ∋ n ⦂ A
-      -----------------
-    → (Γ , B) ∋ suc n ⦂ A
 
 infix  4  _⊢_⦂_
 

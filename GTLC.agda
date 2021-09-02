@@ -82,17 +82,6 @@ pattern ref_ M = op-ref ⦅ cons (ast M) nil ⦆
 pattern !_at_ M ℓ = (op-deref ℓ) ⦅ cons (ast M) nil ⦆
 pattern _:=_at_ L M ℓ = (op-assign ℓ) ⦅ cons (ast L) (cons (ast M) nil) ⦆
 
-data _∋_⦂_ : Context → ℕ → Type → Set where
-
-  Z : ∀ {Γ A}
-      -------------
-    → (Γ , A) ∋ 0 ⦂ A
-
-  S_ : ∀ {Γ A B n}
-    → Γ ∋ n ⦂ A
-      -----------------
-    → (Γ , B) ∋ suc n ⦂ A
-
 infix  4  _⊢G_⦂_
 data _⊢G_⦂_ : Context → Term → Type → Set where
 
