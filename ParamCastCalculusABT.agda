@@ -1,4 +1,5 @@
 open import Types
+open import PreCastStructure
 
 {-
 
@@ -12,7 +13,7 @@ cast. However, in cast calculi with fancy types such as intersections,
 the type of a cast may not literally be a function type.
 
 -}
-module ParamCastCalculusABT (Cast : Type → Set) where
+module ParamCastCalculusABT (pcs : PreCastStruct) where
 
 open import Variables
 open import Labels
@@ -26,6 +27,8 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
 
 open import Syntax hiding (_∋_⦂_)
+
+open PreCastStruct pcs using (Cast; Inert)
 
 {-
 
@@ -50,6 +53,7 @@ data Op : Set where
   op-inr : Type → Op
   op-case : Type → Type → Op
   op-cast : ∀ {A B} → Cast (A ⇒ B) → Op
+  op-wrap : ∀ {A B} → (c : Cast (A ⇒ B)) → Inert c → Op
   op-blame : Label → Op
 
 sig : Op → List Sig
@@ -64,12 +68,19 @@ sig (op-inl B) = ■ ∷ []
 sig (op-inr A) = ■ ∷ []
 sig (op-case A B) = ■ ∷ (ν ■) ∷ (ν ■) ∷ []
 sig (op-cast c) = ■ ∷ []
+sig (op-wrap c i) = ■ ∷ []
 sig (op-blame ℓ) = []
 
 open Syntax.OpSig Op sig renaming (ABT to Term) public
 
 infixl 7  _·_
 infix  8 _⟨_⟩
+{-
+  We use this to express "term *wrapped* with inert cast".
+  Corresponds to `_⟪_⟫` in `ParamCastCalculus`. The later
+  creates visual confusion with the ABT library.
+-}
+infix  9 _⟨_₍_₎⟩
 
 pattern ƛ_˙_ A N = (op-lam A) ⦅ cons (bind (ast N)) nil ⦆
 pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
@@ -83,6 +94,7 @@ pattern inr_other_ M A = (op-inr A) ⦅ cons (ast M) nil ⦆
 pattern case_of_⇒_∣_⇒_ L A M B N =
   (op-case A B) ⦅ cons (ast L) (cons (bind (ast M)) (cons (bind (ast N)) nil)) ⦆
 pattern _⟨_⟩ M c = (op-cast c) ⦅ cons (ast M) nil ⦆
+pattern _⟨_₍_₎⟩ M c i = (op-wrap c i) ⦅ cons (ast M) nil ⦆
 pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
 
 infix  4  _⊢_⦂_
@@ -154,6 +166,13 @@ data _⊢_⦂_ : Context → Term → Type → Set where
     → (c : Cast (A ⇒ B))
       --------------------
     → Γ ⊢ M ⟨ c ⟩ ⦂ B
+
+  ⊢wrap : ∀ {Γ A B} {M}
+    → Γ ⊢ M ⦂ A
+    → (c : Cast (A ⇒ B))
+    → (i : Inert c)
+      ---------------------
+    → Γ ⊢ M ⟨ c ₍ i ₎⟩ ⦂ B
 
   ⊢blame : ∀ {Γ A} {ℓ}
       -----------------
