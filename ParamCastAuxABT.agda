@@ -26,8 +26,7 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
 
   open PreCastStruct pcs
 
-  import ParamCastCalculusABT
-  open ParamCastCalculusABT pcs
+  open import ParamCastCalculusABT pcs
 
 
   {-
@@ -46,7 +45,7 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   requires M to be a value and c to be an inert cast.
 
   -}
-  data Value : ∀ CCTerm → Set where
+  data Value : ∀ Term → Set where
 
     V-ƛ : ∀ {A} {N : Term}
         -----------
@@ -75,3 +74,60 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       → Value V → (i : Inert c)
         ---------------
       → Value (V ⟨ c ₍ i ₎⟩)
+
+  {-
+    A value of type ⋆ must be of the form M ⟨ c ⟩ where c is inert cast.
+  -}
+  canonical⋆ : ∀ {Γ} {V : Term}
+    → (⊢V : Γ ⊢ V ⦂ ⋆) → (Value V)
+      --------------------------
+    → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (V ≡ (V′ ⟨ c ₍ i ₎⟩)))
+  canonical⋆ ⊢lit (V-const {r = ()})
+  canonical⋆ (⊢wrap tV .c .i) (V-wrap {A} {.⋆} {V} {c} v i) = ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+
+  {-
+    We shall use a kind of shallow evaluation context, called a Frame,
+    to collapse all of the ξ rules into a single rule.
+  -}
+  data Frame : Set where
+
+    -- □ · M
+    F-·₁ : ∀ (M : Term) → Frame
+
+    -- V · □
+    F-·₂ : ∀ (V : Term) → Value V → Frame
+
+    -- if □ M N
+    F-if : ∀ (M N : Term) → Frame
+
+    -- ⟨ V , □ ⟩
+    F-×₁ : ∀ (V : Term) → Value V → Frame
+
+    -- ⟨ □ , M ⟩
+    F-×₂ : ∀ (M : Term) → Frame
+
+    -- fst □
+    F-fst : Frame
+
+    -- snd □
+    F-snd : Frame
+
+    -- inl □ other B
+    F-inl : ∀ (B : Type) → Frame
+
+    -- inr □ other A
+    F-inr : ∀ (A : Type) → Frame
+
+    -- case □ of A ⇒ M | B ⇒ N
+    F-case : ∀ (A B : Type) (M N : Term) → Frame
+
+    -- □ ⟨ c ⟩
+    F-cast : ∀ {A B} → Cast (A ⇒ B) → Frame
+
+    {-
+      In order to satisfy progress, we need to consider the case M ⟨ c ₍ i ₎⟩
+      when M is not a Value.
+
+      □ ⟨ c ₍ i ₎⟩
+    -}
+    F-wrap : ∀ {A B} → (c : Cast (A ⇒ B)) → Inert c → Frame
