@@ -71,7 +71,10 @@ sig (op-cast c) = ■ ∷ []
 sig (op-wrap c i) = ■ ∷ []
 sig (op-blame ℓ) = []
 
-open Syntax.OpSig Op sig renaming (ABT to Term) public
+open Syntax.OpSig Op sig
+  renaming (ABT to Term)
+  hiding (plug)  -- we'll implement `plug` for frame
+  public
 
 infixl 7  _·_
 infix  8 _⟨_⟩
@@ -85,7 +88,7 @@ infix  9 _⟨_₍_₎⟩
 pattern ƛ_˙_ A N = (op-lam A) ⦅ cons (bind (ast N)) nil ⦆
 pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
 pattern $_#_ r p = (op-lit r p) ⦅ nil ⦆
-pattern if_then_else_ L M N = op-if ⦅ cons (ast L) (cons (ast M) (cons (ast N) nil)) ⦆
+pattern if_then_else_endif L M N = op-if ⦅ cons (ast L) (cons (ast M) (cons (ast N) nil)) ⦆
 pattern ⟦_,_⟧ M N = op-cons ⦅ cons (ast M) (cons (ast N) nil) ⦆
 pattern fst_ M = op-fst ⦅ cons (ast M) nil ⦆
 pattern snd_ M = op-snd ⦅ cons (ast M) nil ⦆
@@ -126,7 +129,7 @@ data _⊢_⦂_ : Context → Term → Type → Set where
     → Γ ⊢ M ⦂ A
     → Γ ⊢ N ⦂ A
       --------------------------------------
-    → Γ ⊢ if L then M else N ⦂ A
+    → Γ ⊢ if L then M else N endif ⦂ A
 
   ⊢cons : ∀ {Γ A B} {M N}
     → Γ ⊢ M ⦂ A

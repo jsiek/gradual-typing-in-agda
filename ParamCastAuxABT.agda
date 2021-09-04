@@ -131,3 +131,32 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       □ ⟨ c ₍ i ₎⟩
     -}
     F-wrap : ∀ {A B} → (c : Cast (A ⇒ B)) → Inert c → Frame
+
+  {-
+    The plug function inserts an expression into the hole of a frame.
+  -}
+  plug : Term → Frame → Term
+  -- □ · M
+  plug L (F-·₁ M)      = L · M
+  -- V · □
+  plug M (F-·₂ V v)    = V · M
+  -- if □ M N
+  plug L (F-if M N)    = if L then M else N endif
+  -- ⟨ V , □ ⟩
+  plug M (F-×₁ V v)    = ⟦ V , M ⟧
+  -- ⟨ □ , M ⟩
+  plug L (F-×₂ M)      = ⟦ L , M ⟧
+  -- fst □
+  plug M (F-fst)      = fst M
+  -- snd □
+  plug M (F-snd)      = snd M
+  -- inl □ other B
+  plug M (F-inl B)      = inl M other B
+  -- inr □ other A
+  plug M (F-inr A)      = inr M other A
+  -- case □ of A ⇒ M | B ⇒ N
+  plug L (F-case A B M N) = case L of A ⇒ M ∣ B ⇒ N
+  -- □ ⟨ c ⟩
+  plug M (F-cast c) = M ⟨ c ⟩
+  -- □ ⟨ c ₍ i ₎⟩
+  plug M (F-wrap c i) = M ⟨ c ₍ i ₎⟩
