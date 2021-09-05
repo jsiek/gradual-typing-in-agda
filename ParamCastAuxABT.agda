@@ -13,6 +13,8 @@ open import Relation.Binary.PropositionalEquality
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
+open import Syntax using (Sig; Rename; _•_; id; ↑; ⇑)
+
 {-
 
   This modules defines reduction for the Parameterized Cast Calculus
@@ -137,26 +139,52 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   -}
   plug : Term → Frame → Term
   -- □ · M
-  plug L (F-·₁ M)      = L · M
+  plug L (F-·₁ M)         = L · M
   -- V · □
-  plug M (F-·₂ V v)    = V · M
+  plug M (F-·₂ V v)       = V · M
   -- if □ M N
-  plug L (F-if M N)    = if L then M else N endif
+  plug L (F-if M N)       = if L then M else N endif
   -- ⟨ V , □ ⟩
-  plug M (F-×₁ V v)    = ⟦ V , M ⟧
+  plug M (F-×₁ V v)       = ⟦ V , M ⟧
   -- ⟨ □ , M ⟩
-  plug L (F-×₂ M)      = ⟦ L , M ⟧
+  plug L (F-×₂ M)         = ⟦ L , M ⟧
   -- fst □
-  plug M (F-fst)      = fst M
+  plug M (F-fst)          = fst M
   -- snd □
-  plug M (F-snd)      = snd M
+  plug M (F-snd)          = snd M
   -- inl □ other B
-  plug M (F-inl B)      = inl M other B
+  plug M (F-inl B)        = inl M other B
   -- inr □ other A
-  plug M (F-inr A)      = inr M other A
+  plug M (F-inr A)        = inr M other A
   -- case □ of A ⇒ M | B ⇒ N
   plug L (F-case A B M N) = case L of A ⇒ M ∣ B ⇒ N
   -- □ ⟨ c ⟩
-  plug M (F-cast c) = M ⟨ c ⟩
+  plug M (F-cast c)       = M ⟨ c ⟩
   -- □ ⟨ c ₍ i ₎⟩
-  plug M (F-wrap c i) = M ⟨ c ₍ i ₎⟩
+  plug M (F-wrap c i)     = M ⟨ c ₍ i ₎⟩
+
+  eta⇒ : ∀ {A B C D} → (M : Term)
+       → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
+       → (x : Cross c)
+       → Term
+  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename ⇑ M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
+
+  -- eta⇒-wt : ∀ {Γ A B C D} → (M : Term)
+  --   → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → {x : Cross c}
+  --   → Γ ⊢ M ⦂ A ⇒ B
+  --     -------------------------
+  --   → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
+
+  eta× : ∀ {A B C D} → (M : Term)
+       → (c : Cast ((A `× B) ⇒ (C `× D)))
+       → (x : Cross c)
+       → Term
+  eta× M c x = ⟦ fst M ⟨ fstC c x ⟩ , snd M ⟨ sndC c x ⟩ ⟧
+
+  eta⊎ : ∀ {A B C D} → (M : Term)
+       → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
+       → (x : Cross c)
+       → Term
+  eta⊎ {A} {B} {C} {D} M c x =
+    case M of A ⇒ inl (` 0 ⟨ inlC c x ⟩) other D
+            ∣ B ⇒ inr (` 0 ⟨ inrC c x ⟩) other C
