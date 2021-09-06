@@ -77,6 +77,9 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
         ---------------
       → Value (V ⟨ c ₍ i ₎⟩)
 
+  open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
+    (λ x → x) (λ { refl ⊢M → ⊢M }) using (preserve-subst; preserve-substitution)
+
   {-
     A value of type ⋆ must be of the form M ⟨ c ⟩ where c is inert cast.
   -}
@@ -84,8 +87,12 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → (⊢V : Γ ⊢ V ⦂ ⋆) → (Value V)
       --------------------------
     → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (V ≡ (V′ ⟨ c ₍ i ₎⟩)))
-  canonical⋆ ⊢lit (V-const {r = ()})
-  canonical⋆ (⊢wrap tV .c .i) (V-wrap {A} {.⋆} {V} {c} v i) = ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ (⊢$ () p refl) V-const
+  canonical⋆ (⊢ƛ A ⊢N ()) V-ƛ
+  canonical⋆ (⊢wrap c i ⊢M (⟨ refl , refl ⟩)) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ (⊢cons ⊢M ⊢N ()) (V-pair v w)
+  canonical⋆ (⊢inl B ⊢M ()) (V-inl v)
+  canonical⋆ (⊢inr A ⊢M ()) (V-inr v)
 
   {-
     We shall use a kind of shallow evaluation context, called a Frame,
