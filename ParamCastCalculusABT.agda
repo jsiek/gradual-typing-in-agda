@@ -111,6 +111,8 @@ pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
 𝑉 : List Type → Var → Type → Type → Set
 𝑃 : (op : Op) → Vec Type (length (sig op)) → BTypes Type (sig op) → Type → Set
 
+open import ABTPredicate Op sig 𝑉 𝑃
+
 --   ⊢var : ∀ {Γ A} {x : ℕ}
 --     → Γ ∋ x ⦂ A
 --       --------------
@@ -205,3 +207,27 @@ pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
 --       -----------------
 --     → Γ ⊢ blame ℓ ⦂ A
 𝑃 (op-blame _) []ᵥ tt A = ⊤
+
+{- Create the typing rules. -}
+pattern ⊢` ∋x = var-p ∋x refl
+pattern ⊢ƛ A ⊢N eq = op-p {op = op-lam A} (cons-p (bind-p (ast-p ⊢N)) nil-p) eq
+pattern ⊢· ⊢L ⊢M eq = op-p {op = op-app}
+                           (cons-p (ast-p ⊢L) (cons-p (ast-p ⊢M) nil-p)) eq
+pattern ⊢$ r p eq = op-p {op = op-lit r p} nil-p eq
+pattern ⊢if ⊢L ⊢M ⊢N eq = op-p {op = op-if}
+                               (cons-p (ast-p ⊢L)
+                                       (cons-p (ast-p ⊢M)
+                                               (cons-p (ast-p ⊢N) nil-p))) eq
+pattern ⊢cons ⊢M ⊢N eq = op-p {op = op-cons}
+                              (cons-p (ast-p ⊢M) (cons-p (ast-p ⊢N) nil-p)) eq
+pattern ⊢fst ⊢M eq = op-p {op = op-fst} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢snd ⊢M eq = op-p {op = op-snd} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢inl B ⊢M eq = op-p {op = op-inl B} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢inr A ⊢M eq = op-p {op = op-inr A} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢case A B ⊢L ⊢M ⊢N eq = op-p {op-case A B}
+                                     (cons-p (ast-p ⊢L)
+                                             (cons-p (bind-p (ast-p ⊢M))
+                                                     (cons-p (bind-p (ast-p ⊢N)) nil-p))) eq
+pattern ⊢cast c ⊢M eq = op-p {op-cast c} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢wrap c i ⊢M eq = op-p {op-wrap c i} (cons-p (ast-p ⊢M) nil-p) eq
+pattern ⊢blame ℓ eq = op-p {op-blame ℓ} nil-p eq
