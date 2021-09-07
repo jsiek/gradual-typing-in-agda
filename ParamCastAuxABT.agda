@@ -177,7 +177,7 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
        → (x : Cross c)
        → Term
-  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename (↑ 1) M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
+  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename ⇑ M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
 
   eta⇒-wt : ∀ {Γ A B C D} → (M : Term)
     → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → {x : Cross c}
