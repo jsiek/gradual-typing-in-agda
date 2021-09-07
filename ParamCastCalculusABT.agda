@@ -106,12 +106,13 @@ pattern _⟨_₍_₎⟩ M c i = (op-wrap c i) ⦅ cons (ast M) nil ⦆
 pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
 
 
--- infix  4  _⊢_⦂_
+infix  4  _⊢_⦂_
 -- data _⊢_⦂_ : Context → Term → Type → Set where
 𝑉 : List Type → Var → Type → Type → Set
 𝑃 : (op : Op) → Vec Type (length (sig op)) → BTypes Type (sig op) → Type → Set
 
-open import ABTPredicate Op sig 𝑉 𝑃 public
+open import ABTPredicate Op sig 𝑉 𝑃 public renaming (_⊢_⦂_ to predicate)
+_⊢_⦂_ = predicate
 
 --   ⊢var : ∀ {Γ A} {x : ℕ}
 --     → Γ ∋ x ⦂ A

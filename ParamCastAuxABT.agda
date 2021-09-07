@@ -77,8 +77,6 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
         ---------------
       → Value (V ⟨ c ₍ i ₎⟩)
 
-  open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
-    (λ x → x) (λ { refl ⊢M → ⊢M }) using (preserve-subst; preserve-substitution)
 
   {-
     A value of type ⋆ must be of the form M ⟨ c ⟩ where c is inert cast.
@@ -170,23 +168,42 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   -- □ ⟨ c ₍ i ₎⟩
   plug M (F-wrap c i)     = M ⟨ c ₍ i ₎⟩
 
+  open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
+    (λ x → x) (λ { refl ⊢M → ⊢M }) public
+      using (preserve-rename; preserve-subst; preserve-substitution)
+
+
   eta⇒ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
        → (x : Cross c)
        → Term
-  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename ⇑ M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
+  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename (↑ 1) M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
 
-  -- eta⇒-wt : ∀ {Γ A B C D} → (M : Term)
-  --   → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → {x : Cross c}
-  --   → Γ ⊢ M ⦂ A ⇒ B
-  --     -------------------------
-  --   → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
+  eta⇒-wt : ∀ {Γ A B C D} → (M : Term)
+    → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → {x : Cross c}
+    → Γ ⊢ M ⦂ A ⇒ B
+      -------------------------
+    → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
+  eta⇒-wt M c {x} ⊢M =
+    ⊢ƛ _ (⊢cast (cod c x) (⊢· (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
+                              (⊢cast (dom c x) (⊢` refl) (⟨ refl , refl ⟩)) refl) (⟨ refl , refl ⟩)) (⟨ refl , refl ⟩)
 
   eta× : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `× B) ⇒ (C `× D)))
        → (x : Cross c)
        → Term
   eta× M c x = ⟦ fst M ⟨ fstC c x ⟩ , snd M ⟨ sndC c x ⟩ ⟧
+
+  eta×-wt : ∀ {Γ A B C D} → (M : Term)
+    → (c : Cast ((A `× B) ⇒ (C `× D))) → {x : Cross c}
+    → Γ ⊢ M ⦂ A `× B
+      -------------------------
+    → Γ ⊢ eta× M c x ⦂ C `× D
+  eta×-wt M c {x} ⊢M =
+    ⊢cons (⊢cast (fstC c x)
+                 (⊢fst ⊢M (⟨ _ , refl ⟩)) (⟨ refl , refl ⟩))
+          (⊢cast (sndC c x)
+                 (⊢snd ⊢M (⟨ _ , refl ⟩)) (⟨ refl , refl ⟩)) refl
 
   eta⊎ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
@@ -195,3 +212,12 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   eta⊎ {A} {B} {C} {D} M c x =
     case M of A ⇒ inl (` 0 ⟨ inlC c x ⟩) other D
             ∣ B ⇒ inr (` 0 ⟨ inrC c x ⟩) other C
+
+  eta⊎-wt : ∀ {Γ A B C D} → (M : Term)
+    → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D))) → {x : Cross c}
+    → Γ ⊢ M ⦂ A `⊎ B
+      -------------------------
+    → Γ ⊢ eta⊎ M c x ⦂ C `⊎ D
+  eta⊎-wt M c {x} ⊢M = ⊢case _ _ ⊢M (⊢inl _ (⊢cast (inlC c x) (⊢` refl) (⟨ refl , refl ⟩)) refl)
+                                    (⊢inr _ (⊢cast (inrC c x) (⊢` refl) (⟨ refl , refl ⟩)) refl)
+                                    (⟨ ⟨ refl , refl ⟩ , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩)
