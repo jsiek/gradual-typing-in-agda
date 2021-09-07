@@ -9,6 +9,7 @@ open import Data.Product
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Data.Maybe
+open import Data.List using (List; _∷_; [])
 open import Variables
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
@@ -134,3 +135,65 @@ module ParamCastReductionABT (cs : CastStruct) where
            —→
          case V of A ⇒ (rename ⇑ M [ ` 0 ⟨ inlC c x ⟩ ])
                  ∣ B ⇒ (rename ⇑ N [ ` 0 ⟨ inrC c x ⟩ ])
+
+  infix  2 _—↠_
+  infixr 2 _—→⟨_⟩_
+  infix  3 _∎
+
+  data _—↠_ : Term → Term → Set where
+    _∎ : ∀ (M : Term)
+        ---------
+      → M —↠ M
+
+    _—→⟨_⟩_ : ∀ (L : Term) → {M N : Term}
+      → L —→ M
+      → M —↠ N
+        ---------
+      → L —↠ N
+
+  data Observe : Set where
+    O-const : ∀{A} → rep A → Observe
+    O-fun : Observe
+    O-pair : Observe
+    O-sum : Observe
+    O-blame : Label → Observe
+
+  observe : ∀ (V : Term) → Value V → Observe
+  observe _ V-ƛ = O-fun
+  observe ($ r # p) (V-const {A}) = O-const {A} r
+  observe _ (V-pair v v₁) = O-pair
+  observe _ (V-inl v) = O-sum
+  observe _ (V-inr v) = O-sum
+  observe (V ⟨ c ₍ i ₎⟩) (V-wrap v .i) = observe V v
+
+  data Eval : Term → Observe → Set where
+    eval : ∀ {M V}
+         → M —↠ V
+         → (v : Value V)
+         → Eval M (observe V v)
+
+  {-
+    The Progress data type has an additional error case to
+    allow for cast errors, i.e., blame. We use the follow
+    Error data type to help express the error case.
+  -}
+
+  data Error : Term → Set where
+    E-blame : ∀ {ℓ} → Error (blame ℓ)
+
+  data Progress (M : Term) : Set where
+
+    step : ∀ {N : Term}
+      → M —→ N
+        -------------
+      → Progress M
+
+    done :
+        Value M
+        ----------
+      → Progress M
+
+    error :
+        Error M
+        ----------
+      → Progress M
