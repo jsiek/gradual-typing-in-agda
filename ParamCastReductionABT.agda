@@ -17,7 +17,7 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   renaming (subst to subst-eq)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Utils using (case_of_)
+open import Utils
 
 open import Syntax using (Sig; Rename; _•_; id; ↑; ⇑)
 
@@ -197,3 +197,74 @@ module ParamCastReductionABT (cs : CastStruct) where
         Error M
         ----------
       → Progress M
+
+  postulate
+    preservation : ∀ {Γ A} {M N : Term}
+      → Γ ⊢ M ⦂ A
+      → M —→ N
+      → Γ ⊢ N ⦂ A
+
+  {-
+    The proof of progress follows the same structure as the one for
+    the STLC, by induction on the structure of the expression (or
+    equivalently, the typing derivation). In the following, we
+    discuss the extra cases that are needed for this cast calculus.
+
+    Each recursive call to progress may result in an error,
+    in which case the current expression can take a step
+    via the ξ-blame rule with an appropriate frame.
+
+    On the other hand, if the recusive call produces a value, the
+    value may be a cast that is inert. In the case for function
+    application, the expression takes a step via the fun-cast rule
+    (which uses the funCast parameter).  In the case for fst and snd,
+    the expression takes a step via fst-cast or snd-cast
+    respectively. Regarding the case form, the expression takes a
+    step via case-cast.
+
+    Of course, we must add a case for the cast form.
+    If the recursive call produces a step, then we step via ξ.
+    Likewise, if the recursive call produces an error, we step via ξ-blame.
+    Otherwise, the recursive call produces a value.
+    We make use of the ActiveOrInert parameter to see which
+    kind of cast we are dealing with. If it is active, we reduce
+    via the cast rule. Otherwise we form a value using V-cast.
+
+    We must also consider the situations where the subexpression is
+    of base type: the argument of a primitive operator and the
+    condition of 'if'. In these two cases, the baseNotInert parameter
+    ensures that the value not a cast, it is a constant.
+  -}
+
+  progress : ∀ {A} → (M : Term) → [] ⊢ M ⦂ A → Progress M
+  progress (` x) (⊢` ())
+  progress ($ r # p) ⊢M = done V-const
+  progress (ƛ A ˙ M) ⊢M = done V-ƛ
+  progress (M₁ · M₂) (⊢· ⊢M₁ ⊢M₂ refl) =
+    case progress M₁ ⊢M₁ of λ where
+      (step R) → step (ξ {F = F-·₁ M₂} R)
+      (error E-blame) → step (ξ-blame {F = F-·₁ M₂})
+      (done v₁) →
+        case progress M₂ ⊢M₂ of λ where
+          (step R′) → step (ξ {F = F-·₂ M₁ v₁} R′)
+          (error E-blame) → step (ξ-blame {F = F-·₂ M₁ v₁})
+          (done v₂) →
+            case ⟨ v₁ , ⊢M₁ ⟩ of λ where
+              ⟨ V-ƛ , ⊢ƛ _ _ _ ⟩ → step (β v₂)
+              ⟨ V-wrap v i , ⊢wrap c .i ⊢M (⟨ refl , refl ⟩) ⟩ →
+                case Inert-Cross⇒ c i of λ where
+                  ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (fun-cast v v₂ {x})
+              ⟨ V-const {r = r₁} {p = p₁} , ⊢$ .r₁ .p₁ refl ⟩ →
+                case ⟨ v₂ , ⊢M₂ ⟩ of λ where
+                  ⟨ V-const {r = r₂} {p = p₂} , ⊢$ .r₂ .p₂ refl ⟩ → step (δ {ab = p₁} {p₂} {P-Fun2 p₁})
+                  ⟨ V-ƛ , ⊢ƛ _ _ (⟨ refl , refl ⟩) ⟩ → contradiction p₁ ¬P-Fun
+                  ⟨ V-pair v w , ⊢cons _ _ refl ⟩ → contradiction p₁ ¬P-Pair
+                  ⟨ V-inl v , ⊢inl _ _ refl ⟩ → contradiction p₁ ¬P-Sum
+                  ⟨ V-inr v , ⊢inr _ _ refl ⟩ → contradiction p₁ ¬P-Sum
+                  ⟨ V-wrap {c = c} w i , ⊢wrap .c .i _ (⟨ refl , refl ⟩) ⟩ →
+                    let G : Prim (_ ⇒ _) → ¬ Inert c
+                        G = λ { (P-Fun _) ic → baseNotInert c ic } in
+                      contradiction i (G p₁)
+              ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
+              ⟨ V-inl _ , ⊢inl _ _ () ⟩
+              ⟨ V-inr _ , ⊢inr _ _ () ⟩
