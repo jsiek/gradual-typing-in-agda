@@ -19,7 +19,7 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Empty using (⊥; ⊥-elim)
 open import Utils
 
-open import Syntax using (Sig; Rename; _•_; id; ↑; ⇑)
+open import Syntax using (Var; Sig; Rename; _•_; id; ↑; ⇑)
 
 
 {-
@@ -198,12 +198,6 @@ module ParamCastReductionABT (cs : CastStruct) where
         ----------
       → Progress M
 
-  postulate
-    preservation : ∀ {Γ A} {M N : Term}
-      → Γ ⊢ M ⦂ A
-      → M —→ N
-      → Γ ⊢ N ⦂ A
-
   {-
     The proof of progress follows the same structure as the one for
     the STLC, by induction on the structure of the expression (or
@@ -357,3 +351,80 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
           ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
   progress (blame ℓ) (⊢blame .ℓ tt) = error E-blame
+
+  {- *Auxiliary lemmas* -}
+  plug-not-var : ∀ {x : Var} {M : Term} {F : Frame}
+    → plug M F ≢ ` x
+  plug-not-var {x} {M} {F} = case F return (λ F → plug M F ≢ ` x) of
+    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
+        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
+        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
+        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
+
+  plug-not-ƛ : ∀ {A} {M N : Term} {F : Frame}
+    → plug M F ≢ ƛ A ˙ N
+  plug-not-ƛ {A} {M} {N} {F} = case F return (λ F → plug M F ≢ ƛ A ˙ N) of
+    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
+        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
+        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
+        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
+
+  plug-not-blame : ∀ {ℓ} {M : Term} {F : Frame}
+    → plug M F ≢ blame ℓ
+  plug-not-blame {ℓ} {M} {F} = case F return (λ F → plug M F ≢ blame ℓ) of
+    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
+        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
+        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
+        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
+
+  var⌿→ : ∀ {x : Var} {M N : Term}
+    → M ≡ ` x
+      -------------
+    → ¬ (M —→ N)
+  var⌿→ eq (ξ R) = contradiction eq plug-not-var
+  var⌿→ eq ξ-blame = contradiction eq plug-not-var
+
+  ƛ⌿→ : ∀ {A} {M M₁ N : Term}
+    → M ≡ ƛ A ˙ M₁
+      -------------
+    → ¬ (M —→ N)
+  ƛ⌿→ eq (ξ R) = contradiction eq plug-not-ƛ
+  ƛ⌿→ eq ξ-blame = contradiction eq plug-not-ƛ
+
+  blame⌿→ : ∀ {ℓ} {M N : Term}
+    → M ≡ blame ℓ
+      -------------
+    → ¬ (M —→ N)
+  blame⌿→ eq (ξ R) = contradiction eq plug-not-blame
+  blame⌿→ eq ξ-blame = contradiction eq plug-not-blame
+
+  -- Values do not reduce.
+  V⌿→ : ∀ {M N : Term}
+      → Value M
+      → ¬ (M —→ N)
+  V⌿→ V-ƛ R = {!!}
+  V⌿→ V-const R = {!!}
+  V⌿→ (V-pair v w) R = {!!}
+  V⌿→ (V-inl v) R = {!!}
+  V⌿→ (V-inr v) R = {!!}
+  V⌿→ (V-wrap v i) R = {!!}
+
+  preservation : ∀ {Γ A} {M N : Term}
+    → Γ ⊢ M ⦂ A
+    → M —→ N
+      -------------
+    → Γ ⊢ N ⦂ A
+  preservation (⊢` ∋x) R = contradiction R (var⌿→ refl)
+  preservation (⊢$ r p eq) R = contradiction R (V⌿→ V-const)
+  preservation (⊢ƛ A ⊢N eq) R = contradiction R (V⌿→ V-ƛ)
+  preservation (⊢· ⊢L ⊢M eq) R = {!!}
+  preservation (⊢if ⊢L ⊢M ⊢N eq) R = {!!}
+  preservation (⊢cons ⊢M ⊢N eq) R = {!!}
+  preservation (⊢fst ⊢M eq) R = {!!}
+  preservation (⊢snd ⊢M eq) R = {!!}
+  preservation (⊢inl B ⊢M eq) R = {!!}
+  preservation (⊢inr A ⊢M eq) R = {!!}
+  preservation (⊢case A B ⊢L ⊢M ⊢N eq) R = {!!}
+  preservation (⊢cast c ⊢M eq) R = {!!}
+  preservation (⊢wrap c i ⊢M eq) R = {!!}
+  preservation (⊢blame ℓ eq) R = {!!}
