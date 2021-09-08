@@ -254,9 +254,9 @@ module ParamCastReductionABT (cs : CastStruct) where
               ⟨ V-wrap v i , ⊢wrap c .i ⊢M (⟨ refl , refl ⟩) ⟩ →
                 case Inert-Cross⇒ c i of λ where
                   ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (fun-cast v v₂ {x})
-              ⟨ V-const {r = r₁} {p = p₁} , ⊢$ .r₁ .p₁ refl ⟩ →
+              ⟨ V-const , ⊢$ r₁ p₁ refl ⟩ →
                 case ⟨ v₂ , ⊢M₂ ⟩ of λ where
-                  ⟨ V-const {r = r₂} {p = p₂} , ⊢$ .r₂ .p₂ refl ⟩ → step (δ {ab = p₁} {p₂} {P-Fun2 p₁})
+                  ⟨ V-const , ⊢$ r₂ p₂ refl ⟩ → step (δ {ab = p₁} {p₂} {P-Fun2 p₁})
                   ⟨ V-ƛ , ⊢ƛ _ _ (⟨ refl , refl ⟩) ⟩ → contradiction p₁ ¬P-Fun
                   ⟨ V-pair v w , ⊢cons _ _ refl ⟩ → contradiction p₁ ¬P-Pair
                   ⟨ V-inl v , ⊢inl _ _ refl ⟩ → contradiction p₁ ¬P-Sum
@@ -268,3 +268,92 @@ module ParamCastReductionABT (cs : CastStruct) where
               ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
               ⟨ V-inl _ , ⊢inl _ _ () ⟩
               ⟨ V-inr _ , ⊢inr _ _ () ⟩
+  progress (if L then M else N endif) (⊢if ⊢L ⊢M ⊢N (⟨ ⟨ refl , refl ⟩ , refl ⟩)) =
+    case progress L ⊢L of λ where
+      (step R) → step (ξ {F = F-if M N} R)
+      (error E-blame) → step (ξ-blame {F = F-if M N})
+      (done v) →
+        case ⟨ v , ⊢L ⟩ of λ where
+          ⟨ V-const , ⊢$ true _ refl ⟩ → step β-if-true
+          ⟨ V-const , ⊢$ false _ refl ⟩ → step β-if-false
+          ⟨ V-wrap v i , ⊢wrap c .i _ (⟨ refl , refl ⟩) ⟩ → contradiction i (baseNotInert c)
+          ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
+          ⟨ V-inl _ , ⊢inl _ _ () ⟩
+          ⟨ V-inr _ , ⊢inr _ _ () ⟩
+          ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
+  progress (M ⟨ c ⟩) (⊢cast .c ⊢M (⟨ refl , refl ⟩)) =
+    case progress M ⊢M of λ where
+      (step {N} R) → step (ξ{F = F-cast c} R)
+      (error E-blame) → step (ξ-blame{F = F-cast c})
+      (done v) →
+        case ActiveOrInert c of λ where
+          (inj₁ a) → step (cast v {a})
+          (inj₂ i) → step (wrap v {i})
+  progress (M ⟨ c ₍ i ₎⟩) (⊢wrap .c .i ⊢M (⟨ refl , refl ⟩)) =
+    case progress M ⊢M of λ where
+      (step R) → step (ξ {F = F-wrap c i} R)
+      (error E-blame) → step (ξ-blame {F = F-wrap c i})
+      (done v) → done (V-wrap v i)
+  progress ⟦ M₁ , M₂ ⟧ (⊢cons ⊢M₁ ⊢M₂ refl) =
+    case progress M₁ ⊢M₁ of λ where
+      (step R) → step (ξ {F = F-×₂ M₂} R)
+      (error E-blame) → step (ξ-blame {F = F-×₂ M₂})
+      (done V) →
+        case progress M₂ ⊢M₂ of λ where
+          (step R′) → step (ξ {F = F-×₁ M₁ V} R′)
+          (done V′) → done (V-pair V V′)
+          (error E-blame) → step (ξ-blame {F = F-×₁ M₁ V})
+  progress (fst M) (⊢fst ⊢M (⟨ B , refl ⟩)) =
+    case progress M ⊢M of λ where
+      (step R) → step (ξ {F = F-fst} R)
+      (error E-blame) → step (ξ-blame {F = F-fst})
+      (done v) →
+        case ⟨ v , ⊢M ⟩ of λ where
+          ⟨ V-const , ⊢$ () p refl ⟩
+          ⟨ V-pair {V = V₁} v w , ⊢cons _ _ refl ⟩ → step {N = V₁} (β-fst v w)
+          ⟨ V-wrap v i , ⊢wrap c .i _ (⟨ refl , refl ⟩)⟩ →
+            case Inert-Cross× c i of λ where
+              ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (fst-cast {c = c} v {x})
+          ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
+          ⟨ V-inl _ , ⊢inl _ _ () ⟩
+          ⟨ V-inr _ , ⊢inr _ _ () ⟩
+  progress (snd M) (⊢snd ⊢M (⟨ A , refl ⟩)) =
+    case progress M ⊢M of λ where
+      (step R) → step (ξ {F = F-snd} R)
+      (error E-blame) → step (ξ-blame {F = F-snd})
+      (done v) →
+        case ⟨ v , ⊢M ⟩ of λ where
+          ⟨ V-const , ⊢$ () p refl ⟩
+          ⟨ V-pair {W = V₂} v w , ⊢cons _ _ refl ⟩ → step {N = V₂} (β-snd v w)
+          ⟨ V-wrap v i , ⊢wrap c .i _ (⟨ refl , refl ⟩)⟩ →
+            case Inert-Cross× c i of λ where
+              ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (snd-cast {c = c} v {x})
+          ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
+          ⟨ V-inl _ , ⊢inl _ _ () ⟩
+          ⟨ V-inr _ , ⊢inr _ _ () ⟩
+  progress (inl M other B) (⊢inl .B ⊢M refl) =
+    case progress M ⊢M of λ where
+      (step R) → step (ξ {F = F-inl B} R)
+      (error E-blame) → step (ξ-blame {F = F-inl B})
+      (done V) → done (V-inl V)
+  progress (inr M other A) (⊢inr .A ⊢M refl) =
+    case progress M ⊢M of λ where
+      (step R) → step (ξ {F = F-inr A} R)
+      (error E-blame) → step (ξ-blame {F = F-inr A})
+      (done V) → done (V-inr V)
+  progress (case L of A ⇒ M ∣ B ⇒ N)
+           (⊢case .A .B ⊢L ⊢M ⊢N (⟨ ⟨ refl , refl ⟩ , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩)) =
+    case progress L ⊢L of λ where
+      (step R) → step (ξ {F = F-case A B M N} R)
+      (error E-blame) → step (ξ-blame {F = F-case A B M N})
+      (done v) →
+        case ⟨ v , ⊢L ⟩ of λ where
+          ⟨ V-const , ⊢$ () p refl ⟩
+          ⟨ V-inl v , ⊢inl _ _ refl ⟩ → step (β-caseL v)
+          ⟨ V-inr v , ⊢inr _ _ refl ⟩ → step (β-caseR v)
+          ⟨ V-wrap v i , ⊢wrap c .i _ (⟨ refl , refl ⟩) ⟩ →
+            case Inert-Cross⊎ c i of λ where
+              ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (case-cast {c = c} v {x})
+          ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
+          ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
+  progress (blame ℓ) (⊢blame .ℓ tt) = error E-blame
