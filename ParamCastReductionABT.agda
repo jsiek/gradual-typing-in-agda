@@ -377,6 +377,14 @@ module ParamCastReductionABT (cs : CastStruct) where
         (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
         (F-cast _) → λ () ; (F-wrap _ _) → λ () }
 
+  plug-not-const : ∀ {A} {r : rep A} {p : Prim A} {M : Term} {F : Frame}
+    → plug M F ≢ $ r # p
+  plug-not-const {A} {r} {p} {M} {F} = case F return (λ F → plug M F ≢ $ r # p) of
+    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
+        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
+        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
+        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
+
   var⌿→ : ∀ {x : Var} {M N : Term}
     → M ≡ ` x
       -------------
@@ -391,6 +399,12 @@ module ParamCastReductionABT (cs : CastStruct) where
   ƛ⌿→ eq (ξ R) = contradiction eq plug-not-ƛ
   ƛ⌿→ eq ξ-blame = contradiction eq plug-not-ƛ
 
+  const⌿→ : ∀ {A} {r : rep A} {p : Prim A} {M N : Term}
+    → M ≡ $ r # p
+    → ¬ (M —→ N)
+  const⌿→ eq (ξ R) = contradiction eq plug-not-const
+  const⌿→ eq ξ-blame = contradiction eq plug-not-const
+
   blame⌿→ : ∀ {ℓ} {M N : Term}
     → M ≡ blame ℓ
       -------------
@@ -399,32 +413,61 @@ module ParamCastReductionABT (cs : CastStruct) where
   blame⌿→ eq ξ-blame = contradiction eq plug-not-blame
 
   -- Values do not reduce.
-  V⌿→ : ∀ {M N : Term}
+  postulate
+    Value⌿→ : ∀ {M N : Term}
       → Value M
       → ¬ (M —→ N)
-  V⌿→ V-ƛ R = {!!}
-  V⌿→ V-const R = {!!}
-  V⌿→ (V-pair v w) R = {!!}
-  V⌿→ (V-inl v) R = {!!}
-  V⌿→ (V-inr v) R = {!!}
-  V⌿→ (V-wrap v i) R = {!!}
+  -- Value⌿→ V-ƛ R = contradiction R (ƛ⌿→ refl)
+  -- Value⌿→ V-const R = contradiction R (const⌿→ refl)
+  -- Value⌿→ (V-pair v w) R = {!!}
+  -- Value⌿→ (V-inl v) R = {!!}
+  -- Value⌿→ (V-inr v) R = {!!}
+  -- Value⌿→ (V-wrap v i) R = {!!}
 
-  preservation : ∀ {Γ A} {M N : Term}
+  plug-inversion : ∀ {Γ M F A}
+    → Γ ⊢ plug M F ⦂ A
+      -------------------------------------------------------------
+    → ∃[ B ] Γ ⊢ M ⦂ B × (∀ M' → Γ ⊢ M' ⦂ B → Γ ⊢ plug M' F ⦂ A)
+  plug-inversion {M = L} {F-·₁ M} {A} (⊢·-refl ⊢L ⊢M) =
+    ⟨ _ ⇒ A , ⟨ ⊢L , (λ M' ⊢M' → ⊢·-refl ⊢M' ⊢M) ⟩ ⟩
+  plug-inversion {M = M} {F-·₂ V v} (⊢·-refl ⊢V ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢·-refl ⊢V ⊢M') ⟩ ⟩
+  plug-inversion {M = L} {F-if M N} (⊢if-refl ⊢L ⊢M ⊢N) =
+    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢if-refl ⊢M' ⊢M ⊢N) ⟩ ⟩
+  plug-inversion {F = F-×₁ V v} (⊢cons-refl ⊢M ⊢N) =
+    ⟨ _ , ⟨ ⊢N , (λ M' ⊢M' → ⊢cons-refl ⊢M ⊢M') ⟩ ⟩
+  plug-inversion {F = F-×₂ M} (⊢cons-refl ⊢M ⊢N) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cons-refl ⊢M' ⊢N) ⟩ ⟩
+  plug-inversion {F = F-fst} (⊢fst-refl ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢fst-refl ⊢M') ⟩ ⟩
+  plug-inversion {F = F-snd} (⊢snd-refl ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢snd-refl ⊢M') ⟩ ⟩
+  plug-inversion {F = F-inl B} (⊢inl-refl .B ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inl-refl B ⊢M') ⟩ ⟩
+  plug-inversion {F = F-inr A} (⊢inr-refl .A ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inr-refl A ⊢M') ⟩ ⟩
+  plug-inversion {F = F-case A B M N} (⊢case-refl .A .B ⊢L ⊢M ⊢N) =
+    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢case-refl A B ⊢M' ⊢M ⊢N) ⟩ ⟩
+  plug-inversion {F = F-cast c} (⊢cast-refl .c ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cast-refl c ⊢M') ⟩ ⟩
+  plug-inversion {F = F-wrap c i} (⊢wrap-refl .c .i ⊢M) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢wrap-refl c i ⊢M') ⟩ ⟩
+
+  preserve : ∀ {Γ A} {M N : Term}
     → Γ ⊢ M ⦂ A
     → M —→ N
       -------------
     → Γ ⊢ N ⦂ A
-  preservation (⊢` ∋x) R = contradiction R (var⌿→ refl)
-  preservation (⊢$ r p eq) R = contradiction R (V⌿→ V-const)
-  preservation (⊢ƛ A ⊢N eq) R = contradiction R (V⌿→ V-ƛ)
-  preservation (⊢· ⊢L ⊢M eq) R = {!!}
-  preservation (⊢if ⊢L ⊢M ⊢N eq) R = {!!}
-  preservation (⊢cons ⊢M ⊢N eq) R = {!!}
-  preservation (⊢fst ⊢M eq) R = {!!}
-  preservation (⊢snd ⊢M eq) R = {!!}
-  preservation (⊢inl B ⊢M eq) R = {!!}
-  preservation (⊢inr A ⊢M eq) R = {!!}
-  preservation (⊢case A B ⊢L ⊢M ⊢N eq) R = {!!}
-  preservation (⊢cast c ⊢M eq) R = {!!}
-  preservation (⊢wrap c i ⊢M eq) R = {!!}
-  preservation (⊢blame ℓ eq) R = {!!}
+  preserve ⊢M (ξ {F = F} R) = {!!}
+  preserve ⊢M (ξ-blame {F = F}) = {!!}
+  -- preserve {Γ} {A} {L · M} {N} (⊢· ⊢L ⊢M refl) R = {!!}
+  -- preserve (⊢if ⊢L ⊢M ⊢N eq) R = {!!}
+  -- preserve (⊢cons ⊢M ⊢N eq) R = {!!}
+  -- preserve (⊢fst ⊢M eq) R = {!!}
+  -- preserve (⊢snd ⊢M eq) R = {!!}
+  -- preserve (⊢inl B ⊢M eq) R = {!!}
+  -- preserve (⊢inr A ⊢M eq) R = {!!}
+  -- preserve (⊢case A B ⊢L ⊢M ⊢N eq) R = {!!}
+  -- preserve (⊢cast c ⊢M eq) R = {!!}
+  -- preserve (⊢wrap c i ⊢M eq) R = {!!}
+  -- preserve (⊢blame ℓ eq) R = {!!}
