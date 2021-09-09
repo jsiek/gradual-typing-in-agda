@@ -87,10 +87,10 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (V ≡ (V′ ⟨ c ₍ i ₎⟩)))
   canonical⋆ (⊢$ () p refl) V-const
   canonical⋆ (⊢ƛ A ⊢N ()) V-ƛ
-  canonical⋆ (⊢wrap c i ⊢M (⟨ refl , refl ⟩)) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
   canonical⋆ (⊢cons ⊢M ⊢N ()) (V-pair v w)
   canonical⋆ (⊢inl B ⊢M ()) (V-inl v)
   canonical⋆ (⊢inr A ⊢M ()) (V-inr v)
+  canonical⋆ (⊢wrap-refl c i ⊢M) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
 
   {-
     We shall use a kind of shallow evaluation context, called a Frame,
@@ -185,8 +185,8 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       -------------------------
     → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
   eta⇒-wt M c {x} ⊢M =
-    ⊢ƛ _ (⊢cast (cod c x) (⊢· (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
-                              (⊢cast (dom c x) (⊢` refl) (⟨ refl , refl ⟩)) refl) (⟨ refl , refl ⟩)) (⟨ refl , refl ⟩)
+    ⊢ƛ-refl _ (⊢cast-refl (cod c x) (⊢·-refl (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
+                                    (⊢cast-refl (dom c x) (⊢` refl))))
 
   eta× : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `× B) ⇒ (C `× D)))
@@ -199,11 +199,8 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → Γ ⊢ M ⦂ A `× B
       -------------------------
     → Γ ⊢ eta× M c x ⦂ C `× D
-  eta×-wt M c {x} ⊢M =
-    ⊢cons (⊢cast (fstC c x)
-                 (⊢fst ⊢M (⟨ _ , refl ⟩)) (⟨ refl , refl ⟩))
-          (⊢cast (sndC c x)
-                 (⊢snd ⊢M (⟨ _ , refl ⟩)) (⟨ refl , refl ⟩)) refl
+  eta×-wt M c {x} ⊢M = ⊢cons-refl (⊢cast-refl (fstC c x) (⊢fst-refl ⊢M))
+                                  (⊢cast-refl (sndC c x) (⊢snd-refl ⊢M))
 
   eta⊎ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
@@ -218,6 +215,6 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → Γ ⊢ M ⦂ A `⊎ B
       -------------------------
     → Γ ⊢ eta⊎ M c x ⦂ C `⊎ D
-  eta⊎-wt M c {x} ⊢M = ⊢case _ _ ⊢M (⊢inl _ (⊢cast (inlC c x) (⊢` refl) (⟨ refl , refl ⟩)) refl)
-                                    (⊢inr _ (⊢cast (inrC c x) (⊢` refl) (⟨ refl , refl ⟩)) refl)
-                                    (⟨ ⟨ refl , refl ⟩ , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩)
+  eta⊎-wt M c {x} ⊢M =
+    ⊢case-refl _ _ ⊢M (⊢inl-refl _ (⊢cast-refl (inlC c x) (⊢` refl)))
+                      (⊢inr-refl _ (⊢cast-refl (inrC c x) (⊢` refl)))
