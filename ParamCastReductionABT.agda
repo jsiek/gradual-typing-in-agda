@@ -479,13 +479,22 @@ module ParamCastReductionABT (cs : CastStruct) where
     preserve-substitution _ _ ⊢M ⊢L
   preserve (⊢case-refl A B (⊢inr-refl _ ⊢L) ⊢M ⊢N) (β-caseR v) =
     preserve-substitution _ _ ⊢N ⊢L
-  preserve {Γ} (⊢case-refl C D (⊢wrap-refl c i ⊢L) ⊢M ⊢N) (case-cast {A} {B} {C} {D} {V} {M} {N} v {x}) =
+  preserve {Γ} (⊢case-refl C D (⊢wrap-refl c i ⊢L) ⊢M ⊢N)
+               (case-cast {A} {B} {C} {D} {V} {M} {N} v {x}) =
     ⊢case-refl A B ⊢L
-      (preserve-substitution _ _ (preserve-rename M ⊢M (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
-                                                            {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
-                                 (⊢cast-refl (inlC c x) (⊢` refl)))
-      (preserve-substitution _ _ (preserve-rename N ⊢N (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
-                                                            {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
-                                 (⊢cast-refl (inrC c x) (⊢` refl)))
+      {- rename (ext ⇑) M [ ` 0 ⟨ inlC c x ⟩ ] -}
+      (preserve-substitution _ _
+        (preserve-rename M ⊢M λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
+        (⊢cast-refl (inlC c x) (⊢` refl)))
+      (preserve-substitution _ _
+        (preserve-rename N ⊢N λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
+        (⊢cast-refl (inrC c x) (⊢` refl)))
+    where
+    ext-suc-∋x : ∀ {Γ} {X Y A : Type}
+      → (x : Var)
+      → (Y ∷ Γ) ∋ x ⦂ A
+      → (Y ∷ X ∷ Γ) ∋ (ext ⇑) x ⦂ A -- skipping the `X`
+    ext-suc-∋x 0       ∋x = ∋x
+    ext-suc-∋x (suc x) ∋x = ∋x
   preserve (⊢cast-refl c ⊢M) (cast v {a}) = applyCast-wt ⊢M v a
   preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M
