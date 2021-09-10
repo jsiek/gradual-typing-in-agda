@@ -482,5 +482,7 @@ module ParamCastReductionABT (cs : CastStruct) where
       (preserve-substitution _ _ (preserve-rename M ⊢M (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
                                                             {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
                                  (⊢cast-refl (inlC c x) (⊢` refl)))
-      {!!}
+      (preserve-substitution _ _ (preserve-rename N ⊢N (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
+                                                            {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
+                                 (⊢cast-refl (inrC c x) (⊢` refl)))
   preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M
