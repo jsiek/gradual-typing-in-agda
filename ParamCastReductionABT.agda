@@ -133,8 +133,8 @@ module ParamCastReductionABT (cs : CastStruct) where
         --------------------------------------------
       → case (V ⟨ c ₍ i ₎⟩) of C ⇒ M ∣ D ⇒ N
            —→
-         case V of A ⇒ ((rename (ext ⇑) M) [ ` 0 ⟨ inlC c x ⟩ ])
-                 ∣ B ⇒ ((rename (ext ⇑) N) [ ` 0 ⟨ inrC c x ⟩ ])
+         case V of A ⇒ (rename (ext ⇑) M [ ` 0 ⟨ inlC c x ⟩ ])
+                 ∣ B ⇒ (rename (ext ⇑) N [ ` 0 ⟨ inrC c x ⟩ ])
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_
@@ -487,5 +487,5 @@ module ParamCastReductionABT (cs : CastStruct) where
       (preserve-substitution _ _ (preserve-rename N ⊢N (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
                                                             {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
                                  (⊢cast-refl (inrC c x) (⊢` refl)))
-  preserve (⊢cast-refl c ⊢M) (cast v {a}) = {!!}
+  preserve (⊢cast-refl c ⊢M) (cast v {a}) = applyCast-wt ⊢M v a
   preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M
