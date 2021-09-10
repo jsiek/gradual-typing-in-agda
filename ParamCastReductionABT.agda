@@ -10,7 +10,7 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Data.Maybe
 open import Data.List using (List; _∷_; [])
-open import Variables
+-- open import Variables
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
@@ -19,7 +19,7 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Empty using (⊥; ⊥-elim)
 open import Utils
 
-open import Syntax using (Var; Sig; Rename; _•_; id; ↑; ⇑)
+open import Syntax using (Var; Sig; Rename; _•_; id; ext; ↑; ⇑; _∋_⦂_)
 
 
 {-
@@ -133,8 +133,8 @@ module ParamCastReductionABT (cs : CastStruct) where
         --------------------------------------------
       → case (V ⟨ c ₍ i ₎⟩) of C ⇒ M ∣ D ⇒ N
            —→
-         case V of A ⇒ (rename ⇑ M [ ` 0 ⟨ inlC c x ⟩ ])
-                 ∣ B ⇒ (rename ⇑ N [ ` 0 ⟨ inrC c x ⟩ ])
+         case V of A ⇒ ((rename (ext ⇑) M) [ ` 0 ⟨ inlC c x ⟩ ])
+                 ∣ B ⇒ ((rename (ext ⇑) N) [ ` 0 ⟨ inrC c x ⟩ ])
 
   infix  2 _—↠_
   infixr 2 _—→⟨_⟩_
@@ -458,16 +458,29 @@ module ParamCastReductionABT (cs : CastStruct) where
     → M —→ N
       -------------
     → Γ ⊢ N ⦂ A
-  preserve ⊢M (ξ {F = F} R) = {!!}
-  preserve ⊢M (ξ-blame {F = F}) = {!!}
-  -- preserve {Γ} {A} {L · M} {N} (⊢· ⊢L ⊢M refl) R = {!!}
-  -- preserve (⊢if ⊢L ⊢M ⊢N eq) R = {!!}
-  -- preserve (⊢cons ⊢M ⊢N eq) R = {!!}
-  -- preserve (⊢fst ⊢M eq) R = {!!}
-  -- preserve (⊢snd ⊢M eq) R = {!!}
-  -- preserve (⊢inl B ⊢M eq) R = {!!}
-  -- preserve (⊢inr A ⊢M eq) R = {!!}
-  -- preserve (⊢case A B ⊢L ⊢M ⊢N eq) R = {!!}
-  -- preserve (⊢cast c ⊢M eq) R = {!!}
-  -- preserve (⊢wrap c i ⊢M eq) R = {!!}
-  -- preserve (⊢blame ℓ eq) R = {!!}
+  {- casing on the reduction step and then inversion on the derivation of M. -}
+  preserve ⊢M (ξ R) =
+    case plug-inversion ⊢M of λ where
+      ⟨ _ , ⟨ ⊢M' , plug-wt ⟩ ⟩ → plug-wt _ {- M' -} (preserve ⊢M' R)
+  preserve ⊢M ξ-blame = ⊢blame-refl _
+  preserve (⊢·-refl (⊢ƛ-refl _ ⊢N) ⊢M) (β v) = preserve-substitution _ _ ⊢N ⊢M
+  preserve (⊢·-refl (⊢$-refl f _) (⊢$-refl k _)) δ = ⊢$-refl (f k) _
+  preserve (⊢·-refl (⊢wrap-refl c i ⊢M) ⊢N) (fun-cast v w) =
+    ⊢cast-refl (cod c _) (⊢·-refl ⊢M (⊢cast-refl (dom c _) ⊢N))
+  preserve (⊢if-refl ⊢L ⊢M ⊢N) β-if-true = ⊢M
+  preserve (⊢if-refl ⊢L ⊢M ⊢N) β-if-false = ⊢N
+  preserve (⊢fst-refl (⊢cons-refl ⊢M ⊢N)) (β-fst v w) = ⊢M
+  preserve (⊢fst-refl (⊢wrap-refl c i ⊢M)) (fst-cast v) =
+    ⊢cast-refl (fstC c _) (⊢fst-refl ⊢M)
+  preserve (⊢snd-refl (⊢cons-refl ⊢M ⊢N)) (β-snd v w) = ⊢N
+  preserve (⊢case-refl A B (⊢inl-refl _ ⊢L) ⊢M ⊢N) (β-caseL v) =
+    preserve-substitution _ _ ⊢M ⊢L
+  preserve (⊢case-refl A B (⊢inr-refl _ ⊢L) ⊢M ⊢N) (β-caseR v) =
+    preserve-substitution _ _ ⊢N ⊢L
+  preserve {Γ} (⊢case-refl C D (⊢wrap-refl c i ⊢L) ⊢M ⊢N) (case-cast {A} {B} {C} {D} {V} {M} {N} v {x}) =
+    ⊢case-refl A B ⊢L
+      (preserve-substitution _ _ (preserve-rename M ⊢M (λ { {zero}  ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
+                                                            {suc x} ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ }))
+                                 (⊢cast-refl (inlC c x) (⊢` refl)))
+      {!!}
+  preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M

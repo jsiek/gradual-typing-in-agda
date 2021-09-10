@@ -38,19 +38,6 @@ data _∋_ : Context → Type → Set where
       ---------
     → Γ , B ∋ A
 
-{- extrinsically typed variant -}
-data _∋_⦂_ : Context → ℕ → Type → Set where
-
-  Z : ∀ {Γ A}
-      -------------
-    → (Γ , A) ∋ 0 ⦂ A
-
-  S_ : ∀ {Γ A B n}
-    → Γ ∋ n ⦂ A
-      -----------------
-    → (Γ , B) ∋ suc n ⦂ A
-
-
 ∋→ℕ : ∀{Γ}{A} → Γ ∋ A → ℕ
 ∋→ℕ {.(_ , A)} {A} Z = 0
 ∋→ℕ {.(_ , _)} {A} (S Γ∋A) = suc (∋→ℕ Γ∋A)
