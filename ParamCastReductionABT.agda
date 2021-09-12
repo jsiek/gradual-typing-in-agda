@@ -445,13 +445,21 @@ module ParamCastReductionABT (cs : CastStruct) where
   blame⌿→ eq (ξ R)   = contradiction eq blame-not-plug
   blame⌿→ eq ξ-blame = contradiction eq blame-not-plug
 
-  {- Values do not reduce. -}
+  reduce-not-value : ∀ {M N}
+      → M —→ N
+      → ¬ (Value M)
+  reduce-not-value (ξ R) v =
+    let vₘ = value-plug v in
+      contradiction vₘ (reduce-not-value R)
+  reduce-not-value ξ-blame v =
+    let vₘ = value-plug v in  -- impossible!!
+      case vₘ of λ where ()
+
+  {-
+    Values do not reduce.
+    It is a direct corollary of "`M` is not a value if it reduces".
+  -}
   Value⌿→ : ∀ {M N : Term}
     → Value M
     → ¬ (M —→ N)
-  -- Value⌿→ V-ƛ R = contradiction R (ƛ⌿→ refl)
-  -- Value⌿→ V-const R = contradiction R (const⌿→ refl)
-  -- Value⌿→ (V-pair v w) R = {!!}
-  -- Value⌿→ (V-inl v) R = {!!}
-  -- Value⌿→ (V-inr v) R = {!!}
-  -- Value⌿→ (V-wrap v i) R = {!!}
+  Value⌿→ v R = contradiction v (reduce-not-value R)
