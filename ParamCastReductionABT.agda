@@ -445,9 +445,7 @@ module ParamCastReductionABT (cs : CastStruct) where
   blame⌿→ eq (ξ R)   = contradiction eq blame-not-plug
   blame⌿→ eq ξ-blame = contradiction eq blame-not-plug
 
-  reduce-not-value : ∀ {M N}
-      → M —→ N
-      → ¬ (Value M)
+  reduce-not-value : ∀ {M N} → M —→ N → ¬ (Value M)
   reduce-not-value (ξ R) v =
     let vₘ = value-plug v in
       contradiction vₘ (reduce-not-value R)
@@ -461,5 +459,30 @@ module ParamCastReductionABT (cs : CastStruct) where
   -}
   Value⌿→ : ∀ {M N : Term}
     → Value M
+      --------------
     → ¬ (M —→ N)
   Value⌿→ v R = contradiction v (reduce-not-value R)
+
+  {- Multi-step reduction is a congruence. -}
+  plug-cong : ∀ {M N}
+    → (F : Frame)
+    → M —↠ N
+      -----------------------
+    → plug M F —↠ plug N F
+  plug-cong F (M ∎) = plug M F ∎
+  plug-cong F (M —→⟨ M→L ⟩ L↠N) = plug M F —→⟨ ξ M→L ⟩ plug-cong F L↠N
+
+  {- Multi-step reduction is also transitive. -}
+  ↠-trans : ∀ {L M N}
+    → L —↠ M
+    → M —↠ N
+      ---------
+    → L —↠ N
+  ↠-trans (L ∎) (._ ∎) = L ∎
+  ↠-trans (L ∎) (.L —→⟨ M→ ⟩ ↠N) = L —→⟨ M→ ⟩ ↠N
+  ↠-trans (L —→⟨ L→ ⟩ ↠M) (M ∎) = L —→⟨ L→ ⟩ ↠M
+  ↠-trans (L —→⟨ L→ ⟩ ↠M) (M —→⟨ M→ ⟩ ↠N) =
+    L —→⟨ L→ ⟩ ↠-trans ↠M (M —→⟨ M→ ⟩ ↠N)
+
+  ↠-eq : ∀ {M N} → M ≡ N → M —↠ N
+  ↠-eq {M = M} {N} eq rewrite eq = N ∎
