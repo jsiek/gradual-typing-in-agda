@@ -13,7 +13,7 @@ open import Relation.Binary.PropositionalEquality
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
-open import Syntax using (Sig; Rename; _•_; id; ↑; ⇑)
+open import Syntax using (Sig; Rename; Var; _•_; id; ↑; ⇑)
 
 {-
 
@@ -167,6 +167,49 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   plug M (F-cast c)       = M ⟨ c ⟩
   -- □ ⟨ c ₍ i ₎⟩
   plug M (F-wrap c i)     = M ⟨ c ₍ i ₎⟩
+
+  data Plugged : Term → Set where
+    plugged-app  : ∀ {L M} → Plugged (L · M)
+    plugged-if   : ∀ {L M N} → Plugged (if L then M else N endif)
+    plugged-pair : ∀ {L M} → Plugged (⟦ L , M ⟧)
+    plugged-fst  : ∀ {M} → Plugged (fst M)
+    plugged-snd  : ∀ {M} → Plugged (snd M)
+    plugged-inl  : ∀ {B M} → Plugged (inl M other B)
+    plugged-inr  : ∀ {A M} → Plugged (inr M other A)
+    plugged-case : ∀ {A B L M N} → Plugged (case L of A ⇒ M ∣ B ⇒ N)
+    plugged-cast : ∀ {A B} {M} {c : Cast (A ⇒ B)} → Plugged (M ⟨ c ⟩)
+    plugged-wrap : ∀ {A B} {M} {c : Cast (A ⇒ B)} {i : Inert c}
+      → Plugged (M ⟨ c ₍ i ₎⟩)
+
+  is-plugged : ∀ {F : Frame} {N : Term}
+    → (M : Term)
+    → plug N F ≡ M
+    → Plugged M
+  is-plugged {F-·₁ M} .(plug _ (F-·₁ M)) refl = plugged-app
+  is-plugged {F-·₂ V x} .(plug _ (F-·₂ V x)) refl = plugged-app
+  is-plugged {F-if M N} .(plug _ (F-if M N)) refl = plugged-if
+  is-plugged {F-×₁ V x} .(plug _ (F-×₁ V x)) refl = plugged-pair
+  is-plugged {F-×₂ M} .(plug _ (F-×₂ M)) refl = plugged-pair
+  is-plugged {F-fst} .(plug _ F-fst) refl = plugged-fst
+  is-plugged {F-snd} .(plug _ F-snd) refl = plugged-snd
+  is-plugged {F-inl B} .(plug _ (F-inl B)) refl = plugged-inl
+  is-plugged {F-inr A} .(plug _ (F-inr A)) refl = plugged-inr
+  is-plugged {F-case A B M N} .(plug _ (F-case A B M N)) refl = plugged-case
+  is-plugged {F-cast x} .(plug _ (F-cast x)) refl = plugged-cast
+  is-plugged {F-wrap c x} .(plug _ (F-wrap c x)) refl = plugged-wrap
+
+  not-plugged : ∀ {F : Frame} {N : Term}
+    → (M : Term)
+    → ¬ (Plugged M)
+    → ¬ (plug N F ≡ M)
+  not-plugged M not-plugged eq = contradiction (is-plugged M eq) not-plugged
+
+  var-not-plug : ∀ {x : Var} {N : Term} {F : Frame}
+    → plug N F ≢ ` x
+  var-not-plug {x} = not-plugged (` x) var-not-plugged
+    where
+    var-not-plugged : ¬ (Plugged (` x))
+    var-not-plugged ()
 
   open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
     (λ x → x) (λ { refl ⊢M → ⊢M }) public
