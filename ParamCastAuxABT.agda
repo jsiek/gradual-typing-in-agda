@@ -217,6 +217,14 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → plug M F ≢ $ r # p
   const-not-plug {A} {r} {p} = not-plugged ($ r # p) λ ()
 
+  ƛ-not-plug : ∀ {A} {M N : Term} {F : Frame}
+    → plug M F ≢ ƛ A ˙ N
+  ƛ-not-plug {A} {M} {N} = not-plugged (ƛ A ˙ N) λ ()
+
+  blame-not-plug : ∀ {ℓ} {M : Term} {F : Frame}
+    → plug M F ≢ blame ℓ
+  blame-not-plug {ℓ} = not-plugged (blame ℓ) λ ()
+
   open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
     (λ x → x) (λ { refl ⊢M → ⊢M }) public
       using (preserve-rename; preserve-subst; preserve-substitution)

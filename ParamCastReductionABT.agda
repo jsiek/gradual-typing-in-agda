@@ -352,61 +352,6 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
   progress (blame ℓ) (⊢blame .ℓ tt) = error E-blame
 
-  plug-not-ƛ : ∀ {A} {M N : Term} {F : Frame}
-    → plug M F ≢ ƛ A ˙ N
-  plug-not-ƛ {A} {M} {N} {F} = case F return (λ F → plug M F ≢ ƛ A ˙ N) of
-    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
-        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
-        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
-        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
-
-  plug-not-blame : ∀ {ℓ} {M : Term} {F : Frame}
-    → plug M F ≢ blame ℓ
-  plug-not-blame {ℓ} {M} {F} = case F return (λ F → plug M F ≢ blame ℓ) of
-    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
-        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
-        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
-        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
-
-  var⌿→ : ∀ {x : Var} {M N : Term}
-    → M ≡ ` x
-      -------------
-    → ¬ (M —→ N)
-  var⌿→ eq (ξ R) = contradiction eq plug-not-var
-  var⌿→ eq ξ-blame = contradiction eq plug-not-var
-
-  ƛ⌿→ : ∀ {A} {M M₁ N : Term}
-    → M ≡ ƛ A ˙ M₁
-      -------------
-    → ¬ (M —→ N)
-  ƛ⌿→ eq (ξ R) = contradiction eq plug-not-ƛ
-  ƛ⌿→ eq ξ-blame = contradiction eq plug-not-ƛ
-
-  const⌿→ : ∀ {A} {r : rep A} {p : Prim A} {M N : Term}
-    → M ≡ $ r # p
-    → ¬ (M —→ N)
-  const⌿→ eq (ξ R) = contradiction eq plug-not-const
-  const⌿→ eq ξ-blame = contradiction eq plug-not-const
-
-  blame⌿→ : ∀ {ℓ} {M N : Term}
-    → M ≡ blame ℓ
-      -------------
-    → ¬ (M —→ N)
-  blame⌿→ eq (ξ R) = contradiction eq plug-not-blame
-  blame⌿→ eq ξ-blame = contradiction eq plug-not-blame
-
-  -- Values do not reduce.
-  postulate
-    Value⌿→ : ∀ {M N : Term}
-      → Value M
-      → ¬ (M —→ N)
-  -- Value⌿→ V-ƛ R = contradiction R (ƛ⌿→ refl)
-  -- Value⌿→ V-const R = contradiction R (const⌿→ refl)
-  -- Value⌿→ (V-pair v w) R = {!!}
-  -- Value⌿→ (V-inl v) R = {!!}
-  -- Value⌿→ (V-inr v) R = {!!}
-  -- Value⌿→ (V-wrap v i) R = {!!}
-
   plug-inversion : ∀ {Γ M F A}
     → Γ ⊢ plug M F ⦂ A
       -------------------------------------------------------------
@@ -481,3 +426,32 @@ module ParamCastReductionABT (cs : CastStruct) where
     ext-suc-∋x (suc x) ∋x = ∋x
   preserve (⊢cast-refl c ⊢M) (cast v {a}) = applyCast-wt ⊢M v a
   preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M
+
+  {- Auxiliary lemmas about reduction. -}
+  var⌿→ : ∀ {x} {M N} → M ≡ ` x → ¬ (M —→ N)
+  var⌿→ eq (ξ R)   = contradiction eq var-not-plug
+  var⌿→ eq ξ-blame = contradiction eq var-not-plug
+
+  ƛ⌿→ : ∀ {A} {M M₁ N} → M ≡ ƛ A ˙ M₁ → ¬ (M —→ N)
+  ƛ⌿→ eq (ξ R)   = contradiction eq ƛ-not-plug
+  ƛ⌿→ eq ξ-blame = contradiction eq ƛ-not-plug
+
+  const⌿→ : ∀ {A} {r : rep A} {p : Prim A} {M N}
+    → M ≡ $ r # p → ¬ (M —→ N)
+  const⌿→ eq (ξ R)   = contradiction eq const-not-plug
+  const⌿→ eq ξ-blame = contradiction eq const-not-plug
+
+  blame⌿→ : ∀ {ℓ} {M N} → M ≡ blame ℓ → ¬ (M —→ N)
+  blame⌿→ eq (ξ R)   = contradiction eq blame-not-plug
+  blame⌿→ eq ξ-blame = contradiction eq blame-not-plug
+
+  {- Values do not reduce. -}
+  Value⌿→ : ∀ {M N : Term}
+    → Value M
+    → ¬ (M —→ N)
+  -- Value⌿→ V-ƛ R = contradiction R (ƛ⌿→ refl)
+  -- Value⌿→ V-const R = contradiction R (const⌿→ refl)
+  -- Value⌿→ (V-pair v w) R = {!!}
+  -- Value⌿→ (V-inl v) R = {!!}
+  -- Value⌿→ (V-inr v) R = {!!}
+  -- Value⌿→ (V-wrap v i) R = {!!}
