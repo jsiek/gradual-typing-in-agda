@@ -168,6 +168,11 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   -- □ ⟨ c ₍ i ₎⟩
   plug M (F-wrap c i)     = M ⟨ c ₍ i ₎⟩
 
+  {-
+    Auxiliary lemmas about `plug`.
+    First we define a datatype that characterizes terms
+    that can be produced by plugging into a frame:
+  -}
   data Plugged : Term → Set where
     plugged-app  : ∀ {L M} → Plugged (L · M)
     plugged-if   : ∀ {L M N} → Plugged (if L then M else N endif)
@@ -206,10 +211,11 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
 
   var-not-plug : ∀ {x : Var} {N : Term} {F : Frame}
     → plug N F ≢ ` x
-  var-not-plug {x} = not-plugged (` x) var-not-plugged
-    where
-    var-not-plugged : ¬ (Plugged (` x))
-    var-not-plugged ()
+  var-not-plug {x} = not-plugged (` x) λ ()
+
+  const-not-plug : ∀ {A} {r : rep A} {p : Prim A} {M : Term} {F : Frame}
+    → plug M F ≢ $ r # p
+  const-not-plug {A} {r} {p} = not-plugged ($ r # p) λ ()
 
   open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
     (λ x → x) (λ { refl ⊢M → ⊢M }) public

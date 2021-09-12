@@ -352,15 +352,6 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
   progress (blame ℓ) (⊢blame .ℓ tt) = error E-blame
 
-  {- *Auxiliary lemmas* -}
-  plug-not-var : ∀ {x : Var} {M : Term} {F : Frame}
-    → plug M F ≢ ` x
-  plug-not-var {x} {M} {F} = case F return (λ F → plug M F ≢ ` x) of
-    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
-        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
-        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
-        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
-
   plug-not-ƛ : ∀ {A} {M N : Term} {F : Frame}
     → plug M F ≢ ƛ A ˙ N
   plug-not-ƛ {A} {M} {N} {F} = case F return (λ F → plug M F ≢ ƛ A ˙ N) of
@@ -372,14 +363,6 @@ module ParamCastReductionABT (cs : CastStruct) where
   plug-not-blame : ∀ {ℓ} {M : Term} {F : Frame}
     → plug M F ≢ blame ℓ
   plug-not-blame {ℓ} {M} {F} = case F return (λ F → plug M F ≢ blame ℓ) of
-    λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
-        (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
-        (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
-        (F-cast _) → λ () ; (F-wrap _ _) → λ () }
-
-  plug-not-const : ∀ {A} {r : rep A} {p : Prim A} {M : Term} {F : Frame}
-    → plug M F ≢ $ r # p
-  plug-not-const {A} {r} {p} {M} {F} = case F return (λ F → plug M F ≢ $ r # p) of
     λ { (F-·₁ _) → λ () ; (F-·₂ _ _) → λ () ; (F-if _ _) → λ () ;
         (F-×₁ _ _) → λ () ; (F-×₂ _) → λ () ; F-fst → λ () ; F-snd → λ () ;
         (F-inl _) → λ () ; (F-inr _) → λ () ; (F-case _ _ _ _) → λ () ;
