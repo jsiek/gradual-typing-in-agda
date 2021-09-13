@@ -28,8 +28,8 @@ the `defaults` file.
 
 ### Correspondence with article in Journal of Function Programming
 
-The article "Parameterized Cast Caculi and Reusable Meta-theory for
-Gradually Typed Lambda Caculi" describes most of this Agda
+The article "Parameterized Cast Calculi and Reusable Meta-theory for
+Gradually Typed Lambda Calculi" describes most of this Agda
 development. Here we provide a mapping from sections in that article
 to the files in this project.
 
