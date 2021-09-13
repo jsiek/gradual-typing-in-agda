@@ -2,7 +2,76 @@
 
 ### About
 
-Formalizations of Gradually Typed Languages in Agda
+Formalizations of Gradually Typed Languages in Agda.
+
+The current release is `v1.0`.
+
+### Agda Version
+
+The current release `v1.0` of this project has been checked by Agda
+version `2.6.2`.
+
+
+### Prerequisites/Dependencies
+
+This project depends on the following Abstract Binding Trees library,
+specifically release `v1.0`.
+
+https://github.com/jsiek/abstract-binding-trees
+
+After cloning that repository, make sure to add the path to `abt.agda-lib`
+to the `libraries` file in your `.agda` directory and to add `abt` to 
+the `defaults` file.
+
+
+### Correspondence with article in Journal of Function Programming
+
+The article "Parameterized Cast Caculi and Reusable Meta-theory for
+Gradually Typed Lambda Caculi" describes most of this Agda
+development. Here we provide a mapping from sections in that article
+to the files in this project.
+
+1. Introduction - no corresponding Agda files
+2. [GTLC](./GTLC.agda)
+3. Parameterized Cast Calculus
+    1. [PreCastStructure](./PreCastStructure.agda)
+	2. [ParamCastAux](./ParamCastAux.agda)
+	3. [ParamCastAux](./ParamCastAux.agda)
+	4. [CastStructure](./CastStructure.agda)
+	5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
+	6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+	7. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+	8. [ParamCastCalculus](./ParamCastCalculus.agda), 
+	   [ParamCastReduction](./ParamCastReduction.agda)
+    9. [PreCastStructureWithBlameSafety](./PreCastStructureWithBlameSafety)
+	   [CastStructureWithBlameSafety](./CastStructureWithBlameSafety),
+	   [Subtyping](./Subtyping.agda),
+	   [ParamCastSubtyping](./ParamCastSubtyping.agda),
+	   and [ParamBlameSubtyping](./ParamBlameSubtyping.agda).
+	10. [PreCastStructureWithPrecision](./PreCastStructureWithPrecision.agda),
+	    [CastStructureWithPrecision](./CastStructureWithPrecision.agda),
+        [ParamCCPrecision](./ParamCCPrecision.agda),
+		[ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda), 
+		[ParamGradualGuaranteeSim](./ParamGradualGuaranteeSim.agda), and
+		[ParamGradualGuarantee](./ParamGradualGuarantee.agda).
+4. [GTLC2CCOrig](./GTLC2CCOrig.agda)
+5. A Half-Dozen Cast Calculi
+    1. EDA: [SimpleCast](./SimpleCast.agda)
+	2. EDI: [SimpleFunCast](./SimpleFunCast.agda)
+	3. λB: [GroundCast](./GroundCast.agda), [GroundCastGG](./GroundCastGG.agda)
+	4. EDC: [SimpleCoercions](./SimpleCoercions.agda)
+	5. LDC: [LazyCoercions](./LazyCoercions.agda)
+	6. λC: [GroundCoercion](./GroundCoercion.agda)
+6. Space-Efficient Parameterized Cast Caclulus
+	1. [EfficientParamCastAux](./EfficientParamCastAux.agda)
+	2. [CastStructure](./CastStructure.agda) (`ComposableCasts` is named `EfficientCastStruct`)
+	3. [EfficientParamCasts](./EfficientParamCasts.agda)
+	4. [EfficientParamCasts](./EfficientParamCasts.agda)
+	5. [PreserveHeight](./PreserveHeight.agda) and [SpaceEfficient](./SpaceEfficient.agda)
+7. Space-Efficient Cast Calculi
+	1. [EfficientGroundCoercions](./EfficientGroundCoercions.agda)
+	2. [HyperCoercions](./HyperCoercions.agda)
+
 
 ### Inventory
 
@@ -61,7 +130,7 @@ Formalizations of Gradually Typed Languages in Agda
        Calculus. It is parameterized over a type constructor `Cast`. This
        includes the definition of substitution.
     - [ParamCastCalculus](./ParamCastCalculus.agda): This is mostly
-       the same as the vanilla version above, except it has a separate
+       the same as the version above, except it has a separate
        term constructor for inert cast ("wrap"). This is used when defining
        the precision relation and proving the gradual guarantee.
 
@@ -70,9 +139,13 @@ Formalizations of Gradually Typed Languages in Agda
    and proves a canonical forms lemma for type dynamic.
    This module is parameterized over a `PreCastStruct`.
 
-* [ParamCastReduction](./ParamCastReduction.agda): Reduction
-   rules and proof of type safety for the Parameterized Cast
-   Calculus, parameterized over a `CastStruct`.
+* [ParamCastReductionOrig](./ParamCastReductionOrig.agda): Reduction
+   rules and proof of type safety for the first version of hte
+   Parameterized Cast Calculus, parameterized over a `CastStruct`.
+
+* [ParamCastReduction](./ParamCastReduction.agda): Reduction rules and
+   proof of type safety for the second version of hte Parameterized
+   Cast Calculus, parameterized over a `CastStruct`.
 
 * [ParamCastDeterministic](./ParamCastDeterministic.agda):
    A proof that reduction is deterministic.
@@ -86,6 +159,12 @@ Formalizations of Gradually Typed Languages in Agda
    calculus. This module requires a compose function for casts, so it
    is parameterized over `EfficientCastStruct`.  This module includes
    a proof of progress.
+
+*  **Compilation of the GTLC** to the corresponding variant of the
+   Parameterized Cast Calculus (CC). The compilation is type preserving.
+   
+    - [GTLC2CCOrig](./GTLC2CCOrig.agda): From GTLC to `ParamCastCalculusOrig`.
+    - [GTLC2CC](./GTLC2CC.agda): From GTLC to `ParamCastCalculus`.
 
 * **Space-efficiency theorem:**
 
@@ -133,12 +212,6 @@ Formalizations of Gradually Typed Languages in Agda
     - [ParamGradualGuarantee](./ParamGradualGuarantee.agda):
        This module is also parameterized by `CastStructWithPrecision`.
        It contains the main theorem statement and proof of `gradual-guarantee`.
-
-*  **Compilation of the GTLC** to the corresponding variant of the
-   Parameterized Cast Calculus (CC). The compilation is type preserving.
-   
-    - [GTLC2CCOrig](./GTLC2CCOrig.agda): From GTLC to `ParamCastCalculusOrig`.
-    - [GTLC2CC](./GTLC2CC.agda): From GTLC to `ParamCastCalculus`.
 
 * [GroundCast](./GroundCast.agda): Type safety of λB (Siek,
    Thiemann, Wadler 2015). ("lazy UD" of Siek, Garcia, and Taha 2009)
