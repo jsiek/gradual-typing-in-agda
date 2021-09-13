@@ -1,20 +1,22 @@
 # Gradual Typing in Agda
 
+
 ### About
 
 Formalizations of Gradually Typed Languages in Agda.
 
 The current release is `v1.0`.
 
+
 ### Agda Version
 
 The current release `v1.0` of this project has been checked by Agda
-version `2.6.2`.
+version `2.6.2` with the Agda standard library version `1.7`.
 
 
 ### Prerequisites/Dependencies
 
-This project depends on the following Abstract Binding Trees library,
+This project depends on the Abstract Binding Trees library,
 specifically release `v1.0`.
 
 https://github.com/jsiek/abstract-binding-trees
@@ -32,7 +34,7 @@ development. Here we provide a mapping from sections in that article
 to the files in this project.
 
 1. Introduction - no corresponding Agda files
-2. [GTLC](./GTLC.agda)
+2. Gradually Typed Lambda Calculus: [GTLC](./GTLC.agda)
 3. Parameterized Cast Calculus
     1. [PreCastStructure](./PreCastStructure.agda)
 	2. [ParamCastAux](./ParamCastAux.agda)
@@ -54,7 +56,7 @@ to the files in this project.
 		[ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda), 
 		[ParamGradualGuaranteeSim](./ParamGradualGuaranteeSim.agda), and
 		[ParamGradualGuarantee](./ParamGradualGuarantee.agda).
-4. [GTLC2CCOrig](./GTLC2CCOrig.agda)
+4. Compilation of GTLC to CC: [GTLC2CCOrig](./GTLC2CCOrig.agda)
 5. A Half-Dozen Cast Calculi
     1. EDA: [SimpleCast](./SimpleCast.agda)
 	2. EDI: [SimpleFunCast](./SimpleFunCast.agda)
