@@ -62,14 +62,14 @@ to the files in this project.
 	5. LDC: [LazyCoercions](./LazyCoercions.agda)
 	6. λC: [GroundCoercion](./GroundCoercion.agda)
 6. Space-Efficient Parameterized Cast Caclulus
-  1. [EfficientParamCastAux](./EfficientParamCastAux.agda)
-  2. [CastStructure](./CastStructure.agda) (`ComposableCasts` is named `EfficientCastStruct`)
-  3. [EfficientParamCasts](./EfficientParamCasts.agda)
-  4. [EfficientParamCasts](./EfficientParamCasts.agda)
-  5. [PreserveHeight](./PreserveHeight.agda) and [SpaceEfficient](./SpaceEfficient.agda)
+	1. [EfficientParamCastAux](./EfficientParamCastAux.agda)
+	2. [CastStructure](./CastStructure.agda) (`ComposableCasts` is named `EfficientCastStruct`)
+	3. [EfficientParamCasts](./EfficientParamCasts.agda)
+	4. [EfficientParamCasts](./EfficientParamCasts.agda)
+	5. [PreserveHeight](./PreserveHeight.agda) and [SpaceEfficient](./SpaceEfficient.agda)
 7. Space-Efficient Cast Calculi
-  1. [EfficientGroundCoercions](./EfficientGroundCoercions.agda)
-  2. [HyperCoercions](./HyperCoercions.agda)
+	1. [EfficientGroundCoercions](./EfficientGroundCoercions.agda)
+	2. [HyperCoercions](./HyperCoercions.agda)
 
 
 ### Inventory
