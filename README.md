@@ -41,7 +41,8 @@ to the files in this project.
 	5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
 	6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
 	7. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
-	8. [ParamCastCalculus](./ParamCastCalculus.agda)
+	8. [ParamCastCalculus](./ParamCastCalculus.agda), 
+	   [ParamCastReduction](./ParamCastReduction.agda)
     9. [PreCastStructureWithBlameSafety](./PreCastStructureWithBlameSafety)
 	   [CastStructureWithBlameSafety](./CastStructureWithBlameSafety),
 	   [Subtyping](./Subtyping.agda),
