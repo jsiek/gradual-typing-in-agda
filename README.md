@@ -5,19 +5,19 @@
 
 Formalizations of Gradually Typed Languages in Agda.
 
-The current release is `v1.0`.
+The current release is `v2.1`.
 
 
 ### Agda Version
 
-The current release `v1.0` of this project has been checked by Agda
+The release `v2.1` of this project has been checked by Agda
 version `2.6.2` with the Agda standard library version `1.7`.
 
 
 ### Prerequisites/Dependencies
 
 This project depends on the Abstract Binding Trees library,
-specifically release `v2.1`.
+specifically release `v1.0`.
 
 https://github.com/jsiek/abstract-binding-trees
 
