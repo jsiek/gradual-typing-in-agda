@@ -130,3 +130,6 @@ CastAllSafe = predicate-allsafe []
 --       ------------------------------------
 --     → CastsAllSafe (blame ℓ′) ℓ
 𝑃ₛ (op-blame ℓ′) []ᵥ tt ℓ = ℓ ≢̂ ℓ′
+
+open import SubstPreserve Op sig Label 𝑉ₛ 𝑃ₛ (λ _ → unit) (λ { unit unit → unit })
+    (λ x → x) (λ { unit pM → {!!} }) public
