@@ -17,7 +17,7 @@ version `2.6.2` with the Agda standard library version `1.7`.
 ### Prerequisites/Dependencies
 
 This project depends on the Abstract Binding Trees library,
-specifically release `v1.0`.
+specifically release `v2.1`.
 
 https://github.com/jsiek/abstract-binding-trees
 
