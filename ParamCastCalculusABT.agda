@@ -1,6 +1,8 @@
 open import Types
 open import PreCastStructure
 
+open import Syntax
+
 {-
 
 Here we define the Cast Calculus in a way that parameterizes over the
@@ -15,11 +17,10 @@ the type of a cast may not literally be a function type.
 -}
 module ParamCastCalculusABT (pcs : PreCastStruct) where
 
-open import Variables
 open import Labels
 open import Data.Nat
 open import Data.Unit using (⊤) renaming (tt to unit)
-open import Data.Bool hiding (if_then_else_)
+open import Data.Bool
 open import Data.List
 open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
 open import Data.Product
@@ -30,8 +31,6 @@ open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong; cong₂; cong-app)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
-
-open import Syntax hiding (_∋_⦂_)
 
 open PreCastStruct pcs using (Cast; Inert)
 

@@ -5,7 +5,6 @@ open import Data.Nat
 open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
-open import Variables
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
@@ -13,7 +12,7 @@ open import Relation.Binary.PropositionalEquality
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
 open import Data.Empty using (⊥; ⊥-elim)
 
-open import Syntax using (Sig; Rename; Var; _•_; id; ↑; ⇑)
+open import Syntax
 
 {-
 

@@ -10,7 +10,6 @@ open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Bool
 open import Data.Maybe
 open import Data.List using (List; _∷_; [])
--- open import Variables
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
@@ -19,7 +18,7 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Empty using (⊥; ⊥-elim)
 open import Utils
 
-open import Syntax using (Var; Sig; Rename; _•_; id; ext; ↑; ⇑; _∋_⦂_)
+open import Syntax
 
 
 {-
