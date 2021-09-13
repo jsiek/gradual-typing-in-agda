@@ -34,14 +34,14 @@ to the files in this project.
 1. Introduction - no corresponding Agda files
 2. `GTLC.agda`
 3. Parameterized Cast Calculus
-    1. `PreCastStructure.agda`
-	2. `ParamCastAux.agda`
-	3. `ParamCastAux.agda`
-	4. `CastStructure.agda`
-	5. `ParamCastCalculusOrig.agda`
-	6. `ParamCastReductionOrig.agda`
-	7. `ParamCastReductionOrig.agda`
-	8. `ParamCastCalculus.agda`
+    1. [PreCastStructure](./PreCastStructure.agda)
+	2. [ParamCastAux](./ParamCastAux.agda)
+	3. [ParamCastAux](./ParamCastAux.agda)
+	4. [CastStructure](./CastStructure.agda)
+	5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
+	6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+	7. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+	8. [ParamCastCalculus](./ParamCastCalculus.agda)
     9. `PreCastStructureWithBlameSafety`, `CastStructureWithBlameSafety`,
 	   `Subtyping.agda`, `ParamCastSubtyping.agda`, and `ParamBlameSubtyping.agda`.
 	10. `PreCastStructureWithPrecision.agda`, `CastStructureWithPrecision.agda`,
