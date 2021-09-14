@@ -1,26 +1,4 @@
-open import Types
-open import PreCastStructure
-
-open import Syntax
-
-{-
-
-Here we define the Cast Calculus in a way that parameterizes over the
-actual casts, to enable succinct definitions and proofs of type safety
-for many different cast calculi.  The Agda type constructor for
-representing casts is given by the module parameter named Cast.  The
-Type argument to Cast is typically a function type whose domain is the
-source of the cast and whose codomain is the target type of the
-cast. However, in cast calculi with fancy types such as intersections,
-the type of a cast may not literally be a function type.
-
--}
-module ParamCastCalculusABT (pcs : PreCastStruct) where
-
-open import Labels
-open import Data.Nat
 open import Data.Unit using (⊤) renaming (tt to unit)
-open import Data.Bool
 open import Data.List
 open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
 open import Data.Product
@@ -28,20 +6,36 @@ open import Data.Product
   renaming (_,_ to ⟨_,_⟩ )
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality using (_≡_; refl; trans; sym; cong; cong₂; cong-app)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Empty using (⊥; ⊥-elim)
+open import Relation.Binary.PropositionalEquality
+  using (_≡_; refl; trans; sym; cong; cong₂; cong-app)
+
+open import Types
+open import Labels
+open import PreCastStructure
+
+open import Syntax
+
+
+{-
+  Here we define the Cast Calculus in a way that parameterizes over the
+  actual casts, to enable succinct definitions and proofs of type safety
+  for many different cast calculi.  The Agda type constructor for
+  representing casts is given by the module parameter named Cast.  The
+  Type argument to Cast is typically a function type whose domain is the
+  source of the cast and whose codomain is the target type of the
+  cast. However, in cast calculi with fancy types such as intersections,
+  the type of a cast may not literally be a function type.
+-}
+module ParamCastCalculusABT (pcs : PreCastStruct) where
 
 open PreCastStruct pcs using (Cast; Inert)
 
 {-
-
-We define well-typed expressions with the following typing judgment.
-Compared to the STLC, there are two important new features.
-The cast is written M ⟨ c ⟩, where M is an expression and c
-is a cast (whatever that may be). We also have blame ℓ for
-raising uncatchable exceptions.
-
+  We define well-typed expressions with the following typing judgment.
+  Compared to the STLC, there are two important new features.
+  The cast is written M ⟨ c ⟩, where M is an expression and c
+  is a cast (whatever that may be). We also have blame ℓ for
+  raising uncatchable exceptions.
 -}
 
 -- Syntax

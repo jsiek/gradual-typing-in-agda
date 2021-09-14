@@ -1,27 +1,24 @@
-open import Types
-open import PreCastStructure
-open import Labels
-open import Data.Nat
-open import Data.Product using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ; Σ-syntax) renaming (_,_ to ⟨_,_⟩)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Bool
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
+open import Data.Product
+  using (_×_; proj₁; proj₂; ∃; ∃-syntax; Σ; Σ-syntax)
+  renaming (_,_ to ⟨_,_⟩)
 open import Relation.Binary.PropositionalEquality
   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   renaming (subst to subst-eq; subst₂ to subst₂-eq)
-open import Data.Empty using (⊥; ⊥-elim)
+
+open import Types
+open import Labels
+open import PreCastStructure
 
 open import Syntax
 
-{-
 
+{-
   This modules defines reduction for the Parameterized Cast Calculus
   and provides a proof of progress. Preservation is guaranteed in the
   way the reduction relation is defined and checked by Agda.
-
 -}
-
 
 module ParamCastAuxABT (pcs : PreCastStruct) where
 
@@ -29,22 +26,19 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
 
   open import ParamCastCalculusABT pcs
 
-
   {-
+    Before defining reduction, we first need to define Value.  In cast
+    calculi, whether a cast forms a value or not depends on the shape of
+    the cast. But here we have parameterized over casts.  So we must add
+    more parameters to tell us whether a cast is a value-forming cast or
+    not. So we add the parameter Inert to identify the later, and the
+    parameter Active to identify casts that need to be reduced. Further,
+    we require that all casts (at least, all the well-typed ones) can be
+    categorized one of these two ways, which is given by the
+    ActiveOrInert parameter.
 
-  Before defining reduction, we first need to define Value.  In cast
-  calculi, whether a cast forms a value or not depends on the shape of
-  the cast. But here we have parameterized over casts.  So we must add
-  more parameters to tell us whether a cast is a value-forming cast or
-  not. So we add the parameter Inert to identify the later, and the
-  parameter Active to identify casts that need to be reduced. Further,
-  we require that all casts (at least, all the well-typed ones) can be
-  categorized one of these two ways, which is given by the
-  ActiveOrInert parameter.
-
-  The following is the definition of Value. The case for casts, M ⟨ c ⟩,
-  requires M to be a value and c to be an inert cast.
-
+    The following is the definition of Value. The case for casts, M ⟨ c ⟩,
+    requires M to be a value and c to be an inert cast.
   -}
   data Value : ∀ Term → Set where
 

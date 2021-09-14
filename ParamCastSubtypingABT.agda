@@ -1,17 +1,9 @@
-open import Data.Nat using (ℕ; zero; suc)
-open import Data.Bool
-open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
-  renaming (subst to subst-eq; subst₂ to subst₂-eq)
-open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax) renaming (_,_ to ⟨_,_⟩)
-open import Data.Nat.Properties using (_≟_)
+  using (_≡_; _≢_; refl)
+open import Data.Product using (_×_) renaming (_,_ to ⟨_,_⟩)
 open import Data.List
 open import Data.Vec using (Vec) renaming ([] to []ᵥ; _∷_ to _∷ᵥ_)
-open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Maybe
 open import Data.Unit using (⊤) renaming (tt to unit)
-
 
 open import Types
 open import Labels

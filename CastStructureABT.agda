@@ -1,6 +1,3 @@
-open import Types hiding (_⊔_)
-open import Variables
-open import PreCastStructure
 open import Data.Bool using (Bool; true; false)
 open import Data.Nat using (ℕ; _≤_; _⊔_; _+_; _*_)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
@@ -10,6 +7,9 @@ open import Data.Maybe using (Maybe; just; nothing)
 open import Relation.Binary.PropositionalEquality
    using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 open import Relation.Nullary using (¬_)
+
+open import Types hiding (_⊔_)
+open import PreCastStructure
 open import Pow2
 
 

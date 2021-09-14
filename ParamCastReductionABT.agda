@@ -1,22 +1,21 @@
-open import Types
-open import PreCastStructure
-open import CastStructureABT
-open import Labels
+open import Data.Bool
 open import Data.Nat
 open import Data.Product
   using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Bool
-open import Data.Maybe
 open import Data.List using (List; _∷_; [])
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   renaming (subst to subst-eq)
-open import Data.Empty using (⊥; ⊥-elim)
+
 open import Utils
+open import Types
+open import Labels
+open import PreCastStructure
+open import CastStructureABT
 
 open import Syntax
 
@@ -25,7 +24,6 @@ open import Syntax
   This modules defines reduction for the Parameterized Cast Calculus
   and provides proofs of both progress and preservation.
 -}
-
 
 module ParamCastReductionABT (cs : CastStruct) where
 
