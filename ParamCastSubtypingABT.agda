@@ -38,7 +38,7 @@ CastAllSafe = predicate-allsafe []
 --   allsafe-var : ∀ {x} {ℓ}
 --       ------------------------------
 --     → CastsAllSafe (` x) ℓ
-𝑉ₛ _ _ _ _ = ⊤
+𝑉ₛ _ _ ℓ′ ℓ = ℓ ≡ ℓ′
 
 --   allsafe-cast : ∀ {S T} {M : Term} {c : Cast (S ⇒ T)} {ℓ}
 --     → CastBlameSafe c ℓ
@@ -58,7 +58,7 @@ CastAllSafe = predicate-allsafe []
 --     → CastsAllSafe N ℓ
 --       -----------------------
 --     → CastsAllSafe (ƛ A ˙ N) ℓ
-𝑃ₛ (op-lam _) (ℓₙ ∷ᵥ []ᵥ) ⟨ ⟨ _ , tt ⟩ , tt ⟩ ℓ = ℓ ≡ ℓₙ
+𝑃ₛ (op-lam _) (ℓₙ ∷ᵥ []ᵥ) ⟨ ⟨ ℓ′ , tt ⟩ , tt ⟩ ℓ = ℓ ≡ ℓ′ × ℓ ≡ ℓₙ
 
 --   allsafe-· : ∀ {L M : Term} {ℓ}
 --     → CastsAllSafe L ℓ
@@ -131,5 +131,8 @@ CastAllSafe = predicate-allsafe []
 --     → CastsAllSafe (blame ℓ′) ℓ
 𝑃ₛ (op-blame ℓ′) []ᵥ tt ℓ = ℓ ≢̂ ℓ′
 
-open import SubstPreserve Op sig Label 𝑉ₛ 𝑃ₛ (λ _ → unit) (λ { unit unit → unit })
-    (λ x → x) (λ { unit pM → {!!} }) public
+open import SubstPreserve Op sig Label 𝑉ₛ 𝑃ₛ (λ _ → refl) (λ { refl refl → refl })
+  (λ x → x) (λ { refl pM → pM }) public
+    renaming (preserve-rename to rename-pres-allsafe;
+              preserve-subst to subst-pres-allsafe;
+              preserve-substitution to substitution-allsafe)
