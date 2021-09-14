@@ -22,8 +22,10 @@ open import ParamCastCalculusABT precast
 𝑉ₛ : List Label → Var → Label → Label → Set
 𝑃ₛ : (op : Op) → Vec Label (length (sig op)) → BTypes Label (sig op) → Label → Set
 
-open import ABTPredicate Op sig 𝑉 𝑃 public renaming (_⊢_⦂_ to predicate-allsafe)
-CastAllSafe = predicate-allsafe []
+open import ABTPredicate Op sig 𝑉ₛ 𝑃ₛ public renaming (_⊢_⦂_ to predicate-allsafe)
+
+CastsAllSafe : Term → Label → Set  -- CastsAllSafe M ℓ
+CastsAllSafe = predicate-allsafe []
 
 -- data CastsAllSafe : ∀ (M : Term) → (ℓ : Label) → Set where
 
