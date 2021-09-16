@@ -13,7 +13,7 @@ open import Syntax
 
 module GenericPredicate (precast : PreCastStruct) where
 
-  open import ParamCastCalculusSyntax precast using (Op; sig)
+  open import ParamCCSyntaxABT precast using (Op; sig)
   open Op
 
   module GenericPredicatePatterns {ℓ} {I : Set ℓ}
