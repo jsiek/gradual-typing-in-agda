@@ -107,8 +107,8 @@ module ParamCastSubtypingABT (pcss : PreCastStructWithBlameSafety) where
   --     → CastsAllSafe N ℓ
   --       ------------------------------
   --     → CastsAllSafe (case L of A ⇒ M ∣ B ⇒ N) ℓ
-  𝑃ₛ (op-case _ _) (ℓₗ ∷ᵥ ℓₘ ∷ᵥ ℓₙ ∷ᵥ []ᵥ) ⟨ tt , ⟨ ⟨ _ , tt ⟩ , ⟨ ⟨ _ , tt ⟩ , tt ⟩ ⟩ ⟩ ℓ =
-    ℓ ≡ ℓₗ × ℓ ≡ ℓₘ × ℓ ≡ ℓₙ
+  𝑃ₛ (op-case _ _) (ℓₗ ∷ᵥ ℓₘ ∷ᵥ ℓₙ ∷ᵥ []ᵥ) ⟨ tt , ⟨ ⟨ ℓ₁ , tt ⟩ , ⟨ ⟨ ℓ₂ , tt ⟩ , tt ⟩ ⟩ ⟩ ℓ =
+    ℓ ≡ ℓ₁  × ℓ ≡ ℓ₂ × ℓ ≡ ℓₗ × ℓ ≡ ℓₘ × ℓ ≡ ℓₙ
 
   {-
     NOTE:
@@ -132,7 +132,7 @@ module ParamCastSubtypingABT (pcss : PreCastStructWithBlameSafety) where
   pattern 𝐶ₛ-snd = refl
   pattern 𝐶ₛ-inl = refl
   pattern 𝐶ₛ-inr = refl
-  pattern 𝐶ₛ-case = ⟨ refl , ⟨ refl , refl ⟩ ⟩
+  pattern 𝐶ₛ-case = ⟨ refl , ⟨ refl , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩ ⟩
 
   open import ABTPredicate Op sig 𝑉ₛ 𝑃ₛ public
     renaming (_⊢_⦂_ to predicate-allsafe)

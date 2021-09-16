@@ -90,3 +90,19 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     ⊢cast c (preserve-allsafe allsafeₘ R) ⟨ safe , refl ⟩
   preserve-allsafe-plug (F-wrap c i) (⊢wrap .c .i allsafeₘ ⟨ safe , refl ⟩) R =
     ⊢wrap c i (preserve-allsafe allsafeₘ R) ⟨ safe , refl ⟩
+
+  preserve-allsafe allsafe (ξ {F = F} rd) =
+    preserve-allsafe-plug F allsafe rd
+  preserve-allsafe allsafe (ξ-blame {F = F}) =
+    ⊢blame _ (plug-blame-allsafe-diff-ℓ F allsafe)
+  preserve-allsafe (⊢· (⊢ƛ _ allsafeₙ 𝐶⊢-ƛ) allsafeₘ 𝐶ₛ-·) (β v) =
+    substitution-allsafe _ _ allsafeₙ allsafeₘ
+  preserve-allsafe _ δ = ⊢$ _ _ 𝐶ₛ-$
+  preserve-allsafe (⊢if _ allsafeₘ _ 𝐶ₛ-if) β-if-true = allsafeₘ
+  preserve-allsafe (⊢if _ _ allsafeₙ 𝐶ₛ-if) β-if-false = allsafeₙ
+  preserve-allsafe (⊢fst (⊢cons allsafeₘ _ 𝐶ₛ-cons) 𝐶ₛ-fst) (β-fst _ _) = allsafeₘ
+  preserve-allsafe (⊢snd (⊢cons _ allsafeₙ 𝐶ₛ-cons) 𝐶ₛ-snd) (β-snd _ _) = allsafeₙ
+  preserve-allsafe (⊢case _ _ (⊢inl _ allsafeₗ 𝐶ₛ-inl) allsafeₘ _ 𝐶ₛ-case) (β-caseL _) =
+    substitution-allsafe _ _ allsafeₘ allsafeₗ
+  preserve-allsafe (⊢case _ _ (⊢inr _ allsafeₗ 𝐶ₛ-inr) _ allsafeₙ 𝐶ₛ-case) (β-caseR _) =
+    substitution-allsafe _ _ allsafeₙ allsafeₗ
