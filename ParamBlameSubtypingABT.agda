@@ -18,7 +18,7 @@ open import CastStructureWithBlameSafetyABT
 module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
 
   open CastStructWithBlameSafety css
-  open import ParamCCTypingABT precast
+  open import ParamCastCalculusABT precast
   open import ParamCastAuxABT precast
   open import ParamCastReductionABT cs
 

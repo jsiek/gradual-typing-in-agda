@@ -129,6 +129,20 @@ module ParamCastCalculusABT (pcs : PreCastStruct) where
   --     → Γ ⊢ blame ℓ ⦂ A
   𝑃⊢ (op-blame _) []ᵥ tt A = ⊤
 
+  pattern 𝐶⊢-ƛ = ⟨ refl , refl ⟩
+  pattern 𝐶⊢-· = refl
+  pattern 𝐶⊢-$ = refl
+  pattern 𝐶⊢-if = ⟨ ⟨ refl , refl ⟩ , refl ⟩
+  pattern 𝐶⊢-cons = refl
+  pattern 𝐶⊢-fst = ⟨ _ , refl ⟩
+  pattern 𝐶⊢-snd = ⟨ _ , refl ⟩
+  pattern 𝐶⊢-inl = refl
+  pattern 𝐶⊢-inr = refl
+  pattern 𝐶⊢-case = ⟨ ⟨ refl , refl ⟩ , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩
+  pattern 𝐶⊢-cast = ⟨ refl , refl ⟩
+  pattern 𝐶⊢-wrap = ⟨ refl , refl ⟩
+  pattern 𝐶⊢-blame = unit
+
   infix  4  _⊢_⦂_
   open import ABTPredicate Op sig 𝑉⊢ 𝑃⊢ public renaming (_⊢_⦂_ to predicate)
   _⊢_⦂_ = predicate

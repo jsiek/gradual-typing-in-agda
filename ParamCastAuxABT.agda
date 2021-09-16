@@ -83,7 +83,7 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   canonical⋆ (⊢cons ⊢M ⊢N ()) (V-pair v w)
   canonical⋆ (⊢inl B ⊢M ()) (V-inl v)
   canonical⋆ (⊢inr A ⊢M ()) (V-inr v)
-  canonical⋆ (⊢wrap-refl c i ⊢M) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
 
   {-
     We shall use a kind of shallow evaluation context, called a Frame,
@@ -238,8 +238,8 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       -------------------------
     → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
   eta⇒-wt M c {x} ⊢M =
-    ⊢ƛ-refl _ (⊢cast-refl (cod c x) (⊢·-refl (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
-                                    (⊢cast-refl (dom c x) (⊢` refl))))
+    ⊢ƛ _ (⊢cast (cod c x) (⊢· (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
+                              (⊢cast (dom c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-·) 𝐶⊢-cast) 𝐶⊢-ƛ
 
   eta× : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `× B) ⇒ (C `× D)))
@@ -252,8 +252,8 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → Γ ⊢ M ⦂ A `× B
       -------------------------
     → Γ ⊢ eta× M c x ⦂ C `× D
-  eta×-wt M c {x} ⊢M = ⊢cons-refl (⊢cast-refl (fstC c x) (⊢fst-refl ⊢M))
-                                  (⊢cast-refl (sndC c x) (⊢snd-refl ⊢M))
+  eta×-wt M c {x} ⊢M = ⊢cons (⊢cast (fstC c x) (⊢fst ⊢M 𝐶⊢-fst) 𝐶⊢-cast)
+                             (⊢cast (sndC c x) (⊢snd ⊢M 𝐶⊢-snd) 𝐶⊢-cast) 𝐶⊢-cons
 
   eta⊎ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
@@ -269,5 +269,5 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       -------------------------
     → Γ ⊢ eta⊎ M c x ⦂ C `⊎ D
   eta⊎-wt M c {x} ⊢M =
-    ⊢case-refl _ _ ⊢M (⊢inl-refl _ (⊢cast-refl (inlC c x) (⊢` refl)))
-                      (⊢inr-refl _ (⊢cast-refl (inrC c x) (⊢` refl)))
+    ⊢case _ _ ⊢M (⊢inl _ (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-inl)
+                 (⊢inr _ (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-inr) 𝐶⊢-case

@@ -353,30 +353,30 @@ module ParamCastReductionABT (cs : CastStruct) where
     → Γ ⊢ plug M F ⦂ A
       -------------------------------------------------------------
     → ∃[ B ] Γ ⊢ M ⦂ B × (∀ M' → Γ ⊢ M' ⦂ B → Γ ⊢ plug M' F ⦂ A)
-  plug-inversion {M = L} {F-·₁ M} {A} (⊢·-refl ⊢L ⊢M) =
-    ⟨ _ ⇒ A , ⟨ ⊢L , (λ M' ⊢M' → ⊢·-refl ⊢M' ⊢M) ⟩ ⟩
-  plug-inversion {M = M} {F-·₂ V v} (⊢·-refl ⊢V ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢·-refl ⊢V ⊢M') ⟩ ⟩
-  plug-inversion {M = L} {F-if M N} (⊢if-refl ⊢L ⊢M ⊢N) =
-    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢if-refl ⊢M' ⊢M ⊢N) ⟩ ⟩
-  plug-inversion {F = F-×₁ V v} (⊢cons-refl ⊢M ⊢N) =
-    ⟨ _ , ⟨ ⊢N , (λ M' ⊢M' → ⊢cons-refl ⊢M ⊢M') ⟩ ⟩
-  plug-inversion {F = F-×₂ M} (⊢cons-refl ⊢M ⊢N) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cons-refl ⊢M' ⊢N) ⟩ ⟩
-  plug-inversion {F = F-fst} (⊢fst-refl ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢fst-refl ⊢M') ⟩ ⟩
-  plug-inversion {F = F-snd} (⊢snd-refl ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢snd-refl ⊢M') ⟩ ⟩
-  plug-inversion {F = F-inl B} (⊢inl-refl .B ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inl-refl B ⊢M') ⟩ ⟩
-  plug-inversion {F = F-inr A} (⊢inr-refl .A ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inr-refl A ⊢M') ⟩ ⟩
-  plug-inversion {F = F-case A B M N} (⊢case-refl .A .B ⊢L ⊢M ⊢N) =
-    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢case-refl A B ⊢M' ⊢M ⊢N) ⟩ ⟩
-  plug-inversion {F = F-cast c} (⊢cast-refl .c ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cast-refl c ⊢M') ⟩ ⟩
-  plug-inversion {F = F-wrap c i} (⊢wrap-refl .c .i ⊢M) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢wrap-refl c i ⊢M') ⟩ ⟩
+  plug-inversion {M = L} {F-·₁ M} {A} (⊢· ⊢L ⊢M 𝐶⊢-·) =
+    ⟨ _ ⇒ A , ⟨ ⊢L , (λ M' ⊢M' → ⊢· ⊢M' ⊢M 𝐶⊢-·) ⟩ ⟩
+  plug-inversion {M = M} {F-·₂ V v} (⊢· ⊢V ⊢M 𝐶⊢-·) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢· ⊢V ⊢M' 𝐶⊢-·) ⟩ ⟩
+  plug-inversion {M = L} {F-if M N} (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) =
+    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢if ⊢M' ⊢M ⊢N 𝐶⊢-if) ⟩ ⟩
+  plug-inversion {F = F-×₁ V v} (⊢cons ⊢M ⊢N 𝐶⊢-cons) =
+    ⟨ _ , ⟨ ⊢N , (λ M' ⊢M' → ⊢cons ⊢M ⊢M' 𝐶⊢-cons) ⟩ ⟩
+  plug-inversion {F = F-×₂ M} (⊢cons ⊢M ⊢N 𝐶⊢-cons) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cons ⊢M' ⊢N 𝐶⊢-cons) ⟩ ⟩
+  plug-inversion {F = F-fst} (⊢fst ⊢M 𝐶⊢-fst) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢fst ⊢M' 𝐶⊢-fst) ⟩ ⟩
+  plug-inversion {F = F-snd} (⊢snd ⊢M 𝐶⊢-snd) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢snd ⊢M' 𝐶⊢-snd) ⟩ ⟩
+  plug-inversion {F = F-inl B} (⊢inl .B ⊢M 𝐶⊢-inl) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inl B ⊢M' 𝐶⊢-inl) ⟩ ⟩
+  plug-inversion {F = F-inr A} (⊢inr .A ⊢M 𝐶⊢-inr) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inr A ⊢M' 𝐶⊢-inr) ⟩ ⟩
+  plug-inversion {F = F-case A B M N} (⊢case .A .B ⊢L ⊢M ⊢N 𝐶⊢-case) =
+    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢case A B ⊢M' ⊢M ⊢N 𝐶⊢-case) ⟩ ⟩
+  plug-inversion {F = F-cast c} (⊢cast .c ⊢M 𝐶⊢-cast) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cast c ⊢M' 𝐶⊢-cast) ⟩ ⟩
+  plug-inversion {F = F-wrap c i} (⊢wrap .c .i ⊢M 𝐶⊢-wrap) =
+    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢wrap c i ⊢M' 𝐶⊢-wrap) ⟩ ⟩
 
   preserve : ∀ {Γ A} {M N : Term}
     → Γ ⊢ M ⦂ A
@@ -387,33 +387,33 @@ module ParamCastReductionABT (cs : CastStruct) where
   preserve ⊢M (ξ R) =
     case plug-inversion ⊢M of λ where
       ⟨ _ , ⟨ ⊢M' , plug-wt ⟩ ⟩ → plug-wt _ {- M' -} (preserve ⊢M' R)
-  preserve ⊢M ξ-blame = ⊢blame-refl _
-  preserve (⊢·-refl (⊢ƛ-refl _ ⊢N) ⊢M) (β v) = preserve-substitution _ _ ⊢N ⊢M
-  preserve (⊢·-refl (⊢$-refl f _) (⊢$-refl k _)) δ = ⊢$-refl (f k) _
-  preserve (⊢·-refl (⊢wrap-refl c i ⊢M) ⊢N) (fun-cast v w) =
-    ⊢cast-refl (cod c _) (⊢·-refl ⊢M (⊢cast-refl (dom c _) ⊢N))
-  preserve (⊢if-refl ⊢L ⊢M ⊢N) β-if-true = ⊢M
-  preserve (⊢if-refl ⊢L ⊢M ⊢N) β-if-false = ⊢N
-  preserve (⊢fst-refl (⊢cons-refl ⊢M ⊢N)) (β-fst v w) = ⊢M
-  preserve (⊢fst-refl (⊢wrap-refl c i ⊢M)) (fst-cast v) =
-    ⊢cast-refl (fstC c _) (⊢fst-refl ⊢M)
-  preserve (⊢snd-refl (⊢wrap-refl c i ⊢M)) (snd-cast v) =
-    ⊢cast-refl (sndC c _) (⊢snd-refl ⊢M)
-  preserve (⊢snd-refl (⊢cons-refl ⊢M ⊢N)) (β-snd v w) = ⊢N
-  preserve (⊢case-refl A B (⊢inl-refl _ ⊢L) ⊢M ⊢N) (β-caseL v) =
+  preserve ⊢M ξ-blame = ⊢blame _ 𝐶⊢-blame
+  preserve (⊢· (⊢ƛ _ ⊢N 𝐶⊢-ƛ) ⊢M 𝐶⊢-·) (β v) = preserve-substitution _ _ ⊢N ⊢M
+  preserve (⊢· (⊢$ f _ 𝐶⊢-$) (⊢$ k _ 𝐶⊢-$) 𝐶⊢-·) δ = ⊢$ (f k) _ 𝐶⊢-$
+  preserve (⊢· (⊢wrap c i ⊢M 𝐶⊢-wrap) ⊢N 𝐶⊢-·) (fun-cast v w) =
+    ⊢cast (cod c _) (⊢· ⊢M (⊢cast (dom c _) ⊢N 𝐶⊢-cast) 𝐶⊢-·) 𝐶⊢-cast
+  preserve (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) β-if-true = ⊢M
+  preserve (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) β-if-false = ⊢N
+  preserve (⊢fst (⊢cons ⊢M ⊢N 𝐶⊢-cons) 𝐶⊢-fst) (β-fst v w) = ⊢M
+  preserve (⊢fst (⊢wrap c i ⊢M 𝐶⊢-wrap) 𝐶⊢-fst) (fst-cast v) =
+    ⊢cast (fstC c _) (⊢fst ⊢M 𝐶⊢-fst) 𝐶⊢-cast
+  preserve (⊢snd (⊢wrap c i ⊢M 𝐶⊢-wrap) 𝐶⊢-snd) (snd-cast v) =
+    ⊢cast (sndC c _) (⊢snd ⊢M 𝐶⊢-snd) 𝐶⊢-cast
+  preserve (⊢snd (⊢cons ⊢M ⊢N 𝐶⊢-cons) 𝐶⊢-snd) (β-snd v w) = ⊢N
+  preserve (⊢case A B (⊢inl _ ⊢L 𝐶⊢-inl) ⊢M ⊢N 𝐶⊢-case) (β-caseL v) =
     preserve-substitution _ _ ⊢M ⊢L
-  preserve (⊢case-refl A B (⊢inr-refl _ ⊢L) ⊢M ⊢N) (β-caseR v) =
+  preserve (⊢case A B (⊢inr _ ⊢L 𝐶⊢-inr) ⊢M ⊢N 𝐶⊢-case) (β-caseR v) =
     preserve-substitution _ _ ⊢N ⊢L
-  preserve {Γ} (⊢case-refl C D (⊢wrap-refl c i ⊢L) ⊢M ⊢N)
+  preserve {Γ} (⊢case C D (⊢wrap c i ⊢L 𝐶⊢-wrap) ⊢M ⊢N 𝐶⊢-case)
                (case-cast {A} {B} {C} {D} {V} {M} {N} v {x}) =
-    ⊢case-refl A B ⊢L
+    ⊢case A B ⊢L
       {- rename (ext ⇑) M [ ` 0 ⟨ inlC c x ⟩ ] -}
       (preserve-substitution _ _
         (preserve-rename M ⊢M λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
-        (⊢cast-refl (inlC c x) (⊢` refl)))
+        (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast))
       (preserve-substitution _ _
         (preserve-rename N ⊢N λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
-        (⊢cast-refl (inrC c x) (⊢` refl)))
+        (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast)) 𝐶⊢-case
     where
     ext-suc-∋x : ∀ {Γ} {X Y A : Type}
       → (x : Var)
@@ -421,8 +421,8 @@ module ParamCastReductionABT (cs : CastStruct) where
       → (Y ∷ X ∷ Γ) ∋ (ext ⇑) x ⦂ A -- skipping the `X`
     ext-suc-∋x 0       ∋x = ∋x
     ext-suc-∋x (suc x) ∋x = ∋x
-  preserve (⊢cast-refl c ⊢M) (cast v {a}) = applyCast-wt ⊢M v a
-  preserve (⊢cast-refl c ⊢M) (wrap v {i}) = ⊢wrap-refl c i ⊢M
+  preserve (⊢cast c ⊢M 𝐶⊢-cast) (cast v {a}) = applyCast-wt ⊢M v a
+  preserve (⊢cast c ⊢M 𝐶⊢-cast) (wrap v {i}) = ⊢wrap c i ⊢M 𝐶⊢-wrap
 
   {- Auxiliary lemmas about reduction. -}
   var⌿→ : ∀ {x} {M N} → M ≡ ` x → ¬ (M —→ N)
