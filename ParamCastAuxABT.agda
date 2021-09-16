@@ -225,10 +225,6 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   value-plug {F-inr _} (V-inr v) = v
   value-plug {F-wrap _ _} (V-wrap v _) = v
 
-  open import SubstPreserve Op sig Type 𝑉 𝑃 (λ x → refl) (λ { refl refl → refl })
-    (λ x → x) (λ { refl ⊢M → ⊢M }) public
-      using (preserve-rename; preserve-subst; preserve-substitution)
-
 
   eta⇒ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
