@@ -106,3 +106,5 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     substitution-allsafe _ _ allsafeₘ allsafeₗ
   preserve-allsafe (⊢case _ _ (⊢inr _ allsafeₗ 𝐶ₛ-inr) _ allsafeₙ 𝐶ₛ-case) (β-caseR _) =
     substitution-allsafe _ _ allsafeₙ allsafeₗ
+  preserve-allsafe (⊢cast c allsafeₘ ⟨ safe , refl ⟩) (cast v {a}) = applyCast-pres-allsafe a safe allsafeₘ
+  preserve-allsafe (⊢cast c allsafeₘ ⟨ safe , refl ⟩) (wrap v {i}) = ⊢wrap c i allsafeₘ ⟨ safe , refl ⟩
