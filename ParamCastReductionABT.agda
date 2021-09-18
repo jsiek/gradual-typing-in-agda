@@ -378,6 +378,13 @@ module ParamCastReductionABT (cs : CastStruct) where
   plug-inversion {F = F-wrap c i} (⊢wrap .c .i ⊢M 𝐶⊢-wrap) =
     ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢wrap c i ⊢M' 𝐶⊢-wrap) ⟩ ⟩
 
+  ext-suc-∋x : ∀ {ℓ} {τ : Set ℓ} {Γ} {X Y A : τ}
+    → (x : Var)
+    → (Y ∷ Γ) ∋ x ⦂ A
+    → (Y ∷ X ∷ Γ) ∋ (ext ⇑) x ⦂ A -- skipping the `X`
+  ext-suc-∋x 0       ∋x = ∋x
+  ext-suc-∋x (suc x) ∋x = ∋x
+
   preserve : ∀ {Γ A} {M N : Term}
     → Γ ⊢ M ⦂ A
     → M —→ N
@@ -413,14 +420,8 @@ module ParamCastReductionABT (cs : CastStruct) where
         (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast))
       (preserve-substitution _ _
         (preserve-rename N ⊢N λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
-        (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast)) 𝐶⊢-case
-    where
-    ext-suc-∋x : ∀ {Γ} {X Y A : Type}
-      → (x : Var)
-      → (Y ∷ Γ) ∋ x ⦂ A
-      → (Y ∷ X ∷ Γ) ∋ (ext ⇑) x ⦂ A -- skipping the `X`
-    ext-suc-∋x 0       ∋x = ∋x
-    ext-suc-∋x (suc x) ∋x = ∋x
+        (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast))
+      𝐶⊢-case
   preserve (⊢cast c ⊢M 𝐶⊢-cast) (cast v {a}) = applyCast-wt ⊢M v a
   preserve (⊢cast c ⊢M 𝐶⊢-cast) (wrap v {i}) = ⊢wrap c i ⊢M 𝐶⊢-wrap
 

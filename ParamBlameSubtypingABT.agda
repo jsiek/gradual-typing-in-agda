@@ -108,3 +108,18 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     substitution-allsafe _ _ allsafeₙ allsafeₗ
   preserve-allsafe (⊢cast c allsafeₘ ⟨ safe , refl ⟩) (cast v {a}) = applyCast-pres-allsafe a safe allsafeₘ
   preserve-allsafe (⊢cast c allsafeₘ ⟨ safe , refl ⟩) (wrap v {i}) = ⊢wrap c i allsafeₘ ⟨ safe , refl ⟩
+  preserve-allsafe (⊢· (⊢wrap c i allsafeₗ ⟨ safe , refl ⟩) allsafeₘ 𝐶ₛ-·) (fun-cast {c = c} v w {x}) =
+    ⊢cast _ (⊢· allsafeₗ (⊢cast _ allsafeₘ ⟨ domBlameSafe safe x , refl ⟩) 𝐶ₛ-·) ⟨ codBlameSafe safe x , refl ⟩
+  preserve-allsafe (⊢fst (⊢wrap _ _ allsafeₘ ⟨ safe , refl ⟩) 𝐶ₛ-fst) (fst-cast v {x}) =
+    ⊢cast _ (⊢fst allsafeₘ 𝐶ₛ-fst) ⟨ fstBlameSafe safe x , refl ⟩
+  preserve-allsafe (⊢snd (⊢wrap _ _ allsafeₘ ⟨ safe , refl ⟩) 𝐶ₛ-snd) (snd-cast v {x}) =
+    ⊢cast _ (⊢snd allsafeₘ 𝐶ₛ-snd) ⟨ sndBlameSafe safe x , refl ⟩
+  preserve-allsafe (⊢case _ _ (⊢wrap _ _ allsafeₗ ⟨ safe , refl ⟩) allsafeₘ allsafeₙ 𝐶ₛ-case) (case-cast v {x}) =
+    ⊢case _ _ allsafeₗ
+      (substitution-allsafe _ _
+        (rename-pres-allsafe _ allsafeₘ λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
+        (⊢cast _ (⊢` refl) ⟨ inlBlameSafe safe x , refl ⟩))
+      (substitution-allsafe _ _
+        (rename-pres-allsafe _ allsafeₙ λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
+        (⊢cast _ (⊢` refl) ⟨ inrBlameSafe safe x , refl ⟩))
+      𝐶ₛ-case
