@@ -29,12 +29,12 @@ module CastStructureWithBlameSafetyABT where
           --------------------------------
         → Γ ⊢ applyCast M v c {a} ⦂ B
       {- This field is for blame-subtyping. -}
-      applyCast-pres-allsafe : ∀ {A B} {V : Term} {v : Value V} {c : Cast (A ⇒ B)} {ℓ}
+      applyCast-pres-SafeFor : ∀ {A B} {V : Term} {v : Value V} {c : Cast (A ⇒ B)} {ℓ}
         → (a : Active c)
         → CastBlameSafe c ℓ
-        → CastsAllSafe V ℓ
+        → V SafeFor ℓ
           --------------------------------------
-        → CastsAllSafe (applyCast V v c {a}) ℓ
+        → (applyCast V v c {a}) SafeFor ℓ
 
     cs : CastStruct
     cs = record {

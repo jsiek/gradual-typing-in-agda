@@ -135,16 +135,20 @@ module ParamCastSubtypingABT (pcss : PreCastStructWithBlameSafety) where
   pattern 𝐶ₛ-case = ⟨ refl , ⟨ refl , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩ ⟩
 
   open import ABTPredicate Op sig 𝑉ₛ 𝑃ₛ public
-    renaming (_⊢_⦂_ to predicate-allsafe)
+    renaming (_⊢_⦂_ to predicate-SafeFor)
 
-  CastsAllSafe : Term → Label → Set  -- CastsAllSafe M ℓ
-  CastsAllSafe = predicate-allsafe []
+  {- NOTE: This predicate used to be called `CastsAllSafe`. However we change
+     it to `_SafeFor_` to comply with the notation in the paper.
+     The predicate says all casts with blame label ℓ in term M are safe. -}
+  infix 4 _SafeFor_
+  _SafeFor_ : Term → Label → Set    -- M SafeFor ℓ
+  _SafeFor_ = predicate-SafeFor []
 
   open import SubstPreserve Op sig Label 𝑉ₛ 𝑃ₛ (λ _ → refl) (λ { refl refl → refl })
     (λ x → x) (λ { refl pM → pM }) public
-      renaming (preserve-rename to rename-pres-allsafe;
-                                preserve-subst to subst-pres-allsafe;
-                                preserve-substitution to substitution-allsafe)
+      renaming (preserve-rename to rename-pres-SafeFor;
+                preserve-subst to subst-pres-SafeFor;
+                preserve-substitution to substitution-SafeFor)
 
   open import GenericPredicate precast
   open GenericPredicatePatterns 𝑉ₛ 𝑃ₛ public
