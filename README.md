@@ -42,15 +42,16 @@ to the files in this project.
 	4. [CastStructure](./CastStructure.agda)
 	5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
 	6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
-	7. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
-	8. [ParamCastCalculus](./ParamCastCalculus.agda), 
+	7. [ParamCastDeterministic](./ParamCastDeterministic.agda)
+	8. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+	9. [ParamCastCalculus](./ParamCastCalculus.agda), 
 	   [ParamCastReduction](./ParamCastReduction.agda)
-    9. [PreCastStructureWithBlameSafety](./PreCastStructureWithBlameSafety)
+    10. [PreCastStructureWithBlameSafety](./PreCastStructureWithBlameSafety)
 	   [CastStructureWithBlameSafety](./CastStructureWithBlameSafety),
 	   [Subtyping](./Subtyping.agda),
 	   [ParamCastSubtyping](./ParamCastSubtyping.agda),
 	   and [ParamBlameSubtyping](./ParamBlameSubtyping.agda).
-	10. [PreCastStructureWithPrecision](./PreCastStructureWithPrecision.agda),
+	11. [PreCastStructureWithPrecision](./PreCastStructureWithPrecision.agda),
 	    [CastStructureWithPrecision](./CastStructureWithPrecision.agda),
         [ParamCCPrecision](./ParamCCPrecision.agda),
 		[ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda), 
