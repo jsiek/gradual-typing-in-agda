@@ -36,6 +36,9 @@ module Labels where
   ≡̂-refl {pos n} = refl++
   ≡̂-refl {neg n} = refl--
 
+  ≡→≡̂ : ∀ {ℓ₁ ℓ₂} → ℓ₁ ≡ ℓ₂ → ℓ₁ ≡̂ ℓ₂
+  ≡→≡̂ refl = ≡̂-refl
+
   ≢̂→≢̂flip : ∀ {ℓ₁ ℓ₂} → ℓ₁ ≢̂ ℓ₂ → ℓ₁ ≢̂ flip ℓ₂
   ≢̂→≢̂flip {pos n₁} {pos .n₁} neq refl+- = neq refl++
   ≢̂→≢̂flip {pos n₁} {neg .n₁} neq refl++ = neq refl+-
