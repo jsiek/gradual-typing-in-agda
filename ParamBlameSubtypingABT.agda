@@ -129,7 +129,7 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
   soundness-<: safefor-plug ( .(plug _ _) —→⟨ ξ M→M′ ⟩ plugM′F↠blame ) =
     -- In this case we need to prove that single step reduction preserves `CastsRespect<:` .
     soundness-<: (preserve-SafeFor safefor-plug (ξ M→M′)) plugM′F↠blame
-  -- There is no way to plug a `blame ℓ` in a frame and produce a term where every cast with ℓ respects <: .
+  -- There is no way to plug a `blame ℓ` in a frame and produce a term safe for ℓ
   soundness-<: safefor ( .(plug (blame _) _) —→⟨ ξ-blame {F = F} ⟩ blame↠blame ) =
     plug-blame-safe-for-diff-ℓ F safefor (≡→≡̂ (sym ℓ≡))
     where
@@ -140,53 +140,69 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     blame↠blame→ℓ≡ (_ ∎) = refl
     blame↠blame→ℓ≡ (_ —→⟨ R ⟩ R*) = contradiction R (blame⌿→ refl)
     ℓ≡ = blame↠blame→ℓ≡ blame↠blame
--- -- Application (β).
--- soundness-<: {M = (ƛ N) · W} (allsafe-· (allsafe-ƛ allsafe-N) allsafe-W) ( .((ƛ N) · W) —→⟨ β vW ⟩ N[W]↠blame ) =
---   {-
---     We need to prove that given Γ , A ⊢ N ⦂ B and Γ ⊢ W ⦂ A that both satisfy `CastsRespect<:`,
---     the substituted term N [ W ] also satisfies `CastsRespect<:` - single substitution preserves `CastsRespect<:` .
---   -}
---   soundness-<: (substitution-allsafe allsafe-N allsafe-W) N[W]↠blame
--- -- This case corresponds to the δ rule.
--- soundness-<: (allsafe-· allsafe-f allsafe-k) ( .(($ _) · ($ _)) —→⟨ δ ⟩ fk↠blame ) =
---     soundness-<: allsafe-prim fk↠blame
--- -- If
--- soundness-<: {M = if ($ true) M N} (allsafe-if _ allsafe-M _) ( .(if ($ true) M N) —→⟨ β-if-true ⟩ M↠blame ) =
---     soundness-<: allsafe-M M↠blame
--- soundness-<: {M = if ($ false) M N} (allsafe-if _ _ allsafe-N) ( .(if ($ false) M N) —→⟨ β-if-false ⟩ N↠blame ) =
---     soundness-<: allsafe-N N↠blame
--- -- Fst & snd
--- soundness-<: (allsafe-fst (allsafe-cons allsafe-V allsafe-W)) ( .(fst (cons _ _)) —→⟨ β-fst vV vW ⟩ V↠blame ) =
---     -- Another way to do this is to prove that V cannot step to blame.
---     soundness-<: allsafe-V V↠blame
--- soundness-<: (allsafe-snd (allsafe-cons allsafe-V allsafe-W)) ( .(snd (cons _ _)) —→⟨ β-snd vV vW ⟩ W↠blame ) =
---     soundness-<: allsafe-W W↠blame
--- -- Case
--- soundness-<: (allsafe-case (allsafe-inl allsafe-V) allsafe-M _) ( .(case (inl _) _ _) —→⟨ β-caseL vV ⟩ L·V↠blame ) =
---     soundness-<: (substitution-allsafe allsafe-M allsafe-V) L·V↠blame
--- soundness-<: (allsafe-case (allsafe-inr allsafe-V) _ allsafe-N) ( .(case (inr _) _ _) —→⟨ β-caseR vV ⟩ M·V↠blame ) =
---     soundness-<: (substitution-allsafe allsafe-N allsafe-V) M·V↠blame
--- -- Cast
--- soundness-<: (allsafe-cast safe allsafe-V) ((V ⟨ c ⟩) —→⟨ cast vV {a} ⟩ applyCastVc↠blame ) =
---   soundness-<: (applyCast-pres-allsafe a safe allsafe-V) applyCastVc↠blame
--- -- Wrap
--- soundness-<: (allsafe-cast safe allsafe-V) ((V ⟨ c ⟩) —→⟨ wrap vV {i} ⟩ applyCastVc↠blame ) =
---   soundness-<: (allsafe-wrap safe allsafe-V) applyCastVc↠blame
--- -- Fun-cast
--- soundness-<: (allsafe-· (allsafe-wrap safe allsafe-V) allsafe-W) ((V ⟪ i ⟫ · W) —→⟨ fun-cast vV vW {x} ⟩ V·W↠blame) =
---     soundness-<: (allsafe-cast (codBlameSafe safe x) (allsafe-· allsafe-V (allsafe-cast (domBlameSafe safe x) allsafe-W))) V·W↠blame
--- -- Fst-cast & snd-cast
--- soundness-<: (allsafe-fst (allsafe-wrap safe allsafe-V)) ( (fst (V ⟪ i ⟫)) —→⟨ fst-cast _ {x} ⟩ fstV⟨fstc⟩↠blame ) =
---     soundness-<: (allsafe-cast (fstBlameSafe safe x) (allsafe-fst allsafe-V)) fstV⟨fstc⟩↠blame
--- soundness-<: (allsafe-snd (allsafe-wrap safe allsafe-V)) ( (snd (V ⟪ i ⟫)) —→⟨ snd-cast _ {x} ⟩ sndV⟨sndc⟩↠blame ) =
---     soundness-<: (allsafe-cast (sndBlameSafe safe x) (allsafe-snd allsafe-V)) sndV⟨sndc⟩↠blame
--- -- Case-cast
--- soundness-<: (allsafe-case (allsafe-wrap safe allsafe-V) allsafe-M allsafe-N) ( case (V ⟪ i ⟫) M N —→⟨ case-cast vV {x} ⟩ ↠blame ) =
---     soundness-<: (allsafe-case allsafe-V (substitution-allsafe (rename-pres-allsafe (ext S_) allsafe-M)
---                                                                (allsafe-cast (inlBlameSafe safe x) allsafe-var))
---                                          (substitution-allsafe (rename-pres-allsafe (ext S_) allsafe-N)
---                                                                (allsafe-cast (inrBlameSafe safe x) allsafe-var))) ↠blame
--- -- Blame
--- soundness-<: (allsafe-blame-diff-ℓ ℓ≢ℓ) ((blame ℓ) ∎) = ℓ≢ℓ ≡̂-refl
-
-
+  -- Application (β).
+  soundness-<: (⊢· (⊢ƛ _ safeforₙ 𝐶ₛ-ƛ) safeforₘ 𝐶ₛ-·)
+               ( (ƛ _ ˙ N) · M —→⟨ β vₘ ⟩ N[M]↠blame ) =
+    soundness-<: (substitution-SafeFor _ _ safeforₙ safeforₘ) N[M]↠blame
+  -- δ.
+  soundness-<: (⊢· _ _ 𝐶ₛ-·)
+               ( ($ f # _) · ($ k # _) —→⟨ δ ⟩ f·k↠blame ) =
+    soundness-<: (⊢$ (f k) _ 𝐶ₛ-$) f·k↠blame
+  -- If
+  soundness-<: (⊢if _ safeforₘ _ 𝐶ₛ-if)
+               ( if ($ true # _) then M else N endif  —→⟨ β-if-true ⟩  M↠blame ) =
+    soundness-<: safeforₘ M↠blame
+  soundness-<: (⊢if _ _ safeforₙ 𝐶ₛ-if)
+               ( if ($ false # _) then M else N endif —→⟨ β-if-false ⟩ N↠blame ) =
+    soundness-<: safeforₙ N↠blame
+  -- Fst & snd
+  soundness-<: (⊢fst (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) 𝐶ₛ-fst)
+               ( fst ⟦ M , N ⟧ —→⟨ β-fst vₘ vₙ ⟩ M↠blame ) =
+    soundness-<: safeforₘ M↠blame
+  soundness-<: (⊢snd (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) 𝐶ₛ-snd)
+               ( snd ⟦ M , N ⟧ —→⟨ β-snd vₘ vₙ ⟩ N↠blame ) =
+    soundness-<: safeforₙ N↠blame
+  -- Case
+  soundness-<: (⊢case _ _ (⊢inl _ safeforₗ 𝐶ₛ-inl) safeforₘ _ 𝐶ₛ-case)
+               ( case (inl L other _) of _ ⇒ _ ∣ _ ⇒ _ —→⟨ β-caseL v ⟩ M[L]↠blame ) =
+    soundness-<: (substitution-SafeFor _ _ safeforₘ safeforₗ) M[L]↠blame
+  soundness-<: (⊢case _ _ (⊢inr _ safeforₗ 𝐶ₛ-inr) _ safeforₙ 𝐶ₛ-case)
+               ( case (inr L other _) of _ ⇒ _ ∣ _ ⇒ _ —→⟨ β-caseR v ⟩ N[L]↠blame ) =
+    soundness-<: (substitution-SafeFor _ _ safeforₙ safeforₗ) N[L]↠blame
+  -- Cast
+  soundness-<: (⊢cast .c safeforₘ ⟨ safe , refl ⟩)
+               ( M ⟨ c ⟩ —→⟨ cast v {a} ⟩ applyCastMc↠blame ) =
+    soundness-<: (applyCast-pres-SafeFor a safe safeforₘ) applyCastMc↠blame
+  -- Wrap
+  soundness-<: (⊢cast .c safeforₘ ⟨ safe , refl ⟩)
+               ( M ⟨ c ⟩ —→⟨ wrap v {i} ⟩ applyCastMc↠blame ) =
+    soundness-<: (⊢wrap c i safeforₘ ⟨ safe , refl ⟩) applyCastMc↠blame
+  -- Fun-cast
+  soundness-<: (⊢· (⊢wrap .c .i safeforₘ ⟨ safe , refl ⟩) safeforₙ 𝐶ₛ-·)
+               ( M ⟨ c ₍ i ₎⟩ · N —→⟨ fun-cast vₘ vₙ {x} ⟩ M·N↠blame) =
+    soundness-<: (⊢cast _ (⊢· safeforₘ
+                              (⊢cast _ safeforₙ ⟨ domBlameSafe safe x , refl ⟩) 𝐶ₛ-·)
+                          ⟨ codBlameSafe safe x , refl ⟩) M·N↠blame
+  -- Fst-cast & snd-cast
+  soundness-<: (⊢fst (⊢wrap .c .i safeforₘ ⟨ safe , refl ⟩) 𝐶ₛ-fst)
+               ( fst (M ⟨ c ₍ i ₎⟩) —→⟨ fst-cast _ {x} ⟩ fstM⟨fstc⟩↠blame ) =
+    soundness-<: (⊢cast _ (⊢fst safeforₘ 𝐶ₛ-fst)
+                   ⟨ fstBlameSafe safe x , refl ⟩) fstM⟨fstc⟩↠blame
+  soundness-<: (⊢snd (⊢wrap .c .i safeforₘ ⟨ safe , refl ⟩) 𝐶ₛ-fst)
+               ( snd (M ⟨ c ₍ i ₎⟩) —→⟨ snd-cast _ {x} ⟩ sndM⟨sndc⟩↠blame ) =
+    soundness-<: (⊢cast _ (⊢snd safeforₘ 𝐶ₛ-snd)
+                   ⟨ sndBlameSafe safe x , refl ⟩) sndM⟨sndc⟩↠blame
+  -- Case-cast
+  soundness-<: (⊢case _ _ (⊢wrap .c .i safeforₗ ⟨ safe , refl ⟩) safeforₘ safeforₙ 𝐶ₛ-case)
+               ( case (L ⟨ c ₍ i ₎⟩) of _ ⇒ M ∣ _ ⇒ N —→⟨ case-cast v {x} ⟩ ↠blame ) =
+    soundness-<: (⊢case _ _ safeforₗ
+                   (substitution-SafeFor _ _
+                     (rename-pres-SafeFor _ safeforₘ λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩ )
+                     (⊢cast _ (⊢` refl) ⟨ inlBlameSafe safe x , refl ⟩))
+                   (substitution-SafeFor _ _
+                     (rename-pres-SafeFor _ safeforₙ λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩ )
+                     (⊢cast _ (⊢` refl) ⟨ inrBlameSafe safe x , refl ⟩))
+                   𝐶ₛ-case)
+                 ↠blame
+  -- Blame
+  soundness-<: (⊢blame _ ℓ≢) (blame ℓ ∎) = ℓ≢ ≡̂-refl
