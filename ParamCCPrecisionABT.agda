@@ -105,7 +105,7 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set whe
                {c : Cast (A ⇒ B)}
     → A ⊑ A′
     → B ⊑ A′
-    → Γ      ⊢ M′ ⦂ A′
+    → Γ′     ⊢ M′ ⦂ A′
     → Γ , Γ′ ⊢ M ⊑ᶜ M′
       -----------------------
     → Γ , Γ′ ⊢ M ⟨ c ⟩ ⊑ᶜ M′
@@ -119,30 +119,31 @@ data _,_⊢_⊑ᶜ_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set whe
       ------------------------
     → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟨ c′ ⟩
 
-  -- ⊑ᶜ-wrap : ∀ {Γ Γ′ A A′ B B′} {M M′ : Term}
-  --             {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
-  --             {i : Inert c} {i′ : Inert c′}
-  --   → c ₍ i ₎⊑ c′ ₍ i′ ₎
-  --   → Γ , Γ′ ⊢ M ⊑ᶜ M′
-  --   → (B ≡ ⋆ → B′ ≡ ⋆)  -- note the side condition
-  --     -----------------------------------------
-  --   → Γ , Γ′ ⊢ M ⟨ c ₍ i ₎⟩ ⊑ᶜ M′ ⟨ c′ ₍ i′ ₎⟩
+  ⊑ᶜ-wrap : ∀ {Γ Γ′ A A′ B B′} {M M′ : Term}
+              {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+              {i : Inert c} {i′ : Inert c′}
+    → c ₍ i ₎⊑ c′ ₍ i′ ₎
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    → (B ≡ ⋆ → B′ ≡ ⋆)  -- note the side condition
+      -----------------------------------------
+    → Γ , Γ′ ⊢ M ⟨ c ₍ i ₎⟩ ⊑ᶜ M′ ⟨ c′ ₍ i′ ₎⟩
 
-  -- ⊑ᶜ-wrapl : ∀ {Γ Γ′ A A′ B} {M : Γ ⊢ A} {M′ : Γ′ ⊢ A′}
-  --              {c : Cast (A ⇒ B)} {i : Inert c}
-  --   → ⟪ i ⟫⊑ A′
-  --   → Γ , Γ′ ⊢ M ⊑ᶜ M′
-  --   -- NOTE: Not sure if we need to require Value M′ here.
-  --     -----------------------
-  --   → Γ , Γ′ ⊢ M ⟪ i ⟫ ⊑ᶜ M′
+  ⊑ᶜ-wrapl : ∀ {Γ Γ′ A A′ B} {M M′ : Term}
+               {c : Cast (A ⇒ B)} {i : Inert c}
+    → c ₍ i ₎⊑ A′
+    → Γ′     ⊢ M′ ⦂ A′
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+      -----------------------
+    → Γ , Γ′ ⊢ M ⟨ c ₍ i ₎⟩ ⊑ᶜ M′
 
-  -- ⊑ᶜ-wrapr : ∀ {Γ Γ′ A′ B′} {M M′ : Term}
-  --              {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
-  --   → A ⊑ c′ ₍ i′ ₎
-  --   → Γ , Γ′ ⊢ M ⊑ᶜ M′
-  --   → A ≢ ⋆
-  --     ------------------------
-  --   → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟪ i′ ⟫
+  ⊑ᶜ-wrapr : ∀ {Γ Γ′ A A′ B′} {M M′ : Term}
+               {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑ c′ ₍ i′ ₎
+    → Γ ⊢ M ⦂ A
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′
+    → A ≢ ⋆             -- note the side condition
+      ------------------------
+    → Γ , Γ′ ⊢ M ⊑ᶜ M′ ⟨ c′ ₍ i′ ₎⟩
 
   ⊑ᶜ-blame : ∀ {Γ Γ′} {M : Term} {ℓ}
       -------------------------------
