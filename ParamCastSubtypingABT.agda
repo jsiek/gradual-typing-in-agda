@@ -19,9 +19,8 @@ module ParamCastSubtypingABT (pcss : PreCastStructWithBlameSafety) where
 
   open import ParamCastCalculusABT precast
 
-  private
-    𝑉ₛ : List Label → Var → Label → Label → Set
-    𝑃ₛ : (op : Op) → Vec Label (length (sig op)) → BTypes Label (sig op) → Label → Set
+  𝑉ₛ : List Label → Var → Label → Label → Set
+  𝑃ₛ : (op : Op) → Vec Label (length (sig op)) → BTypes Label (sig op) → Label → Set
 
   -- data CastsAllSafe : ∀ (M : Term) → (ℓ : Label) → Set where
 

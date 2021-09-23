@@ -166,4 +166,45 @@ private
 infix 6 _⊑ˢ_
 
 _⊑ˢ_ : Subst → Subst → Set
-σ ⊑ˢ σ′ = ∀ (x : Var) → ∀ {Γ Γ′} → Γ , Γ′ ⊢ σ x ⊑ σ′ x
+σ ⊑ˢ σ′ = ∀ {Δ Δ′} → ∀ (x : Var) → Δ , Δ′ ⊢ σ x ⊑ σ′ x
+
+open import MapPreserve Op sig Type 𝑉⊢ 𝑃⊢
+  using (MapPreservable; _⦂_⇒_)
+
+private
+  instance
+    _ : MapPreservable Term
+    _ = record {
+          _⊢v_⦂_ = _⊢_⦂_ ;
+          ⊢v-var→val0 = ⊢` refl ;
+          shift-⊢v = λ ⊢M → preserve-rename _ ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩ ;
+          quote-⊢v = λ ⊢v → ⊢v ;
+          𝑉-⊢v = λ { refl ⊢M → ⊢M }
+        }
+
+subst-pres-⊑ : ∀ {Γ Δ Γ′ Δ′ : List Type} {M M′ : Term} {σ σ′}
+  → σ ⊑ˢ σ′
+  → σ ⦂ Γ ⇒ Δ → σ′ ⦂ Γ′ ⇒ Δ′
+  → Γ , Γ′ ⊢ M ⊑ M′
+    -----------------------------
+  → Δ , Δ′ ⊢ ⟪ σ ⟫ M ⊑ ⟪ σ′ ⟫ M′
+subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-$ = ⊑-$
+subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-` = lps _
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-ƛ x lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-· lpM lpM₁) = ⊑-· {!!} {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-if lpM lpM₁ lpM₂) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-cons lpM lpM₁) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-fst lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-snd lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-inl lp lpM) =
+  ⊑-inl lp (subst-pres-⊑ lps ⊢σ ⊢σ′ lpM)
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-inr x lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-case lpM x x₁ lpM₁ lpM₂) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-cast x x₁ lpM) = {!!}
+subst-pres-⊑ σ⊑ ⊢σ ⊢σ′ (⊑-castl lpA lpB ⊢M′ M⊑) =
+  ⊑-castl lpA lpB (preserve-subst _ ⊢M′ ⊢σ′) (subst-pres-⊑ σ⊑ ⊢σ ⊢σ′ M⊑)
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-castr x x₁ x₂ lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrap x lpM x₁) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrapl x x₁ lpM) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrapr x x₁ lpM x₂) = {!!}
+subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-blame = {!!}

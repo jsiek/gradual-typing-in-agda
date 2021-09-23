@@ -30,9 +30,9 @@ module ParamCastCalculusABT (pcs : PreCastStruct) where
     the type of a cast may not literally be a function type.
   -}
 
-  private
-    𝑉⊢ : List Type → Var → Type → Type → Set
-    𝑃⊢ : (op : Op) → Vec Type (length (sig op)) → BTypes Type (sig op) → Type → Set
+
+  𝑉⊢ : List Type → Var → Type → Type → Set
+  𝑃⊢ : (op : Op) → Vec Type (length (sig op)) → BTypes Type (sig op) → Type → Set
 
   --   ⊢var : ∀ {Γ A} {x : ℕ}
   --     → Γ ∋ x ⦂ A
