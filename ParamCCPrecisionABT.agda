@@ -1,3 +1,4 @@
+open import Data.Nat
 open import Data.List
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Binary.PropositionalEquality
@@ -10,7 +11,7 @@ open import Types
 open import Labels
 open import PreCastStructureWithPrecisionABT
 
-open import Syntax using (Var)
+open import Syntax
 
 
 module ParamCCPrecisionABT (pcsp : PreCastStructWithPrecision) where
@@ -163,13 +164,9 @@ private
 --       -------------------------------------------------------------------
 --     → (Γ ,  B) , (Δ , B) , (Γ′ , B′) , (Δ′ , B′) ⊢ (exts σ) ⊑ˢ (exts σ′)
 
-infix 6 _⊑ˢ_
-
-_⊑ˢ_ : Subst → Subst → Set
-σ ⊑ˢ σ′ = ∀ {Δ Δ′} → ∀ (x : Var) → Δ , Δ′ ⊢ σ x ⊑ σ′ x
 
 open import MapPreserve Op sig Type 𝑉⊢ 𝑃⊢
-  using (MapPreservable; _⦂_⇒_)
+  using (MapPreservable; _⦂_⇒_; ext-pres)
 
 private
   instance
@@ -181,30 +178,116 @@ private
           quote-⊢v = λ ⊢v → ⊢v ;
           𝑉-⊢v = λ { refl ⊢M → ⊢M }
         }
+  _⊢v_⦂_ : List Type → Var → Type → Set
+  Γ ⊢v x ⦂ B = ∃[ A ] Γ ∋ x ⦂ A × 𝑉⊢ Γ x A B
+  instance
+    _ : MapPreservable Var
+    _ = record {
+        _⊢v_⦂_ = _⊢v_⦂_ ;
+        ⊢v-var→val0 = λ {A} → ⟨ A , ⟨ refl , refl ⟩ ⟩ ;
+        shift-⊢v = λ { ⟨ A , ⟨ ∋x , Vx ⟩ ⟩ → ⟨ A , ⟨ ∋x , Vx ⟩ ⟩ } ;
+        quote-⊢v = λ { ⟨ B , ⟨ ∋x , Vx ⟩ ⟩ → var-p ∋x Vx } ;
+        𝑉-⊢v = λ { refl ⟨ C , ⟨ ∋x , Vx' ⟩ ⟩ → ⟨ C , ⟨ ∋x , Vx' ⟩ ⟩ }
+      }
 
-subst-pres-⊑ : ∀ {Γ Δ Γ′ Δ′ : List Type} {M M′ : Term} {σ σ′}
-  → σ ⊑ˢ σ′
+infix 6 _⇒_,_⇒_⊢_⊑ˢ_
+
+_⇒_,_⇒_⊢_⊑ˢ_ : ∀ (Γ Δ Γ′ Δ′ : List Type) →  Subst → Subst → Set
+Γ ⇒ Δ , Γ′ ⇒ Δ′ ⊢ σ ⊑ˢ σ′ =
+  (σ ⦂ Γ ⇒ Δ) → (σ′ ⦂ Γ′ ⇒ Δ′) →
+  ∀ (x : Var)
+  → ∃[ A ] Γ ∋ x ⦂ A
+  → ∃[ A′ ] Γ′ ∋ x ⦂ A′
+  → Δ , Δ′ ⊢ σ x ⊑ σ′ x
+
+rename-pres-⊑ : ∀ {Γ Γ′ Δ Δ′} {M M′ : Term} {ρ : Rename}
+  → ρ ⦂ Γ ⇒ Δ → ρ ⦂ Γ′ ⇒ Δ′
+  → Γ , Γ′ ⊢ M ⊑ M′
+    ----------------------------------
+  → Δ , Δ′ ⊢ rename ρ M ⊑ rename ρ M′
+rename-pres-⊑ ⊢ρ ⊢ρ′ ⊑-$ = ⊑-$
+rename-pres-⊑ ⊢ρ ⊢ρ′ ⊑-` = ⊑-`
+rename-pres-⊑ {ρ = ρ} ⊢ρ ⊢ρ′ (⊑-ƛ A⊑ M⊑) =
+  ⊑-ƛ A⊑ (rename-pres-⊑ {ρ = ext ρ}
+                        (λ {x} ∋x → ext-pres ⊢ρ  {x} ∋x)
+                        (λ {x} ∋x → ext-pres ⊢ρ′ {x} ∋x) M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-· L⊑ M⊑) =
+  ⊑-· (rename-pres-⊑ ⊢ρ ⊢ρ′ L⊑) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-if L⊑ M⊑ N⊑) =
+  ⊑-if (rename-pres-⊑ ⊢ρ ⊢ρ′ L⊑) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) (rename-pres-⊑ ⊢ρ ⊢ρ′ N⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-cons M⊑ N⊑) =
+  ⊑-cons (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) (rename-pres-⊑ ⊢ρ ⊢ρ′ N⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-fst M⊑) =
+  ⊑-fst (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-snd M⊑) =
+  ⊑-snd (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-inl B⊑ M⊑) =
+  ⊑-inl B⊑ (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-inr A⊑ M⊑) =
+  ⊑-inr A⊑ (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ {ρ = ρ} ⊢ρ ⊢ρ′ (⊑-case L⊑ A⊑ B⊑ M⊑ N⊑) =
+  ⊑-case (rename-pres-⊑ ⊢ρ ⊢ρ′ L⊑) A⊑ B⊑
+    (rename-pres-⊑ {ρ = ext ρ}
+      (λ {x} ∋x → ext-pres ⊢ρ  {x} ∋x)
+      (λ {x} ∋x → ext-pres ⊢ρ′ {x} ∋x) M⊑)
+    (rename-pres-⊑ {ρ = ext ρ}
+      (λ {x} ∋x → ext-pres ⊢ρ  {x} ∋x)
+      (λ {x} ∋x → ext-pres ⊢ρ′ {x} ∋x) N⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-cast A⊑ B⊑ M⊑) =
+  ⊑-cast A⊑ B⊑ (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) =
+  ⊑-castl A⊑A′ B⊑A′ (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑) =
+  ⊑-castr A⊑A′ A⊑B′ (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrap lpii M⊑ dd) =
+  ⊑-wrap lpii (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) dd
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapl lpit ⊢M′ M⊑) =
+  ⊑-wrapl lpit (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapr lpti ⊢M M⊑ nd) =
+  ⊑-wrapr lpti (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) nd
+rename-pres-⊑ _ _ ⊑-blame = ⊑-blame
+
+ext-pres-⊑ˢ : ∀ {Γ Γ′ Δ Δ′} {A A′} {σ σ′ : Subst}
   → σ ⦂ Γ ⇒ Δ → σ′ ⦂ Γ′ ⇒ Δ′
+  → Γ ⇒ Δ , Γ′ ⇒ Δ′ ⊢ σ ⊑ˢ σ′
+  → (A ∷ Γ) ⇒ (A ∷ Δ) , (A′ ∷ Γ′) ⇒ (A′ ∷ Δ′) ⊢ ext σ ⊑ˢ ext σ′
+ext-pres-⊑ˢ ⊢σ ⊢σ′ σ⊑ ⊢extσ ⊢extσ′ 0 ⟨ X , x⦂X ⟩ ⟨ X′ , x⦂X′ ⟩ = ⊑-`
+ext-pres-⊑ˢ {σ = σ} ⊢σ ⊢σ′ σ⊑ ⊢extσ ⊢extσ′ (suc x) lookup-x lookup-x′
+  rewrite exts-suc' σ x =
+  -- rename ⇑ (σ x) ⊑ rename ⇑ (σ′ x)
+  rename-pres-⊑ (λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)  {- ⇑ ⦂ Γ ⇒ A ∷ Γ -}
+                (λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
+                (σ⊑ ⊢σ ⊢σ′ x lookup-x lookup-x′)
+
+subst-pres-⊑ : ∀ {Γ Γ′ Δ Δ′} {A A′} {M M′ : Term} {σ σ′}
+  → σ ⦂ Γ ⇒ Δ → σ′ ⦂ Γ′ ⇒ Δ′
+  → Γ ⊢ M ⦂ A → Γ′ ⊢ M′ ⦂ A′
+  → Γ ⇒ Δ , Γ′ ⇒ Δ′ ⊢ σ ⊑ˢ σ′
   → Γ , Γ′ ⊢ M ⊑ M′
     -----------------------------
   → Δ , Δ′ ⊢ ⟪ σ ⟫ M ⊑ ⟪ σ′ ⟫ M′
-subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-$ = ⊑-$
-subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-` = lps _
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-ƛ x lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-· lpM lpM₁) = ⊑-· {!!} {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-if lpM lpM₁ lpM₂) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-cons lpM lpM₁) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-fst lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-snd lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-inl lp lpM) =
-  ⊑-inl lp (subst-pres-⊑ lps ⊢σ ⊢σ′ lpM)
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-inr x lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-case lpM x x₁ lpM₁ lpM₂) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-cast x x₁ lpM) = {!!}
-subst-pres-⊑ σ⊑ ⊢σ ⊢σ′ (⊑-castl lpA lpB ⊢M′ M⊑) =
-  ⊑-castl lpA lpB (preserve-subst _ ⊢M′ ⊢σ′) (subst-pres-⊑ σ⊑ ⊢σ ⊢σ′ M⊑)
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-castr x x₁ x₂ lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrap x lpM x₁) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrapl x x₁ lpM) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ (⊑-wrapr x x₁ lpM x₂) = {!!}
-subst-pres-⊑ lps ⊢σ ⊢σ′ ⊑-blame = {!!}
+subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ ⊑-$ = ⊑-$
+subst-pres-⊑ {M = ` x} {` x} ⊢σ ⊢σ′ (⊢` Γ∋x⦂A) (⊢` Γ′∋x⦂A′) σ⊑ ⊑-` =
+    σ⊑ ⊢σ ⊢σ′ x ⟨ _ , Γ∋x⦂A ⟩ ⟨ _ , Γ′∋x⦂A′ ⟩
+subst-pres-⊑ ⊢σ ⊢σ′ (⊢ƛ _ ⊢N 𝐶⊢-ƛ) (⊢ƛ _ ⊢N′ 𝐶⊢-ƛ) σ⊑ (⊑-ƛ A⊑ N⊑) =
+  ⊑-ƛ A⊑ (subst-pres-⊑
+    (λ {x} ∋x → ext-pres ⊢σ  {x} ∋x) {- ext σ ⦂ A ∷ Γ ⇒ A ∷ Δ -}
+    (λ {x} ∋x → ext-pres ⊢σ′ {x} ∋x) ⊢N ⊢N′ (ext-pres-⊑ˢ ⊢σ ⊢σ′ σ⊑) N⊑)
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-· lpM lpM₁) = ⊑-· {!!} {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-if lpM lpM₁ lpM₂) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-cons lpM lpM₁) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-fst lpM) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-snd lpM) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ (⊢inl _ ⊢M 𝐶⊢-inl) (⊢inl _ ⊢M′ 𝐶⊢-inl) σ⊑ (⊑-inl B⊑B′ M⊑) =
+--   ⊑-inl B⊑B′ (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-inr x lpM) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-case lpM x x₁ lpM₁ lpM₂) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-cast x x₁ lpM) = {!!}
+-- subst-pres-⊑ ⊢σ ⊢σ′ (⊢cast _ ⊢M 𝐶⊢-cast) ⊢M′ σ⊑ (⊑-castl A⊑A′ B⊑A′ ⊢M′₁ M⊑) =
+--   ⊑-castl A⊑A′ B⊑A′ (preserve-subst _ ⊢M′₁ ⊢σ′) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
+-- -- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-castr A⊑A′ A⊑B′ ⊢M  M⊑) =
+-- --   ⊑-castr A⊑A′ A⊑B′ (preserve-subst _ ⊢M ⊢σ) (subst-pres-⊑ σ⊑ ⊢σ ⊢σ′ M⊑)
+-- -- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-wrap x lpM x₁) = {!!}
+-- -- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-wrapl x x₁ lpM) = {!!}
+-- -- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-wrapr x x₁ lpM x₂) = {!!}
+-- -- subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ ⊑-blame = {!!}
