@@ -96,8 +96,8 @@ rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) =
   ⊑-castl A⊑A′ B⊑A′ (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑) =
   ⊑-castr A⊑A′ A⊑B′ (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
-rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrap lpii M⊑ dd) =
-  ⊑-wrap lpii (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) dd
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrap lpii M⊑ imp) =
+  ⊑-wrap lpii (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) imp
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapl lpit ⊢M′ M⊑) =
   ⊑-wrapl lpit (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapr lpti ⊢M M⊑ nd) =
@@ -167,8 +167,8 @@ subst-pres-⊑ ⊢σ ⊢σ′ (⊢cast _ ⊢M 𝐶⊢-cast) ⊢M′ σ⊑ (⊑-c
   ⊑-castl A⊑A′ B⊑A′ (preserve-subst _ ⊢M′₁ ⊢σ′) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
 subst-pres-⊑ ⊢σ ⊢σ′ ⊢M (⊢cast _ ⊢M′ 𝐶⊢-cast) σ⊑ (⊑-castr A⊑A′ A⊑B′ ⊢M₁  M⊑) =
   ⊑-castr A⊑A′ A⊑B′ (preserve-subst _ ⊢M₁ ⊢σ) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
-subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrap lpii M⊑ dd) =
-  ⊑-wrap lpii (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑) dd
+subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrap lpii M⊑ imp) =
+  ⊑-wrap lpii (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑) imp
 subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) ⊢M′ σ⊑ (⊑-wrapl lpit ⊢M′₁ M⊑) =
   ⊑-wrapl lpit (preserve-subst _ ⊢M′₁ ⊢σ′) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
 subst-pres-⊑ ⊢σ ⊢σ′ ⊢M (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrapr lpti ⊢M₁ M⊑ nd) =

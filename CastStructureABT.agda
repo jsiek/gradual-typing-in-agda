@@ -28,7 +28,7 @@ record CastStruct : Set₁ where
   open ParamCastAuxABT precast
   field
     applyCast : ∀ {A B} → (M : Term) → Value M → (c : Cast (A ⇒ B))
-                    → ∀ {a : Active c} → Term
+                        → ∀ {a : Active c} → Term
 
     -- cast application is well-typed
     applyCast-wt : ∀ {Γ A B} {M : Term} {c : Cast (A ⇒ B)}
