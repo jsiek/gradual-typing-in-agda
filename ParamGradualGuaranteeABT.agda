@@ -28,7 +28,7 @@ open import ParamCastAuxABT precast
 open import ParamCastReductionABT cs
 open import ParamCCPrecisionABT pcsp
 {- We've already proven the simlulation lemmas. -}
--- open import ParamGradualGuaranteeSim csp
+open import PrecisionSimulationABT csp
 
 {- Here is the statement of the gradual guarantee! -}
 gradual-guarantee : ∀ {A A′} {M₁ M₁′ M₂′ : Term}
@@ -39,7 +39,7 @@ gradual-guarantee : ∀ {A A′} {M₁ M₁′ M₂′ : Term}
     --------------------------------------------
   → ∃[ M₂ ] (M₁ —↠ M₂) × ([] , [] ⊢ M₂ ⊑ M₂′)
 
-gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₂ M₁′ M₂′ : Term}
+gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₁′ M₂′ : Term}
   → [] ⊢ M₁ ⦂ A
   → [] ⊢ plug M₁′ F ⦂ A′
   → [] , [] ⊢ M₁ ⊑ plug M₁′ F
@@ -67,9 +67,14 @@ gradual-guarantee-plug (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A
           ⊑-castl A⊑A′ B⊑A′ (preserve ⊢M′ (ξ R)) M₂⊑ ⟩ ⟩
 gradual-guarantee-plug ⊢M₁ ⊢plugN′F (⊑-wrapl x x₁ M₁⊑) R = {!!}
 
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (ξ {F = F} R) = {!!}
+gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (ξ {F = F} R) =
+  gradual-guarantee-plug {F = F} ⊢M₁ ⊢M₁′ M₁⊑ R
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ ξ-blame = ⟨ _ , ⟨ _ ∎ , ⊑-blame ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-· M₁⊑ M₁⊑₁) (β w) = {!!}
+gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-ƛ) ⊢W′ 𝐶⊢-·) (⊑-· L⊑ M⊑) (β w′) =
+  case catchup ⊢L V-ƛ L⊑ of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑ ⟩ ⟩ ⟩ →
+      case catchup ⊢M w′ M⊑ of λ where
+        ⟨ W , ⟨ w , ⟨ M↠W , W⊑ ⟩ ⟩ ⟩ → {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ δ = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}

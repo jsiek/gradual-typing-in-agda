@@ -1,4 +1,5 @@
 open import Data.Nat using (ℕ; zero; suc)
+open import Data.List hiding ([_])
 open import Data.Nat.Properties using (suc-injective)
 open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
@@ -28,6 +29,7 @@ open import ParamCastCalculusABT precast
 open import ParamCastAuxABT precast
 open import ParamCastReductionABT cs
 open import ParamCCPrecisionABT pcsp
+open import PreservePrecisionABT pcsp
 
 {- Catching up on the less precise side. -}
 catchup : ∀ {Γ Γ′ A} {M V′ : Term}
@@ -86,3 +88,18 @@ catchup ⊢M (V-wrap v′ i′) (⊑-wrapr lpti ⊢M₁ M⊑ nd) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
       ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr lpti (preserve-multi ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
+
+
+sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
+  → [] ⊢ V ⦂ A ⇒ B
+  → [] ⊢ W ⦂ A
+  → A′ ∷ [] ⊢ N′ ⦂ B′
+  → [] ⊢ W′ ⦂ A′
+  → Value V → Value W → Value W′
+  → [] , [] ⊢ V ⊑ ƛ A′ ˙ N′
+  → [] , [] ⊢ W ⊑ W′
+    --------------------------------------------------
+  → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ N′ [ W′ ])
+sim-β {V = ƛ A ˙ N} {W} (⊢ƛ .A ⊢N 𝐶⊢-ƛ) ⊢W ⊢N′ ⊢W′ V-ƛ w w′ (⊑-ƛ A⊑ N⊑) W⊑ =
+  ⟨ N [ W ] , ⟨ _ —→⟨ β w ⟩ _ ∎ , substitution-pres-⊑ ⊢N ⊢N′ ⊢W ⊢W′ N⊑ W⊑ ⟩ ⟩
+sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W ⊢N′ ⊢W′ (V-wrap v .i) w w′ V⊑ W′ = {!!}
