@@ -60,8 +60,7 @@ gradual-guarantee-plug {F = F-inr A} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-case A B M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-cast x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-wrap c x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F} {M₁′ = M₁′} {M₂′}
-  (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl {A′ = A′} A⊑A′ B⊑A′ ⊢M′ M⊑) R =
+gradual-guarantee-plug (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
     case gradual-guarantee ⊢M ⊢M′ M⊑ (ξ R) of λ where
       ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
         ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast c) R* ,
