@@ -47,20 +47,44 @@ gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₁′ M₂′ : Term}
   → M₁′ —→ M₂′
   → ∃[ M₂ ] (M₁ —↠ M₂) × [] , [] ⊢ M₂ ⊑ plug M₂′ F
 
-gradual-guarantee-plug {F = F-·₁ M′} {L · M} (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢M₁′ _ 𝐶⊢-·) (⊑-· L⊑M₁′ M⊑M′) R =
+gradual-guarantee-plug {F = F-·₁ M′} {L · M}
+                       (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢M₁′ _ 𝐶⊢-·) (⊑-· L⊑M₁′ M⊑M′) R =
   case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
-    ⟨ L₂ , ⟨ R* , L₂⊑ ⟩ ⟩  → ⟨ L₂ · M , ⟨ plug-cong (F-·₁ M) R* , ⊑-· L₂⊑ M⊑M′ ⟩ ⟩
-gradual-guarantee-plug {F = F-·₂ V′ v′} (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢V′ ⊢M₁′ 𝐶⊢-·) (⊑-· L⊑V′ M⊑M₁′) R =
+    ⟨ L₂ , ⟨ R* , L₂⊑ ⟩ ⟩ →
+      ⟨ L₂ · M , ⟨ plug-cong (F-·₁ M) R* , ⊑-· L₂⊑ M⊑M′ ⟩ ⟩
+gradual-guarantee-plug {F = F-·₂ V′ v′} {L · M}
+                       (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢V′ ⊢M₁′ 𝐶⊢-·) (⊑-· L⊑V′ M⊑M₁′) R =
   case catchup ⊢L v′ L⊑V′ of λ where
     ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′ ⟩ ⟩ ⟩ →
       case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
         ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
-          ⟨ V · M₂ , ⟨ ↠-trans (plug-cong (F-·₁ _) L↠V)
-                                (plug-cong (F-·₂ _ v) M↠M₂) ,
-                       ⊑-· V⊑V′ M₂⊑M₂′ ⟩ ⟩
-gradual-guarantee-plug {F = F-if M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-×₁ V x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-×₂ M} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
+          ⟨ V · M₂ ,
+            ⟨ ↠-trans (plug-cong (F-·₁ _) L↠V) (plug-cong (F-·₂ _ v) M↠M₂) ,
+              ⊑-· V⊑V′ M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-if M′ N′} {if L then M else N endif}
+                       (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if ⊢M₁′ ⊢M′ ⊢N′ 𝐶⊢-if)
+                       (⊑-if L⊑M₁′ M⊑M′ N⊑N′) R =
+  case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
+    ⟨ L₂ , ⟨ L↠L₂ , L₂⊑M₂′ ⟩ ⟩ →
+      ⟨ if L₂ then M else N endif ,
+        ⟨ plug-cong (F-if M N) L↠L₂ ,
+          ⊑-if L₂⊑M₂′ M⊑M′ N⊑N′ ⟩ ⟩
+gradual-guarantee-plug {F = F-×₁ V′ v′} {⟦ L , M ⟧}
+                       (⊢cons ⊢L ⊢M 𝐶⊢-cons) (⊢cons ⊢V′ ⊢M₁′ 𝐶⊢-cons)
+                       (⊑-cons L⊑V′ M⊑M₁′) R =
+  case catchup ⊢L v′ L⊑V′ of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′ ⟩ ⟩ ⟩ →
+      case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+        ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+          ⟨ ⟦ V , M₂ ⟧ ,
+            ⟨ ↠-trans (plug-cong (F-×₂ _) L↠V) (plug-cong (F-×₁ _ v) M↠M₂) ,
+              ⊑-cons V⊑V′ M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-×₂ M′} {⟦ L , M ⟧}
+                       (⊢cons ⊢L ⊢M 𝐶⊢-cons) (⊢cons ⊢M₁′ ⊢M′ 𝐶⊢-cons)
+                       (⊑-cons L⊑M₁′ M⊑M′) R =
+  case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
+    ⟨ L₂ , ⟨ L↠L₂ , L₂⊑M₂′ ⟩ ⟩ →
+      ⟨ ⟦ L₂ , M ⟧ , ⟨ plug-cong (F-×₂ _) L↠L₂ , ⊑-cons L₂⊑M₂′ M⊑M′ ⟩ ⟩
 gradual-guarantee-plug {F = F-fst} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-snd} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-inl B} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
