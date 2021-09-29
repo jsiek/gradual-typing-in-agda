@@ -125,5 +125,7 @@ sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w�
                           ⊢N′ ⊢W′ v w₁ w′ V⊑ƛN′ W₁⊑) of λ where
                 ⟨ N , ⟨ V·W₁↠N , N⊑ ⟩ ⟩ →
                   ⟨ N ⟨ cod c x ⟩ ,
-                    ⟨ {!!} ,
+                    ⟨ _ —→⟨ fun-cast v w {x} ⟩
+                        ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ v) Wdomc↠W₁))
+                                 (plug-cong (F-cast _) V·W₁↠N),
                       ⊑-castl B₁⊑B′ B⊑B′ (preserve-substitution _ _ ⊢N′ ⊢W′) N⊑ ⟩ ⟩
