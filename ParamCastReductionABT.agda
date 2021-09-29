@@ -486,11 +486,11 @@ module ParamCastReductionABT (cs : CastStruct) where
   ↠-eq {M = M} {N} eq rewrite eq = N ∎
 
   {- Multi-step reduction preserves type. -}
-  preserve-multi : ∀ {Γ A} {M N : Term}
+  preserve-mult : ∀ {Γ A} {M N : Term}
     → Γ ⊢ M ⦂ A
     → M —↠ N
       -------------
     → Γ ⊢ N ⦂ A
-  preserve-multi ⊢M (_ ∎) = ⊢M
-  preserve-multi ⊢M (_ —→⟨ R ⟩ R*) =
-    preserve-multi (preserve ⊢M R) R*
+  preserve-mult ⊢M (_ ∎) = ⊢M
+  preserve-mult ⊢M (_ —→⟨ R ⟩ R*) =
+    preserve-mult (preserve ⊢M R) R*
