@@ -104,12 +104,26 @@ sim-β {V = ƛ A ˙ N} {W} (⊢ƛ .A ⊢N 𝐶⊢-ƛ) ⊢W ⊢N′ ⊢W′ V-ƛ 
   ⟨ N [ W ] , ⟨ _ —→⟨ β w ⟩ _ ∎ , substitution-pres-⊑ ⊢N ⊢N′ ⊢W ⊢W′ N⊑ W⊑ ⟩ ⟩
 sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w′
       (⊑-wrapl lpit (⊢ƛ A′ ⊢N′ 𝐶⊢-ƛ) V⊑ƛN′) W⊑ =
+  {-
+       V ⟨ c ₍ i ₎⟩ · W
+         —→ ( by fun-cast )
+       (V · W ⟨ dom c ⟩) ⟨ cod c ⟩
+         —↠ ( by catchup )
+       (V · W₁) ⟨ cod c ⟩
+         —↠ ( by sim-β )
+       N ⟨ cod c ⟩
+  -}
   case Inert-Cross⇒ c i of λ where
     ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
       case lpit→⊑ lpit of λ where
         ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A⊑A′ B⊑B′ ⟩ →
           -- dom c : A ⇒ A₁ ⊑ A′
-          case catchup (⊢cast (dom c x) ⊢W 𝐶⊢-cast) w′ (⊑-castl A⊑A′ A₁⊑A′ ⊢W′ W⊑) of λ where
-            ⟨ W₁ , ⟨ w₁ , ⟨ Wdomc↠W₁ , W₁⊑ ⟩ ⟩ ⟩ → {!!}
-
-
+          let ⊢Wdomc = (⊢cast (dom c x) ⊢W 𝐶⊢-cast) in
+          case catchup ⊢Wdomc w′ (⊑-castl A⊑A′ A₁⊑A′ ⊢W′ W⊑) of λ where
+            ⟨ W₁ , ⟨ w₁ , ⟨ Wdomc↠W₁ , W₁⊑ ⟩ ⟩ ⟩ →
+              case (sim-β ⊢V (preserve-multi ⊢Wdomc Wdomc↠W₁)
+                          ⊢N′ ⊢W′ v w₁ w′ V⊑ƛN′ W₁⊑) of λ where
+                ⟨ N , ⟨ V·W₁↠N , N⊑ ⟩ ⟩ →
+                  ⟨ N ⟨ cod c x ⟩ ,
+                    ⟨ {!!} ,
+                      ⊑-castl B₁⊑B′ B⊑B′ (preserve-substitution _ _ ⊢N′ ⊢W′) N⊑ ⟩ ⟩
