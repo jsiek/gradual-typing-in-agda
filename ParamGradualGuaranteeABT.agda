@@ -93,11 +93,19 @@ gradual-guarantee-plug {F = F-case A B M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!
 gradual-guarantee-plug {F = F-cast x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-wrap c x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
-    case gradual-guarantee ⊢M ⊢M′ M⊑ (ξ R) of λ where
-      ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
-        ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast c) R* ,
+  {- be careful about which ⊢M′ to use, since CC doesn't
+     satisfy uniqueness of typing -}
+  case gradual-guarantee ⊢M ⊢M′ M⊑ (ξ R) of λ where
+    ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
+      ⟨ M₂ ⟨ c ⟩ ,
+        ⟨ plug-cong (F-cast c) R* ,
           ⊑-castl A⊑A′ B⊑A′ (preserve ⊢M′ (ξ R)) M₂⊑ ⟩ ⟩
-gradual-guarantee-plug ⊢M₁ ⊢plugN′F (⊑-wrapl x x₁ M₁⊑) R = {!!}
+gradual-guarantee-plug (⊢wrap c i ⊢M 𝐶⊢-cast) _ (⊑-wrapl lpit ⊢M′ M⊑) R =
+  case gradual-guarantee ⊢M ⊢M′ M⊑ (ξ R) of λ where
+    ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
+      ⟨ M₂ ⟨ c ₍ i ₎⟩ ,
+        ⟨ plug-cong (F-wrap c i) R* ,
+          ⊑-wrapl lpit (preserve ⊢M′ (ξ R)) M₂⊑ ⟩ ⟩
 
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (ξ {F = F} R) =
   gradual-guarantee-plug {F = F} ⊢M₁ ⊢M₁′ M₁⊑ R
@@ -129,6 +137,12 @@ gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (case-cast x) = {!!}
 gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
   case gradual-guarantee ⊢M ⊢M′ M⊑ R of λ where
     ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
-      ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast c) R* ,
-        ⊑-castl A⊑A′ B⊑A′ (preserve ⊢M′ R) M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-wrapl lpit ⊢M′ M⊑) R = {!!}
+      ⟨ M₂ ⟨ c ⟩ ,
+        ⟨ plug-cong (F-cast c) R* ,
+          ⊑-castl A⊑A′ B⊑A′ (preserve ⊢M′ R) M₂⊑ ⟩ ⟩
+gradual-guarantee (⊢wrap c i ⊢M 𝐶⊢-wrap) _ (⊑-wrapl lpit ⊢M′ M⊑) R =
+  case gradual-guarantee ⊢M ⊢M′ M⊑ R of λ where
+    ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
+      ⟨ M₂ ⟨ c ₍ i ₎⟩ ,
+        ⟨ plug-cong (F-wrap c i) R* ,
+          ⊑-wrapl lpit (preserve ⊢M′ R) M₂⊑ ⟩ ⟩
