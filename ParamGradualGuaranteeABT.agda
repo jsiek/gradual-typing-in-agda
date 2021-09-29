@@ -39,6 +39,7 @@ gradual-guarantee : ∀ {A A′} {M₁ M₁′ M₂′ : Term}
     --------------------------------------------
   → ∃[ M₂ ] (M₁ —↠ M₂) × ([] , [] ⊢ M₂ ⊑ M₂′)
 
+-- all cases for the ξ rule in the plug lemma
 gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₁′ M₂′ : Term}
   → [] ⊢ M₁ ⦂ A
   → [] ⊢ plug M₁′ F ⦂ A′
@@ -49,7 +50,14 @@ gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₁′ M₂′ : Term}
 gradual-guarantee-plug {F = F-·₁ M′} {L · M} (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢M₁′ _ 𝐶⊢-·) (⊑-· L⊑M₁′ M⊑M′) R =
   case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
     ⟨ L₂ , ⟨ R* , L₂⊑ ⟩ ⟩  → ⟨ L₂ · M , ⟨ plug-cong (F-·₁ M) R* , ⊑-· L₂⊑ M⊑M′ ⟩ ⟩
-gradual-guarantee-plug {F = F-·₂ V x} ⊢M₁ ⊢plugN′F (⊑-· L⊑M₁′ M⊑M′) R = {!!}
+gradual-guarantee-plug {F = F-·₂ V′ v′} (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· ⊢V′ ⊢M₁′ 𝐶⊢-·) (⊑-· L⊑V′ M⊑M₁′) R =
+  case catchup ⊢L v′ L⊑V′ of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′ ⟩ ⟩ ⟩ →
+      case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+        ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+          ⟨ V · M₂ , ⟨ ↠-trans (plug-cong (F-·₁ _) L↠V)
+                                (plug-cong (F-·₂ _ v) M↠M₂) ,
+                       ⊑-· V⊑V′ M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-if M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-×₁ V x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-×₂ M} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
