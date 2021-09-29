@@ -39,12 +39,13 @@ gradual-guarantee : ∀ {A A′} {M₁ M₁′ M₂′ : Term}
     --------------------------------------------
   → ∃[ M₂ ] (M₁ —↠ M₂) × ([] , [] ⊢ M₂ ⊑ M₂′)
 
--- all cases for the ξ rule in the plug lemma
+-- group all cases for the ξ rule in the plug lemma
 gradual-guarantee-plug : ∀ {A A′} {F : Frame} {M₁ M₁′ M₂′ : Term}
   → [] ⊢ M₁ ⦂ A
   → [] ⊢ plug M₁′ F ⦂ A′
   → [] , [] ⊢ M₁ ⊑ plug M₁′ F
   → M₁′ —→ M₂′
+    -------------------------------------------------
   → ∃[ M₂ ] (M₁ —↠ M₂) × [] , [] ⊢ M₂ ⊑ plug M₂′ F
 
 gradual-guarantee-plug {F = F-·₁ M′} {L · M}
@@ -85,13 +86,34 @@ gradual-guarantee-plug {F = F-×₂ M′} {⟦ L , M ⟧}
   case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
     ⟨ L₂ , ⟨ L↠L₂ , L₂⊑M₂′ ⟩ ⟩ →
       ⟨ ⟦ L₂ , M ⟧ , ⟨ plug-cong (F-×₂ _) L↠L₂ , ⊑-cons L₂⊑M₂′ M⊑M′ ⟩ ⟩
-gradual-guarantee-plug {F = F-fst} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-snd} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
+gradual-guarantee-plug {F = F-fst} {fst M}
+                       (⊢fst ⊢M 𝐶⊢-fst) (⊢fst ⊢M₁′ 𝐶⊢-fst)
+                       (⊑-fst M⊑M₁′) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ fst M₂ ,
+        ⟨ plug-cong F-fst M↠M₂ ,
+          ⊑-fst M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-snd} {snd M}
+                       (⊢snd ⊢M 𝐶⊢-snd) (⊢snd ⊢M₁′ 𝐶⊢-snd)
+                       (⊑-snd M⊑M₁′) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ snd M₂ ,
+        ⟨ plug-cong F-snd M↠M₂ ,
+          ⊑-snd M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-inl B} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-inr A} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-case A B M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-cast x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-wrap c x} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
+gradual-guarantee-plug {F = F-cast c′} {M ⟨ c ⟩}
+                       ⊢M (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
+                       (⊑-cast A⊑A′ B⊑B′ M⊑M₁′) R =
+  {!!}
+gradual-guarantee-plug {F = F-cast c′} {M}
+                       _ (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
+                       (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑M₁′) R =
+  {!!}
+gradual-guarantee-plug {F = F-wrap c′ i′} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
   {- be careful about which ⊢M′ to use, since CC doesn't
      satisfy uniqueness of typing -}
@@ -109,7 +131,8 @@ gradual-guarantee-plug (⊢wrap c i ⊢M 𝐶⊢-cast) _ (⊑-wrapl lpit ⊢M′
 
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (ξ {F = F} R) =
   gradual-guarantee-plug {F = F} ⊢M₁ ⊢M₁′ M₁⊑ R
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ ξ-blame = ⟨ _ , ⟨ _ ∎ , ⊑-blame ⟩ ⟩
+gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ ξ-blame =
+  ⟨ _ , ⟨ _ ∎ , ⊑-blame ⟩ ⟩
 gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-ƛ) ⊢W′ 𝐶⊢-·) (⊑-· L⊑ M⊑) (β w′) =
   case catchup ⊢L V-ƛ L⊑ of λ where
     ⟨ V , ⟨ v , ⟨ L↠V , V⊑ ⟩ ⟩ ⟩ →
@@ -119,8 +142,10 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-�
               ⊢W = preserve-mult ⊢M M↠W in
           case sim-β ⊢V ⊢W ⊢N′ ⊢W′ v w w′ V⊑ W⊑ of λ where
             ⟨ M₂ , ⟨ V·W↠M₂ , M₂⊑ ⟩ ⟩ →
-              ⟨ M₂ , ⟨  ↠-trans (plug-cong (F-·₁ _)   L↠V)
-                       (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) , M₂⊑ ⟩ ⟩
+              ⟨ M₂ ,
+                ⟨  ↠-trans (plug-cong (F-·₁ _)   L↠V)
+                            (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) ,
+                   M₂⊑ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ δ = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
