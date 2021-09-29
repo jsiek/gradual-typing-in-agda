@@ -64,7 +64,7 @@ catchup (⊢cast c ⊢M 𝐶⊢-cast) v′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ 
     ⟨ V , ⟨ v , ⟨ rd*₁ , V⊑ ⟩ ⟩ ⟩ →
       case ActiveOrInert c of λ where
         (inj₁ a) →
-          case applyCast-catchup a (preserve-multi ⊢M rd*₁) ⊢M′ v v′ A⊑A′ B⊑A′ V⊑ of λ where
+          case applyCast-catchup a (preserve-mult ⊢M rd*₁) ⊢M′ v v′ A⊑A′ B⊑A′ V⊑ of λ where
             ⟨ W , ⟨ w , ⟨ rd*₂ , W⊑ ⟩ ⟩ ⟩ →
               ⟨ W , ⟨ w ,
                 ⟨ ↠-trans (plug-cong (F-cast c) rd*₁) (_ —→⟨ cast v ⟩ rd*₂) ,
@@ -87,7 +87,7 @@ catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) v′ (⊑-wrapl {c = c} {i = i} lpit ⊢
 catchup ⊢M (V-wrap v′ i′) (⊑-wrapr lpti ⊢M₁ M⊑ nd) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
-      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr lpti (preserve-multi ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
+      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr lpti (preserve-mult ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
 
 
 sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
@@ -121,7 +121,7 @@ sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w�
           let ⊢Wdomc = (⊢cast (dom c x) ⊢W 𝐶⊢-cast) in
           case catchup ⊢Wdomc w′ (⊑-castl A⊑A′ A₁⊑A′ ⊢W′ W⊑) of λ where
             ⟨ W₁ , ⟨ w₁ , ⟨ Wdomc↠W₁ , W₁⊑ ⟩ ⟩ ⟩ →
-              case (sim-β ⊢V (preserve-multi ⊢Wdomc Wdomc↠W₁)
+              case (sim-β ⊢V (preserve-mult ⊢Wdomc Wdomc↠W₁)
                           ⊢N′ ⊢W′ v w₁ w′ V⊑ƛN′ W₁⊑) of λ where
                 ⟨ N , ⟨ V·W₁↠N , N⊑ ⟩ ⟩ →
                   ⟨ N ⟨ cod c x ⟩ ,

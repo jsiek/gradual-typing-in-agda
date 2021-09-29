@@ -74,7 +74,13 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-�
   case catchup ⊢L V-ƛ L⊑ of λ where
     ⟨ V , ⟨ v , ⟨ L↠V , V⊑ ⟩ ⟩ ⟩ →
       case catchup ⊢M w′ M⊑ of λ where
-        ⟨ W , ⟨ w , ⟨ M↠W , W⊑ ⟩ ⟩ ⟩ → sim-β {!!} {!!} ⊢N′ {!!} {!!} {!!} {!!} {!!} {!!}
+        ⟨ W , ⟨ w , ⟨ M↠W , W⊑ ⟩ ⟩ ⟩ →
+          let ⊢V = preserve-mult ⊢L L↠V
+              ⊢W = preserve-mult ⊢M M↠W in
+          case sim-β ⊢V ⊢W ⊢N′ ⊢W′ v w w′ V⊑ W⊑ of λ where
+            ⟨ M₂ , ⟨ V·W↠M₂ , M₂⊑ ⟩ ⟩ →
+              ⟨ M₂ , ⟨  ↠-trans (plug-cong (F-·₁ _)   L↠V)
+                       (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) , M₂⊑ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ δ = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
