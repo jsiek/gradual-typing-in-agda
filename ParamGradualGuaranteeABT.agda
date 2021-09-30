@@ -91,24 +91,22 @@ gradual-guarantee-plug {F = F-fst} {fst M}
                        (⊑-fst M⊑M₁′) R =
   case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
     ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
-      ⟨ fst M₂ ,
-        ⟨ plug-cong F-fst M↠M₂ ,
-          ⊑-fst M₂⊑M₂′ ⟩ ⟩
+      ⟨ fst M₂ , ⟨ plug-cong F-fst M↠M₂ , ⊑-fst M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-snd} {snd M}
                        (⊢snd ⊢M 𝐶⊢-snd) (⊢snd ⊢M₁′ 𝐶⊢-snd)
                        (⊑-snd M⊑M₁′) R =
   case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
     ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
-      ⟨ snd M₂ ,
-        ⟨ plug-cong F-snd M↠M₂ ,
-          ⊑-snd M₂⊑M₂′ ⟩ ⟩
+      ⟨ snd M₂ , ⟨ plug-cong F-snd M↠M₂ , ⊑-snd M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-inl B} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-inr A} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-case A B M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
 gradual-guarantee-plug {F = F-cast c′} {M ⟨ c ⟩}
-                       ⊢M (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
+                       (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
                        (⊑-cast A⊑A′ B⊑B′ M⊑M₁′) R =
-  {!!}
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ M₂ ⟨ c ⟩ , ⟨ plug-cong (F-cast c) M↠M₂ , ⊑-cast A⊑A′ B⊑B′ M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-cast c′} {M}
                        _ (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
                        (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑M₁′) R =
