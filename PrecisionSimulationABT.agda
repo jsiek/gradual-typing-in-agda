@@ -140,10 +140,25 @@ sim-δ : ∀ {A A′ B B′} {V W : Term} {f : rep A′ → rep B′} {k : rep A
   → [] , [] ⊢ W ⊑ $ k # a
     ----------------------------------------------------
   → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ $ (f k) # b)
-sim-δ {ab = P-Fun _} (⊢$ _ _ 𝐶⊢-$) (⊢wrap _ _ _ 𝐶⊢-wrap)
+sim-δ {ab = P-Fun _} (⊢$ _ _ 𝐶⊢-$) (⊢wrap _ _ _ 𝐶⊢-wrap) -- impossible
       V-const (V-wrap w i) ⊑-$ (⊑-wrapl _ _ _) =
-  contradiction i (baseNotInert _) {- c : A ⇒ ` ι cannot be inert -}
+  contradiction i {- c : A ⇒ ` ι cannot be inert -} (baseNotInert _)
 sim-δ {ab = P-Fun _} {a} {b} (⊢$ f ab 𝐶⊢-$) (⊢$ k a 𝐶⊢-$)
       V-const V-const ⊑-$ ⊑-$ =
   ⟨ $ (f k) # b , ⟨ _ —→⟨ δ ⟩ _ ∎ , ⊑-$ ⟩ ⟩
-sim-δ ⊢V ⊢W v w (⊑-wrapl _ _ _) W⊑ = {!!}
+sim-δ {f = f} {k} {ab} {a} {b} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W
+      (V-wrap v i) w (⊑-wrapl lpit (⊢$ f _ 𝐶⊢-$) V⊑f) W⊑k =
+  case Inert-Cross⇒ c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
+      case lpit→⊑ lpit of λ where
+        ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A⊑A′ B⊑B′ ⟩ →
+          let ⊢Wdomc = (⊢cast (dom c x) ⊢W 𝐶⊢-cast) in
+          case catchup ⊢Wdomc V-const (⊑-castl A⊑A′ A₁⊑A′ (⊢$ k a 𝐶⊢-$) W⊑k) of λ where
+            ⟨ W₁ , ⟨ w₁ , ⟨ Wdomc↠W₁ , W₁⊑ ⟩ ⟩ ⟩ →
+              case (sim-δ ⊢V (preserve-mult ⊢Wdomc Wdomc↠W₁) v w₁ V⊑f W₁⊑) of λ where
+                ⟨ N , ⟨ V·W₁↠N , N⊑ ⟩ ⟩ →
+                  ⟨ N ⟨ cod c x ⟩ ,
+                    ⟨ _ —→⟨ fun-cast v w {x} ⟩
+                        ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ v) Wdomc↠W₁))
+                                 (plug-cong (F-cast _) V·W₁↠N),
+                      ⊑-castl B₁⊑B′ B⊑B′ (⊢$ (f k) b 𝐶⊢-$) N⊑ ⟩ ⟩

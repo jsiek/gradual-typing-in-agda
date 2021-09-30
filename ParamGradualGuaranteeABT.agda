@@ -175,7 +175,18 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-�
                             (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) ,
                    M₂⊑ ⟩ ⟩
 gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢$ f ab 𝐶⊢-$) (⊢$ k a 𝐶⊢-$) 𝐶⊢-·) (⊑-· L⊑f M⊑k) δ =
-  {!!}
+  case catchup ⊢L V-const L⊑f of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑f ⟩ ⟩ ⟩ →
+      case catchup ⊢M V-const M⊑k of λ where
+        ⟨ W , ⟨ w , ⟨ M↠W , W⊑k ⟩ ⟩ ⟩ →
+          let ⊢V = preserve-mult ⊢L L↠V
+              ⊢W = preserve-mult ⊢M M↠W in
+          case sim-δ ⊢V ⊢W v w V⊑f W⊑k of λ where
+            ⟨ M₂ , ⟨ V·W↠M₂ , M₂⊑ ⟩ ⟩ →
+              ⟨ M₂ ,
+                ⟨  ↠-trans (plug-cong (F-·₁ _)   L↠V)
+                            (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) ,
+                   M₂⊑ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-fst x x₁) = {!!}
