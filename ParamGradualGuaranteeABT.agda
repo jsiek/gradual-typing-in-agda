@@ -98,9 +98,26 @@ gradual-guarantee-plug {F = F-snd} {snd M}
   case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
     ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
       ⟨ snd M₂ , ⟨ plug-cong F-snd M↠M₂ , ⊑-snd M₂⊑M₂′ ⟩ ⟩
-gradual-guarantee-plug {F = F-inl B} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-inr A} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
-gradual-guarantee-plug {F = F-case A B M N} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
+gradual-guarantee-plug {F = F-inl B′} {inl M other B}
+                       (⊢inl B ⊢M 𝐶⊢-inl) (⊢inl B′ ⊢M₁′ 𝐶⊢-inl)
+                       (⊑-inl B⊑B′ M⊑M₁′) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ inl M₂ other B , ⟨ plug-cong (F-inl B) M↠M₂ , ⊑-inl B⊑B′ M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-inr A′} {inr M other A}
+                       (⊢inr A ⊢M 𝐶⊢-inr) (⊢inr A′ ⊢M₁′ 𝐶⊢-inr)
+                       (⊑-inr A⊑A′ M⊑M₁′) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ inr M₂ other A , ⟨ plug-cong (F-inr A) M↠M₂ , ⊑-inr A⊑A′ M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-case A′ B′ M′ N′} {case L of A ⇒ M ∣ B ⇒ N}
+                       (⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case) (⊢case A′ B′ ⊢M₁′ ⊢M′ ⊢N′ 𝐶⊢-case)
+                       (⊑-case L⊑M₁′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) R =
+  case gradual-guarantee ⊢L ⊢M₁′ L⊑M₁′ R of λ where
+    ⟨ L₂ , ⟨ L↠L₂ , L₂⊑M₂′ ⟩ ⟩ →
+      ⟨ case L₂ of A ⇒ M ∣ B ⇒ N ,
+        ⟨ plug-cong (F-case A B M N) L↠L₂ ,
+          ⊑-case L₂⊑M₂′ A⊑A′ B⊑B′ M⊑M′ N⊑N′ ⟩ ⟩
 gradual-guarantee-plug {F = F-cast c′} {M ⟨ c ⟩}
                        (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
                        (⊑-cast A⊑A′ B⊑B′ M⊑M₁′) R =
@@ -110,8 +127,21 @@ gradual-guarantee-plug {F = F-cast c′} {M ⟨ c ⟩}
 gradual-guarantee-plug {F = F-cast c′} {M}
                        _ (⊢cast c′ ⊢M₁′ 𝐶⊢-cast)
                        (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑M₁′) R =
-  {!!}
-gradual-guarantee-plug {F = F-wrap c′ i′} ⊢M₁ ⊢plugN′F M₁⊑ R = {!!}
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ M₂ , ⟨ M↠M₂ , ⊑-castr A⊑A′ A⊑B′ (preserve-mult ⊢M M↠M₂) M₂⊑M₂′ ⟩ ⟩
+gradual-guarantee-plug {F = F-wrap c′ i′} {M ⟨ c ₍ i ₎⟩}
+                       (⊢wrap c i ⊢M 𝐶⊢-wrap) (⊢wrap c′ i′ ⊢M₁′ 𝐶⊢-wrap)
+                       (⊑-wrap lpii M⊑M₁′ imp) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ M₂ ⟨ c ₍ i ₎⟩ , ⟨ plug-cong (F-wrap c i) M↠M₂ , ⊑-wrap lpii M₂⊑M₂′ imp ⟩ ⟩
+gradual-guarantee-plug {F = F-wrap c′ i′} {M}
+                       _ (⊢wrap c′ i′ ⊢M₁′ 𝐶⊢-wrap)
+                       (⊑-wrapr lpti ⊢M M⊑M₁′ nd) R =
+  case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
+    ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
+      ⟨ M₂ , ⟨ M↠M₂ , ⊑-wrapr lpti (preserve-mult ⊢M M↠M₂) M₂⊑M₂′ nd ⟩ ⟩
 gradual-guarantee-plug (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
   {- be careful about which ⊢M′ to use, since CC doesn't
      satisfy uniqueness of typing -}
@@ -144,7 +174,8 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢ƛ _ ⊢N′ 𝐶⊢-�
                 ⟨  ↠-trans (plug-cong (F-·₁ _)   L↠V)
                             (↠-trans (plug-cong (F-·₂ _ v) M↠W) V·W↠M₂) ,
                    M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ δ = {!!}
+gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢$ f ab 𝐶⊢-$) (⊢$ k a 𝐶⊢-$) 𝐶⊢-·) (⊑-· L⊑f M⊑k) δ =
+  {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-fst x x₁) = {!!}

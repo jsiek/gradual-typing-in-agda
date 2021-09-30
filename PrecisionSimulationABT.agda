@@ -100,6 +100,7 @@ sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
   → [] , [] ⊢ W ⊑ W′
     --------------------------------------------------
   → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ N′ [ W′ ])
+
 sim-β {V = ƛ A ˙ N} {W} (⊢ƛ .A ⊢N 𝐶⊢-ƛ) ⊢W ⊢N′ ⊢W′ V-ƛ w w′ (⊑-ƛ A⊑ N⊑) W⊑ =
   ⟨ N [ W ] , ⟨ _ —→⟨ β w ⟩ _ ∎ , substitution-pres-⊑ ⊢N ⊢N′ ⊢W ⊢W′ N⊑ W⊑ ⟩ ⟩
 sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w′
@@ -129,3 +130,20 @@ sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w�
                         ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ v) Wdomc↠W₁))
                                  (plug-cong (F-cast _) V·W₁↠N),
                       ⊑-castl B₁⊑B′ B⊑B′ (preserve-substitution _ _ ⊢N′ ⊢W′) N⊑ ⟩ ⟩
+
+sim-δ : ∀ {A A′ B B′} {V W : Term} {f : rep A′ → rep B′} {k : rep A′}
+          {ab : Prim (A′ ⇒ B′)} {a : Prim A′} {b : Prim B′}
+  → [] ⊢ V ⦂ A ⇒ B
+  → [] ⊢ W ⦂ A
+  → Value V → Value W
+  → [] , [] ⊢ V ⊑ $ f # ab
+  → [] , [] ⊢ W ⊑ $ k # a
+    ----------------------------------------------------
+  → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ $ (f k) # b)
+sim-δ {ab = P-Fun _} (⊢$ _ _ 𝐶⊢-$) (⊢wrap _ _ _ 𝐶⊢-wrap)
+      V-const (V-wrap w i) ⊑-$ (⊑-wrapl _ _ _) =
+  contradiction i (baseNotInert _) {- c : A ⇒ ` ι cannot be inert -}
+sim-δ {ab = P-Fun _} {a} {b} (⊢$ f ab 𝐶⊢-$) (⊢$ k a 𝐶⊢-$)
+      V-const V-const ⊑-$ ⊑-$ =
+  ⟨ $ (f k) # b , ⟨ _ —→⟨ δ ⟩ _ ∎ , ⊑-$ ⟩ ⟩
+sim-δ ⊢V ⊢W v w (⊑-wrapl _ _ _) W⊑ = {!!}
