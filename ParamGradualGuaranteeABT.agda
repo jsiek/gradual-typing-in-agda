@@ -195,7 +195,9 @@ gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseL x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseR x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (cast v) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (wrap v) = {!!}
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (fun-cast x x₁) = {!!}
+gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢W′ 𝐶⊢-·)
+                  (⊑-· L⊑V′c′ M⊑W′) (fun-cast v′ w′ {x′} {i′}) =
+  {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (fst-cast x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (snd-cast x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (case-cast x) = {!!}

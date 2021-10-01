@@ -162,3 +162,24 @@ sim-δ {f = f} {k} {ab} {a} {b} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W
                         ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ v) Wdomc↠W₁))
                                  (plug-cong (F-cast _) V·W₁↠N),
                       ⊑-castl B₁⊑B′ B⊑B′ (⊢$ (f k) b 𝐶⊢-$) N⊑ ⟩ ⟩
+
+sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+  → [] ⊢ V ⦂ A ⇒ B
+  → [] ⊢ W ⦂ A
+  → [] ⊢ V′ ⦂ A′ ⇒ B′
+  → [] ⊢ W′ ⦂ C′
+  → Value V → Value W → Value V′ → Value W′
+  → (i′ : Inert c′) → (x′ : Cross c′)
+  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+  → [] , [] ⊢ W ⊑ W′
+    --------------------------------------------------------------------------------
+  → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
+sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap lpii V⊑V′ imp) W⊑W′ =
+  {!!}
+sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl lpit ⊢V′c′ V⊑V′c′) W⊑W′ =
+  {!!}
+sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr lpti ⊢V₁ V⊑V′ nd) W⊑W′ =
+  case lpti→⊑ lpti of λ where
+    ⟨ unk⊑ , unk⊑ ⟩ → contradiction refl nd
+    ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A₁⊑C′ B₁⊑D′ ⟩ →
+      ⟨ V · W , ⟨ _ ∎ , ⊑-castr B₁⊑B′ B₁⊑D′ (⊢· ⊢V₁ {!!} 𝐶⊢-·) {!!} ⟩ ⟩
