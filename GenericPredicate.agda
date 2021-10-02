@@ -69,5 +69,5 @@ module GenericPredicate (precast : PreCastStruct) where
     pattern ⊢wrap c i ⊢M eq =
       op-p {op = op-wrap c i} (cons-p (ast-p ⊢M) nil-p) eq
 
-    pattern ⊢blame ℓ eq =
-      op-p {op = op-blame ℓ} nil-p eq
+    pattern ⊢blame A ℓ eq =
+      op-p {op = op-blame A ℓ} nil-p eq

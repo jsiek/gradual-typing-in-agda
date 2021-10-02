@@ -141,9 +141,11 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
       ------------------------
     → Γ , Γ′ ⊢ M ⊑ M′ ⟨ c′ ₍ i′ ₎⟩
 
-  ⊑-blame : ∀ {Γ Γ′} {M : Term} {ℓ}
+  ⊑-blame : ∀ {Γ Γ′ A A′} {M : Term} {ℓ}
+    → Γ ⊢ M ⦂ A
+    → A ⊑ A′
       -------------------------------
-    → Γ , Γ′ ⊢ M ⊑ blame ℓ
+    → Γ , Γ′ ⊢ M ⊑ blame A′ ℓ
 
 -- Example(s):
 private

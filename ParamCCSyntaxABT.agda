@@ -23,7 +23,7 @@ module ParamCCSyntaxABT (pcs : PreCastStruct) where
     We define well-typed expressions with the following typing judgment.
     Compared to the STLC, there are two important new features.
     The cast is written M ⟨ c ⟩, where M is an expression and c
-    is a cast (whatever that may be). We also have blame ℓ for
+    is a cast (whatever that may be). We also have (blame A ℓ) for
     raising uncatchable exceptions.
   -}
 
@@ -40,7 +40,7 @@ module ParamCCSyntaxABT (pcs : PreCastStruct) where
     op-case  : Type → Type → Op
     op-cast  : ∀ {A B} → Cast (A ⇒ B) → Op
     op-wrap  : ∀ {A B} → (c : Cast (A ⇒ B)) → Inert c → Op
-    op-blame : Label → Op
+    op-blame : Type → Label → Op
 
   sig : Op → List Sig
   sig (op-lam A)    = (ν ■) ∷ []
@@ -55,7 +55,7 @@ module ParamCCSyntaxABT (pcs : PreCastStruct) where
   sig (op-case A B) = ■ ∷ (ν ■) ∷ (ν ■) ∷ []
   sig (op-cast c)   = ■ ∷ []
   sig (op-wrap c i) = ■ ∷ []
-  sig (op-blame ℓ)  = []
+  sig (op-blame A ℓ)  = []
 
   open Syntax.OpSig Op sig
     renaming (ABT to Term)
@@ -84,4 +84,4 @@ module ParamCCSyntaxABT (pcs : PreCastStruct) where
         (op-case A B) ⦅ cons (ast L) (cons (bind (ast M)) (cons (bind (ast N)) nil)) ⦆
   pattern _⟨_⟩ M c = (op-cast c) ⦅ cons (ast M) nil ⦆
   pattern _⟨_₍_₎⟩ M c i = (op-wrap c i) ⦅ cons (ast M) nil ⦆
-  pattern blame_ ℓ = (op-blame ℓ) ⦅ nil ⦆
+  pattern blame A ℓ = (op-blame A ℓ) ⦅ nil ⦆

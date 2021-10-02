@@ -1,3 +1,5 @@
+open import Data.Nat
+open import Data.List hiding ([_])
 open import Relation.Nullary using (¬_)
 open import Relation.Nullary.Negation using (contradiction)
 open import Data.Product
@@ -214,9 +216,9 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → plug M F ≢ ƛ A ˙ N
   ƛ-not-plug {A} {M} {N} = not-plugged (ƛ A ˙ N) λ ()
 
-  blame-not-plug : ∀ {ℓ} {M : Term} {F : Frame}
-    → plug M F ≢ blame ℓ
-  blame-not-plug {ℓ} = not-plugged (blame ℓ) λ ()
+  blame-not-plug : ∀ {A ℓ} {M : Term} {F : Frame}
+    → plug M F ≢ blame A ℓ
+  blame-not-plug {A} {ℓ} = not-plugged (blame A ℓ) λ ()
 
   value-plug : ∀ {F M} → Value (plug M F) → Value M
   value-plug {F-×₁ _ _} (V-pair v w) = w
