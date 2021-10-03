@@ -46,7 +46,7 @@ private
         𝑉-⊢v = λ { refl ⟨ C , ⟨ ∋x , Vx' ⟩ ⟩ → ⟨ C , ⟨ ∋x , Vx' ⟩ ⟩ }
       }
 
-infix 6 _⇒_,_⇒_⊢_⊑ˢ_
+infix 4 _⇒_,_⇒_⊢_⊑ˢ_
 
 _⇒_,_⇒_⊢_⊑ˢ_ : ∀ (Γ Δ Γ′ Δ′ : List Type) →  Subst → Subst → Set
 Γ ⇒ Δ , Γ′ ⇒ Δ′ ⊢ σ ⊑ˢ σ′ =
@@ -230,13 +230,21 @@ cc-prec→⊑ Γ⊑Γ′ (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if ⊢L′ ⊢M�
 cc-prec→⊑ Γ⊑Γ′ (⊢cons ⊢L ⊢M 𝐶⊢-cons) (⊢cons ⊢L′ ⊢M′ 𝐶⊢-cons) (⊑-cons L⊑L′ M⊑M′) =
   pair⊑ (cc-prec→⊑ Γ⊑Γ′ ⊢L ⊢L′ L⊑L′) (cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ M⊑M′)
 cc-prec→⊑ Γ⊑Γ′ (⊢fst ⊢M 𝐶⊢-fst) (⊢fst ⊢M′ 𝐶⊢-fst) (⊑-fst M⊑M′) =
+  case cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ M⊑M′ of λ where
+    (pair⊑ A⊑A′ _) → A⊑A′
+cc-prec→⊑ Γ⊑Γ′ (⊢snd ⊢M 𝐶⊢-snd) (⊢snd ⊢M′ 𝐶⊢-snd) (⊑-snd M⊑M′) =
+  case cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ M⊑M′ of λ where
+    (pair⊑ _ B⊑B′) → B⊑B′
+cc-prec→⊑ Γ⊑Γ′ (⊢inl B ⊢M 𝐶⊢-inl) (⊢inl B′ ⊢M′ 𝐶⊢-inl) (⊑-inl B⊑B′ M⊑M′) =
+  sum⊑ (cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ M⊑M′) B⊑B′
+cc-prec→⊑ Γ⊑Γ′ (⊢inr A ⊢M 𝐶⊢-inr) (⊢inr A′ ⊢M′ 𝐶⊢-inr) (⊑-inr A⊑A′ M⊑M′) =
+  sum⊑ A⊑A′ (cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ M⊑M′)
+cc-prec→⊑ Γ⊑Γ′ (⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case) (⊢case A′ B′ ⊢L′ ⊢M′ ⊢N′ 𝐶⊢-case)
+                (⊑-case L⊑L′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) =
+  cc-prec→⊑ (⊑*-ext Γ⊑Γ′ A⊑A′) ⊢M ⊢M′ M⊑M′
+cc-prec→⊑ Γ⊑Γ′ (⊢cast c M 𝐶⊢-cast) (⊢cast c′ M′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑M′) = B⊑B′
+cc-prec→⊑ Γ⊑Γ′ (⊢cast c M 𝐶⊢-cast) ⊢M′ (⊑-castl A⊑A′ B⊑A′ ⊢M′₁ M⊑M′) =
   {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-snd M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-inl x M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-inr x M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-case M⊑M′ x x₁ M⊑M′₁ M⊑M′₂) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-cast x x₁ M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-castl x x₁ x₂ M⊑M′) = {!!}
 cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-castr x x₁ x₂ M⊑M′) = {!!}
 cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-wrap x M⊑M′ x₁) = {!!}
 cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-wrapl x x₁ M⊑M′) = {!!}

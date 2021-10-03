@@ -13,6 +13,7 @@ open import Types
 open import Labels
 open import PreCastStructure
 
+open import Utils
 open import Syntax
 
 
@@ -273,3 +274,34 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   eta⊎-wt M c {x} ⊢M =
     ⊢case _ _ ⊢M (⊢inl _ (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-inl)
                  (⊢inr _ (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-inr) 𝐶⊢-case
+
+  lookup-unique : ∀ {Γ} {A B : Type}
+    → (x : Var)
+    → Γ ∋ x ⦂ A
+    → Γ ∋ x ⦂ B
+      ----------
+    → A ≡ B
+  lookup-unique {_ ∷ Γ} 0 refl refl = refl
+  lookup-unique {_ ∷ Γ} (suc x) x⦂A x⦂B = lookup-unique {Γ} x x⦂A x⦂B
+
+  uniqueness : ∀ {Γ} {A B : Type} {M}
+    → Γ ⊢ M ⦂ A
+    → Γ ⊢ M ⦂ B
+      ----------
+    → A ≡ B
+  uniqueness {Γ} {M = ` x} (⊢` x⦂A) (⊢` x⦂B) = lookup-unique {Γ} x x⦂A x⦂B
+  uniqueness {Γ} (⊢ƛ A ⊢N₁ 𝐶⊢-ƛ) (⊢ƛ A ⊢N₂ 𝐶⊢-ƛ) =
+    case uniqueness {A ∷ Γ} ⊢N₁ ⊢N₂ of λ where
+      refl → refl
+  uniqueness (⊢· ⊢L₁ _ 𝐶⊢-·) (⊢· ⊢L₂ _ 𝐶⊢-·) =
+    case uniqueness ⊢L₁ ⊢L₂ of λ where
+      refl → refl
+  uniqueness (⊢$ r p 𝐶⊢-$) (⊢$ r p 𝐶⊢-$) = refl
+  uniqueness (⊢if _ ⊢M₁ _ 𝐶⊢-if) (⊢if _ ⊢M₂ _ 𝐶⊢-if) =
+    uniqueness ⊢M₁ ⊢M₂
+  uniqueness (⊢cons ⊢M₁ ⊢N₁ 𝐶⊢-cons) (⊢cons ⊢M₂ ⊢N₂ 𝐶⊢-cons) =
+    case ⟨ uniqueness ⊢M₁ ⊢M₂ , uniqueness ⊢N₁ ⊢N₂ ⟩ of λ where
+      ⟨ refl , refl ⟩ → refl
+  uniqueness (⊢fst ⊢M₁ 𝐶⊢-fst) (⊢fst ⊢M₂ 𝐶⊢-fst) =
+    case uniqueness ⊢M₁ ⊢M₂ of λ where
+      refl → refl

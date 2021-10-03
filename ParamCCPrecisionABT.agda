@@ -19,7 +19,7 @@ open PreCastStructWithPrecision pcsp
 open import ParamCastCalculusABT precast
 
 {- The precision relation for the cast calculus. -}
-infix 6 _,_⊢_⊑_
+infix 4 _,_⊢_⊑_
 
 data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
 
@@ -33,7 +33,7 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
 
   ⊑-ƛ : ∀ {Γ Γ′ A A′} {N N′ : Term}
     → A ⊑ A′
-    → (A ∷ Γ) , (A′ ∷ Γ′) ⊢ N ⊑ N′
+    → A ∷ Γ , A′ ∷ Γ′ ⊢ N ⊑ N′
       ------------------------------
     → Γ , Γ′ ⊢ ƛ A ˙ N ⊑ ƛ A′ ˙ N′
 
