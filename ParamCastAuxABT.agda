@@ -305,3 +305,17 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   uniqueness (⊢fst ⊢M₁ 𝐶⊢-fst) (⊢fst ⊢M₂ 𝐶⊢-fst) =
     case uniqueness ⊢M₁ ⊢M₂ of λ where
       refl → refl
+  uniqueness (⊢snd ⊢M₁ 𝐶⊢-snd) (⊢snd ⊢M₂ 𝐶⊢-snd) =
+    case uniqueness ⊢M₁ ⊢M₂ of λ where
+      refl → refl
+  uniqueness (⊢inl B ⊢M₁ 𝐶⊢-inl) (⊢inl B ⊢M₂ 𝐶⊢-inl) =
+    case uniqueness ⊢M₁ ⊢M₂ of λ where
+      refl → refl
+  uniqueness (⊢inr A ⊢M₁ 𝐶⊢-inr) (⊢inr A ⊢M₂ 𝐶⊢-inr) =
+    case uniqueness ⊢M₁ ⊢M₂ of λ where
+      refl → refl
+  uniqueness (⊢case A B ⊢L₁ ⊢M₁ ⊢N₁ 𝐶⊢-case) (⊢case A B ⊢L₂ ⊢M₂ ⊢N₂ 𝐶⊢-case) =
+    uniqueness ⊢M₁ ⊢M₂
+  uniqueness (⊢cast c ⊢M₁ 𝐶⊢-cast) (⊢cast c ⊢M₂ 𝐶⊢-cast) = refl
+  uniqueness (⊢wrap c i ⊢M₁ 𝐶⊢-wrap) (⊢wrap c i ⊢M₂ 𝐶⊢-wrap) = refl
+  uniqueness (⊢blame A ℓ 𝐶⊢-blame) (⊢blame A ℓ 𝐶⊢-blame) = refl

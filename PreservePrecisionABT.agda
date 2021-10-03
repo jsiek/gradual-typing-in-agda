@@ -19,6 +19,7 @@ module PreservePrecisionABT (pcsp : PreCastStructWithPrecision) where
 
 open PreCastStructWithPrecision pcsp
 open import ParamCastCalculusABT precast
+open import ParamCastAuxABT precast
 open import ParamCCPrecisionABT pcsp
 
 open import MapPreserve Op sig Type 𝑉⊢ 𝑃⊢
@@ -211,6 +212,7 @@ _⊑*_ : List Type → List Type → Set
 ⊑*-ext Γ⊑Γ′ A⊑A′ 0 refl refl = A⊑A′
 ⊑*-ext Γ⊑Γ′ A⊑A′ (suc x) ∋x ∋x′ = Γ⊑Γ′ x ∋x ∋x′
 
+{- Term precision of CC implies type precision. -}
 cc-prec→⊑ : ∀ {Γ Γ′} {A A′} {M M′}
   → Γ ⊑* Γ′
   → Γ  ⊢ M  ⦂ A
@@ -242,11 +244,17 @@ cc-prec→⊑ Γ⊑Γ′ (⊢inr A ⊢M 𝐶⊢-inr) (⊢inr A′ ⊢M′ 𝐶�
 cc-prec→⊑ Γ⊑Γ′ (⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case) (⊢case A′ B′ ⊢L′ ⊢M′ ⊢N′ 𝐶⊢-case)
                 (⊑-case L⊑L′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) =
   cc-prec→⊑ (⊑*-ext Γ⊑Γ′ A⊑A′) ⊢M ⊢M′ M⊑M′
-cc-prec→⊑ Γ⊑Γ′ (⊢cast c M 𝐶⊢-cast) (⊢cast c′ M′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑M′) = B⊑B′
-cc-prec→⊑ Γ⊑Γ′ (⊢cast c M 𝐶⊢-cast) ⊢M′ (⊑-castl A⊑A′ B⊑A′ ⊢M′₁ M⊑M′) =
-  {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-castr x x₁ x₂ M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-wrap x M⊑M′ x₁) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-wrapl x x₁ M⊑M′) = {!!}
-cc-prec→⊑ Γ⊑Γ′ ⊢M ⊢M′ (⊑-wrapr x x₁ M⊑M′ x₂) = {!!}
-cc-prec→⊑ Γ⊑Γ′ _ (⊢blame A ℓ 𝐶⊢-blame) (⊑-blame ⊢M A⊑A′) = {!!}
+cc-prec→⊑ Γ⊑Γ′ (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢M′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑M′) =
+  B⊑B′
+cc-prec→⊑ Γ⊑Γ′ (⊢cast c ⊢M 𝐶⊢-cast) ⊢M′ (⊑-castl A⊑A′ B⊑A′ ⊢M′₁ M⊑M′)
+  rewrite uniqueness ⊢M′ ⊢M′₁ = B⊑A′
+cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢cast c ⊢M′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁ M⊑M′)
+  rewrite uniqueness ⊢M ⊢M₁ = A⊑B′
+cc-prec→⊑ Γ⊑Γ′ (⊢wrap c i ⊢M 𝐶⊢-wrap) (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrap lpii M⊑M′ imp) =
+  proj₂ (lpii→⊑ lpii)
+cc-prec→⊑ Γ⊑Γ′ (⊢wrap c i ⊢M 𝐶⊢-wrap) ⊢M′ (⊑-wrapl lpit ⊢M′₁ M⊑M′)
+  rewrite uniqueness ⊢M′ ⊢M′₁ = proj₂ (lpit→⊑ lpit)
+cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrapr lpti ⊢M₁ M⊑M′ nd)
+  rewrite uniqueness ⊢M ⊢M₁ = proj₂ (lpti→⊑ lpti)
+cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢blame A ℓ 𝐶⊢-blame) (⊑-blame ⊢M₁ A⊑A′)
+  rewrite uniqueness ⊢M ⊢M₁ = A⊑A′
