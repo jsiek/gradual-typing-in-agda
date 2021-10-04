@@ -92,40 +92,41 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     We shall use a kind of shallow evaluation context, called a Frame,
     to collapse all of the ξ rules into a single rule.
   -}
-  data Frame : Set where
+  data Frame : ∀ {Γ : List Type} → (A B : Type) → Set where
 
     -- □ · M
-    F-·₁ : ∀ (M : Term) → Frame
+    F-·₁ : ∀ {Γ A B} (M : Term) → Γ ⊢ M ⦂ A → Frame {Γ} (A ⇒ B) B
 
     -- V · □
-    F-·₂ : ∀ (V : Term) → Value V → Frame
+    F-·₂ : ∀ {Γ A B} (V : Term) → Γ ⊢ V ⦂ A ⇒ B → Value V → Frame {Γ} A B
 
     -- if □ M N
-    F-if : ∀ (M N : Term) → Frame
+    F-if : ∀ {Γ A} (M N : Term) → Γ ⊢ M ⦂ A → Γ ⊢ N ⦂ A → Frame {Γ} (` 𝔹) A
 
     -- ⟨ V , □ ⟩
-    F-×₁ : ∀ (V : Term) → Value V → Frame
+    F-×₁ : ∀ {Γ A B} (V : Term) → Γ ⊢ V ⦂ A → Value V → Frame {Γ} B (A `× B)
 
     -- ⟨ □ , M ⟩
-    F-×₂ : ∀ (M : Term) → Frame
+    F-×₂ : ∀ {Γ A B} (M : Term) → Γ ⊢ M ⦂ B → Frame {Γ} A (A `× B)
 
     -- fst □
-    F-fst : Frame
+    F-fst : ∀ {Γ A B} → Frame {Γ} (A `× B) A
 
     -- snd □
-    F-snd : Frame
+    F-snd : ∀ {Γ A B} → Frame {Γ} (A `× B) B
 
     -- inl □ other B
-    F-inl : ∀ (B : Type) → Frame
+    F-inl : ∀ {Γ A} (B : Type) → Frame {Γ} A (A `⊎ B)
 
     -- inr □ other A
-    F-inr : ∀ (A : Type) → Frame
+    F-inr : ∀ {Γ B} (A : Type) → Frame {Γ} B (A `⊎ B)
 
     -- case □ of A ⇒ M | B ⇒ N
-    F-case : ∀ (A B : Type) (M N : Term) → Frame
+    F-case : ∀ {Γ C} (A B : Type) (M N : Term)
+      → A ∷ Γ ⊢ M ⦂ C → B ∷ Γ ⊢ N ⦂ C → Frame {Γ} (A `⊎ B) C
 
     -- □ ⟨ c ⟩
-    F-cast : ∀ {A B} → Cast (A ⇒ B) → Frame
+    F-cast : ∀ {Γ A B} → Cast (A ⇒ B) → Frame {Γ} A B
 
     {-
       In order to satisfy progress, we need to consider the case M ⟨ c ₍ i ₎⟩
@@ -133,36 +134,55 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
 
       □ ⟨ c ₍ i ₎⟩
     -}
-    F-wrap : ∀ {A B} → (c : Cast (A ⇒ B)) → Inert c → Frame
+    F-wrap : ∀ {Γ A B} → (c : Cast (A ⇒ B)) → Inert c → Frame {Γ} A B
 
   {-
     The plug function inserts an expression into the hole of a frame.
   -}
-  plug : Term → Frame → Term
+  plug : ∀ {Γ A B} → Term → Frame {Γ} A B → Term
   -- □ · M
-  plug L (F-·₁ M)         = L · M
+  plug L (F-·₁ M ⊢M)            = L · M
   -- V · □
-  plug M (F-·₂ V v)       = V · M
+  plug M (F-·₂ V ⊢V v)          = V · M
   -- if □ M N
-  plug L (F-if M N)       = if L then M else N endif
+  plug L (F-if M N ⊢M ⊢N)       = if L then M else N endif
   -- ⟨ V , □ ⟩
-  plug M (F-×₁ V v)       = ⟦ V , M ⟧
+  plug M (F-×₁ V ⊢V v)          = ⟦ V , M ⟧
   -- ⟨ □ , M ⟩
-  plug L (F-×₂ M)         = ⟦ L , M ⟧
+  plug L (F-×₂ M ⊢M)            = ⟦ L , M ⟧
   -- fst □
-  plug M (F-fst)          = fst M
+  plug M (F-fst)                = fst M
   -- snd □
-  plug M (F-snd)          = snd M
+  plug M (F-snd)                = snd M
   -- inl □ other B
-  plug M (F-inl B)        = inl M other B
+  plug M (F-inl B)              = inl M other B
   -- inr □ other A
-  plug M (F-inr A)        = inr M other A
+  plug M (F-inr A)              = inr M other A
   -- case □ of A ⇒ M | B ⇒ N
-  plug L (F-case A B M N) = case L of A ⇒ M ∣ B ⇒ N
+  plug L (F-case A B M N ⊢M ⊢N) = case L of A ⇒ M ∣ B ⇒ N
   -- □ ⟨ c ⟩
-  plug M (F-cast c)       = M ⟨ c ⟩
+  plug M (F-cast c)             = M ⟨ c ⟩
   -- □ ⟨ c ₍ i ₎⟩
-  plug M (F-wrap c i)     = M ⟨ c ₍ i ₎⟩
+  plug M (F-wrap c i)           = M ⟨ c ₍ i ₎⟩
+
+  wt-plug : ∀ {Γ A B}
+    → (M : Term)
+    → Γ ⊢ M ⦂ A
+    → (F : Frame {Γ} A B)
+      --------------------
+    → Γ ⊢ plug M F ⦂ B
+  wt-plug L ⊢L (F-·₁ M ⊢M) = ⊢· ⊢L ⊢M 𝐶⊢-·
+  wt-plug M ⊢M (F-·₂ V ⊢V v) = ⊢· ⊢V ⊢M 𝐶⊢-·
+  wt-plug L ⊢L (F-if M N ⊢M ⊢N) = ⊢if ⊢L ⊢M ⊢N 𝐶⊢-if
+  wt-plug M ⊢M (F-×₁ V ⊢V v) = ⊢cons ⊢V ⊢M 𝐶⊢-cons
+  wt-plug L ⊢L (F-×₂ M ⊢M) = ⊢cons ⊢L ⊢M 𝐶⊢-cons
+  wt-plug M ⊢M F-fst = ⊢fst ⊢M 𝐶⊢-fst
+  wt-plug M ⊢M F-snd = ⊢snd ⊢M 𝐶⊢-snd
+  wt-plug M ⊢M (F-inl B) = ⊢inl B ⊢M 𝐶⊢-inl
+  wt-plug M ⊢M (F-inr A) = ⊢inr A ⊢M 𝐶⊢-inr
+  wt-plug L ⊢L (F-case A B M N ⊢M ⊢N) = ⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case
+  wt-plug M ⊢M (F-cast c) = ⊢cast c ⊢M 𝐶⊢-cast
+  wt-plug M ⊢M (F-wrap c i) = ⊢wrap c i ⊢M 𝐶⊢-wrap
 
   {-
     Auxiliary lemmas about `plug`.
@@ -182,58 +202,59 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     plugged-wrap : ∀ {A B} {M} {c : Cast (A ⇒ B)} {i : Inert c}
       → Plugged (M ⟨ c ₍ i ₎⟩)
 
-  is-plugged : ∀ {F : Frame} {N : Term}
+  is-plugged : ∀ {Γ A B} {F : Frame {Γ} A B} {N : Term}
     → (M : Term)
     → plug N F ≡ M
     → Plugged M
-  is-plugged {F-·₁ M} .(plug _ (F-·₁ M)) refl = plugged-app
-  is-plugged {F-·₂ V x} .(plug _ (F-·₂ V x)) refl = plugged-app
-  is-plugged {F-if M N} .(plug _ (F-if M N)) refl = plugged-if
-  is-plugged {F-×₁ V x} .(plug _ (F-×₁ V x)) refl = plugged-pair
-  is-plugged {F-×₂ M} .(plug _ (F-×₂ M)) refl = plugged-pair
-  is-plugged {F-fst} .(plug _ F-fst) refl = plugged-fst
-  is-plugged {F-snd} .(plug _ F-snd) refl = plugged-snd
-  is-plugged {F-inl B} .(plug _ (F-inl B)) refl = plugged-inl
-  is-plugged {F-inr A} .(plug _ (F-inr A)) refl = plugged-inr
-  is-plugged {F-case A B M N} .(plug _ (F-case A B M N)) refl = plugged-case
-  is-plugged {F-cast x} .(plug _ (F-cast x)) refl = plugged-cast
-  is-plugged {F-wrap c x} .(plug _ (F-wrap c x)) refl = plugged-wrap
+  is-plugged {F = F-·₁ M ⊢M} _ refl = plugged-app
+  is-plugged {F = F-·₂ V ⊢V v} _ refl = plugged-app
+  is-plugged {F = F-if M N ⊢M ⊢N} _ refl = plugged-if
+  is-plugged {F = F-×₁ V ⊢V v} _ refl = plugged-pair
+  is-plugged {F = F-×₂ M ⊢M} _ refl = plugged-pair
+  is-plugged {F = F-fst} _ refl = plugged-fst
+  is-plugged {F = F-snd} _ refl = plugged-snd
+  is-plugged {F = F-inl B} _ refl = plugged-inl
+  is-plugged {F = F-inr A} _ refl = plugged-inr
+  is-plugged {F = F-case A B M N ⊢M ⊢N} _ refl = plugged-case
+  is-plugged {F = F-cast i} _ refl = plugged-cast
+  is-plugged {F = F-wrap c i} _ refl = plugged-wrap
 
-  not-plugged : ∀ {F : Frame} {N : Term}
+  not-plugged : ∀ {Γ A B} {F : Frame {Γ} A B} {N : Term}
     → (M : Term)
     → ¬ (Plugged M)
     → ¬ (plug N F ≡ M)
   not-plugged M not-plugged eq = contradiction (is-plugged M eq) not-plugged
 
-  var-not-plug : ∀ {x : Var} {N : Term} {F : Frame}
+  var-not-plug : ∀ {Γ A B} {x : Var} {N : Term} {F : Frame {Γ} A B}
     → plug N F ≢ ` x
-  var-not-plug {x} = not-plugged (` x) λ ()
+  var-not-plug {x = x} = not-plugged (` x) λ ()
 
-  const-not-plug : ∀ {A} {r : rep A} {p : Prim A} {M : Term} {F : Frame}
+  const-not-plug : ∀ {Γ X A} {r : rep A} {p : Prim A} {M : Term} {F : Frame {Γ} X A}
     → plug M F ≢ $ r # p
-  const-not-plug {A} {r} {p} = not-plugged ($ r # p) λ ()
+  const-not-plug {r = r} {p} = not-plugged ($ r # p) λ ()
 
-  ƛ-not-plug : ∀ {A} {M N : Term} {F : Frame}
+  ƛ-not-plug : ∀ {Γ X A B} {M N : Term} {F : Frame {Γ} X (A ⇒ B)}
     → plug M F ≢ ƛ A ˙ N
-  ƛ-not-plug {A} {M} {N} = not-plugged (ƛ A ˙ N) λ ()
+  ƛ-not-plug {A = A} {N = N} = not-plugged (ƛ A ˙ N) λ ()
 
-  blame-not-plug : ∀ {A ℓ} {M : Term} {F : Frame}
+  blame-not-plug : ∀ {Γ X A ℓ} {M : Term} {F : Frame {Γ} X A}
     → plug M F ≢ blame A ℓ
-  blame-not-plug {A} {ℓ} = not-plugged (blame A ℓ) λ ()
+  blame-not-plug {A = A} {ℓ} = not-plugged (blame A ℓ) λ ()
 
-  value-plug : ∀ {F M} → Value (plug M F) → Value M
-  value-plug {F-×₁ _ _} (V-pair v w) = w
-  value-plug {F-×₂ _} (V-pair v w) = v
-  value-plug {F-inl _} (V-inl v) = v
-  value-plug {F-inr _} (V-inr v) = v
-  value-plug {F-wrap _ _} (V-wrap v _) = v
+  value-plug : ∀ {Γ A B} {F : Frame {Γ} A B} {M} → Value (plug M F) → Value M
+  value-plug {F = F-×₁ _ _ _} (V-pair v w) = w
+  value-plug {F = F-×₂ _ _}   (V-pair v w) = v
+  value-plug {F = F-inl _}    (V-inl v)    = v
+  value-plug {F = F-inr _}    (V-inr v)    = v
+  value-plug {F = F-wrap _ _} (V-wrap v _) = v
 
 
   eta⇒ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D)))
        → (x : Cross c)
        → Term
-  eta⇒ {A} {B} {C} {D} M c x = ƛ C ˙ (((rename ⇑ M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
+  eta⇒ {A} {B} {C} {D} M c x =
+    ƛ C ˙ (((rename ⇑ M) · (` 0 ⟨ dom c x ⟩)) ⟨ cod c x ⟩)
 
   eta⇒-wt : ∀ {Γ A B C D} → (M : Term)
     → (c : Cast ((A ⇒ B) ⇒ (C ⇒ D))) → {x : Cross c}
@@ -241,8 +262,9 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
       -------------------------
     → Γ ⊢ eta⇒ M c x ⦂ C ⇒ D
   eta⇒-wt M c {x} ⊢M =
-    ⊢ƛ _ (⊢cast (cod c x) (⊢· (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
-                              (⊢cast (dom c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-·) 𝐶⊢-cast) 𝐶⊢-ƛ
+    ⊢ƛ _ (⊢cast (cod c x)
+                (⊢· (preserve-rename M ⊢M λ ∋x → ⟨ _ , ⟨ ∋x , refl ⟩ ⟩)
+                    (⊢cast (dom c x) (⊢` refl) 𝐶⊢-cast) 𝐶⊢-·) 𝐶⊢-cast) 𝐶⊢-ƛ
 
   eta× : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `× B) ⇒ (C `× D)))
@@ -255,8 +277,9 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → Γ ⊢ M ⦂ A `× B
       -------------------------
     → Γ ⊢ eta× M c x ⦂ C `× D
-  eta×-wt M c {x} ⊢M = ⊢cons (⊢cast (fstC c x) (⊢fst ⊢M 𝐶⊢-fst) 𝐶⊢-cast)
-                             (⊢cast (sndC c x) (⊢snd ⊢M 𝐶⊢-snd) 𝐶⊢-cast) 𝐶⊢-cons
+  eta×-wt M c {x} ⊢M =
+    ⊢cons (⊢cast (fstC c x) (⊢fst ⊢M 𝐶⊢-fst) 𝐶⊢-cast)
+          (⊢cast (sndC c x) (⊢snd ⊢M 𝐶⊢-snd) 𝐶⊢-cast) 𝐶⊢-cons
 
   eta⊎ : ∀ {A B C D} → (M : Term)
        → (c : Cast ((A `⊎ B) ⇒ (C `⊎ D)))
