@@ -185,5 +185,7 @@ sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl lpit �
 sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr lpti ⊢V₁ V⊑V′ nd) W⊑W′ =
   case lpti→⊑ lpti of λ where
     ⟨ unk⊑ , unk⊑ ⟩ → contradiction refl nd
-    ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A₁⊑C′ B₁⊑D′ ⟩ →
-      ⟨ V · W , ⟨ _ ∎ , ⊑-castr B₁⊑B′ B₁⊑D′ (⊢· ⊢V₁ {!!} 𝐶⊢-·) {!!} ⟩ ⟩
+    ⟨ fun⊑ A⊑A′ B⊑B′ , fun⊑ A⊑C′ B⊑D′ ⟩ →
+      case uniqueness ⊢V ⊢V₁ of λ where
+       refl → ⟨ V · W , ⟨ _ ∎ ,
+                 ⊑-castr B⊑B′ B⊑D′ (⊢· ⊢V ⊢W 𝐶⊢-·) (⊑-· V⊑V′ (⊑-castr A⊑C′ A⊑A′ ⊢W W⊑W′)) ⟩ ⟩
