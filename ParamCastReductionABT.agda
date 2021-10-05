@@ -48,14 +48,15 @@ module ParamCastReductionABT (cs : CastStruct) where
 
   data _—→_ : Term → Term → Set where
 
-    ξ : ∀ {M M′ : Term} {F : Frame}
+    ξ : ∀ {A B} {M M′ : Term} {F : Frame A B}
+      → [] ⊢ M ⦂ A
       → M —→ M′
         ---------------------
       → plug M F —→ plug M′ F
 
-    ξ-blame : ∀ {F : Frame} {ℓ}
+    ξ-blame : ∀ {A B} {F : Frame A B} {ℓ}
         ---------------------------
-      → plug (blame ℓ) F —→ blame ℓ
+      → plug (blame A ℓ) F —→ blame B ℓ
 
     β : ∀ {A} {N : Term} {W : Term}
       → Value W
@@ -153,7 +154,7 @@ module ParamCastReductionABT (cs : CastStruct) where
     O-fun : Observe
     O-pair : Observe
     O-sum : Observe
-    O-blame : Label → Observe
+    -- O-blame : Label → Observe
 
   observe : ∀ (V : Term) → Value V → Observe
   observe _ V-ƛ = O-fun
@@ -176,7 +177,7 @@ module ParamCastReductionABT (cs : CastStruct) where
   -}
 
   data Error : Term → Set where
-    E-blame : ∀ {ℓ} → Error (blame ℓ)
+    E-blame : ∀ {A ℓ} → Error (blame A ℓ)
 
   data Progress (M : Term) : Set where
 
@@ -233,12 +234,16 @@ module ParamCastReductionABT (cs : CastStruct) where
   progress (ƛ A ˙ M) ⊢M = done V-ƛ
   progress (M₁ · M₂) (⊢· ⊢M₁ ⊢M₂ refl) =
     case progress M₁ ⊢M₁ of λ where
-      (step R) → step (ξ {F = F-·₁ M₂} R)
-      (error E-blame) → step (ξ-blame {F = F-·₁ M₂})
+      (step R) → step (ξ {F = F-·₁ M₂ ⊢M₂} ⊢M₁ R)
+      (error E-blame) →
+        case ⊢M₁ of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-·₁ M₂ ⊢M₂})
       (done v₁) →
         case progress M₂ ⊢M₂ of λ where
-          (step R′) → step (ξ {F = F-·₂ M₁ v₁} R′)
-          (error E-blame) → step (ξ-blame {F = F-·₂ M₁ v₁})
+          (step R′) → step (ξ {F = F-·₂ M₁ ⊢M₁ v₁} ⊢M₂ R′)
+          (error E-blame) →
+            case ⊢M₂ of λ where
+              (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-·₂ M₁ ⊢M₁ v₁})
           (done v₂) →
             case ⟨ v₁ , ⊢M₁ ⟩ of λ where
               ⟨ V-ƛ , ⊢ƛ _ _ _ ⟩ → step (β v₂)
@@ -261,8 +266,10 @@ module ParamCastReductionABT (cs : CastStruct) where
               ⟨ V-inr _ , ⊢inr _ _ () ⟩
   progress (if L then M else N endif) (⊢if ⊢L ⊢M ⊢N (⟨ ⟨ refl , refl ⟩ , refl ⟩)) =
     case progress L ⊢L of λ where
-      (step R) → step (ξ {F = F-if M N} R)
-      (error E-blame) → step (ξ-blame {F = F-if M N})
+      (step R) → step (ξ {F = F-if M N ⊢M ⊢N} ⊢L R)
+      (error E-blame) →
+        case ⊢L of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-if M N ⊢M ⊢N})
       (done v) →
         case ⟨ v , ⊢L ⟩ of λ where
           ⟨ V-const , ⊢$ true _ refl ⟩ → step β-if-true
@@ -274,30 +281,36 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
   progress (M ⟨ c ⟩) (⊢cast .c ⊢M (⟨ refl , refl ⟩)) =
     case progress M ⊢M of λ where
-      (step {N} R) → step (ξ{F = F-cast c} R)
-      (error E-blame) → step (ξ-blame{F = F-cast c})
+      (step {N} R) → step (ξ {F = F-cast c} ⊢M R)
+      (error E-blame) →
+        case ⊢M of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-cast c})
       (done v) →
         case ActiveOrInert c of λ where
           (inj₁ a) → step (cast v {a})
           (inj₂ i) → step (wrap v {i})
   progress (M ⟨ c ₍ i ₎⟩) (⊢wrap .c .i ⊢M (⟨ refl , refl ⟩)) =
     case progress M ⊢M of λ where
-      (step R) → step (ξ {F = F-wrap c i} R)
-      (error E-blame) → step (ξ-blame {F = F-wrap c i})
+      (step R) → step (ξ {F = F-wrap c i} ⊢M R)
+      (error E-blame) →
+        case ⊢M of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-wrap c i})
       (done v) → done (V-wrap v i)
   progress ⟦ M₁ , M₂ ⟧ (⊢cons ⊢M₁ ⊢M₂ refl) =
     case progress M₁ ⊢M₁ of λ where
-      (step R) → step (ξ {F = F-×₂ M₂} R)
-      (error E-blame) → step (ξ-blame {F = F-×₂ M₂})
-      (done V) →
+      (step R) → step (ξ {F = F-×₂ M₂ ⊢M₂} ⊢M₁ R)
+      (error E-blame) → step (ξ-blame {F = F-×₂ M₂ ⊢M₂})
+      (done v₁) →
         case progress M₂ ⊢M₂ of λ where
-          (step R′) → step (ξ {F = F-×₁ M₁ V} R′)
-          (done V′) → done (V-pair V V′)
-          (error E-blame) → step (ξ-blame {F = F-×₁ M₁ V})
+          (step R′) → step (ξ {F = F-×₁ M₁ ⊢M₁ v₁} ⊢M₂ R′)
+          (done v₂) → done (V-pair v₁ v₂)
+          (error E-blame) → step (ξ-blame {F = F-×₁ M₁ ⊢M₁ v₁})
   progress (fst M) (⊢fst ⊢M (⟨ B , refl ⟩)) =
     case progress M ⊢M of λ where
-      (step R) → step (ξ {F = F-fst} R)
-      (error E-blame) → step (ξ-blame {F = F-fst})
+      (step R) → step (ξ {F = F-fst} ⊢M R)
+      (error E-blame) →
+        case ⊢M of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-fst})
       (done v) →
         case ⟨ v , ⊢M ⟩ of λ where
           ⟨ V-const , ⊢$ () p refl ⟩
@@ -310,8 +323,10 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-inr _ , ⊢inr _ _ () ⟩
   progress (snd M) (⊢snd ⊢M (⟨ A , refl ⟩)) =
     case progress M ⊢M of λ where
-      (step R) → step (ξ {F = F-snd} R)
-      (error E-blame) → step (ξ-blame {F = F-snd})
+      (step R) → step (ξ {F = F-snd} ⊢M R)
+      (error E-blame) →
+        case ⊢M of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-snd})
       (done v) →
         case ⟨ v , ⊢M ⟩ of λ where
           ⟨ V-const , ⊢$ () p refl ⟩
@@ -324,19 +339,21 @@ module ParamCastReductionABT (cs : CastStruct) where
           ⟨ V-inr _ , ⊢inr _ _ () ⟩
   progress (inl M other B) (⊢inl .B ⊢M refl) =
     case progress M ⊢M of λ where
-      (step R) → step (ξ {F = F-inl B} R)
+      (step R) → step (ξ {F = F-inl B} ⊢M R)
       (error E-blame) → step (ξ-blame {F = F-inl B})
       (done V) → done (V-inl V)
   progress (inr M other A) (⊢inr .A ⊢M refl) =
     case progress M ⊢M of λ where
-      (step R) → step (ξ {F = F-inr A} R)
+      (step R) → step (ξ {F = F-inr A} ⊢M R)
       (error E-blame) → step (ξ-blame {F = F-inr A})
       (done V) → done (V-inr V)
   progress (case L of A ⇒ M ∣ B ⇒ N)
            (⊢case .A .B ⊢L ⊢M ⊢N (⟨ ⟨ refl , refl ⟩ , ⟨ refl , ⟨ refl , refl ⟩ ⟩ ⟩)) =
     case progress L ⊢L of λ where
-      (step R) → step (ξ {F = F-case A B M N} R)
-      (error E-blame) → step (ξ-blame {F = F-case A B M N})
+      (step R) → step (ξ {F = F-case A B M N ⊢M ⊢N} ⊢L R)
+      (error E-blame) →
+        case ⊢L of λ where
+          (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-case A B M N ⊢M ⊢N})
       (done v) →
         case ⟨ v , ⊢L ⟩ of λ where
           ⟨ V-const , ⊢$ () p refl ⟩
@@ -347,31 +364,31 @@ module ParamCastReductionABT (cs : CastStruct) where
               ⟨ x , ⟨ _ , ⟨ _ , refl ⟩ ⟩ ⟩ → step (case-cast {c = c} v {x})
           ⟨ V-ƛ , ⊢ƛ _ _ () ⟩
           ⟨ V-pair _ _ , ⊢cons _ _ () ⟩
-  progress (blame ℓ) (⊢blame .ℓ tt) = error E-blame
+  progress (blame A ℓ) (⊢blame .A .ℓ tt) = error E-blame
 
-  plug-inversion : ∀ {Γ M F A}
-    → Γ ⊢ plug M F ⦂ A
+  plug-inversion : ∀ {M A X} {F : Frame X A}
+    → [] ⊢ plug M F ⦂ A
       -------------------------------------------------------------
-    → ∃[ B ] Γ ⊢ M ⦂ B × (∀ M' → Γ ⊢ M' ⦂ B → Γ ⊢ plug M' F ⦂ A)
-  plug-inversion {M = L} {F-·₁ M} {A} (⊢· ⊢L ⊢M 𝐶⊢-·) =
-    ⟨ _ ⇒ A , ⟨ ⊢L , (λ M' ⊢M' → ⊢· ⊢M' ⊢M 𝐶⊢-·) ⟩ ⟩
-  plug-inversion {M = M} {F-·₂ V v} (⊢· ⊢V ⊢M 𝐶⊢-·) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢· ⊢V ⊢M' 𝐶⊢-·) ⟩ ⟩
-  plug-inversion {M = L} {F-if M N} (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) =
-    ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢if ⊢M' ⊢M ⊢N 𝐶⊢-if) ⟩ ⟩
-  plug-inversion {F = F-×₁ V v} (⊢cons ⊢M ⊢N 𝐶⊢-cons) =
-    ⟨ _ , ⟨ ⊢N , (λ M' ⊢M' → ⊢cons ⊢M ⊢M' 𝐶⊢-cons) ⟩ ⟩
-  plug-inversion {F = F-×₂ M} (⊢cons ⊢M ⊢N 𝐶⊢-cons) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cons ⊢M' ⊢N 𝐶⊢-cons) ⟩ ⟩
+    → ∃[ B ] [] ⊢ M ⦂ B × (∀ M' → [] ⊢ M' ⦂ B → [] ⊢ plug M' F ⦂ A)
+  plug-inversion {L} {F = F-·₁ M _} (⊢· ⊢L ⊢M 𝐶⊢-·) =
+    ⟨ _ , ⟨ ⊢L , (λ _ ⊢M' → ⊢· ⊢M' ⊢M 𝐶⊢-·) ⟩ ⟩
+  plug-inversion {M} {F = F-·₂ V _ v} (⊢· ⊢V ⊢M 𝐶⊢-·) =
+    ⟨ _ , ⟨ ⊢M , (λ _ ⊢M' → ⊢· ⊢V ⊢M' 𝐶⊢-·) ⟩ ⟩
+  plug-inversion {L} {F = F-if M N _ _} (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) =
+    ⟨ _ , ⟨ ⊢L , (λ _ ⊢M' → ⊢if ⊢M' ⊢M ⊢N 𝐶⊢-if) ⟩ ⟩
+  plug-inversion {F = F-×₁ V _ v} (⊢cons ⊢V ⊢N 𝐶⊢-cons) =
+    ⟨ _ , ⟨ ⊢N , (λ _ ⊢M' → ⊢cons ⊢V ⊢M' 𝐶⊢-cons) ⟩ ⟩
+  plug-inversion {F = F-×₂ M _} (⊢cons ⊢M ⊢N 𝐶⊢-cons) =
+    ⟨ _ , ⟨ ⊢M , (λ _ ⊢M' → ⊢cons ⊢M' ⊢N 𝐶⊢-cons) ⟩ ⟩
   plug-inversion {F = F-fst} (⊢fst ⊢M 𝐶⊢-fst) =
-    ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢fst ⊢M' 𝐶⊢-fst) ⟩ ⟩
+    ⟨ _ , ⟨ ⊢M , (λ _ ⊢M' → ⊢fst ⊢M' 𝐶⊢-fst) ⟩ ⟩
   plug-inversion {F = F-snd} (⊢snd ⊢M 𝐶⊢-snd) =
     ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢snd ⊢M' 𝐶⊢-snd) ⟩ ⟩
   plug-inversion {F = F-inl B} (⊢inl .B ⊢M 𝐶⊢-inl) =
     ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inl B ⊢M' 𝐶⊢-inl) ⟩ ⟩
   plug-inversion {F = F-inr A} (⊢inr .A ⊢M 𝐶⊢-inr) =
     ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢inr A ⊢M' 𝐶⊢-inr) ⟩ ⟩
-  plug-inversion {F = F-case A B M N} (⊢case .A .B ⊢L ⊢M ⊢N 𝐶⊢-case) =
+  plug-inversion {F = F-case A B M N _ _} (⊢case .A .B ⊢L ⊢M ⊢N 𝐶⊢-case) =
     ⟨ _ , ⟨ ⊢L , (λ M' ⊢M' → ⊢case A B ⊢M' ⊢M ⊢N 𝐶⊢-case) ⟩ ⟩
   plug-inversion {F = F-cast c} (⊢cast .c ⊢M 𝐶⊢-cast) =
     ⟨ _ , ⟨ ⊢M , (λ M' ⊢M' → ⊢cast c ⊢M' 𝐶⊢-cast) ⟩ ⟩
@@ -385,16 +402,20 @@ module ParamCastReductionABT (cs : CastStruct) where
   ext-suc-∋x 0       ∋x = ∋x
   ext-suc-∋x (suc x) ∋x = ∋x
 
-  preserve : ∀ {Γ A} {M N : Term}
-    → Γ ⊢ M ⦂ A
+  preserve : ∀ {A} {M N : Term}
+    → [] ⊢ M ⦂ A
     → M —→ N
       -------------
-    → Γ ⊢ N ⦂ A
+    → [] ⊢ N ⦂ A
   {- casing on the reduction step and then inversion on the derivation of M. -}
-  preserve ⊢M (ξ R) =
-    case plug-inversion ⊢M of λ where
-      ⟨ _ , ⟨ ⊢M' , plug-wt ⟩ ⟩ → plug-wt _ {- M' -} (preserve ⊢M' R)
-  preserve ⊢M ξ-blame = ⊢blame _ 𝐶⊢-blame
+  preserve ⊢plug (ξ {F = F} ⊢M R) =
+    case uniqueness ⊢plug (plug-wt _ {- M -} ⊢M F) of λ where
+      refl →
+        case plug-inversion ⊢plug of λ where
+          ⟨ _ , ⟨ ⊢M' , plug-wt ⟩ ⟩ → plug-wt _ {- M' -} (preserve ⊢M' R)
+  preserve ⊢plug (ξ-blame {F = F}) =
+    case uniqueness ⊢plug (plug-wt _ {- blame -} (⊢blame _ _ 𝐶⊢-blame) F) of λ where
+      refl → ⊢blame _ _ 𝐶⊢-blame
   preserve (⊢· (⊢ƛ _ ⊢N 𝐶⊢-ƛ) ⊢M 𝐶⊢-·) (β v) = preserve-substitution _ _ ⊢N ⊢M
   preserve (⊢· (⊢$ f _ 𝐶⊢-$) (⊢$ k _ 𝐶⊢-$) 𝐶⊢-·) δ = ⊢$ (f k) _ 𝐶⊢-$
   preserve (⊢· (⊢wrap c i ⊢M 𝐶⊢-wrap) ⊢N 𝐶⊢-·) (fun-cast v w) =
@@ -427,24 +448,24 @@ module ParamCastReductionABT (cs : CastStruct) where
 
   {- Auxiliary lemmas about reduction. -}
   var⌿→ : ∀ {x} {M N} → M ≡ ` x → ¬ (M —→ N)
-  var⌿→ eq (ξ R)   = contradiction eq var-not-plug
+  var⌿→ eq (ξ _ R) = contradiction eq var-not-plug
   var⌿→ eq ξ-blame = contradiction eq var-not-plug
 
   ƛ⌿→ : ∀ {A} {M M₁ N} → M ≡ ƛ A ˙ M₁ → ¬ (M —→ N)
-  ƛ⌿→ eq (ξ R)   = contradiction eq ƛ-not-plug
+  ƛ⌿→ eq (ξ _ R) = contradiction eq ƛ-not-plug
   ƛ⌿→ eq ξ-blame = contradiction eq ƛ-not-plug
 
   const⌿→ : ∀ {A} {r : rep A} {p : Prim A} {M N}
     → M ≡ $ r # p → ¬ (M —→ N)
-  const⌿→ eq (ξ R)   = contradiction eq const-not-plug
+  const⌿→ eq (ξ _ R) = contradiction eq const-not-plug
   const⌿→ eq ξ-blame = contradiction eq const-not-plug
 
-  blame⌿→ : ∀ {ℓ} {M N} → M ≡ blame ℓ → ¬ (M —→ N)
-  blame⌿→ eq (ξ R)   = contradiction eq blame-not-plug
+  blame⌿→ : ∀ {A ℓ} {M N} → M ≡ blame A ℓ → ¬ (M —→ N)
+  blame⌿→ eq (ξ _ R) = contradiction eq blame-not-plug
   blame⌿→ eq ξ-blame = contradiction eq blame-not-plug
 
   reduce-not-value : ∀ {M N} → M —→ N → ¬ (Value M)
-  reduce-not-value (ξ R) v =
+  reduce-not-value (ξ _ R) v =
     let vₘ = value-plug v in
       contradiction vₘ (reduce-not-value R)
   reduce-not-value ξ-blame v =
@@ -462,13 +483,15 @@ module ParamCastReductionABT (cs : CastStruct) where
   Value⌿→ v R = contradiction v (reduce-not-value R)
 
   {- Multi-step reduction is a congruence. -}
-  plug-cong : ∀ {M N}
-    → (F : Frame)
+  plug-cong : ∀ {A B} {M N}
+    → (F : Frame A B)
+    → [] ⊢ M ⦂ A
     → M —↠ N
       -----------------------
     → plug M F —↠ plug N F
-  plug-cong F (M ∎) = plug M F ∎
-  plug-cong F (M —→⟨ M→L ⟩ L↠N) = plug M F —→⟨ ξ M→L ⟩ plug-cong F L↠N
+  plug-cong F _ (M ∎) = plug M F ∎
+  plug-cong F ⊢M (M —→⟨ M→L ⟩ L↠N) =
+    plug M F —→⟨ ξ ⊢M M→L ⟩ plug-cong F (preserve ⊢M M→L) L↠N
 
   {- Multi-step reduction is also transitive. -}
   ↠-trans : ∀ {L M N}
@@ -486,11 +509,10 @@ module ParamCastReductionABT (cs : CastStruct) where
   ↠-eq {M = M} {N} eq rewrite eq = N ∎
 
   {- Multi-step reduction preserves type. -}
-  preserve-mult : ∀ {Γ A} {M N : Term}
-    → Γ ⊢ M ⦂ A
+  preserve-mult : ∀ {A} {M N : Term}
+    → [] ⊢ M ⦂ A
     → M —↠ N
       -------------
-    → Γ ⊢ N ⦂ A
+    → [] ⊢ N ⦂ A
   preserve-mult ⊢M (_ ∎) = ⊢M
-  preserve-mult ⊢M (_ —→⟨ R ⟩ R*) =
-    preserve-mult (preserve ⊢M R) R*
+  preserve-mult ⊢M (_ —→⟨ R ⟩ R*) = preserve-mult (preserve ⊢M R) R*
