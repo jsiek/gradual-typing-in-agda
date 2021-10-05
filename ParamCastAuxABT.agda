@@ -229,15 +229,15 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
     → plug N F ≢ ` x
   var-not-plug {x = x} = not-plugged (` x) λ ()
 
-  const-not-plug : ∀ {X A} {r : rep A} {p : Prim A} {M : Term} {F : Frame X A}
+  const-not-plug : ∀ {X Y A} {r : rep A} {p : Prim A} {M : Term} {F : Frame X Y}
     → plug M F ≢ $ r # p
   const-not-plug {r = r} {p} = not-plugged ($ r # p) λ ()
 
-  ƛ-not-plug : ∀ {X A B} {M N : Term} {F : Frame X (A ⇒ B)}
+  ƛ-not-plug : ∀ {X Y A} {M N : Term} {F : Frame X Y}
     → plug M F ≢ ƛ A ˙ N
   ƛ-not-plug {A = A} {N = N} = not-plugged (ƛ A ˙ N) λ ()
 
-  blame-not-plug : ∀ {X A ℓ} {M : Term} {F : Frame X A}
+  blame-not-plug : ∀ {X Y A ℓ} {M : Term} {F : Frame X Y}
     → plug M F ≢ blame A ℓ
   blame-not-plug {A = A} {ℓ} = not-plugged (blame A ℓ) λ ()
 
