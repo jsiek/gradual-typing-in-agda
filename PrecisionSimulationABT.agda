@@ -167,7 +167,8 @@ sim-δ {f = f} {k} {ab} {a} {b} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W
                                  (plug-cong (F-cast _) ⊢V·W₁ V·W₁↠N),
                       ⊑-castl B₁⊑B′ B⊑B′ (⊢$ (f k) b 𝐶⊢-$) N⊑ ⟩ ⟩
 
-sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′} {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
+sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′}
+                 {c′ : Cast ((A′ ⇒ B′) ⇒ (C′ ⇒ D′))}
   → [] ⊢ V ⦂ A ⇒ B
   → [] ⊢ W ⦂ A
   → [] ⊢ V′ ⦂ A′ ⇒ B′
@@ -177,8 +178,10 @@ sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′} {c′ : Cast ((A′
   → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
   → [] , [] ⊢ W ⊑ W′
     --------------------------------------------------------------------------------
-  → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
-sim-fun-cast {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap {M = V} A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
+  → ∃[ M ] (V · W —↠ M) ×
+            ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
+sim-fun-cast {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′
+             (⊑-wrap {M = V} A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
   case v of λ where
     (V-wrap {A} {⋆} {c = c} v i) → contradiction (imp refl) λ ()
     (V-wrap {A} {B₁ ⇒ B₂} {c = c} v i) →
@@ -189,12 +192,35 @@ sim-fun-cast {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap
               ⟨ (V · W ⟨ dom c x ⟩) ⟨ cod c x ⟩ ,
                 ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ ,
                   ⊑-cast A₂⊑B′ B₂⊑D′ (⊑-· V⊑V′ (⊑-cast B₁⊑C′ A₁⊑A′ W⊑W′)) ⟩ ⟩
-sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl A⊑A′ B⊑A′ ⊢V′c′ V⊑V′c′) W⊑W′ =
-  {!!}
-sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V₁ V⊑V′ nd) W⊑W′ =
+sim-fun-cast {W = W} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W ⊢V′ ⊢W′ (V-wrap v i) w v′ w′ i′ x′
+             (⊑-wrapl {M = V} A⊑A′ B⊑A′ ⊢V′c′ V⊑V′c′) W⊑W′ =
+  case uniqueness ⊢V′c′ (⊢wrap _ i′ ⊢V′ 𝐶⊢-wrap) of λ where
+    refl →
+      case Inert-Cross⇒ c i of λ where
+        ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
+          case ⟨ A⊑A′ , B⊑A′ ⟩ of λ where
+            ⟨ fun⊑ A₁⊑C′ A₂⊑D′ , fun⊑ B₁⊑C′ B₂⊑D′ ⟩ →
+              let ⊢Wdomc = ⊢cast (dom c x) ⊢W 𝐶⊢-cast in
+              case catchup ⊢Wdomc w′ (⊑-castl B₁⊑C′ A₁⊑C′ ⊢W′ W⊑W′) of λ where
+                ⟨ W₁ , ⟨ w₁ , ⟨ Wdomc↠W₁ , W₁⊑ ⟩ ⟩ ⟩ →
+                  let ⊢W₁ = preserve-mult ⊢Wdomc Wdomc↠W₁ in
+                  case sim-fun-cast ⊢V ⊢W₁ ⊢V′ ⊢W′ v w₁ v′ w′ i′ x′ V⊑V′c′ W₁⊑ of λ where
+                    ⟨ N , ⟨ V·W₁↠N , N⊑ ⟩ ⟩ →
+                      let ⊢V·Wdomc = ⊢· ⊢V ⊢Wdomc 𝐶⊢-·
+                          wt-rhs   = ⊢cast (cod _ x′)
+                                       (⊢· ⊢V′ (⊢cast (dom _ x′) ⊢W′ 𝐶⊢-cast) 𝐶⊢-·) 𝐶⊢-cast in
+                      ⟨ N ⟨ cod c x ⟩ ,
+                        ⟨ _ —→⟨ fun-cast v w {x} ⟩
+                          ↠-trans (plug-cong (F-cast _) ⊢V·Wdomc
+                                     (plug-cong (F-·₂ _ ⊢V v) ⊢Wdomc Wdomc↠W₁))
+                                   (plug-cong (F-cast _) (⊢· ⊢V ⊢W₁ 𝐶⊢-·) V·W₁↠N) ,
+                          ⊑-castl A₂⊑D′ B₂⊑D′ wt-rhs N⊑ ⟩ ⟩
+sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′
+             (⊑-wrapr A⊑A′ A⊑B′ ⊢V₁ V⊑V′ nd) W⊑W′ =
   case ⟨ A⊑A′ , A⊑B′ ⟩ of λ where
     ⟨ unk⊑ , unk⊑ ⟩ → contradiction refl nd
     ⟨ fun⊑ A⊑A′ B⊑B′ , fun⊑ A⊑C′ B⊑D′ ⟩ →
       case uniqueness ⊢V ⊢V₁ of λ where
        refl → ⟨ V · W , ⟨ _ ∎ ,
-                 ⊑-castr B⊑B′ B⊑D′ (⊢· ⊢V ⊢W 𝐶⊢-·) (⊑-· V⊑V′ (⊑-castr A⊑C′ A⊑A′ ⊢W W⊑W′)) ⟩ ⟩
+                 ⊑-castr B⊑B′ B⊑D′ (⊢· ⊢V ⊢W 𝐶⊢-·)
+                   (⊑-· V⊑V′ (⊑-castr A⊑C′ A⊑A′ ⊢W W⊑W′)) ⟩ ⟩
