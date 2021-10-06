@@ -178,8 +178,17 @@ sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′} {c′ : Cast ((A′
   → [] , [] ⊢ W ⊑ W′
     --------------------------------------------------------------------------------
   → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
-sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
-  {!!}
+sim-fun-cast {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap {M = V} A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
+  case v of λ where
+    (V-wrap {A} {⋆} {c = c} v i) → contradiction (imp refl) λ ()
+    (V-wrap {A} {B₁ ⇒ B₂} {c = c} v i) →
+      case Inert-Cross⇒ c i of λ where
+        ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
+          case ⟨ A⊑A′ , B⊑B′ ⟩ of λ where
+            ⟨ fun⊑ A₁⊑A′ A₂⊑B′ , fun⊑ B₁⊑C′ B₂⊑D′ ⟩ →
+              ⟨ (V · W ⟨ dom c x ⟩) ⟨ cod c x ⟩ ,
+                ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ ,
+                  ⊑-cast A₂⊑B′ B₂⊑D′ (⊑-· V⊑V′ (⊑-cast B₁⊑C′ A₁⊑A′ W⊑W′)) ⟩ ⟩
 sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl A⊑A′ B⊑A′ ⊢V′c′ V⊑V′c′) W⊑W′ =
   {!!}
 sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V₁ V⊑V′ nd) W⊑W′ =
