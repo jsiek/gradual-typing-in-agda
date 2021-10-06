@@ -7,6 +7,7 @@ open import Labels
 open import PreCastStructure
 
 
+{- TODO FIXME: This file is to be removed !! -}
 module PreCastStructureWithPrecisionABT where
 
   {- This record contains precision relations and corresponding lemmas. -}
