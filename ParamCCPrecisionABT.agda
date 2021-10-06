@@ -90,7 +90,7 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
                 case L′ of A′ ⇒ M′ ∣ B′ ⇒ N′
 
   ⊑-cast : ∀ {Γ Γ′ A A′ B B′} {M M′ : Term}
-              {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+             {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
     → A ⊑ A′
     → B ⊑ B′
     → Γ , Γ′ ⊢ M ⊑ M′
@@ -98,7 +98,7 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
     → Γ , Γ′ ⊢ M ⟨ c ⟩ ⊑ M′ ⟨ c′ ⟩
 
   ⊑-castl : ∀ {Γ Γ′ A A′ B} {M M′ : Term}
-               {c : Cast (A ⇒ B)}
+              {c : Cast (A ⇒ B)}
     → A ⊑ A′
     → B ⊑ A′
     → Γ′     ⊢ M′ ⦂ A′
@@ -107,7 +107,7 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
     → Γ , Γ′ ⊢ M ⟨ c ⟩ ⊑ M′
 
   ⊑-castr : ∀ {Γ Γ′ A A′ B′} {M M′ : Term}
-               {c′ : Cast (A′ ⇒ B′)}
+              {c′ : Cast (A′ ⇒ B′)}
     → A ⊑ A′
     → A ⊑ B′
     → Γ      ⊢ M ⦂ A
@@ -116,29 +116,32 @@ data _,_⊢_⊑_ : ∀ (Γ Γ′ : List Type) → (M M′ : Term) → Set where
     → Γ , Γ′ ⊢ M ⊑ M′ ⟨ c′ ⟩
 
   ⊑-wrap : ∀ {Γ Γ′ A A′ B B′} {M M′ : Term}
-              {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
-              {i : Inert c} {i′ : Inert c′}
-    → c ₍ i ₎⊑ c′ ₍ i′ ₎
+             {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+             {i : Inert c}       {i′ : Inert c′}
+    → A ⊑ A′
+    → B ⊑ B′
     → Γ , Γ′ ⊢ M ⊑ M′
-    → (B ≡ ⋆ → B′ ≡ ⋆)  -- note the side condition
+    → (B ≡ ⋆ → B′ ≡ ⋆)
       -----------------------------------------
     → Γ , Γ′ ⊢ M ⟨ c ₍ i ₎⟩ ⊑ M′ ⟨ c′ ₍ i′ ₎⟩
 
   ⊑-wrapl : ∀ {Γ Γ′ A A′ B} {M M′ : Term}
-               {c : Cast (A ⇒ B)} {i : Inert c}
-    → c ₍ i ₎⊑ A′
+              {c : Cast (A ⇒ B)} {i : Inert c}
+    → A ⊑ A′
+    → B ⊑ A′
     → Γ′     ⊢ M′ ⦂ A′
     → Γ , Γ′ ⊢ M ⊑ M′
-      -----------------------
+      ---------------------------
     → Γ , Γ′ ⊢ M ⟨ c ₍ i ₎⟩ ⊑ M′
 
   ⊑-wrapr : ∀ {Γ Γ′ A A′ B′} {M M′ : Term}
-               {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
-    → A ⊑ c′ ₍ i′ ₎
-    → Γ ⊢ M ⦂ A
+              {c′ : Cast (A′ ⇒ B′)} {i′ : Inert c′}
+    → A ⊑ A′
+    → A ⊑ B′
+    → Γ      ⊢ M ⦂ A
     → Γ , Γ′ ⊢ M ⊑ M′
-    → A ≢ ⋆             -- note the side condition
-      ------------------------
+    → A ≢ ⋆
+      -----------------------------
     → Γ , Γ′ ⊢ M ⊑ M′ ⟨ c′ ₍ i′ ₎⟩
 
   ⊑-blame : ∀ {Γ Γ′ A A′} {M : Term} {ℓ}

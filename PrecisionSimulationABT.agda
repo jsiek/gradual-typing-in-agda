@@ -73,22 +73,22 @@ catchup (⊢cast c ⊢M 𝐶⊢-cast) v′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ 
         (inj₂ i) →
           ⟨ V ⟨ c ₍ i ₎⟩ , ⟨ V-wrap v i ,
             ⟨ ↠-trans (plug-cong (F-cast c) ⊢M rd*₁) (_ —→⟨ wrap v ⟩ _ ∎) ,
-              ⊑-wrapl (⊑→lpit i A⊑A′ B⊑A′) ⊢M′ V⊑ ⟩ ⟩ ⟩
+              ⊑-wrapl A⊑A′ B⊑A′ ⊢M′ V⊑ ⟩ ⟩ ⟩
 -- just recur in all 3 wrap cases
-catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v′ i′) (⊑-wrap lpii M⊑ imp) =
+catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v′ i′) (⊑-wrap A⊑A′ B⊑B′ M⊑ imp) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
       ⟨ W ⟨ c ₍ i ₎⟩ , ⟨ V-wrap w i ,
-        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrap lpii W⊑ imp ⟩ ⟩ ⟩
-catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) v′ (⊑-wrapl {c = c} {i = i} lpit ⊢M′ M⊑) =
+        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrap A⊑A′ B⊑B′ W⊑ imp ⟩ ⟩ ⟩
+catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) v′ (⊑-wrapl {c = c} {i = i} A⊑A′ B⊑A′ ⊢M′ M⊑) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
       ⟨ W ⟨ c ₍ i ₎⟩ , ⟨ V-wrap w i ,
-        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrapl lpit ⊢M′ W⊑ ⟩ ⟩ ⟩
-catchup ⊢M (V-wrap v′ i′) (⊑-wrapr lpti ⊢M₁ M⊑ nd) =
+        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrapl A⊑A′ B⊑A′ ⊢M′ W⊑ ⟩ ⟩ ⟩
+catchup ⊢M (V-wrap v′ i′) (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑ nd) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
-      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr lpti (preserve-mult ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
+      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr A⊑A′ A⊑B′ (preserve-mult ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
 
 
 sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
@@ -104,7 +104,7 @@ sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
 sim-β {V = ƛ A ˙ N} {W} (⊢ƛ .A ⊢N 𝐶⊢-ƛ) ⊢W ⊢N′ ⊢W′ V-ƛ w w′ (⊑-ƛ A⊑ N⊑) W⊑ =
   ⟨ N [ W ] , ⟨ _ —→⟨ β w ⟩ _ ∎ , substitution-pres-⊑ ⊢N ⊢N′ ⊢W ⊢W′ N⊑ W⊑ ⟩ ⟩
 sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w′
-      (⊑-wrapl lpit (⊢ƛ A′ ⊢N′ 𝐶⊢-ƛ) V⊑ƛN′) W⊑ =
+      (⊑-wrapl A⊑A′ B⊑A′ (⊢ƛ A′ ⊢N′ 𝐶⊢-ƛ) V⊑ƛN′) W⊑ =
   {-
        V ⟨ c ₍ i ₎⟩ · W
          —→ ( by fun-cast )
@@ -116,7 +116,7 @@ sim-β (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W _ ⊢W′ (V-wrap {V = V} v .i) w w�
   -}
   case Inert-Cross⇒ c i of λ where
     ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
-      case lpit→⊑ lpit of λ where
+      case ⟨ A⊑A′ , B⊑A′ ⟩ of λ where
         ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A⊑A′ B⊑B′ ⟩ →
           -- dom c : A ⇒ A₁ ⊑ A′
           let ⊢Wdomc = (⊢cast (dom c x) ⊢W 𝐶⊢-cast) in
@@ -143,16 +143,16 @@ sim-δ : ∀ {A A′ B B′} {V W : Term} {f : rep A′ → rep B′} {k : rep A
     ----------------------------------------------------
   → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ $ (f k) # b)
 sim-δ {ab = P-Fun _} (⊢$ _ _ 𝐶⊢-$) (⊢wrap _ _ _ 𝐶⊢-wrap) -- impossible
-      V-const (V-wrap w i) ⊑-$ (⊑-wrapl _ _ _) =
+      V-const (V-wrap w i) ⊑-$ (⊑-wrapl _ _ _ _) =
   contradiction i {- c : A ⇒ ` ι cannot be inert -} (baseNotInert _)
 sim-δ {ab = P-Fun _} {a} {b} (⊢$ f ab 𝐶⊢-$) (⊢$ k a 𝐶⊢-$)
       V-const V-const ⊑-$ ⊑-$ =
   ⟨ $ (f k) # b , ⟨ _ —→⟨ δ ⟩ _ ∎ , ⊑-$ ⟩ ⟩
 sim-δ {f = f} {k} {ab} {a} {b} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W
-      (V-wrap v i) w (⊑-wrapl lpit (⊢$ f _ 𝐶⊢-$) V⊑f) W⊑k =
+      (V-wrap v i) w (⊑-wrapl A⊑A′ B⊑A′ (⊢$ f _ 𝐶⊢-$) V⊑f) W⊑k =
   case Inert-Cross⇒ c i of λ where
     ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
-      case lpit→⊑ lpit of λ where
+      case ⟨ A⊑A′ , B⊑A′ ⟩ of λ where
         ⟨ fun⊑ A₁⊑A′ B₁⊑B′ , fun⊑ A⊑A′ B⊑B′ ⟩ →
           let ⊢Wdomc = (⊢cast (dom c x) ⊢W 𝐶⊢-cast) in
           case catchup ⊢Wdomc V-const (⊑-castl A⊑A′ A₁⊑A′ (⊢$ k a 𝐶⊢-$) W⊑k) of λ where
@@ -178,12 +178,12 @@ sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′} {c′ : Cast ((A′
   → [] , [] ⊢ W ⊑ W′
     --------------------------------------------------------------------------------
   → ∃[ M ] (V · W —↠ M) × ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
-sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap lpii V⊑V′ imp) W⊑W′ =
+sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrap A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
   {!!}
-sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl lpit ⊢V′c′ V⊑V′c′) W⊑W′ =
+sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapl A⊑A′ B⊑A′ ⊢V′c′ V⊑V′c′) W⊑W′ =
   {!!}
-sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr lpti ⊢V₁ V⊑V′ nd) W⊑W′ =
-  case lpti→⊑ lpti of λ where
+sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V₁ V⊑V′ nd) W⊑W′ =
+  case ⟨ A⊑A′ , A⊑B′ ⟩ of λ where
     ⟨ unk⊑ , unk⊑ ⟩ → contradiction refl nd
     ⟨ fun⊑ A⊑A′ B⊑B′ , fun⊑ A⊑C′ B⊑D′ ⟩ →
       case uniqueness ⊢V ⊢V₁ of λ where
