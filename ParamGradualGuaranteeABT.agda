@@ -200,7 +200,18 @@ gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (cast v) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (wrap v) = {!!}
 gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢W′ 𝐶⊢-·)
                   (⊑-· L⊑V′c′ M⊑W′) (fun-cast v′ w′ {x′} {i′}) =
-  {!!}
+  case catchup ⊢L (V-wrap v′ i′) L⊑V′c′ of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′c′ ⟩ ⟩ ⟩ →
+      case catchup ⊢M w′ M⊑W′ of λ where
+        ⟨ W , ⟨ w , ⟨ M↠W , W⊑W′ ⟩ ⟩ ⟩ →
+          let ⊢V = preserve-mult ⊢L L↠V
+              ⊢W = preserve-mult ⊢M M↠W in
+          case sim-fun-cast ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′ V⊑V′c′ W⊑W′ of λ where
+            ⟨ M₂ , ⟨ V·W↠M₂ , M₂⊑ ⟩ ⟩ →
+              ⟨ M₂ ,
+                ⟨ ↠-trans (plug-cong (F-·₁ _ ⊢M) ⊢L  L↠V)
+                           (↠-trans (plug-cong (F-·₂ _ ⊢V v) ⊢M M↠W) V·W↠M₂) ,
+                  M₂⊑ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (fst-cast x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (snd-cast x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (case-cast x) = {!!}
