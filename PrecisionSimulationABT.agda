@@ -248,7 +248,9 @@ wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′} {c′} i′ (⊢wrap
       contradiction refl nd
     (⊑-wrapl A⊑A′ unk⊑ ⊢V′† V⊑V′) →
       case uniqueness ⊢V′ ⊢V′† of λ where
-        refl → ⊑-wrapl {!!} unk⊑ {!!} {!!}
+        refl →
+          ⊑-wrapl {!!} {- A ⊑ B′ -} unk⊑ (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap)
+            (⊑-wrapr A⊑A′ {!!} ⊢V V⊑V′ {!!} {- A ≢ ⋆ -})
 
 -- wrap-castr : ∀ {A A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)
