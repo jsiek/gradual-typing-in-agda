@@ -224,3 +224,37 @@ sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′
        refl → ⟨ V · W , ⟨ _ ∎ ,
                  ⊑-castr B⊑B′ B⊑D′ (⊢· ⊢V ⊢W 𝐶⊢-·)
                    (⊑-· V⊑V′ (⊑-castr A⊑C′ A⊑A′ ⊢W W⊑W′)) ⟩ ⟩
+
+wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
+  → (i′ : Inert c′)
+  → [] ⊢ V ⦂ ⋆ → [] ⊢ V′ ⦂ A′
+  → Value V → Value V′
+  → [] , [] ⊢ V ⊑ V′
+    ------------------------------
+  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+wrap-castr* i′ ⊢V ⊢V′ v v′ V⊑V′ with canonical⋆ ⊢V v
+wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′} {c′} i′ (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ V⊑V′
+  | ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩ =
+  case V⊑V′ of λ where
+    (⊑-wrap _ _ _ imp) →
+      case ⊢V′ of λ where
+        (⊢wrap _ _ _ 𝐶⊢-wrap) →
+          -- case analysis on A′ and B′
+          let A′≡⋆ = imp refl in
+          case ⟨ A′≡⋆ , eq-unk B′ ⟩ of λ where
+            ⟨ refl , yes refl ⟩ → contradiction i′ (idNotInert A-Unk c′)
+            ⟨ refl , no  B′≢⋆ ⟩ → contradiction i′ (projNotInert B′≢⋆ c′)
+    (⊑-wrapr _ _ (⊢wrap _ _ _ 𝐶⊢-wrap) _ nd) →
+      contradiction refl nd
+    (⊑-wrapl A⊑A′ unk⊑ ⊢V′† V⊑V′) →
+      case uniqueness ⊢V′ ⊢V′† of λ where
+        refl → ⊑-wrapl {!!} unk⊑ {!!} {!!}
+
+-- wrap-castr : ∀ {A A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
+--   → (i′ : Inert c′)
+--   → [] ⊢ V ⦂ A → [] ⊢ V′ ⦂ A′
+--   → Value V → (v′ : Value V′)
+--   → A ⊑ A′ → A ⊑ B′
+--   → [] , [] ⊢ V ⊑ V′
+--     -----------------------------------------------------
+--   → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
