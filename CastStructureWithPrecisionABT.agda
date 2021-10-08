@@ -1,3 +1,4 @@
+open import Data.List hiding ([_])
 open import Data.Product using (_×_; ∃; ∃-syntax)
 
 open import Types
@@ -37,11 +38,29 @@ record CastStructWithPrecision : Set₁ where
     {- For gradual guarantee.
        Because the implementation of `applyCast` is unique to each cast representation,
        we need to prove this lemma for each specific representation too. -}
-    applyCast-catchup : ∀ {Γ Γ′ A A′ B} {V V′} {c : Cast (A ⇒ B)}
+    applyCast-catchup : ∀ {A A′ B} {V V′} {c : Cast (A ⇒ B)}
       → (a : Active c)
-      → (Γ ⊢ V ⦂ A) → (Γ′ ⊢ V′ ⦂ A′)
-      → (vV : Value V) → Value V′
+      → [] ⊢ V ⦂ A → [] ⊢ V′ ⦂ A′
+      → (v : Value V) → Value V′
       → A ⊑ A′ → B ⊑ A′
-      → Γ , Γ′ ⊢ V ⊑ V′
+      → [] , [] ⊢ V ⊑ V′
         -----------------------------------------------------------------
-      → ∃[ W ] Value W × (applyCast V vV c {a} —↠ W) × Γ , Γ′ ⊢ W ⊑ V′
+      → ∃[ W ] Value W × (applyCast V v c {a} —↠ W) × [] , [] ⊢ W ⊑ V′
+
+    sim-cast : ∀ {A A′ B B′} {V V′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
+      → (a′ : Active c′)
+      → [] ⊢ V ⦂ A → [] ⊢ V′ ⦂ A′
+      → Value V → (v′ : Value V′)
+      → A ⊑ A′ → B ⊑ B′
+      → [] , [] ⊢ V ⊑ V′
+        ------------------------------------------------------------
+      → ∃[ N ] (V ⟨ c ⟩ —↠ N) × [] , [] ⊢ N ⊑ applyCast V′ v′ c′ {a′}
+
+    cast-castr : ∀ {A A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
+      → (a′ : Active c′)
+      → [] ⊢ V ⦂ A → [] ⊢ V′ ⦂ A′
+      → Value V → (v′ : Value V′)
+      → A ⊑ A′ → A ⊑ B′
+      → [] , [] ⊢ V ⊑ V′
+        --------------------------------------
+      → [] , [] ⊢ V ⊑ applyCast V′ v′ c′ {a′}
