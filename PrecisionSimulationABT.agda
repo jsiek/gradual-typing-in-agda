@@ -28,8 +28,8 @@ open CastStructWithPrecision csp
 open import ParamCastCalculusABT precast
 open import ParamCastAuxABT precast
 open import ParamCastReductionABT cs
-open import ParamCCPrecisionABT pcsp
-open import PreservePrecisionABT pcsp
+open import ParamCCPrecisionABT precast
+open import PreservePrecisionABT precast
 
 {- Catching up on the less precise side. -}
 catchup : ∀ {A} {M V′ : Term}

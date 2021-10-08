@@ -26,8 +26,8 @@ open CastStructWithPrecision csp
 open import ParamCastCalculusABT precast
 open import ParamCastAuxABT precast
 open import ParamCastReductionABT cs
-open import ParamCCPrecisionABT pcsp
-open import PreservePrecisionABT pcsp using (cc-prec→⊑)
+open import ParamCCPrecisionABT precast
+open import PreservePrecisionABT precast using (cc-prec→⊑)
 {- We've already proven the simlulation lemmas. -}
 open import PrecisionSimulationABT csp
 

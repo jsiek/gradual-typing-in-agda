@@ -7,14 +7,14 @@ open import Data.Product
 
 open import Types
 open import Labels
-open import PreCastStructureWithPrecisionABT
+open import PreCastStructure
 
 open import Syntax
 
 
-module ParamCCPrecisionABT (pcsp : PreCastStructWithPrecision) where
+module ParamCCPrecisionABT (precast : PreCastStruct) where
 
-open PreCastStructWithPrecision pcsp
+open PreCastStruct precast
 
 open import ParamCastCalculusABT precast
 

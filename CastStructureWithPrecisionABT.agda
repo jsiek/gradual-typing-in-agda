@@ -1,7 +1,7 @@
 open import Data.Product using (_×_; ∃; ∃-syntax)
 
 open import Types
-open import PreCastStructureWithPrecisionABT
+open import PreCastStructure
 open import CastStructureABT
 import ParamCastCalculusABT
 import ParamCastAuxABT
@@ -11,13 +11,14 @@ import ParamCastReductionABT
 
 module CastStructureWithPrecisionABT where
 
+{- TODO : better make this similar to `CastStruct` -}
 record CastStructWithPrecision : Set₁ where
   field
-    pcsp : PreCastStructWithPrecision
-  open PreCastStructWithPrecision pcsp public
+    precast : PreCastStruct
+  open PreCastStruct precast public
   open ParamCastCalculusABT precast
   open ParamCastAuxABT precast
-  open ParamCCPrecisionABT pcsp
+  open ParamCCPrecisionABT precast
   field
     applyCast : ∀ {A B} → (M : Term) → Value M → (c : Cast (A ⇒ B))
                         → ∀ {a : Active c} → Term

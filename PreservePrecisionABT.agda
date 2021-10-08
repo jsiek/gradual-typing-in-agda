@@ -8,19 +8,19 @@ open import Data.Product
 
 open import Types
 open import Labels
-open import PreCastStructureWithPrecisionABT
+open import PreCastStructure
 
 open import Utils
 open import Syntax
 
 
 
-module PreservePrecisionABT (pcsp : PreCastStructWithPrecision) where
+module PreservePrecisionABT (precast : PreCastStruct) where
 
-open PreCastStructWithPrecision pcsp
+open PreCastStruct precast
 open import ParamCastCalculusABT precast
 open import ParamCastAuxABT precast
-open import ParamCCPrecisionABT pcsp
+open import ParamCCPrecisionABT precast
 
 open import MapPreserve Op sig Type 𝑉⊢ 𝑃⊢
   using (MapPreservable; _⦂_⇒_; ext-pres)
