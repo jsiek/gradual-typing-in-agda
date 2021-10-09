@@ -136,10 +136,10 @@ gradual-guarantee-plug {F = F-cast c′} {M}
       ⟨ M₂ , ⟨ M↠M₂ , ⊑-castr A⊑A′ A⊑B′ (preserve-mult ⊢M M↠M₂) M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-wrap c′ i′} {M ⟨ c ₍ i ₎⟩}
                        (⊢wrap c i ⊢M 𝐶⊢-wrap) (⊢wrap c′ i′ ⊢M₁′ 𝐶⊢-wrap) _
-                       (⊑-wrap A⊑A′ B⊑B′ M⊑M₁′ imp) R =
+                       (⊑-wrap A⊑A′ B⊑B′ M⊑M₁′) R =
   case gradual-guarantee ⊢M ⊢M₁′ M⊑M₁′ R of λ where
     ⟨ M₂ , ⟨ M↠M₂ , M₂⊑M₂′ ⟩ ⟩ →
-      ⟨ M₂ ⟨ c ₍ i ₎⟩ , ⟨ plug-cong (F-wrap c i) ⊢M M↠M₂ , ⊑-wrap A⊑A′ B⊑B′ M₂⊑M₂′ imp ⟩ ⟩
+      ⟨ M₂ ⟨ c ₍ i ₎⟩ , ⟨ plug-cong (F-wrap c i) ⊢M M↠M₂ , ⊑-wrap A⊑A′ B⊑B′ M₂⊑M₂′ ⟩ ⟩
 gradual-guarantee-plug {F = F-wrap c′ i′} {M}
                        _ (⊢wrap c′ i′ ⊢M₁′ 𝐶⊢-wrap) _
                        (⊑-wrapr A⊑A′ A⊑B′ ⊢M M⊑M₁′ nd) R =
@@ -208,9 +208,18 @@ gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-ca
       case sim-cast a′ ⊢V ⊢V′ v v′ A⊑A′ B⊑B′ V⊑V′ of λ where
         ⟨ M₂ , ⟨ Vc↠M₂ , M₂⊑ ⟩ ⟩ →
           ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-cast _) ⊢M M↠V) Vc↠M₂ , M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (wrap v′ {i′}) =
-  {!!}
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-cast A⊑A′ B⊑B′ M⊑M′) (wrap v {i}) = {!!}
+gradual-guarantee ⊢M₁ (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (wrap v′ {i′}) =
+  ⟨ _ , ⟨ _ ∎ , ⊑-wrapr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′ ⟩ ⟩
+gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑V′) (wrap v′ {i′}) =
+  case catchup ⊢M v′ M⊑V′ of λ where
+    ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′ ⟩ ⟩ ⟩ →
+      case ActiveOrInert c of λ where
+        (inj₁ a) → {!!}
+        (inj₂ i) →
+          ⟨ V ⟨ c ₍ i ₎⟩ ,
+            ⟨ ↠-trans (plug-cong (F-cast _) ⊢M M↠V)
+                       (_ —→⟨ wrap v {i} ⟩ _ ∎) ,
+              ⊑-wrap A⊑A′ B⊑B′ V⊑V′ ⟩ ⟩
 gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢W′ 𝐶⊢-·)
                   (⊑-· L⊑V′c′ M⊑W′) (fun-cast v′ w′ {x′} {i′}) =
   case catchup ⊢L (V-wrap v′ i′) L⊑V′c′ of λ where

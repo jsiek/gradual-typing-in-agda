@@ -98,12 +98,12 @@ rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) =
   ⊑-castl A⊑A′ B⊑A′ (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-castr A⊑A′ A⊑B′ ⊢M M⊑) =
   ⊑-castr A⊑A′ A⊑B′ (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
-rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrap A⊑A′ B⊑B′ M⊑ imp) =
-  ⊑-wrap A⊑A′ B⊑B′ (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) imp
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrap A⊑A′ B⊑B′ M⊑) =
+  ⊑-wrap A⊑A′ B⊑B′ (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapl A⊑A′ B⊑A′ ⊢M′ M⊑) =
   ⊑-wrapl A⊑A′ B⊑A′ (preserve-rename _ ⊢M′ ⊢ρ′) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
-rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapr A⊑A′ A⊑B′ ⊢M M⊑ nd) =
-  ⊑-wrapr A⊑A′ A⊑B′ (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑) nd
+rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-wrapr A⊑A′ A⊑B′ ⊢M M⊑) =
+  ⊑-wrapr A⊑A′ A⊑B′ (preserve-rename _ ⊢M ⊢ρ) (rename-pres-⊑ ⊢ρ ⊢ρ′ M⊑)
 rename-pres-⊑ ⊢ρ ⊢ρ′ (⊑-blame ⊢M A⊑A′) =
   ⊑-blame (preserve-rename _ ⊢M ⊢ρ) A⊑A′
 
@@ -170,12 +170,12 @@ subst-pres-⊑ ⊢σ ⊢σ′ (⊢cast _ ⊢M 𝐶⊢-cast) ⊢M′ σ⊑ (⊑-c
   ⊑-castl A⊑A′ B⊑A′ (preserve-subst _ ⊢M′₁ ⊢σ′) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
 subst-pres-⊑ ⊢σ ⊢σ′ ⊢M (⊢cast _ ⊢M′ 𝐶⊢-cast) σ⊑ (⊑-castr A⊑A′ A⊑B′ ⊢M₁  M⊑) =
   ⊑-castr A⊑A′ A⊑B′ (preserve-subst _ ⊢M₁ ⊢σ) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
-subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrap A⊑A′ B⊑B′ M⊑ imp) =
-  ⊑-wrap A⊑A′ B⊑B′ (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑) imp
+subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrap A⊑A′ B⊑B′ M⊑) =
+  ⊑-wrap A⊑A′ B⊑B′ (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
 subst-pres-⊑ ⊢σ ⊢σ′ (⊢wrap _ _ ⊢M 𝐶⊢-wrap) ⊢M′ σ⊑ (⊑-wrapl A⊑A′ B⊑A′ ⊢M′₁ M⊑) =
   ⊑-wrapl A⊑A′ B⊑A′ (preserve-subst _ ⊢M′₁ ⊢σ′) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
-subst-pres-⊑ ⊢σ ⊢σ′ ⊢M (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑ nd) =
-  ⊑-wrapr A⊑A′ A⊑B′ (preserve-subst _ ⊢M₁ ⊢σ) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑) nd
+subst-pres-⊑ ⊢σ ⊢σ′ ⊢M (⊢wrap _ _ ⊢M′ 𝐶⊢-wrap) σ⊑ (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑) =
+  ⊑-wrapr A⊑A′ A⊑B′ (preserve-subst _ ⊢M₁ ⊢σ) (subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ M⊑)
 subst-pres-⊑ ⊢σ ⊢σ′ ⊢M ⊢M′ σ⊑ (⊑-blame ⊢M₁ A⊑A′) =
   ⊑-blame (preserve-subst _ ⊢M₁ ⊢σ) A⊑A′
 
@@ -250,11 +250,11 @@ cc-prec→⊑ Γ⊑Γ′ (⊢cast c ⊢M 𝐶⊢-cast) ⊢M′ (⊑-castl A⊑A�
   rewrite uniqueness ⊢M′ ⊢M′₁ = B⊑A′
 cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢cast c ⊢M′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁ M⊑M′)
   rewrite uniqueness ⊢M ⊢M₁ = A⊑B′
-cc-prec→⊑ Γ⊑Γ′ (⊢wrap c i ⊢M 𝐶⊢-wrap) (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrap A⊑A′ B⊑B′ M⊑M′ imp) =
+cc-prec→⊑ Γ⊑Γ′ (⊢wrap c i ⊢M 𝐶⊢-wrap) (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrap A⊑A′ B⊑B′ M⊑M′) =
   B⊑B′
 cc-prec→⊑ Γ⊑Γ′ (⊢wrap c i ⊢M 𝐶⊢-wrap) ⊢M′ (⊑-wrapl A⊑A′ B⊑A′ ⊢M′₁ M⊑M′)
   rewrite uniqueness ⊢M′ ⊢M′₁ = B⊑A′
-cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑M′ nd)
+cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑M′)
   rewrite uniqueness ⊢M ⊢M₁ = A⊑B′
 cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢blame A ℓ 𝐶⊢-blame) (⊑-blame ⊢M₁ A⊑A′)
   rewrite uniqueness ⊢M ⊢M₁ = A⊑A′
