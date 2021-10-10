@@ -4,6 +4,7 @@ open import Data.Unit using (⊤)
 open import Data.List using ([])
 open import Reflection hiding (name; Type)
 open import Function using (_$_)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 
 macro
   db0 : Term → TC ⊤
@@ -17,3 +18,7 @@ case_of_ a f = f a
 {- For dependent functions the target type will in most cases not be inferrable: -}
 case_return_of_ : ∀ {ℓ₁ ℓ₂} {A : Set ℓ₁} (x : A) (B : A → Set ℓ₂) → (∀ x → B x) → B x
 case x return B of f = f x
+
+dec-neg : ∀ {ℓ} {A : Set ℓ} → Dec A → Dec (¬ A)
+dec-neg (yes p) = no λ ¬p → ¬p p
+dec-neg (no ¬p) = yes ¬p
