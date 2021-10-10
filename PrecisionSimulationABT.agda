@@ -75,20 +75,20 @@ catchup (⊢cast c ⊢M 𝐶⊢-cast) v′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ 
             ⟨ ↠-trans (plug-cong (F-cast c) ⊢M rd*₁) (_ —→⟨ wrap v ⟩ _ ∎) ,
               ⊑-wrapl A⊑A′ B⊑A′ ⊢M′ V⊑ ⟩ ⟩ ⟩
 -- just recur in all 3 wrap cases
-catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v′ i′) (⊑-wrap A⊑A′ B⊑B′ M⊑) =
+catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v′ i′) (⊑-wrap A⊑A′ B⊑B′ M⊑ imp) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
       ⟨ W ⟨ c ₍ i ₎⟩ , ⟨ V-wrap w i ,
-        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrap A⊑A′ B⊑B′ W⊑ ⟩ ⟩ ⟩
+        ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrap A⊑A′ B⊑B′ W⊑ imp ⟩ ⟩ ⟩
 catchup (⊢wrap c i ⊢M 𝐶⊢-wrap) v′ (⊑-wrapl {c = c} {i = i} A⊑A′ B⊑A′ ⊢M′ M⊑) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
       ⟨ W ⟨ c ₍ i ₎⟩ , ⟨ V-wrap w i ,
         ⟨ plug-cong (F-wrap _ _) ⊢M rd* , ⊑-wrapl A⊑A′ B⊑A′ ⊢M′ W⊑ ⟩ ⟩ ⟩
-catchup ⊢M (V-wrap v′ i′) (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑) =
+catchup ⊢M (V-wrap v′ i′) (⊑-wrapr A⊑A′ A⊑B′ ⊢M₁ M⊑ nd) =
   case catchup ⊢M v′ M⊑ of λ where
     ⟨ W , ⟨ w , ⟨ rd* , W⊑ ⟩ ⟩ ⟩ →
-      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr A⊑A′ A⊑B′ (preserve-mult ⊢M₁ rd*) W⊑ ⟩ ⟩ ⟩
+      ⟨ W , ⟨ w , ⟨ rd* , ⊑-wrapr A⊑A′ A⊑B′ (preserve-mult ⊢M₁ rd*) W⊑ nd ⟩ ⟩ ⟩
 
 
 sim-β : ∀ {A A′ B B′} {V W N′ W′ : Term}
@@ -180,15 +180,18 @@ sim-fun-cast : ∀ {A A′ B B′ C′ D′} {V V′ W W′}
     --------------------------------------------------------------------------------
   → ∃[ M ] (V · W —↠ M) ×
             ([] , [] ⊢ M ⊑ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩)
-sim-fun-cast {W = W} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W ⊢V′ ⊢W′ (V-wrap {A} {B₁ ⇒ B₂} v i) w v′ w′ i′ x′
-             (⊑-wrap {M = V} A⊑A′ B⊑B′ V⊑V′) W⊑W′ =
-  case Inert-Cross⇒ c i of λ where
-    ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
-      case ⟨ A⊑A′ , B⊑B′ ⟩ of λ where
-        ⟨ fun⊑ A₁⊑A′ A₂⊑B′ , fun⊑ B₁⊑C′ B₂⊑D′ ⟩ →
-          ⟨ (V · W ⟨ dom c x ⟩) ⟨ cod c x ⟩ ,
-            ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ ,
-              ⊑-cast A₂⊑B′ B₂⊑D′ (⊑-· V⊑V′ (⊑-cast B₁⊑C′ A₁⊑A′ W⊑W′)) ⟩ ⟩
+sim-fun-cast {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′
+             (⊑-wrap {M = V} A⊑A′ B⊑B′ V⊑V′ imp) W⊑W′ =
+  case v of λ where
+    (V-wrap {A} {⋆} {c = c} v i) → contradiction (imp refl) λ ()
+    (V-wrap {A} {B₁ ⇒ B₂} {c = c} v i) →
+      case Inert-Cross⇒ c i of λ where
+        ⟨ x , ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩ ⟩ →
+          case ⟨ A⊑A′ , B⊑B′ ⟩ of λ where
+            ⟨ fun⊑ A₁⊑A′ A₂⊑B′ , fun⊑ B₁⊑C′ B₂⊑D′ ⟩ →
+              ⟨ (V · W ⟨ dom c x ⟩) ⟨ cod c x ⟩ ,
+                ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ ,
+                  ⊑-cast A₂⊑B′ B₂⊑D′ (⊑-· V⊑V′ (⊑-cast B₁⊑C′ A₁⊑A′ W⊑W′)) ⟩ ⟩
 sim-fun-cast {W = W} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W ⊢V′ ⊢W′ (V-wrap v i) w v′ w′ i′ x′
              (⊑-wrapl {M = V} A⊑A′ B⊑A′ ⊢V′c′ V⊑V′c′) W⊑W′ =
   case uniqueness ⊢V′c′ (⊢wrap _ i′ ⊢V′ 𝐶⊢-wrap) of λ where
@@ -213,36 +216,41 @@ sim-fun-cast {W = W} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢W ⊢V′ ⊢W′ (V-wra
                                    (plug-cong (F-cast _) (⊢· ⊢V ⊢W₁ 𝐶⊢-·) V·W₁↠N) ,
                           ⊑-castl A₂⊑D′ B₂⊑D′ wt-rhs N⊑ ⟩ ⟩
 sim-fun-cast {V = V} {W = W} ⊢V ⊢W ⊢V′ ⊢W′ v w v′ w′ i′ x′
-             (⊑-wrapr A⊑A′ A⊑B′ ⊢V† V⊑V′) W⊑W′ =
+             (⊑-wrapr A⊑A′ A⊑B′ ⊢V₁ V⊑V′ nd) W⊑W′ =
   case ⟨ A⊑A′ , A⊑B′ ⟩ of λ where
-    ⟨ unk⊑ , unk⊑ ⟩ → case uniqueness ⊢V ⊢V† of λ {()}
+    ⟨ unk⊑ , unk⊑ ⟩ → contradiction refl nd
     ⟨ fun⊑ A⊑A′ B⊑B′ , fun⊑ A⊑C′ B⊑D′ ⟩ →
-      case uniqueness ⊢V ⊢V† of λ where
+      case uniqueness ⊢V ⊢V₁ of λ where
        refl → ⟨ V · W , ⟨ _ ∎ ,
                  ⊑-castr B⊑B′ B⊑D′ (⊢· ⊢V ⊢W 𝐶⊢-·)
                    (⊑-· V⊑V′ (⊑-castr A⊑C′ A⊑A′ ⊢W W⊑W′)) ⟩ ⟩
 
--- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
---   → (i′ : Inert c′)
---   → [] ⊢ V ⦂ ⋆ → [] ⊢ V′ ⦂ A′
---   → Value V → Value V′
---   → [] , [] ⊢ V ⊑ V′
---     ------------------------------
---   → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
--- wrap-castr* i′ ⊢V ⊢V′ v v′ V⊑V′ with canonical⋆ ⊢V v
--- wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′ = V′ ⟨ c₁′ ₍ i₁′ ₎⟩} {c′}
---   i′ (⊢wrap c i ⊢V 𝐶⊢-wrap) (⊢wrap c₁′ i₁′ ⊢V′ 𝐶⊢-wrap) (V-wrap v i) (V-wrap v′ i₁′) (⊑-wrap A⊑A′ unk⊑ V⊑V′)
---   | ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩ =
---     {!!}
--- wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′} {c′}
---   i′ (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ (⊑-wrapr _ _ (⊢wrap _ _ _ 𝐶⊢-wrap) _)
---   | ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩ =
---     {!!}
--- wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′} {c′}
---   i′ (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ (⊑-wrapl A⊑A′ unk⊑ ⊢V′† V⊑V′)
---   | ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩ =
---     case uniqueness ⊢V′ ⊢V′† of λ where
---       refl → ⊑-wrap A⊑A′ unk⊑ V⊑V′
+wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
+  → (i′ : Inert c′)
+  → [] ⊢ V ⦂ ⋆ → [] ⊢ V′ ⦂ A′
+  → Value V → Value V′
+  → [] , [] ⊢ V ⊑ V′
+    ------------------------------
+  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+wrap-castr* i′ ⊢V ⊢V′ v v′ V⊑V′ with canonical⋆ ⊢V v
+wrap-castr* {A′} {B′} {V = V ⟨ c ₍ i ₎⟩} {V′} {c′} i′ (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ V⊑V′
+  | ⟨ A , ⟨ V , ⟨ c , ⟨ i , refl ⟩ ⟩ ⟩ ⟩ =
+  case V⊑V′ of λ where
+    (⊑-wrap _ _ _ imp) →
+      case ⊢V′ of λ where
+        (⊢wrap _ _ _ 𝐶⊢-wrap) →
+          -- case analysis on A′ and B′
+          let A′≡⋆ = imp refl in
+          case ⟨ A′≡⋆ , eq-unk B′ ⟩ of λ where
+            ⟨ refl , yes refl ⟩ → contradiction i′ (idNotInert A-Unk c′)
+            ⟨ refl , no  B′≢⋆ ⟩ → contradiction i′ (projNotInert B′≢⋆ c′)
+    (⊑-wrapr _ _ (⊢wrap _ _ _ 𝐶⊢-wrap) _ nd) →
+      contradiction refl nd
+    (⊑-wrapl A⊑A′ unk⊑ ⊢V′† V⊑V′) →
+      case uniqueness ⊢V′ ⊢V′† of λ where
+        refl →
+          ⊑-wrapl {!!} {- A ⊑ B′ -} unk⊑ (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap)
+            (⊑-wrapr A⊑A′ {!!} ⊢V V⊑V′ {!!} {- A ≢ ⋆ -})
 
 -- wrap-castr : ∀ {A A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)
