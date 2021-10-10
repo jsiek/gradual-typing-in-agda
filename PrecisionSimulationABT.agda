@@ -68,7 +68,7 @@ catchup (⊢cast c ⊢M 𝐶⊢-cast) v′ (⊑-castl A⊑A′ B⊑A′ ⊢M′ 
           case applyCast-catchup a (preserve-mult ⊢M rd*₁) ⊢M′ v v′ A⊑A′ B⊑A′ V⊑ of λ where
             ⟨ W , ⟨ w , ⟨ rd*₂ , W⊑ ⟩ ⟩ ⟩ →
               ⟨ W , ⟨ w ,
-                ⟨ ↠-trans (plug-cong (F-cast c) ⊢M rd*₁) (_ —→⟨ cast _ v ⟩ rd*₂) ,
+                ⟨ ↠-trans (plug-cong (F-cast c) ⊢M rd*₁) (_ —→⟨ cast v ⟩ rd*₂) ,
                   W⊑ ⟩ ⟩ ⟩
         (inj₂ i) →
           ⟨ V ⟨ c ₍ i ₎⟩ , ⟨ V-wrap v i ,
