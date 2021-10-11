@@ -209,7 +209,14 @@ gradual-guarantee (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if (⊢$ false P-Base �
     ⟨ _ , ⟨ V-wrap v i , ⟨ L↠wrap , ⊑-wrapl _ _ _ _ ⟩ ⟩ ⟩ →
       case preserve-mult ⊢L L↠wrap of λ where
         (⊢wrap c i ⊢V 𝐶⊢-wrap) → contradiction i (baseNotInert c)
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-fst x x₁) = {!!}
+gradual-guarantee (⊢fst ⊢M 𝐶⊢-fst) (⊢fst (⊢cons ⊢V′ ⊢W′ 𝐶⊢-cons) 𝐶⊢-fst)
+                  (⊑-fst M⊑V′W′) (β-fst v′ w′) =
+  case catchup ⊢M (V-pair v′ w′) M⊑V′W′ of λ where
+    ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′W′ ⟩ ⟩ ⟩ →
+      let ⊢V = preserve-mult ⊢M M↠V in
+      case sim-β-fst ⊢V ⊢V′ ⊢W′ v v′ w′ V⊑V′W′ of λ where
+        ⟨ M₂ , ⟨ fstV↠M₂ , M₂⊑V′ ⟩ ⟩ →
+          ⟨ M₂ , ⟨ ↠-trans (plug-cong F-fst ⊢M M↠V) fstV↠M₂ , M₂⊑V′ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-snd x x₁) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseL x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseR x) = {!!}
