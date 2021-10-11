@@ -190,15 +190,25 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢$ f ab 𝐶⊢-$) (⊢
                 ⟨  ↠-trans (plug-cong (F-·₁ _ ⊢M) ⊢L  L↠V)
                             (↠-trans (plug-cong (F-·₂ _ ⊢V v) ⊢M M↠W) V·W↠M₂) ,
                    M₂⊑ ⟩ ⟩
-gradual-guarantee (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if (⊢$ true P-Base 𝐶⊢-$) ⊢M′ ⊢N′ 𝐶⊢-if) (⊑-if L⊑true M⊑M′ N⊑N′) β-if-true =
+gradual-guarantee (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if (⊢$ true P-Base 𝐶⊢-$) ⊢M′ ⊢N′ 𝐶⊢-if)
+                  (⊑-if L⊑true M⊑M′ N⊑N′) β-if-true =
   case catchup ⊢L V-const L⊑true of λ where
     ⟨ $ true # P-Base , ⟨ V-const , ⟨ L↠V , ⊑-$ ⟩ ⟩ ⟩ →
       ⟨ _ , ⟨ ↠-trans (plug-cong (F-if _ _ ⊢M ⊢N) ⊢L L↠V)
                        (_ —→⟨ β-if-true ⟩ _ ∎) , M⊑M′ ⟩ ⟩
     ⟨ _ , ⟨ V-wrap v i , ⟨ L↠wrap , ⊑-wrapl _ _ _ _ ⟩ ⟩ ⟩ →
+      -- impossible because an inert cast never produces a boolean
       case preserve-mult ⊢L L↠wrap of λ where
         (⊢wrap c i ⊢V 𝐶⊢-wrap) → contradiction i (baseNotInert c)
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
+gradual-guarantee (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if (⊢$ false P-Base 𝐶⊢-$) ⊢M′ ⊢N′ 𝐶⊢-if)
+                  (⊑-if L⊑false M⊑M′ N⊑N′) β-if-false =
+  case catchup ⊢L V-const L⊑false of λ where
+    ⟨ $ false # P-Base , ⟨ V-const , ⟨ L↠V , ⊑-$ ⟩ ⟩ ⟩ →
+      ⟨ _ , ⟨ ↠-trans (plug-cong (F-if _ _ ⊢M ⊢N) ⊢L L↠V)
+                       (_ —→⟨ β-if-false ⟩ _ ∎) , N⊑N′ ⟩ ⟩
+    ⟨ _ , ⟨ V-wrap v i , ⟨ L↠wrap , ⊑-wrapl _ _ _ _ ⟩ ⟩ ⟩ →
+      case preserve-mult ⊢L L↠wrap of λ where
+        (⊢wrap c i ⊢V 𝐶⊢-wrap) → contradiction i (baseNotInert c)
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-fst x x₁) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-snd x x₁) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseL x) = {!!}
