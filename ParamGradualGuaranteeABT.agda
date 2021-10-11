@@ -190,7 +190,14 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢$ f ab 𝐶⊢-$) (⊢
                 ⟨  ↠-trans (plug-cong (F-·₁ _ ⊢M) ⊢L  L↠V)
                             (↠-trans (plug-cong (F-·₂ _ ⊢V v) ⊢M M↠W) V·W↠M₂) ,
                    M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-true = {!!}
+gradual-guarantee (⊢if ⊢L ⊢M ⊢N 𝐶⊢-if) (⊢if (⊢$ true P-Base 𝐶⊢-$) ⊢M′ ⊢N′ 𝐶⊢-if) (⊑-if L⊑true M⊑M′ N⊑N′) β-if-true =
+  case catchup ⊢L V-const L⊑true of λ where
+    ⟨ $ true # P-Base , ⟨ V-const , ⟨ L↠V , ⊑-$ ⟩ ⟩ ⟩ →
+      ⟨ _ , ⟨ ↠-trans (plug-cong (F-if _ _ ⊢M ⊢N) ⊢L L↠V)
+                       (_ —→⟨ β-if-true ⟩ _ ∎) , M⊑M′ ⟩ ⟩
+    ⟨ _ , ⟨ V-wrap v i , ⟨ L↠wrap , ⊑-wrapl _ _ _ _ ⟩ ⟩ ⟩ →
+      case preserve-mult ⊢L L↠wrap of λ where
+        (⊢wrap c i ⊢V 𝐶⊢-wrap) → contradiction i (baseNotInert c)
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ β-if-false = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-fst x x₁) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-snd x x₁) = {!!}
@@ -208,9 +215,10 @@ gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-ca
       case sim-cast a′ ⊢V ⊢V′ v v′ A⊑A′ B⊑B′ V⊑V′ of λ where
         ⟨ M₂ , ⟨ Vc↠M₂ , M₂⊑ ⟩ ⟩ →
           ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-cast _) ⊢M M↠V) Vc↠M₂ , M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (wrap v′ {i′}) =
+gradual-guarantee ⊢M₁ (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (wrap v′ {i′}) =
   {!!}
-gradual-guarantee ⊢M₁ ⊢M₁′ (⊑-cast A⊑A′ B⊑B′ M⊑M′) (wrap v {i}) = {!!}
+gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑V′) (wrap v′ {i′}) =
+  {!!}
 gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢W′ 𝐶⊢-·)
                   (⊑-· L⊑V′c′ M⊑W′) (fun-cast v′ w′ {x′} {i′}) =
   case catchup ⊢L (V-wrap v′ i′) L⊑V′c′ of λ where
