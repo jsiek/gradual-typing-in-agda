@@ -217,7 +217,14 @@ gradual-guarantee (⊢fst ⊢M 𝐶⊢-fst) (⊢fst (⊢cons ⊢V′ ⊢W′ �
       case sim-β-fst ⊢V ⊢V′ ⊢W′ v v′ w′ V⊑V′W′ of λ where
         ⟨ M₂ , ⟨ fstV↠M₂ , M₂⊑V′ ⟩ ⟩ →
           ⟨ M₂ , ⟨ ↠-trans (plug-cong F-fst ⊢M M↠V) fstV↠M₂ , M₂⊑V′ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-snd x x₁) = {!!}
+gradual-guarantee (⊢snd ⊢M 𝐶⊢-snd) (⊢snd (⊢cons ⊢V′ ⊢W′ 𝐶⊢-cons) 𝐶⊢-snd)
+                  (⊑-snd M⊑V′W′) (β-snd v′ w′) =
+  case catchup ⊢M (V-pair v′ w′) M⊑V′W′ of λ where
+    ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′W′ ⟩ ⟩ ⟩ →
+      let ⊢V = preserve-mult ⊢M M↠V in
+      case sim-β-snd ⊢V ⊢V′ ⊢W′ v v′ w′ V⊑V′W′ of λ where
+        ⟨ M₂ , ⟨ sndV↠M₂ , M₂⊑W′ ⟩ ⟩ →
+          ⟨ M₂ , ⟨ ↠-trans (plug-cong F-snd ⊢M M↠V) sndV↠M₂ , M₂⊑W′ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseL x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (β-caseR x) = {!!}
 gradual-guarantee ⊢M₁ (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (cast v′ {a′}) =
@@ -232,6 +239,7 @@ gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-ca
       case sim-cast a′ ⊢V ⊢V′ v v′ A⊑A′ B⊑B′ V⊑V′ of λ where
         ⟨ M₂ , ⟨ Vc↠M₂ , M₂⊑ ⟩ ⟩ →
           ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-cast _) ⊢M M↠V) Vc↠M₂ , M₂⊑ ⟩ ⟩
+-- TODO: think about how to state the lemmas for these cases.
 gradual-guarantee ⊢M₁ (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-castr A⊑A′ A⊑B′ ⊢M₁† M₁⊑V′) (wrap v′ {i′}) =
   {!!}
 gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑V′) (wrap v′ {i′}) =
