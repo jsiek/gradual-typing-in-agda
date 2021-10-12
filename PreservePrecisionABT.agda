@@ -258,3 +258,10 @@ cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢wrap c′ i′ ⊢M′ 𝐶⊢-wrap) (⊑-wrap
   rewrite uniqueness ⊢M ⊢M₁ = A⊑B′
 cc-prec→⊑ Γ⊑Γ′ ⊢M (⊢blame A ℓ 𝐶⊢-blame) (⊑-blame ⊢M₁ A⊑A′)
   rewrite uniqueness ⊢M ⊢M₁ = A⊑A′
+
+{- We probably should place them in other files, but anyway. -}
+⇑-wt : ∀ Γ X → ⇑ ⦂ Γ ⇒ (X ∷ Γ)
+⇑-wt Γ X {x} ∋x = ⟨ _ , ⟨ ∋x , refl ⟩ ⟩
+
+ext-⇑-wt : ∀ Γ A X → (ext ⇑) ⦂ (A ∷ Γ) ⇒ (A ∷ X ∷ Γ)
+ext-⇑-wt Γ A X {x} ∋x = ext-pres (⇑-wt Γ X) {x} ∋x
