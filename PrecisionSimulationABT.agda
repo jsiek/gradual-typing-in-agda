@@ -4,9 +4,10 @@ open import Data.Nat.Properties using (suc-injective)
 open import Data.Bool
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-open import Relation.Binary.PropositionalEquality
-  using (_≡_; _≢_; refl; trans; sym; cong; cong₂)
-  renaming (subst to subst-eq; subst₂ to subst₂-eq)
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; _≢_; refl; trans; sym; cong; subst)
+open Eq.≡-Reasoning renaming (_∎ to _qed)
+
 open import Data.Product
   using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
   renaming (_,_ to ⟨_,_⟩)
@@ -275,6 +276,40 @@ sim-β-snd {V = V ⟨ c ₍ i ₎⟩} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ �
                       ⟨ _ —→⟨ snd-cast v {x} ⟩ plug-cong (F-cast (sndC c x)) ⊢sndV sndV↠M ,
                       ⊑-castl A₂⊑A₂′ B₂⊑B₂′ ⊢W′ M⊑W′ ⟩ ⟩
 
+ext-⇑-subst-zero : ∀ M → rename (ext ⇑) M [ ` 0 ] ≡ M
+ext-⇑-subst-zero M =
+  ⟪ subst-zero (` 0) ⟫ (rename (ext ⇑) M)
+    ≡⟨ cong (λ □ → ⟪ _ ⟫ □) (rename-subst (ext ⇑) M) ⟩
+  ⟪ subst-zero (` 0) ⟫ (⟪ rename→subst (ext ⇑) ⟫ M)
+    ≡⟨ sub-sub {M} {rename→subst (ext ⇑)} {subst-zero (` 0)} ⟩
+  ⟪ rename→subst (ext ⇑) ⨟ subst-zero (` 0) ⟫ M
+    ≡⟨ cong (λ □ → ⟪ □ ⨟ subst-zero (` 0) ⟫ M) (rename→subst-ext ⇑) ⟩
+  ⟪ ext (rename→subst ⇑) ⨟ subst-zero (` 0) ⟫ M
+    ≡⟨ cong (λ □ → ⟪ □ ⟫ M) subst-zero-exts-cons ⟩
+  ⟪ ` 0 • rename→subst ⇑ ⟫ M
+    ≡⟨ sub-0•↑1 M ⟩
+  M qed
+
+cast-zero-⊑ : ∀ {A B A′ X X′} {M M′} {c : Cast (B ⇒ A)}
+  → A ∷ [] ⊢ M ⦂ X → A′ ∷ [] ⊢ M′ ⦂ X′
+  → A ⊑ A′ → B ⊑ A′
+  → A ∷ [] , A′ ∷ [] ⊢ M ⊑ M′
+    --------------------------------------------------------
+  → B ∷ [] , A′ ∷ [] ⊢ rename (ext ⇑) M [ ` 0 ⟨ c ⟩ ] ⊑ M′
+cast-zero-⊑ {A} {B} {A′} {M = M} {M′} {c} ⊢M ⊢M′ A⊑A′ B⊑A′ M⊑M′ =
+  subst (λ □ → _ , _ ⊢ _ ⊑ □) (ext-⇑-subst-zero M′) lp
+  where
+  lp : B ∷ [] , A′ ∷ [] ⊢ rename (ext ⇑) M [ ` 0 ⟨ c ⟩ ] ⊑ rename (ext ⇑) M′ [ ` 0 ]
+  lp = let ⊢ext⇑  = ext-⇑-wt [] A  B
+           ⊢ext⇑′ = ext-⇑-wt [] A′ A′ in
+       substitution-pres-⊑ (preserve-rename _ ⊢M  (λ {x}  → ⊢ext⇑  {x}))
+                           (preserve-rename _ ⊢M′ (λ {x}  → ⊢ext⇑′ {x}))
+                           (⊢cast c (⊢` refl) 𝐶⊢-cast) (⊢` refl)
+                           (rename-pres-⊑ (λ {x} → ⊢ext⇑  {x})
+                                          (λ {x} → ⊢ext⇑′ {x})
+                                          M⊑M′)
+                           (⊑-castl B⊑A′ A⊑A′ (⊢` refl) ⊑-`)
+
 sim-case-cast : ∀ {A A₁′ A₂′ B B₁′ B₂′ C C′} {V V′ M M′ N N′}
                   {c′ : Cast ((A₁′ `⊎ B₁′) ⇒ (A₂′ `⊎ B₂′))}
   →       [] ⊢ V  ⦂ A   `⊎ B
@@ -318,9 +353,15 @@ sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V 
                 (rename-pres-⊑ (λ {x} → ext-⇑-wt [] B   B₁  {x})
                                (λ {x} → ext-⇑-wt [] B₂′ B₁′ {x}) N⊑N′)
                 (⊑-cast B₁⊑B₁′ B₂⊑B₂′ ⊑-`))⟩ ⟩
-sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapl _ _ _ _) M⊑M′ N⊑N′ =
-  {!!}
-sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapr _ _ _ _ _) M⊑M′ N⊑N′ =
+sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V ⟨ c ₍ i ₎⟩} {V′} {M} {M′} {N} {N′}
+  (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ (V-wrap v i) v′ i′ x′ (⊑-wrapl A⊑A′ B⊑A′ (⊢wrap c′ i′ ⊢V′† 𝐶⊢-wrap) V⊑V′) M⊑M′ N⊑N′ =
+  case Inert-Cross⊎ c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ A⊑A′ , B⊑A′ ⟩ of λ where
+        ⟨ sum⊑ A₁⊑A₂′ B₁⊑B₂′ , sum⊑ A₂⊑A₂′ B₂⊑B₂′ ⟩ → {!!}
+          -- case sim-case-cast ⊢V ⊢V′† {!!} {!!} {!!} {!!} v v′ i′ x′ V⊑V′ {!!} {!!} of λ where
+          --   ⟨ L , ⟨ case↠L , L⊑case ⟩ ⟩ → {!!}
+sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V† V⊑V′ nd) M⊑M′ N⊑N′ =
   {!!}
 
 -- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
