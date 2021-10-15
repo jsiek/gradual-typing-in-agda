@@ -390,8 +390,16 @@ sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V 
                              (cast-zero-⊑ ⊢N ⊢N′ B₂⊑B₂′ B₁⊑B₂′ N⊑N′) of λ where
             ⟨ L , ⟨ case↠L , L⊑case ⟩ ⟩ →
               ⟨ L , ⟨ _ —→⟨ case-cast v {x} ⟩ case↠L , L⊑case ⟩ ⟩
-sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V† V⊑V′ nd) M⊑M′ N⊑N′ =
-  {!!}
+sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V} {V′} {M} {M′} {N} {N′}
+  ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V† V⊑V′ nd) M⊑M′ N⊑N′ =
+  case ⟨ ⊑⊎-nd A⊑A′ nd , ⊑⊎-nd A⊑B′ nd ⟩ of λ where
+    ⟨ ⟨ A , ⟨ B , refl ⟩ ⟩ , ⟨ A , ⟨ B , refl ⟩ ⟩ ⟩ →
+      case ⟨ uniqueness ⊢V ⊢V† , ⟨ A⊑A′ , A⊑B′ ⟩ ⟩ of λ where
+        ⟨ refl , ⟨ sum⊑ A⊑A₁′ B⊑B₁′ , sum⊑ A⊑A₂′ B⊑B₂′ ⟩ ⟩ →
+          ⟨ _ , ⟨ _ ∎ ,
+            ⊑-case V⊑V′ A⊑A₁′ B⊑B₁′
+                   (⊑-cast-zero ⊢M ⊢M′ A⊑A₂′ A⊑A₁′ M⊑M′)
+                   (⊑-cast-zero ⊢N ⊢N′ B⊑B₂′ B⊑B₁′ N⊑N′) ⟩ ⟩
 
 -- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)

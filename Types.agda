@@ -902,6 +902,14 @@ module Types where
   ▹⊎⊑ match⊎⊎ = sum⊑ Refl⊑ Refl⊑
   ▹⊎⊑ match⊎⋆ = unk⊑
 
+  ⊑⊎-nd : ∀ {A A₁′ A₂′}
+    → A ⊑ A₁′ `⊎ A₂′
+    → A ≢ ⋆
+      -------------------------------
+    → ∃[ A₁ ] ∃[ A₂ ] (A ≡ A₁ `⊎ A₂)
+  ⊑⊎-nd unk⊑ nd = contradiction refl nd
+  ⊑⊎-nd {A₁ `⊎ A₂} (sum⊑ A₁⊑A₁′ A₂⊑A₂′) _ = ⟨ A₁ , ⟨ A₂ , refl ⟩ ⟩
+
   ▹⇒-pres-prec : ∀ {A A′ A₁ A₁′ A₂ A₂′}
     → (m : A ▹ A₁ ⇒ A₂) → (m′ : A′ ▹ A₁′ ⇒ A₂′)
     → A ⊑ A′
