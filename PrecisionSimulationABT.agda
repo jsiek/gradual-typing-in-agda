@@ -378,9 +378,18 @@ sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V 
   case Inert-Cross⊎ c i of λ where
     ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
       case ⟨ A⊑A′ , B⊑A′ ⟩ of λ where
-        ⟨ sum⊑ A₁⊑A₂′ B₁⊑B₂′ , sum⊑ A₂⊑A₂′ B₂⊑B₂′ ⟩ → {!!}
-          -- case sim-case-cast ⊢V ⊢V′† {!!} {!!} {!!} {!!} v v′ i′ x′ V⊑V′ {!!} {!!} of λ where
-          --   ⟨ L , ⟨ case↠L , L⊑case ⟩ ⟩ → {!!}
+        ⟨ sum⊑ A₁⊑A₂′ B₁⊑B₂′ , sum⊑ A₂⊑A₂′ B₂⊑B₂′ ⟩ →
+              let ⊢left  = preserve-substitution _ _
+                             (preserve-rename _ ⊢M (λ {x} → ext-⇑-wt [] A A₁ {x}))
+                             (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast)
+                  ⊢right = preserve-substitution _ _
+                             (preserve-rename _ ⊢N (λ {x} → ext-⇑-wt [] B B₁ {x}))
+                             (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast) in
+          case sim-case-cast ⊢V ⊢V′† ⊢left ⊢M′ ⊢right ⊢N′ v v′ i′ x′ V⊑V′
+                             (cast-zero-⊑ ⊢M ⊢M′ A₂⊑A₂′ A₁⊑A₂′ M⊑M′)
+                             (cast-zero-⊑ ⊢N ⊢N′ B₂⊑B₂′ B₁⊑B₂′ N⊑N′) of λ where
+            ⟨ L , ⟨ case↠L , L⊑case ⟩ ⟩ →
+              ⟨ L , ⟨ _ —→⟨ case-cast v {x} ⟩ case↠L , L⊑case ⟩ ⟩
 sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ (⊑-wrapr A⊑A′ A⊑B′ ⊢V† V⊑V′ nd) M⊑M′ N⊑N′ =
   {!!}
 
