@@ -260,7 +260,14 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′
                   M₂⊑ ⟩ ⟩
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (fst-cast x) = {!!}
 gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (snd-cast x) = {!!}
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (case-cast x) = {!!}
+gradual-guarantee (⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case) (⊢case A′ B′ (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢M′ ⊢N′ 𝐶⊢-case)
+                  (⊑-case L⊑V′c′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) (case-cast v′ {x′} {i′}) =
+  case catchup ⊢L (V-wrap v′ i′) L⊑V′c′ of λ where
+    ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′c′ ⟩ ⟩ ⟩ →
+      let ⊢V = preserve-mult ⊢L L↠V in
+      case sim-case-cast ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ i′ x′ V⊑V′c′ M⊑M′ N⊑N′ of λ where
+        ⟨ M₂ , ⟨ case↠M₂ , M₂⊑case ⟩ ⟩ →
+          ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-case A B _ _ ⊢M ⊢N) ⊢L L↠V) case↠M₂ , M₂⊑case ⟩ ⟩
 gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) _ (⊑-castl A⊑A′ B⊑A′ ⊢M′ M⊑) R =
   case gradual-guarantee ⊢M ⊢M′ M⊑ R of λ where
     ⟨ M₂ , ⟨ R* , M₂⊑ ⟩ ⟩ →
