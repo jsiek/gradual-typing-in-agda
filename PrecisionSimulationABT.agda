@@ -416,8 +416,23 @@ sim-β-caseL : ∀ {A A′ B B′ C C′} {V V′ M M′ N N′}
   → ∃[ L ] (case V of A ⇒ M ∣ B ⇒ N —↠ L) × [] , [] ⊢ L ⊑ M′ [ V′ ]
 sim-β-caseL (⊢inl B ⊢V 𝐶⊢-inl) ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ (V-inl {B} v) v′ (⊑-inl B⊑B′ V⊑V′) M⊑M′ N⊑N′ =
   ⟨ _ , ⟨ (_ —→⟨ β-caseL v ⟩ _ ∎) , substitution-pres-⊑ ⊢M ⊢M′ ⊢V ⊢V′ M⊑M′ V⊑V′ ⟩ ⟩
-sim-β-caseL ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ (⊑-wrapl A⊑A′ B⊑A′ (⊢inl B′ ⊢V′† 𝐶⊢-inl) V⊑V′) M⊑M′ N⊑N′ =
-  {!!}
+sim-β-caseL {A} {A′} {B} {B′} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ (V-wrap v i) v′
+            (⊑-wrapl A₁⊎B₁⊑A′⊎B′ A⊎B⊑A′⊎B′ (⊢inl B′ ⊢V′† 𝐶⊢-inl) V⊑inlV′) M⊑M′ N⊑N′ =
+  case Inert-Cross⊎ c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ uniqueness ⊢V′ ⊢V′† , ⟨ A₁⊎B₁⊑A′⊎B′ , A⊎B⊑A′⊎B′ ⟩ ⟩ of λ where
+        ⟨ refl , ⟨ sum⊑ A₁⊑A′ B₁⊑B′ , sum⊑ A⊑A′ B⊑B′ ⟩ ⟩ →
+          let ⊢left  = preserve-substitution _ _
+                         (preserve-rename _ ⊢M (λ {x} → ext-⇑-wt [] A A₁ {x}))
+                         (⊢cast (inlC c x) (⊢` refl) 𝐶⊢-cast)
+              ⊢right = preserve-substitution _ _
+                         (preserve-rename _ ⊢N (λ {x} → ext-⇑-wt [] B B₁ {x}))
+                         (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast) in
+          case sim-β-caseL ⊢V ⊢V′ ⊢left ⊢M′ ⊢right ⊢N′ v v′ V⊑inlV′
+                           (cast-zero-⊑ ⊢M ⊢M′ A⊑A′ A₁⊑A′ M⊑M′)
+                           (cast-zero-⊑ ⊢N ⊢N′ B⊑B′ B₁⊑B′ N⊑N′) of λ where
+            ⟨ L , ⟨ case↠L , L⊑M′[V′] ⟩ ⟩ →
+              ⟨ L , ⟨ _ —→⟨ case-cast v {x} ⟩ case↠L , L⊑M′[V′] ⟩ ⟩
 
 -- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)
