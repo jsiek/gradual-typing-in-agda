@@ -340,7 +340,7 @@ sim-case-cast : ∀ {A A₁′ A₂′ B B₁′ B₂′ C C′} {V V′ M M′ 
   → B₂′ ∷ [] ⊢ N′ ⦂ C′
   → Value V → Value V′
   → (i′ : Inert c′) → (x′ : Cross c′)
-  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+  →     [] ,       [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
   → A ∷ [] , A₂′ ∷ [] ⊢ M ⊑ M′
   → B ∷ [] , B₂′ ∷ [] ⊢ N ⊑ N′
     --------------------------------------------
@@ -400,6 +400,24 @@ sim-case-cast {A} {A₁′} {A₂′} {B} {B₁′} {B₂′} {C} {C′} {V = V}
             ⊑-case V⊑V′ A⊑A₁′ B⊑B₁′
                    (⊑-cast-zero ⊢M ⊢M′ A⊑A₂′ A⊑A₁′ M⊑M′)
                    (⊑-cast-zero ⊢N ⊢N′ B⊑B₂′ B⊑B₁′ N⊑N′) ⟩ ⟩
+
+sim-β-caseL : ∀ {A A′ B B′ C C′} {V V′ M M′ N N′}
+  →      [] ⊢ V  ⦂ A `⊎ B
+  →      [] ⊢ V′ ⦂ A′
+  → A  ∷ [] ⊢ M  ⦂ C
+  → A′ ∷ [] ⊢ M′ ⦂ C′
+  → B  ∷ [] ⊢ N  ⦂ C
+  → B′ ∷ [] ⊢ N′ ⦂ C′
+  → Value V → Value V′
+  →     [] ,      [] ⊢ V ⊑ inl V′ other B′
+  → A ∷ [] , A′ ∷ [] ⊢ M ⊑ M′
+  → B ∷ [] , B′ ∷ [] ⊢ N ⊑ N′
+    --------------------------------------------------------
+  → ∃[ L ] (case V of A ⇒ M ∣ B ⇒ N —↠ L) × [] , [] ⊢ L ⊑ M′ [ V′ ]
+sim-β-caseL (⊢inl B ⊢V 𝐶⊢-inl) ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ (V-inl {B} v) v′ (⊑-inl B⊑B′ V⊑V′) M⊑M′ N⊑N′ =
+  ⟨ _ , ⟨ (_ —→⟨ β-caseL v ⟩ _ ∎) , substitution-pres-⊑ ⊢M ⊢M′ ⊢V ⊢V′ M⊑M′ V⊑V′ ⟩ ⟩
+sim-β-caseL ⊢V ⊢V′ ⊢M ⊢M′ ⊢N ⊢N′ v v′ (⊑-wrapl A⊑A′ B⊑A′ (⊢inl B′ ⊢V′† 𝐶⊢-inl) V⊑V′) M⊑M′ N⊑N′ =
+  {!!}
 
 -- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)
