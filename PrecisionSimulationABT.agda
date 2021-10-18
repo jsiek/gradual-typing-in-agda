@@ -467,6 +467,68 @@ sim-β-caseR {A} {A′} {B} {B′} (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ ⊢M 
             ⟨ L , ⟨ case↠L , L⊑N′[V′] ⟩ ⟩ →
               ⟨ L , ⟨ _ —→⟨ case-cast v {x} ⟩ case↠L , L⊑N′[V′] ⟩ ⟩
 
+sim-fst-cast : ∀ {A A₁′ A₂′ B B₁′ B₂′} {V V′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → [] ⊢ V  ⦂ A   `× B
+  → [] ⊢ V′ ⦂ A₁′ `× B₁′
+  → Value V → Value V′
+  → (i′ : Inert c′) → (x′ : Cross c′)
+  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+    ------------------------------------------------------------
+  → ∃[ M ] (fst V —↠ M) × [] , [] ⊢ M ⊑ fst V′ ⟨ fstC c′ x′ ⟩
+sim-fst-cast (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ i′ x′ (⊑-wrap A₁×B₁⊑A₁′×B₁′ A×B⊑A₂′×B₂′ V⊑V′ imp) =
+  case Inert-Cross× c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ A₁×B₁⊑A₁′×B₁′ , A×B⊑A₂′×B₂′ ⟩ of λ where
+        ⟨ pair⊑ A₁⊑A₁′ B₁⊑B₁′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ →
+          ⟨ _ , ⟨ _ —→⟨ fst-cast v {x} ⟩ _ ∎ ,
+                  ⊑-cast A₁⊑A₁′ A⊑A₂′ (⊑-fst V⊑V′) ⟩ ⟩
+sim-fst-cast (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ i′ x′
+             (⊑-wrapl A₁×B₁⊑A₂′×B₂′ A×B⊑A₂′×B₂′ (⊢wrap c′ i′ ⊢V′† 𝐶⊢-wrap) V⊑V′c′) =
+  case Inert-Cross× c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ A₁×B₁⊑A₂′×B₂′ , A×B⊑A₂′×B₂′ ⟩ of λ where
+        ⟨ pair⊑ A₁⊑A₂′ B₁⊑B₂′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ →
+          case sim-fst-cast ⊢V ⊢V′† v v′ i′ x′ V⊑V′c′ of λ where
+            ⟨ M , ⟨ fst↠M , M⊑fst-cast ⟩ ⟩ →
+              ⟨ M ⟨ fstC c x ⟩ ,
+                ⟨ _ —→⟨ fst-cast v {x} ⟩ plug-cong (F-cast (fstC c x)) (⊢fst ⊢V 𝐶⊢-fst) fst↠M ,
+                  ⊑-castl A₁⊑A₂′ A⊑A₂′ (⊢cast (fstC c′ x′) (⊢fst ⊢V′† 𝐶⊢-fst) 𝐶⊢-cast) M⊑fst-cast ⟩ ⟩
+sim-fst-cast ⊢V ⊢V′ v v′ i′ x′ (⊑-wrapr A×B⊑A₁′×B₁′ A×B⊑A₂′×B₂′ ⊢V† V⊑V′ nd) =
+  case ⟨ uniqueness ⊢V ⊢V† , ⟨ A×B⊑A₁′×B₁′ , A×B⊑A₂′×B₂′ ⟩ ⟩ of λ where
+    ⟨ refl , ⟨ pair⊑ A⊑A₁′ B⊑B₁′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ ⟩ →
+      ⟨ _ , ⟨ _ ∎ , (⊑-castr A⊑A₁′ A⊑A₂′ (⊢fst ⊢V† 𝐶⊢-fst) (⊑-fst V⊑V′)) ⟩ ⟩
+
+sim-snd-cast : ∀ {A A₁′ A₂′ B B₁′ B₂′} {V V′} {c′ : Cast ((A₁′ `× B₁′) ⇒ (A₂′ `× B₂′))}
+  → [] ⊢ V  ⦂ A   `× B
+  → [] ⊢ V′ ⦂ A₁′ `× B₁′
+  → Value V → Value V′
+  → (i′ : Inert c′) → (x′ : Cross c′)
+  → [] , [] ⊢ V ⊑ V′ ⟨ c′ ₍ i′ ₎⟩
+    ------------------------------------------------------------
+  → ∃[ M ] (snd V —↠ M) × [] , [] ⊢ M ⊑ snd V′ ⟨ sndC c′ x′ ⟩
+sim-snd-cast (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ i′ x′ (⊑-wrap A₁×B₁⊑A₁′×B₁′ A×B⊑A₂′×B₂′ V⊑V′ imp) =
+  case Inert-Cross× c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ A₁×B₁⊑A₁′×B₁′ , A×B⊑A₂′×B₂′ ⟩ of λ where
+        ⟨ pair⊑ A₁⊑A₁′ B₁⊑B₁′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ →
+          ⟨ _ , ⟨ _ —→⟨ snd-cast v {x} ⟩ _ ∎ ,
+                  ⊑-cast B₁⊑B₁′ B⊑B₂′ (⊑-snd V⊑V′) ⟩ ⟩
+sim-snd-cast (⊢wrap c i ⊢V 𝐶⊢-wrap) ⊢V′ (V-wrap v i) v′ i′ x′
+             (⊑-wrapl A₁×B₁⊑A₂′×B₂′ A×B⊑A₂′×B₂′ (⊢wrap c′ i′ ⊢V′† 𝐶⊢-wrap) V⊑V′c′) =
+  case Inert-Cross× c i of λ where
+    ⟨ x , ⟨ A₁ , ⟨ B₁ , refl ⟩ ⟩ ⟩ →
+      case ⟨ A₁×B₁⊑A₂′×B₂′ , A×B⊑A₂′×B₂′ ⟩ of λ where
+        ⟨ pair⊑ A₁⊑A₂′ B₁⊑B₂′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ →
+          case sim-snd-cast ⊢V ⊢V′† v v′ i′ x′ V⊑V′c′ of λ where
+            ⟨ M , ⟨ snd↠M , M⊑snd-cast ⟩ ⟩ →
+              ⟨ M ⟨ sndC c x ⟩ ,
+                ⟨ _ —→⟨ snd-cast v {x} ⟩ plug-cong (F-cast (sndC c x)) (⊢snd ⊢V 𝐶⊢-snd) snd↠M ,
+                  ⊑-castl B₁⊑B₂′ B⊑B₂′ (⊢cast (sndC c′ x′) (⊢snd ⊢V′† 𝐶⊢-snd) 𝐶⊢-cast) M⊑snd-cast ⟩ ⟩
+sim-snd-cast ⊢V ⊢V′ v v′ i′ x′ (⊑-wrapr A×B⊑A₁′×B₁′ A×B⊑A₂′×B₂′ ⊢V† V⊑V′ nd) =
+  case ⟨ uniqueness ⊢V ⊢V† , ⟨ A×B⊑A₁′×B₁′ , A×B⊑A₂′×B₂′ ⟩ ⟩ of λ where
+    ⟨ refl , ⟨ pair⊑ A⊑A₁′ B⊑B₁′ , pair⊑ A⊑A₂′ B⊑B₂′ ⟩ ⟩ →
+      ⟨ _ , ⟨ _ ∎ , (⊑-castr B⊑B₁′ B⊑B₂′ (⊢snd ⊢V† 𝐶⊢-snd) (⊑-snd V⊑V′)) ⟩ ⟩
+
 -- wrap-castr* : ∀ {A′ B′} {V V′} {c′ : Cast (A′ ⇒ B′)}
 --   → (i′ : Inert c′)
 --   → [] ⊢ V ⦂ ⋆ → [] ⊢ V′ ⦂ A′

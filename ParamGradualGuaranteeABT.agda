@@ -272,10 +272,22 @@ gradual-guarantee (⊢· ⊢L ⊢M 𝐶⊢-·) (⊢· (⊢wrap c′ i′ ⊢V′
                 ⟨ ↠-trans (plug-cong (F-·₁ _ ⊢M) ⊢L  L↠V)
                            (↠-trans (plug-cong (F-·₂ _ ⊢V v) ⊢M M↠W) V·W↠M₂) ,
                   M₂⊑ ⟩ ⟩
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (fst-cast x) = {!!}
-gradual-guarantee ⊢M₁ ⊢M₁′ M₁⊑ (snd-cast x) = {!!}
+gradual-guarantee (⊢fst ⊢M 𝐶⊢-fst) (⊢fst (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) 𝐶⊢-fst) (⊑-fst M⊑V′c′) (fst-cast v′ {x′}) =
+  case catchup ⊢M (V-wrap v′ i′) M⊑V′c′ of λ where
+    ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′c′ ⟩ ⟩ ⟩ →
+      let ⊢V = preserve-mult ⊢M M↠V in
+      case sim-fst-cast ⊢V ⊢V′ v v′ i′ x′ V⊑V′c′ of λ where
+        ⟨ M₂ , ⟨ fst↠M₂ , M₂⊑fst-cast ⟩ ⟩ →
+          ⟨ _ , ⟨ ↠-trans (plug-cong F-fst ⊢M M↠V) fst↠M₂ , M₂⊑fst-cast ⟩ ⟩
+gradual-guarantee (⊢snd ⊢M 𝐶⊢-snd) (⊢snd (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) 𝐶⊢-snd) (⊑-snd M⊑V′c′) (snd-cast v′ {x′}) =
+  case catchup ⊢M (V-wrap v′ i′) M⊑V′c′ of λ where
+    ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′c′ ⟩ ⟩ ⟩ →
+      let ⊢V = preserve-mult ⊢M M↠V in
+      case sim-snd-cast ⊢V ⊢V′ v v′ i′ x′ V⊑V′c′ of λ where
+        ⟨ M₂ , ⟨ snd↠M₂ , M₂⊑snd-cast ⟩ ⟩ →
+          ⟨ _ , ⟨ ↠-trans (plug-cong F-snd ⊢M M↠V) snd↠M₂ , M₂⊑snd-cast ⟩ ⟩
 gradual-guarantee (⊢case A B ⊢L ⊢M ⊢N 𝐶⊢-case) (⊢case A′ B′ (⊢wrap c′ i′ ⊢V′ 𝐶⊢-wrap) ⊢M′ ⊢N′ 𝐶⊢-case)
-                  (⊑-case L⊑V′c′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) (case-cast v′ {x′} {i′}) =
+                  (⊑-case L⊑V′c′ A⊑A′ B⊑B′ M⊑M′ N⊑N′) (case-cast v′ {x′}) =
   case catchup ⊢L (V-wrap v′ i′) L⊑V′c′ of λ where
     ⟨ V , ⟨ v , ⟨ L↠V , V⊑V′c′ ⟩ ⟩ ⟩ →
       let ⊢V = preserve-mult ⊢L L↠V in
