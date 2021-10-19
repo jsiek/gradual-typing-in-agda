@@ -12,7 +12,6 @@ import ParamCastReductionABT
 
 module CastStructureWithPrecisionABT where
 
-{- TODO : better make this similar to `CastStruct` -}
 record CastStructWithPrecision : Set₁ where
   field
     precast : PreCastStruct
