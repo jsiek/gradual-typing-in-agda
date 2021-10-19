@@ -15,6 +15,8 @@ open import Labels
 open import CastStructureABT
 open import CastStructureWithBlameSafetyABT
 
+open import Utils
+
 
 module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
 
@@ -30,24 +32,23 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     If we plug `blame ℓ′` into some frame and the result term is
     safe for ℓ, then ℓ ≢ ℓ′ .
   -}
-  plug-blame-safe-for-diff-ℓ : ∀ {ℓ ℓ′}
-    → (F : Frame)
-    → (plug (blame ℓ′) F) SafeFor ℓ
+  plug-blame-safe-for-diff-ℓ : ∀ {A B} {ℓ ℓ′}
+    → (F : Frame A B)
+    → (plug (blame A ℓ′) F) SafeFor ℓ
       -------------------------------------
     → ℓ ≢̂ ℓ′
-  plug-blame-safe-for-diff-ℓ (F-·₁ _)         (⊢· (⊢blame _ ℓ≢ℓ′) _ 𝐶ₛ-·)             ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-·₂ _ _)       (⊢· _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-·)             ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-if _ _)       (⊢if (⊢blame _ ℓ≢ℓ′) _ _ 𝐶ₛ-if)         ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-×₁ _ _)       (⊢cons _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-cons)       ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-×₂ _)         (⊢cons (⊢blame _ ℓ≢ℓ′) _ 𝐶ₛ-cons)       ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ F-fst            (⊢fst (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-fst)           ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ F-snd            (⊢snd (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-snd)           ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-inl _)        (⊢inl _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-inl)         ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-inr _)        (⊢inr _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-inr)         ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-case _ _ _ _) (⊢case _ _ (⊢blame _ ℓ≢ℓ′) _ _ 𝐶ₛ-case) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-cast _)       (⊢cast _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-cast)       ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-  plug-blame-safe-for-diff-ℓ (F-wrap _ _)     (⊢wrap _ _ (⊢blame _ ℓ≢ℓ′) 𝐶ₛ-wrap)     ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-
+  plug-blame-safe-for-diff-ℓ (F-·₁ _ _)           (⊢·        (⊢blame _ _ ℓ≢ℓ′) _   𝐶ₛ-·)    ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-·₂ _ _ _)         (⊢·    _   (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-·)    ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-if _ _ _ _)       (⊢if       (⊢blame _ _ ℓ≢ℓ′) _ _ 𝐶ₛ-if)   ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-×₁ _ _ _)         (⊢cons _   (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-cons) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-×₂ _ _)           (⊢cons     (⊢blame _ _ ℓ≢ℓ′) _   𝐶ₛ-cons) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ F-fst                (⊢fst      (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-fst)  ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ F-snd                (⊢snd      (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-snd)  ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-inl _)            (⊢inl  _   (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-inl)  ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-inr _)            (⊢inr  _   (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-inr)  ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-case _ _ _ _ _ _) (⊢case _ _ (⊢blame _ _ ℓ≢ℓ′) _ _ 𝐶ₛ-case) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-cast _)           (⊢cast _   (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-cast) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+  plug-blame-safe-for-diff-ℓ (F-wrap _ _)         (⊢wrap _ _ (⊢blame _ _ ℓ≢ℓ′)     𝐶ₛ-wrap) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 
   preserve-SafeFor : ∀ {M M′ : Term} {ℓ}
     → M SafeFor ℓ
@@ -55,22 +56,22 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
       --------------------
     → M′ SafeFor ℓ
 
-  preserve-SafeFor-plug : ∀ {M M′ : Term} {ℓ}
-    → (F : Frame)
+  preserve-SafeFor-plug : ∀ {A B} {M M′ : Term} {ℓ}
+    → (F : Frame A B)
     → (plug M F) SafeFor ℓ
     → M —→ M′
       -----------------------------
     → (plug M′ F) SafeFor ℓ
 
-  preserve-SafeFor-plug (F-·₁ _) (⊢· safeforₗ safeforₘ 𝐶ₛ-·) R =
+  preserve-SafeFor-plug (F-·₁ _ _) (⊢· safeforₗ safeforₘ 𝐶ₛ-·) R =
     ⊢· (preserve-SafeFor safeforₗ R) safeforₘ 𝐶ₛ-·
-  preserve-SafeFor-plug (F-·₂ _ _) (⊢· safeforₗ safeforₘ 𝐶ₛ-·) R =
+  preserve-SafeFor-plug (F-·₂ _ _ _) (⊢· safeforₗ safeforₘ 𝐶ₛ-·) R =
     ⊢· safeforₗ (preserve-SafeFor safeforₘ R) 𝐶ₛ-·
-  preserve-SafeFor-plug (F-if _ _) (⊢if safeforₗ safeforₘ safeforₙ 𝐶ₛ-if) R =
+  preserve-SafeFor-plug (F-if _ _ _ _) (⊢if safeforₗ safeforₘ safeforₙ 𝐶ₛ-if) R =
     ⊢if (preserve-SafeFor safeforₗ R) safeforₘ safeforₙ 𝐶ₛ-if
-  preserve-SafeFor-plug (F-×₁ _ _) (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) R =
+  preserve-SafeFor-plug (F-×₁ _ _ _) (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) R =
     ⊢cons safeforₘ (preserve-SafeFor safeforₙ R) 𝐶ₛ-cons
-  preserve-SafeFor-plug (F-×₂ _) (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) R =
+  preserve-SafeFor-plug (F-×₂ _ _) (⊢cons safeforₘ safeforₙ 𝐶ₛ-cons) R =
     ⊢cons (preserve-SafeFor safeforₘ R) safeforₙ 𝐶ₛ-cons
   preserve-SafeFor-plug F-fst (⊢fst safeforₘ 𝐶ₛ-fst) R =
     ⊢fst (preserve-SafeFor safeforₘ R) 𝐶ₛ-fst
@@ -80,17 +81,17 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
     ⊢inl B (preserve-SafeFor safeforₘ R) 𝐶ₛ-inl
   preserve-SafeFor-plug (F-inr A) (⊢inr .A safeforₘ 𝐶ₛ-inr) R =
     ⊢inr A (preserve-SafeFor safeforₘ R) 𝐶ₛ-inr
-  preserve-SafeFor-plug (F-case A B _ _) (⊢case .A .B safeforₗ safeforₘ safeforₙ 𝐶ₛ-case) R =
+  preserve-SafeFor-plug (F-case A B _ _ _ _) (⊢case .A .B safeforₗ safeforₘ safeforₙ 𝐶ₛ-case) R =
     ⊢case A B (preserve-SafeFor safeforₗ R) safeforₘ safeforₙ 𝐶ₛ-case
   preserve-SafeFor-plug (F-cast c) (⊢cast .c safeforₘ ⟨ safe , refl ⟩) R =
     ⊢cast c (preserve-SafeFor safeforₘ R) ⟨ safe , refl ⟩
   preserve-SafeFor-plug (F-wrap c i) (⊢wrap .c .i safeforₘ ⟨ safe , refl ⟩) R =
     ⊢wrap c i (preserve-SafeFor safeforₘ R) ⟨ safe , refl ⟩
 
-  preserve-SafeFor safefor (ξ {F = F} rd) =
+  preserve-SafeFor safefor (ξ {F = F} _ rd) =
     preserve-SafeFor-plug F safefor rd
   preserve-SafeFor safefor (ξ-blame {F = F}) =
-    ⊢blame _ (plug-blame-safe-for-diff-ℓ F safefor)
+    ⊢blame _ _ (plug-blame-safe-for-diff-ℓ F safefor)
   preserve-SafeFor (⊢· (⊢ƛ _ safeforₙ 𝐶⊢-ƛ) safeforₘ 𝐶ₛ-·) (β v) =
     substitution-SafeFor _ _ safeforₙ safeforₘ
   preserve-SafeFor _ δ = ⊢$ _ _ 𝐶ₛ-$
@@ -121,30 +122,24 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
       𝐶ₛ-case
 
   {- If M SafeFor ℓ then M ⌿↠ blame ℓ . -}
-  soundness-<: : ∀ {M : Term} {ℓ}
+  soundness-<: : ∀ {A} {M : Term} {ℓ}
     → M SafeFor ℓ
       --------------------
-    → ¬ (M —↠ blame ℓ)
+    → ¬ (M —↠ blame A ℓ)
   -- By induction on M —↠ blame ℓ .
-  soundness-<: safefor-plug ( .(plug _ _) —→⟨ ξ M→M′ ⟩ plugM′F↠blame ) =
-    -- In this case we need to prove that single step reduction preserves `CastsRespect<:` .
-    soundness-<: (preserve-SafeFor safefor-plug (ξ M→M′)) plugM′F↠blame
-  -- There is no way to plug a `blame ℓ` in a frame and produce a term safe for ℓ
-  soundness-<: safefor ( .(plug (blame _) _) —→⟨ ξ-blame {F = F} ⟩ blame↠blame ) =
-    plug-blame-safe-for-diff-ℓ F safefor (≡→≡̂ (sym ℓ≡))
-    where
-    blame↠blame→ℓ≡ : ∀ {ℓ₁ ℓ₂}
-      → (R* : blame ℓ₁ —↠ blame ℓ₂)
-        ----------------------------------------------
-      → ℓ₁ ≡ ℓ₂
-    blame↠blame→ℓ≡ (_ ∎) = refl
-    blame↠blame→ℓ≡ (_ —→⟨ R ⟩ R*) = contradiction R (blame⌿→ refl)
-    ℓ≡ = blame↠blame→ℓ≡ blame↠blame
-  -- Application (β).
+  soundness-<: safefor-plug ( _ —→⟨ ξ ⊢M M→M′ ⟩ plugM′F↠blame ) =
+    soundness-<: (preserve-SafeFor safefor-plug (ξ ⊢M M→M′)) plugM′F↠blame
+  soundness-<: safefor ( _ —→⟨ ξ-blame {F = F} ⟩ blame↠blame ) =
+    case blame↠blame of λ where
+      (_ ∎) →
+        contradiction (≡→≡̂ refl) (plug-blame-safe-for-diff-ℓ F safefor)
+      (_ —→⟨ blame→ ⟩ _) →
+        contradiction blame→ (blame⌿→ refl)
+  -- Application (β)
   soundness-<: (⊢· (⊢ƛ _ safeforₙ 𝐶ₛ-ƛ) safeforₘ 𝐶ₛ-·)
                ( (ƛ _ ˙ N) · M —→⟨ β vₘ ⟩ N[M]↠blame ) =
     soundness-<: (substitution-SafeFor _ _ safeforₙ safeforₘ) N[M]↠blame
-  -- δ.
+  -- δ
   soundness-<: (⊢· _ _ 𝐶ₛ-·)
                ( ($ f # _) · ($ k # _) —→⟨ δ ⟩ f·k↠blame ) =
     soundness-<: (⊢$ (f k) _ 𝐶ₛ-$) f·k↠blame
@@ -202,7 +197,6 @@ module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
                    (substitution-SafeFor _ _
                      (rename-pres-SafeFor _ safeforₙ λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩ )
                      (⊢cast _ (⊢` refl) ⟨ inrBlameSafe safe x , refl ⟩))
-                   𝐶ₛ-case)
-                 ↠blame
+                   𝐶ₛ-case) ↠blame
   -- Blame
-  soundness-<: (⊢blame _ ℓ≢) (blame ℓ ∎) = ℓ≢ ≡̂-refl
+  soundness-<: (⊢blame _ _ ℓ≢) (blame _ ℓ ∎) = ℓ≢ ≡̂-refl

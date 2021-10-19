@@ -118,7 +118,7 @@ module ParamCastSubtypingABT (pcss : PreCastStructWithBlameSafety) where
   --     → ℓ ≢̂ ℓ′
   --       ------------------------------------
   --     → CastsAllSafe (blame ℓ′) ℓ
-  𝑃ₛ (op-blame ℓ′) []ᵥ tt ℓ = ℓ ≢̂ ℓ′
+  𝑃ₛ (op-blame A ℓ′) []ᵥ tt ℓ = ℓ ≢̂ ℓ′
 
   pattern 𝐶ₛ-cast = ⟨ _ , refl ⟩
   pattern 𝐶ₛ-wrap = ⟨ _ , refl ⟩
