@@ -5,12 +5,12 @@ open import Relation.Binary.PropositionalEquality
 open import Data.Product
   using (_×_; proj₁; proj₂; ∃; ∃-syntax)
   renaming (_,_ to ⟨_,_⟩)
+open import Function using (case_of_; case_return_of_)
 
 open import Types
 open import Labels
 open import PreCastStructure
 
-open import Utils
 open import Syntax
 
 

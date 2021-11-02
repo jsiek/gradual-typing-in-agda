@@ -10,8 +10,9 @@ open import Relation.Nullary.Negation using (contradiction)
 open import Relation.Binary.PropositionalEquality
   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   renaming (subst to subst-eq)
+open import Function using (case_of_; case_return_of_)
 
-open import Utils
+
 open import Types
 open import Labels
 open import PreCastStructure

@@ -7,18 +7,17 @@ open import Relation.Nullary.Negation using (contradiction)
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; _≢_; refl; trans; sym; cong; subst)
 open Eq.≡-Reasoning renaming (_∎ to _qed)
-
 open import Data.Product
   using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Function using (case_of_; case_return_of_)
 
 open import Types
 open import Labels
 open import CastStructureWithPrecisionABT
 
-open import Utils
 open import Syntax
 
 

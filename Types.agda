@@ -16,7 +16,7 @@ module Types where
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   open import Relation.Nullary using (¬_; Dec; yes; no)
   open import Relation.Nullary.Negation using (contradiction)
-  open import Utils using (case_of_; case_return_of_)
+  open import Function using (case_of_; case_return_of_)
 
   infix  7 _⇒_
   infix  9 _`×_

@@ -11,12 +11,11 @@ open import Data.Product
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Function using (case_of_; case_return_of_)
 
 open import Types
 open import Labels
 open import CastStructureWithPrecisionABT
-
-open import Utils
 
 
 module ParamGradualGuaranteeABT (csp : CastStructWithPrecision) where

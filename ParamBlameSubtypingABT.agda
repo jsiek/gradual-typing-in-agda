@@ -9,13 +9,12 @@ open import Data.Product
   using (_×_; proj₁; proj₂; Σ; Σ-syntax; ∃; ∃-syntax)
   renaming (_,_ to ⟨_,_⟩)
 open import Data.Empty using (⊥; ⊥-elim)
+open import Function using (case_of_; case_return_of_)
 
 open import Types
 open import Labels
 open import CastStructureABT
 open import CastStructureWithBlameSafetyABT
-
-open import Utils
 
 
 module ParamBlameSubtypingABT (css : CastStructWithBlameSafety) where
