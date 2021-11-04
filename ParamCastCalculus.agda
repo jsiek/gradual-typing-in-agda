@@ -107,6 +107,9 @@ data _⊢_ : Context → Type → Set where
   {- I would prefer that the cast be an explicit
      parameter and that Inert c be an implicit,
      "irrelevant" parameter, as in .{ i : Inert c}. -Jeremy -}
+  {- I leave this as-is since we're switching to extrinsically typed
+     terms for CC and this trouble goes away by separating terms and
+     their typing judgments. - Tianyu -}
   _⟪_⟫ : ∀ {Γ A B} {c : Cast (A ⇒ B)}
     → Γ ⊢ A
     → Inert c

@@ -16,7 +16,7 @@ open import Relation.Binary.PropositionalEquality
   using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
   renaming (subst to subst-eq)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Utils using (case_of_)
+open import Function using (case_of_)
 
 
 {-
