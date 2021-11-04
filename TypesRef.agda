@@ -22,6 +22,7 @@ module Types where
   infix  9 _`×_
   infix  8 _`⊎_
   infix 10 `_
+  infix 10 Ref_
 
 {-
   data Base : Set where
@@ -38,6 +39,7 @@ module Types where
     _⇒_ : Type → Type → Type
     _`×_ : Type → Type → Type
     _`⊎_ : Type → Type → Type
+    Ref_ : Type → Type
 
 
   height-t : Type → ℕ
@@ -46,6 +48,7 @@ module Types where
   height-t (A ⇒ B) = suc (height-t A ∨ height-t B)
   height-t (A `× B) = suc (height-t A ∨ height-t B)
   height-t (A `⊎ B) = suc (height-t A ∨ height-t B)
+  height-t (Ref A)  = suc (height-t A)
 
   size-t : Type → ℕ
   size-t ⋆ = 0
@@ -53,6 +56,7 @@ module Types where
   size-t (A ⇒ B) = 1 + size-t A + size-t B
   size-t (A `× B) = 1 + size-t A + size-t B
   size-t (A `⊎ B) = 1 + size-t A + size-t B
+  size-t (Ref A)  = 1 + size-t A
 
   data Atomic : Type → Set where
     A-Unk : Atomic ⋆
@@ -76,6 +80,9 @@ module Types where
   base? (A `⊎ B) =  no G
     where G : ¬ (∃[ ι ] A `⊎ B ≡ ` ι)
           G ()
+  base? (Ref A) = no G
+    where G : ¬ (∃[ ι ] Ref A ≡ ` ι)
+          G ()
 
   rep-base : Base → Set
   rep-base = base-rep
@@ -93,6 +100,7 @@ module Types where
   rep (A ⇒ B) = (rep A) → (rep B)
   rep (A `× B) = Bot
   rep (A `⊎ B) = Bot
+  rep (Ref A)  = Bot
 
   data Prim : Type → Set where
     P-Base : ∀{ι} → Prim (` ι)
@@ -136,10 +144,12 @@ module Types where
           (A₁ ⇒ A₂) → no λ ()
           (A₁ `× A₂) → no λ ()
           (A₁ `⊎ A₂) → no λ ()
+          (Ref A) → no λ ()
       (no ¬pb) → no λ pab → contradiction (P-Fun2 pab) ¬pb
   prim? ⋆ = no (λ ())
   prim? (A `× A₁) = no λ ()
   prim? (A `⊎ A₁) = no λ ()
+  prim? (Ref A) = no λ ()
 
   ¬P-Fun : ∀{A B C} → ¬ Prim ((A ⇒ B) ⇒ C)
   ¬P-Fun ()
@@ -175,12 +185,18 @@ module Types where
         ---------------
       → A `⊎ B ⊑ A' `⊎ B'
 
+    ref⊑ : ∀ {A A'}
+      → A ⊑ A'
+        ---------------
+      → Ref A ⊑ Ref A'
+
   Refl⊑ : ∀{A} → A ⊑ A
   Refl⊑ {⋆} = unk⊑
   Refl⊑ {` ι} = base⊑
   Refl⊑ {A ⇒ A₁} = fun⊑ Refl⊑ Refl⊑
   Refl⊑ {A `× A₁} = pair⊑ Refl⊑ Refl⊑
   Refl⊑ {A `⊎ A₁} = sum⊑ Refl⊑ Refl⊑
+  Refl⊑ {Ref A} = ref⊑ Refl⊑
 
   Trans⊑ : ∀ {A B C} → A ⊑ B → B ⊑ C → A ⊑ C
   Trans⊑ unk⊑ b = unk⊑
@@ -188,6 +204,7 @@ module Types where
   Trans⊑ (fun⊑ a a₁) (fun⊑ b b₁) = fun⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (pair⊑ a a₁) (pair⊑ b b₁) = pair⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
   Trans⊑ (sum⊑ a a₁) (sum⊑ b b₁) = sum⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
+  Trans⊑ (ref⊑ a) (ref⊑ b) = ref⊑ (Trans⊑ a b)
 
   AntiSym⊑ : ∀ {A B} → A ⊑ B → B ⊑ A → A ≡ B
   AntiSym⊑ unk⊑ unk⊑ = refl
@@ -198,6 +215,7 @@ module Types where
     cong₂ (_`×_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
   AntiSym⊑ (sum⊑ a a₁) (sum⊑ b b₁) =
     cong₂ (_`⊎_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
+  AntiSym⊑ (ref⊑ a) (ref⊑ b) = cong Ref_ (AntiSym⊑ a b)
 
   ⊑L⋆ : ∀{A} → A ⊑ ⋆ → A ≡ ⋆
   ⊑L⋆ {⋆} unk⊑ = refl
@@ -269,6 +287,11 @@ module Types where
         -------------------
       → (A `⊎ B) ~ (A' `⊎ B')
 
+    ref~ : ∀ {A A'}
+      → A ~ A'
+        ---------------
+      → Ref A ~ Ref A'
+
 
   Sym~ : ∀ {A B} → A ~ B → B ~ A
   Sym~ unk~L = unk~R
@@ -277,6 +300,7 @@ module Types where
   Sym~ (fun~ c c₁) = fun~ (Sym~ c) (Sym~ c₁)
   Sym~ (pair~ c c₁) = pair~ (Sym~ c) (Sym~ c₁)
   Sym~ (sum~ c c₁) = sum~ (Sym~ c) (Sym~ c₁)
+  Sym~ (ref~ c) = ref~ (Sym~ c)
 
   consis : ∀{C A B}
       → A ⊑ C → B ⊑ C
@@ -291,6 +315,8 @@ module Types where
   consis (pair⊑ ac ac₁) (pair⊑ bc bc₁) = pair~ (consis ac bc) (consis ac₁ bc₁)
   consis (sum⊑ ac ac₁) unk⊑ = unk~R
   consis (sum⊑ ac ac₁) (sum⊑ bc bc₁) = sum~ (consis ac bc) (consis ac₁ bc₁)
+  consis (ref⊑ ac) unk⊑ = unk~R
+  consis (ref⊑ ac) (ref⊑ bc) = ref~ (consis ac bc)
 
   Refl~ : ∀ {A} → A ~ A
   Refl~ {A} = consis Refl⊑ Refl⊑
@@ -311,6 +337,9 @@ module Types where
       with consis-ub ab₁ | consis-ub ab₂
   ... | ⟨ C₁ , ⟨ ac1 , bc1 ⟩ ⟩ | ⟨ C₂ , ⟨ ac2 , bc2 ⟩ ⟩ =
         ⟨ C₁ `⊎ C₂ , ⟨ (sum⊑ ac1 ac2) , sum⊑ bc1 bc2 ⟩ ⟩
+  consis-ub (ref~ ab) =
+    case consis-ub ab of λ where
+      ⟨ C , ⟨ ac , bc ⟩ ⟩ → ⟨ Ref C , ⟨ ref⊑ ac , ref⊑ bc ⟩ ⟩
 
   ub : (C : Type) → (A : Type) → (B : Type) → Set
   ub C A B = (A ⊑ C) × (B ⊑ C)
@@ -358,6 +387,12 @@ module Types where
         Σ (A `⊎ B ⊑ C') (λ x₁ → A' `⊎ B' ⊑ C') → C `⊎ D ⊑ C'
     G {.(_ `⊎ _)} ⟨ sum⊑ fst fst₁ , sum⊑ snd snd₁ ⟩ =
       sum⊑ (proj₂ lub1 ⟨ fst , snd ⟩) (proj₂ lub2 ⟨ fst₁ , snd₁ ⟩)
+  (Ref A `⊔ Ref A') {ref~ c} =
+    case (A `⊔ A') {c} of λ where
+      ⟨ C , ⟨ ⟨ ac , a'c ⟩ , f ⟩ ⟩ →
+        ⟨ Ref C , ⟨ ⟨ ref⊑ ac , ref⊑ a'c ⟩ ,
+                    (λ { ⟨ ref⊑ aa'' , ref⊑ a'a'' ⟩ →
+                         ref⊑ (f ⟨ aa'' , a'a'' ⟩) }) ⟩ ⟩
 
   _⊔_ : (A : Type) → (B : Type) → ∀ { c : A ~ B } → Type
   (A ⊔ B) {c} = proj₁ ((A `⊔ B) {c})
@@ -496,6 +531,12 @@ module Types where
     →  ¬ ((A `⊎ A') ~ (B `⊎ B'))
   ¬~sR {A} {B} {A'} {B'} d1 (sum~ c c₁) = d1 c₁
 
+  ¬~r : ∀ {A B}
+    → ¬ (A ~ B)
+      -------------------
+    → ¬ (Ref A ~ Ref B)
+  ¬~r d (ref~ c) = d c
+
   ⊑Base→~Base : ∀{A ι} → A ⊑ ` ι → A ~ ` ι
   ⊑Base→~Base unk⊑ = unk~L
   ⊑Base→~Base base⊑ = base~
@@ -511,6 +552,7 @@ module Types where
   (` ι) `~ (B ⇒ B₁) = no (λ ())
   (` ι) `~ (B `× B₁) = no (λ ())
   (` ι) `~ (B `⊎ B₁) = no (λ ())
+  (` ι) `~ (Ref B) = no (λ ())
   (A ⇒ A₁) `~ ⋆ = yes unk~R
   (A ⇒ A₁) `~ (B ⇒ B₁)
       with A `~ B | A₁ `~ B₁
@@ -520,6 +562,7 @@ module Types where
   (A ⇒ A₁) `~ (` ι) = no (λ ())
   (A ⇒ A₁) `~ (B `× B₁) = no (λ ())
   (A ⇒ A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `~ (Ref B) = no (λ ())
   (A `× A₁) `~ ⋆ = yes unk~R
   (A `× A₁) `~ (B `× B₁)
       with A `~ B | A₁ `~ B₁
@@ -529,6 +572,7 @@ module Types where
   (A `× A₁) `~ (` ι) = no (λ ())
   (A `× A₁) `~ (B ⇒ B₁) = no (λ ())
   (A `× A₁) `~ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `~ (Ref B) = no (λ ())
   (A `⊎ A₁) `~ ⋆ = yes unk~R
   (A `⊎ A₁) `~ (B `⊎ B₁)
       with A `~ B | A₁ `~ B₁
@@ -538,6 +582,18 @@ module Types where
   (A `⊎ A₁) `~ (` ι) = no (λ ())
   (A `⊎ A₁) `~ (B ⇒ B₁) = no (λ ())
   (A `⊎ A₁) `~ (B `× B₁) = no (λ ())
+  (A `⊎ A₁) `~ (Ref B) = no (λ ())
+  (Ref A) `~ ⋆ = yes unk~R
+  (Ref A) `~ (Ref B)
+    with A `~ B
+  ... | yes ab = yes (ref~ ab)
+  ... | no nab = no (¬~r nab)
+  (Ref A) `~ (` ι) = no (λ ())
+  (Ref A) `~ (B ⇒ B₁) = no (λ ())
+  (Ref A) `~ (B `× B₁) = no (λ ())
+  (Ref A) `~ (B `⊎ B₁) = no (λ ())
+
+
 
   ~-relevant : ∀{A B} → .(A ~ B) → A ~ B
   ~-relevant {A}{B} A~B
@@ -551,6 +607,7 @@ module Types where
   eq-unk (A ⇒ A₁) = no (λ ())
   eq-unk (A `× A₁) = no (λ ())
   eq-unk (A `⊎ A₁) = no (λ ())
+  eq-unk (Ref A) = no λ ()
 
   eq-unk-relevant : ∀{A} → .(A ≢ ⋆) → (A ≢ ⋆)
   eq-unk-relevant {A} A≢⋆
@@ -619,6 +676,10 @@ module Types where
         -------------------
       → (A `⊎ B) ⌣ (A' `⊎ B')
 
+    ref⌣ : ∀ {A A'}
+         -------------------
+      → (Ref A) ⌣ (Ref A')
+
 
   _`⌣_ : (A : Type) → (B : Type) → Dec (A ⌣ B)
   ⋆ `⌣ B = yes unk⌣L
@@ -632,33 +693,45 @@ module Types where
   (` ι) `⌣ (B ⇒ B₁) = no (λ ())
   (` ι) `⌣ (B `× B₁) = no (λ ())
   (` ι) `⌣ (B `⊎ B₁) = no (λ ())
+  (` ι) `⌣ (Ref B) = no λ ()
   (A ⇒ A₁) `⌣ ⋆ = yes unk⌣R
   (A ⇒ A₁) `⌣ (` x) = no (λ ())
   (A ⇒ A₁) `⌣ (B ⇒ B₁) = yes fun⌣
   (A ⇒ A₁) `⌣ (B `× B₁) = no (λ ())
   (A ⇒ A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A ⇒ A₁) `⌣ (Ref B) = no λ ()
   (A `× A₁) `⌣ ⋆ = yes unk⌣R
   (A `× A₁) `⌣ (` x) = no (λ ())
   (A `× A₁) `⌣ (B ⇒ B₁) = no (λ ())
   (A `× A₁) `⌣ (B `× B₁) = yes pair⌣
   (A `× A₁) `⌣ (B `⊎ B₁) = no (λ ())
+  (A `× A₁) `⌣ (Ref B) = no λ ()
   (A `⊎ A₁) `⌣ ⋆ = yes unk⌣R
   (A `⊎ A₁) `⌣ (` x) = no (λ ())
   (A `⊎ A₁) `⌣ (B ⇒ B₁) = no (λ ())
   (A `⊎ A₁) `⌣ (B `× B₁) = no (λ ())
   (A `⊎ A₁) `⌣ (B `⊎ B₁) = yes sum⌣
+  (A `⊎ A₁) `⌣ (Ref B) = no λ ()
+  (Ref A) `⌣ ⋆ = yes unk⌣R
+  (Ref A) `⌣ (` x) = no λ ()
+  (Ref A) `⌣ (B ⇒ B₁) = no λ ()
+  (Ref A) `⌣ (B `× B₁) = no λ ()
+  (Ref A) `⌣ (B `⊎ B₁) = no λ ()
+  (Ref A) `⌣ (Ref B) = yes ref⌣
 
   data Ground : Type → Set where
     G-Base : ∀{ι} → Ground (` ι)
     G-Fun : Ground (⋆ ⇒ ⋆)
     G-Pair : Ground (⋆ `× ⋆)
     G-Sum : Ground (⋆ `⊎ ⋆)
+    G-Ref : Ground (Ref ⋆)
 
   GroundNotRel : ∀ {A} → (g1 g2 : Ground A) → g1 ≡ g2
   GroundNotRel {.(` _)} G-Base G-Base = refl
   GroundNotRel {.(⋆ ⇒ ⋆)} G-Fun G-Fun = refl
   GroundNotRel {.(⋆ `× ⋆)} G-Pair G-Pair = refl
   GroundNotRel {.(⋆ `⊎ ⋆)} G-Sum G-Sum = refl
+  GroundNotRel {.(Ref ⋆)} G-Ref G-Ref = refl
 
   not-ground⋆ : ¬ Ground ⋆
   not-ground⋆ ()
@@ -687,6 +760,7 @@ module Types where
   ground (A ⇒ A₁) {nd} = ⟨ ⋆ ⇒ ⋆ , ⟨ G-Fun , fun~ unk~L unk~R ⟩ ⟩
   ground (A `× A₁) {nd} = ⟨ ⋆ `× ⋆ , ⟨ G-Pair , pair~ unk~R unk~R ⟩ ⟩
   ground (A `⊎ A₁) {nd} = ⟨ ⋆ `⊎ ⋆ , ⟨ G-Sum , sum~ unk~R unk~R ⟩ ⟩
+  ground (Ref A) {nd} = ⟨ Ref ⋆ , ⟨ G-Ref , ref~ unk~R ⟩ ⟩
 
   ground? : (A : Type) → Dec (Ground A)
   ground? ⋆ = no λ x → contradiction x not-ground⋆
@@ -703,6 +777,9 @@ module Types where
   ... | yes eq1 | yes eq2 rewrite eq1 | eq2 = yes G-Fun
   ... | yes eq1 | no eq2 rewrite eq1 = no λ x → ground⇒2 x eq2
   ... | no eq1 | _ = no λ x → ground⇒1 x eq1
+  ground? (Ref A) with eq-unk A
+  ... | yes eq rewrite eq = yes G-Ref
+  ... | no neq = no λ { G-Ref → contradiction refl neq }
 
   gnd-eq? : (A : Type) → (B : Type) → {a : Ground A} → {b : Ground B}
           → Dec (A ≡ B)
@@ -715,18 +792,27 @@ module Types where
   gnd-eq? (` ι) .(⋆ ⇒ ⋆) {G-Base} {G-Fun} = no λ ()
   gnd-eq? (` ι) .(⋆ `× ⋆) {G-Base} {G-Pair} = no (λ ())
   gnd-eq? (` ι) .(⋆ `⊎ ⋆) {G-Base} {G-Sum} = no (λ ())
+  gnd-eq? (` ι) .(Ref ⋆) {G-Base} {G-Ref} = no λ ()
   gnd-eq? .(⋆ ⇒ ⋆) (` ι) {G-Fun} {G-Base} = no λ ()
   gnd-eq? .(⋆ ⇒ ⋆) .(⋆ ⇒ ⋆) {G-Fun} {G-Fun} = yes refl
   gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `× ⋆) {G-Fun} {G-Pair} = no (λ ())
   gnd-eq? .(⋆ ⇒ ⋆) .(⋆ `⊎ ⋆) {G-Fun} {G-Sum} = no (λ ())
+  gnd-eq? .(⋆ ⇒ ⋆) .(Ref ⋆) {G-Fun} {G-Ref} = no λ ()
   gnd-eq? .(⋆ `× ⋆) (` ι) {G-Pair} {G-Base} = no (λ ())
   gnd-eq? .(⋆ `× ⋆) .(⋆ ⇒ ⋆) {G-Pair} {G-Fun} = no (λ ())
   gnd-eq? .(⋆ `× ⋆) .(⋆ `× ⋆) {G-Pair} {G-Pair} = yes refl
   gnd-eq? .(⋆ `× ⋆) .(⋆ `⊎ ⋆) {G-Pair} {G-Sum} = no (λ ())
+  gnd-eq? .(⋆ `× ⋆) .(Ref ⋆) {G-Pair} {G-Ref} = no λ ()
   gnd-eq? .(⋆ `⊎ ⋆) (` ι) {G-Sum} {G-Base} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ ⇒ ⋆) {G-Sum} {G-Fun} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `× ⋆) {G-Sum} {G-Pair} = no (λ ())
   gnd-eq? .(⋆ `⊎ ⋆) .(⋆ `⊎ ⋆) {G-Sum} {G-Sum} = yes refl
+  gnd-eq? .(⋆ `⊎ ⋆) .(Ref ⋆) {G-Sum} {G-Ref} = no λ ()
+  gnd-eq? .(Ref ⋆) .(Ref ⋆) {G-Ref} {G-Ref} = yes refl
+  gnd-eq? .(Ref ⋆) (` ι) {G-Ref} {G-Base} = no λ ()
+  gnd-eq? .(Ref ⋆) .(⋆ ⇒ ⋆) {G-Ref} {G-Fun} = no λ ()
+  gnd-eq? .(Ref ⋆) .(⋆ `× ⋆) {G-Ref} {G-Pair} = no λ ()
+  gnd-eq? .(Ref ⋆) .(⋆ `⊎ ⋆) {G-Ref} {G-Sum} = no λ ()
 
   consis-ground-eq : ∀{A B : Type} → (c : A ⌣ B) →
       (gA : Ground A) → (gB : Ground B)
@@ -735,6 +821,7 @@ module Types where
   consis-ground-eq {(⋆ ⇒ ⋆)} {(_ ⇒ _)} fun⌣ G-Fun G-Fun = refl
   consis-ground-eq {(_ `× _)} {(_ `× _)} pair⌣ G-Pair G-Pair = refl
   consis-ground-eq {(_ `⊎ _)} {(_ `⊎ _)} sum⌣ G-Sum G-Sum = refl
+  consis-ground-eq {Ref _} {Ref _} ref⌣ G-Ref G-Ref = refl
 
   ¬⌣if : ∀{ι A B} → ¬ (` ι ⌣ (A ⇒ B))
   ¬⌣if ()
@@ -764,6 +851,7 @@ module Types where
   ⨆ {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~ c d) = (⨆ c) ⇒ (⨆ d)
   ⨆ {.(_ `× _)} {.(_ `× _)} (pair~ c d) = (⨆ c) `× (⨆ d)
   ⨆ {.(_ `⊎ _)} {.(_ `⊎ _)} (sum~ c d) = (⨆ c) `⊎ (⨆ d)
+  ⨆ {.(Ref _)} {.(Ref _)} (ref~ c) = Ref (⨆ c)
 
 
   ⨆~ : ∀ {A B} → (ab : A ~ B) → B ~ ⨆ ab
@@ -775,6 +863,7 @@ module Types where
   ~⨆ (fun~ aa bb) = fun~ (Sym~ (⨆~ aa)) (~⨆ bb)
   ~⨆ (pair~ aa bb) = pair~ (~⨆ aa) (~⨆ bb)
   ~⨆ (sum~ aa bb) = sum~ (~⨆ aa) (~⨆ bb)
+  ~⨆ (ref~ aa) = ref~ (~⨆ aa)
 
   ⨆~ unk~L = Refl~
   ⨆~ unk~R = unk~L
@@ -782,6 +871,7 @@ module Types where
   ⨆~ (fun~ aa bb) = fun~ (Sym~ (~⨆ aa)) (⨆~ bb)
   ⨆~ (pair~ aa bb) = pair~ (⨆~ aa) (⨆~ bb)
   ⨆~ (sum~ aa bb) = sum~ (⨆~ aa) (⨆~ bb)
+  ⨆~ (ref~ aa) = ref~ (⨆~ aa)
 
   {- Type matching -}
   data _▹_⇒_ : Type → Type → Type → Set where
@@ -795,6 +885,10 @@ module Types where
   data _▹_⊎_ : Type → Type → Type → Set where
     match⊎⊎ : ∀ {A B} → (A `⊎ B) ▹ A ⊎ B
     match⊎⋆ : ⋆ ▹ ⋆ ⊎ ⋆
+
+  data _▹Ref_ : Type → Type → Set where
+    matchRefRef : ∀ {A} → (Ref A) ▹Ref A
+    matchRef⋆ : ⋆ ▹Ref ⋆
 
   ▹⇒⊑ : ∀{C A B} → C ▹ A ⇒ B → C ⊑ A ⇒ B
   ▹⇒⊑ match⇒⇒ = fun⊑ Refl⊑ Refl⊑
@@ -857,6 +951,7 @@ module Types where
   ⨆-pres-prec unk~L (fun~ _ _) unk⊑ unk⊑ = unk⊑
   ⨆-pres-prec unk~L (pair~ _ _) unk⊑ unk⊑ = unk⊑
   ⨆-pres-prec unk~L (sum~ _ _) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~L (ref~ bb) unk⊑ unk⊑ = unk⊑
   ⨆-pres-prec unk~R unk~L unk⊑ unk⊑ = unk⊑
   ⨆-pres-prec unk~R unk~R unk⊑ unk⊑ = unk⊑
   ⨆-pres-prec unk~R base~ unk⊑ unk⊑ = unk⊑
@@ -892,6 +987,12 @@ module Types where
     sum⊑ (⨆-pres-prec unk~R bb₁ lp₁ unk⊑) (⨆-pres-prec unk~R bb₂ lp₂ unk⊑)
   ⨆-pres-prec (sum~ aa₁ aa₂) (sum~ bb₁ bb₂) (sum⊑ lpa₁ lpa₂) (sum⊑ lpb₁ lpb₂) =
     sum⊑ (⨆-pres-prec aa₁ bb₁ lpa₁ lpb₁) (⨆-pres-prec aa₂ bb₂ lpa₂ lpb₂)
+  ⨆-pres-prec unk~L unk~L unk⊑ (ref⊑ lp) = ref⊑ lp
+  ⨆-pres-prec unk~R unk~R (ref⊑ lp) unk⊑ = ref⊑ lp
+  ⨆-pres-prec unk~R (ref~ bb) unk⊑ unk⊑ = unk⊑
+  ⨆-pres-prec unk~R (ref~ bb) (ref⊑ lp) unk⊑ = ref⊑ (⨆-pres-prec unk~R bb lp unk⊑)
+  ⨆-pres-prec unk~L (ref~ bb) unk⊑ (ref⊑ lp) = ref⊑ (⨆-pres-prec unk~L bb unk⊑ lp)
+  ⨆-pres-prec (ref~ aa) (ref~ bb) (ref⊑ lpa) (ref⊑ lpb) = ref⊑ (⨆-pres-prec aa bb lpa lpb)
 
   -- If two types are consistent then their less precise counterparts are consistent too.
   lp-consis : ∀ {A A′ B B′}
@@ -917,6 +1018,9 @@ module Types where
   lp-consis (sum~ c~₁ c~₂) unk⊑ lpB = unk~L
   lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) unk⊑ = unk~R
   lp-consis (sum~ c~₁ c~₂) (sum⊑ lpA₁ lpA₂) (sum⊑ lpB₁ lpB₂) = sum~ (lp-consis c~₁ lpA₁ lpB₁) (lp-consis c~₂ lpA₂ lpB₂)
+  lp-consis (ref~ c~) unk⊑ lp = unk~L
+  lp-consis c~ (ref⊑ lpA) unk⊑ = unk~R
+  lp-consis (ref~ c~) (ref⊑ lpA) (ref⊑ lpB) = ref~ (lp-consis c~ lpA lpB)
 
   lp-¬⋆ : ∀ {T T′}
     → T ≢ ⋆ → T ⊑ T′
@@ -952,6 +1056,7 @@ module Types where
   lp-consis-ground-eq G-Fun G-Fun (fun~ c c₁) lp1 lp2 = refl
   lp-consis-ground-eq G-Pair G-Pair (pair~ c c₁) lp1 lp2 = refl
   lp-consis-ground-eq G-Sum G-Sum (sum~ c c₁) lp1 lp2 = refl
+  lp-consis-ground-eq G-Ref G-Ref c~ lp1 lp2 = refl
 
   {- Suppose B ≢ ⋆ (otherwise G₁ and G₂ may not be consistent), we have:
     A  ~  B  ~  C
@@ -989,6 +1094,8 @@ module Types where
   ⊑G-nd-ground G-Pair (pair⊑ unk⊑ unk⊑) x = G-Pair
   ⊑G-nd-ground G-Sum unk⊑ x = contradiction refl x
   ⊑G-nd-ground G-Sum (sum⊑ unk⊑ unk⊑) x = G-Sum
+  ⊑G-nd-ground G-Ref unk⊑ x = contradiction refl x
+  ⊑G-nd-ground G-Ref (ref⊑ unk⊑) x = G-Ref
 
   nd⋢⋆ : ∀ {A} → A ≢ ⋆ → ¬ A ⊑ ⋆
   nd⋢⋆ nd unk⊑ = contradiction refl nd
@@ -1011,6 +1118,7 @@ module Types where
   ⊑-ground-relax G-Fun (fun⊑ lp1 lp2) (fun~ c1 c2) nd = fun⊑ unk⊑ unk⊑
   ⊑-ground-relax G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
   ⊑-ground-relax G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+  ⊑-ground-relax G-Ref (ref⊑ lp) (ref~ c) nd = ref⊑ unk⊑
 
   ⊑-ground-consis : ∀ {G A B}
     → Ground G
@@ -1025,6 +1133,8 @@ module Types where
   ⊑-ground-consis G-Pair (pair⊑ lp1 lp2) (pair~ c1 c2) nd = pair⊑ unk⊑ unk⊑
   ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) unk~R nd = contradiction refl nd
   ⊑-ground-consis G-Sum (sum⊑ lp1 lp2) (sum~ c1 c2) nd = sum⊑ unk⊑ unk⊑
+  ⊑-ground-consis G-Ref (ref⊑ lp) unk~R nd = contradiction refl nd
+  ⊑-ground-consis G-Ref (ref⊑ lp) (ref~ c) nd = ref⊑ unk⊑
 
   -- Suppose G ≡ ground A and H ≡ ground B
   ⊑-ground-monotone : ∀ {A B G H}
@@ -1039,6 +1149,7 @@ module Types where
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Fun G-Fun _ _ (fun⊑ lp1 lp2) = fun⊑ unk⊑ unk⊑
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Pair G-Pair _ _ (pair⊑ lp1 lp2) = pair⊑ unk⊑ unk⊑
   ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Sum G-Sum _ _ (sum⊑ lp1 lp2) = sum⊑ unk⊑ unk⊑
+  ⊑-ground-monotone a-nd b-nd a-ng b-ng G-Ref G-Ref _ _ (ref⊑ lp) = ref⊑ unk⊑
 
   ground-⊑-eq : ∀ {G H}
     → Ground G → Ground H
@@ -1049,3 +1160,4 @@ module Types where
   ground-⊑-eq G-Fun G-Fun (fun⊑ _ _) = refl
   ground-⊑-eq G-Pair G-Pair (pair⊑ _ _) = refl
   ground-⊑-eq G-Sum G-Sum (sum⊑ _ _) = refl
+  ground-⊑-eq G-Ref G-Ref (ref⊑ _) = refl
