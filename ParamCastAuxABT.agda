@@ -80,13 +80,13 @@ module ParamCastAuxABT (pcs : PreCastStruct) where
   canonical⋆ : ∀ {Γ} {V : Term}
     → (⊢V : Γ ⊢ V ⦂ ⋆) → (Value V)
       --------------------------
-    → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (V ≡ (V′ ⟨ c ₍ i ₎⟩)))
+    → ∃[ A ] ∃[ V′ ] (Σ[ c ∈ Cast (A ⇒ ⋆) ] Σ[ i ∈ Inert c ] (Γ ⊢ V′ ⦂ A) × (V ≡ (V′ ⟨ c ₍ i ₎⟩)))
   canonical⋆ (⊢$ () p refl) V-const
   canonical⋆ (⊢ƛ A ⊢N ()) V-ƛ
   canonical⋆ (⊢cons ⊢M ⊢N ()) (V-pair v w)
   canonical⋆ (⊢inl B ⊢M ()) (V-inl v)
   canonical⋆ (⊢inr A ⊢M ()) (V-inr v)
-  canonical⋆ (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , refl ⟩ ⟩ ⟩ ⟩
+  canonical⋆ (⊢wrap c i ⊢M 𝐶⊢-wrap) (V-wrap v i) = ⟨ _ , ⟨ _ , ⟨ _ , ⟨ i , ⟨ ⊢M , refl ⟩ ⟩ ⟩ ⟩ ⟩
 
   {-
     We shall use a kind of shallow evaluation context, called a Frame,

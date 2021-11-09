@@ -27,12 +27,12 @@ record CastStruct : Set₁ where
   open ParamCastCalculusABT precast
   open ParamCastAuxABT precast
   field
-    applyCast : ∀ {A B} → (M : Term) → Value M → (c : Cast (A ⇒ B))
-                        → ∀ {a : Active c} → Term
+    applyCast : ∀ {Γ A B} → (V : Term) → Γ ⊢ V ⦂ A → Value V → (c : Cast (A ⇒ B))
+                          → {a : Active c} → Term
 
     -- cast application is well-typed
-    applyCast-wt : ∀ {Γ A B} {M : Term} {c : Cast (A ⇒ B)}
-      → Γ ⊢ M ⦂ A
-      → (v : Value M) → (a : Active c)
+    applyCast-wt : ∀ {Γ A B} {V : Term} {c : Cast (A ⇒ B)}
+      → (⊢V : Γ ⊢ V ⦂ A)
+      → (v : Value V) → (a : Active c)
         --------------------------------
-      → Γ ⊢ applyCast M v c {a} ⦂ B
+      → Γ ⊢ applyCast V ⊢V v c {a} ⦂ B

@@ -98,9 +98,10 @@ module ParamCastReductionABT (cs : CastStruct) where
       → case (inr V other A) of A ⇒ M ∣ B ⇒ N —→ N [ V ]
 
     cast : ∀ {A B} {V : Term} {c : Cast (A ⇒ B)}
+      → (⊢V : [] ⊢ V ⦂ A)
       → (v : Value V) → {a : Active c}
         ------------------------------
-      → V ⟨ c ⟩ —→ applyCast V v c {a}
+      → V ⟨ c ⟩ —→ applyCast V ⊢V v c {a}
 
     wrap : ∀ {A B} {V : Term} {c : Cast (A ⇒ B)}
       → (v : Value V) → {i : Inert c}
@@ -288,7 +289,7 @@ module ParamCastReductionABT (cs : CastStruct) where
           (⊢blame _ _ 𝐶⊢-blame) → step (ξ-blame {F = F-cast c})
       (done v) →
         case ActiveOrInert c of λ where
-          (inj₁ a) → step (cast v {a})
+          (inj₁ a) → step (cast ⊢M v {a})
           (inj₂ i) → step (wrap v {i})
   progress (M ⟨ c ₍ i ₎⟩) (⊢wrap .c .i ⊢M (⟨ refl , refl ⟩)) =
     case progress M ⊢M of λ where
@@ -444,7 +445,7 @@ module ParamCastReductionABT (cs : CastStruct) where
         (preserve-rename N ⊢N λ {x} ∋x → ⟨ _ , ⟨ ext-suc-∋x x ∋x , refl ⟩ ⟩)
         (⊢cast (inrC c x) (⊢` refl) 𝐶⊢-cast))
       𝐶⊢-case
-  preserve (⊢cast c ⊢M 𝐶⊢-cast) (cast v {a}) = applyCast-wt ⊢M v a
+  preserve (⊢cast c ⊢M 𝐶⊢-cast) (cast ⊢M† v {a}) = applyCast-wt ⊢M† v a
   preserve (⊢cast c ⊢M 𝐶⊢-cast) (wrap v {i}) = ⊢wrap c i ⊢M 𝐶⊢-wrap
 
   {- Auxiliary lemmas about reduction. -}
