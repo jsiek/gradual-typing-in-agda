@@ -20,21 +20,22 @@ module CastStructureWithBlameSafetyABT where
     open ParamCastAuxABT precast
     open ParamCastSubtypingABT pcss
     field
-      {- These are usual `CastStruct` fields. -}
-      applyCast : ∀ {A B} → (M : Term) → Value M → (c : Cast (A ⇒ B))
-                          → ∀ {a : Active c} → Term
-      applyCast-wt : ∀ {Γ A B} {M : Term} {c : Cast (A ⇒ B)}
-        → Γ ⊢ M ⦂ A
-        → (v : Value M) → (a : Active c)
+      {- The usual `CastStruct` fields. -}
+      applyCast : ∀ {Γ A B} → (V : Term) → Γ ⊢ V ⦂ A → Value V → (c : Cast (A ⇒ B))
+                            → {a : Active c} → Term
+      applyCast-wt : ∀ {Γ A B} {V : Term} {c : Cast (A ⇒ B)}
+        → (⊢V : Γ ⊢ V ⦂ A)
+        → (v : Value V) → (a : Active c)
           --------------------------------
-        → Γ ⊢ applyCast M v c {a} ⦂ B
+        → Γ ⊢ applyCast V ⊢V v c {a} ⦂ B
       {- This field is for blame-subtyping. -}
-      applyCast-pres-SafeFor : ∀ {A B} {V : Term} {v : Value V} {c : Cast (A ⇒ B)} {ℓ}
+      applyCast-pres-SafeFor : ∀ {Γ A B} {V : Term} {v : Value V} {c : Cast (A ⇒ B)} {ℓ}
+        → (⊢V : Γ ⊢ V ⦂ A)
         → (a : Active c)
         → CastBlameSafe c ℓ
         → V SafeFor ℓ
           --------------------------------------
-        → (applyCast V v c {a}) SafeFor ℓ
+        → (applyCast V ⊢V v c {a}) SafeFor ℓ
 
     cs : CastStruct
     cs = record {
