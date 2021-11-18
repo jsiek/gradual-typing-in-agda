@@ -245,11 +245,11 @@ gradual-guarantee ⊢M₁ (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-castr A⊑A�
     ⟨ V , ⟨ v , ⟨ M₁↠V , V⊑V′ ⟩ ⟩ ⟩ →
       let ⊢V = preserve-mult ⊢M₁† M₁↠V in
       ⟨ V , ⟨ M₁↠V , cast-castr a′ ⊢V ⊢V′† v v′ A⊑A′ A⊑B′ V⊑V′ ⟩ ⟩
-gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑V′) (cast _ v′ {a′}) =
+gradual-guarantee (⊢cast c ⊢M 𝐶⊢-cast) (⊢cast c′ ⊢V′ 𝐶⊢-cast) (⊑-cast A⊑A′ B⊑B′ M⊑V′) (cast ⊢V′† v′ {a′}) =
   case catchup ⊢M v′ M⊑V′ of λ where
     ⟨ V , ⟨ v , ⟨ M↠V , V⊑V′ ⟩ ⟩ ⟩ →
       let ⊢V = preserve-mult ⊢M M↠V in
-      case sim-cast a′ ⊢V ⊢V′ v v′ A⊑A′ B⊑B′ V⊑V′ of λ where
+      case sim-cast a′ ⊢V ⊢V′† v v′ A⊑A′ B⊑B′ V⊑V′ of λ where
         ⟨ M₂ , ⟨ Vc↠M₂ , M₂⊑ ⟩ ⟩ →
           ⟨ M₂ , ⟨ ↠-trans (plug-cong (F-cast _) ⊢M M↠V) Vc↠M₂ , M₂⊑ ⟩ ⟩
 -- NOTE: The lemmas for the 2 cases below might need rework.
