@@ -603,6 +603,13 @@ module Types where
         -------------------
       → (A `⊎ B) ⌣ (A' `⊎ B')
 
+  ⌣-refl : (A : Type) → A ⌣ A
+  ⌣-refl ⋆ = unk⌣L
+  ⌣-refl (` ι) = base⌣
+  ⌣-refl (A ⇒ B) = fun⌣
+  ⌣-refl (A `× B) = pair⌣
+  ⌣-refl (A `⊎ B) = sum⌣
+
   _`⌣_ : (A : Type) → (B : Type) → Dec (A ⌣ B)
   ⋆ `⌣ B = yes unk⌣L
   (` x) `⌣ ⋆ = yes unk⌣R

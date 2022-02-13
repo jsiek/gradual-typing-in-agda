@@ -9,7 +9,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym; cong�
 open import Relation.Nullary using (¬_; Dec; yes; no)
 
 open import Types hiding (_⊔_; _⊑_)
-open import GroundCoercions renaming (Value to SValue)
+open import GroundCoercions renaming (Value to SValue; _∎ to _QED)
 
 open import ValueConst hiding (dom; cod)
 open import GraphModel
@@ -96,6 +96,14 @@ data _↝⟦_⟧↝_ : ∀ {A B} → Value → Cast (A ⇒ B) → Value → Set 
     → (v ↦ w) ↝⟦ cpair c d ⟧↝ (v ↦ w′)
 -}
 
+↝⟦⟧↝-⊑ :
+  → u ↝⟦ c ⟧↝ v
+  → u ⊑ u′
+  → v′ ⊑ v′
+  → u′ ↝⟦ c ⟧↝ v′
+  
+
+
 𝒞 : ∀ {A B} → Cast (A ⇒ B) → 𝒫 Value → 𝒫 Value
 𝒞 c D v = Σ[ u ∈ Value ] wf u × D u × u ↝⟦ c ⟧↝ v
 
@@ -111,9 +119,9 @@ data _↝⟦_⟧↝_ : ∀ {A B} → Value → Cast (A ⇒ B) → Value → Set 
 𝒞-cong {D₁} {D₂} {A} {B} c (equal to from) =
     equal (𝒞-cong-≲ c to) (𝒞-cong-≲ c from)
 
-𝒞-id-≃ : ∀ {A a} (D : 𝒫 Value)
+𝒞-id-≃ : ∀ {A a} {D : 𝒫 Value}
   → 𝒞 (id{A}{a}) D ≃ D
-𝒞-id-≃{A}{a} D = equal (𝒞-id-≲-1 D) (𝒞-id-≲-2 D)
+𝒞-id-≃{A}{a}{D} = equal (𝒞-id-≲-1 D) (𝒞-id-≲-2 D)
   where
   𝒞-id-≲-1 : ∀ (D : 𝒫 Value)
     → 𝒞 (id{A}{a}) D ≲ D
@@ -123,9 +131,9 @@ data _↝⟦_⟧↝_ : ∀ {A B} → Value → Cast (A ⇒ B) → Value → Set 
     → D ≲ 𝒞 (id{A}{a}) D
   𝒞-id-≲-2 D v wfv Dv = ⟨ v , ⟨ wfv , ⟨ Dv , ⟦id⟧ ⟩ ⟩ ⟩
 
-𝒞-cseq-≃ : ∀ {A B C : Type} (c₁ : Cast (A ⇒ B)) (c₂ : Cast (B ⇒ C)) (D : 𝒫 Value)
+𝒞-cseq-≃ : ∀ {A B C : Type} (c₁ : Cast (A ⇒ B)) (c₂ : Cast (B ⇒ C)) {D : 𝒫 Value}
   → 𝒞 (cseq c₁ c₂) D ≃ 𝒞 c₂ (𝒞 c₁ D)
-𝒞-cseq-≃ c₁ c₂ D = equal (𝒞-cseq-≲-1 c₁ c₂ D) (𝒞-cseq-≲-2 c₁ c₂ D)
+𝒞-cseq-≃ c₁ c₂ {D} = equal (𝒞-cseq-≲-1 c₁ c₂ D) (𝒞-cseq-≲-2 c₁ c₂ D)
   where
   𝒞-cseq-≲-1 : ∀ {A B C : Type} (c₁ : Cast (A ⇒ B)) (c₂ : Cast (B ⇒ C)) (D : 𝒫 Value)
     → 𝒞 (cseq c₁ c₂) D ≲ 𝒞 c₂ (𝒞 c₁ D)
@@ -141,16 +149,36 @@ data _↝⟦_⟧↝_ : ∀ {A B} → Value → Cast (A ⇒ B) → Value → Set 
    (V : 𝒫 Value)
   → 𝒞 (cseq (cseq c d) e) V ≃ 𝒞 (cseq c (cseq d e)) V
 𝒞-assoc-≃ {A}{B}{C}{D} c d e V =
-  let b : 𝒞 (cseq (cseq c d) e) V ≃ 𝒞 e (𝒞 (cseq c d) V)
-      b = 𝒞-cseq-≃ (cseq c d) e V  in
-  let x : 𝒞 e (𝒞 (cseq c d) V) ≃ 𝒞 e (𝒞 d (𝒞 c V))
-      x = 𝒞-cong e (𝒞-cseq-≃ c d V) in
-  let w : 𝒞 (cseq d e) (𝒞 c V) ≃ 𝒞 (cseq c (cseq d e)) V
-      w = ≃-sym (𝒞-cseq-≃ c (cseq d e) V) in
-  let v : 𝒞 e (𝒞 d (𝒞 c V)) ≃ 𝒞 (cseq d e) (𝒞 c V)
-      v = ≃-sym (𝒞-cseq-≃ d e (𝒞 c V)) in
-  ≃-trans (≃-trans b x) (≃-trans v w)
+    𝒞 (cseq (cseq c d) e) V
+  ≃⟨ 𝒞-cseq-≃ (cseq c d) e ⟩
+    𝒞 e (𝒞 (cseq c d) V)
+  ≃⟨ 𝒞-cong e (𝒞-cseq-≃ c d) ⟩
+    𝒞 e (𝒞 d (𝒞 c V))  
+  ≃⟨ ≃-sym (𝒞-cseq-≃ d e) ⟩
+    𝒞 (cseq d e) (𝒞 c V)
+  ≃⟨ ≃-sym (𝒞-cseq-≃ c (cseq d e)) ⟩
+    𝒞 (cseq c (cseq d e)) V
+  ∎ where open ≃-Reasoning
 
+𝒞-id-left-≃ : ∀ {A B a} {D : 𝒫 Value} (c : Cast (A ⇒ B) )
+  → 𝒞 (cseq (id{A}{a}) c) D ≃ 𝒞 c D
+𝒞-id-left-≃ {A}{B}{a}{D} c =
+    𝒞 (cseq (id{A}{a}) c) D
+  ≃⟨ 𝒞-cseq-≃ id c ⟩
+    𝒞 c (𝒞 (id{A}{a})  D)
+  ≃⟨ 𝒞-cong c 𝒞-id-≃ ⟩
+    𝒞 c D
+  ∎ where open ≃-Reasoning
+
+𝒞-id-right-≃ : ∀ {A B a} {D : 𝒫 Value} (c : Cast (A ⇒ B) )
+  → 𝒞 (cseq c (id{B}{a})) D ≃ 𝒞 c D
+𝒞-id-right-≃ {A}{B}{a}{D} c =
+    𝒞 (cseq c (id{B}{a})) D
+  ≃⟨ 𝒞-cseq-≃ c id ⟩
+    𝒞 (id{B}{a}) (𝒞 c D)
+  ≃⟨ 𝒞-id-≃ ⟩
+    𝒞 c D
+  ∎ where open ≃-Reasoning
 
 𝒞-fun-cast : ∀{A B C D}(c : Cast((A ⇒ B) ⇒ (C ⇒ D)))(x : Cross c)(D₁ D₂ : 𝒫 Value)
   → (𝒞 c D₁) ▪ D₂  ≃  𝒞 (cod c x) (D₁ ▪ (𝒞 (dom c x) D₂))

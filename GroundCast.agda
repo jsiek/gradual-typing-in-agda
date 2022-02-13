@@ -45,7 +45,7 @@ module GroundCast where
   For λB, there are two kinds of inert casts, those from a ground
   type to ⋆ and those between two function types.
 
-n  -}
+  -}
 
   data Inert : ∀ {A} → Cast A → Set where
     I-inj : ∀{A} → Ground A → (c : Cast (A ⇒ ⋆)) → Inert c

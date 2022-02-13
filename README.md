@@ -141,6 +141,9 @@ Formalizations of Gradually Typed Languages in Agda
 * [GroundCast](./GroundCast.agda): Type safety of λB (Siek,
    Thiemann, Wadler 2015). ("lazy UD" of Siek, Garcia, and Taha 2009)
 
+* [LazyGroundCast](./GroundCast.agda): λB but with active casts
+   between function types.
+
 * [GroundInertX](./GroundInertX.agda): The cast representation in
    _Refined Criteria_ (Siek, Vitousek, Cimini, and Boyland 2015).
    ("lazy UD" with inert cross cast)

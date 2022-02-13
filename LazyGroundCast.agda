@@ -21,13 +21,14 @@ module LazyGroundCast where
     cast : (A : Type) → (B : Type) → Label → Cast (A ⇒ B)
 
   data Inert : ∀ {A} → Cast A → Set where
-    inert : ∀{A} → .(A ≢ ⋆) → (c : Cast (A ⇒ ⋆)) → Inert c
+    inert : ∀{A} → Ground A → (c : Cast (A ⇒ ⋆)) → Inert c
 
   InertNotRel : ∀{A}{c : Cast A} (i1 : Inert c)(i2 : Inert c) → i1 ≡ i2
-  InertNotRel (inert x _) (inert x₁ _) = refl
+  InertNotRel (inert g _) (inert h _) rewrite GroundNotRel g h = refl
 
   data Active : ∀ {A} → Cast A → Set where
     activeId : ∀{A} → {a : Atomic A} → (c : Cast (A ⇒ A)) → Active c
+    activeInj : ∀{A} → (c : Cast (A ⇒ ⋆)) → .(¬ Ground A) → .(A ≢ ⋆) → Active c
     activeProj : ∀{B} → (c : Cast (⋆ ⇒ B)) → .(B ≢ ⋆) → Active c
     activeFun : ∀{A B A' B'} → (c : Cast ((A ⇒ B) ⇒ (A' ⇒ B'))) → Active c
     activePair : ∀{A B A' B'} → (c : Cast ((A `× B) ⇒ (A' `× B'))) → Active c
@@ -36,58 +37,33 @@ module LazyGroundCast where
 
   {- Yuck! Is there a nice short proof of ActiveNotRel? -}
   ActiveNotRel : ∀{A}{c : Cast A} (a1 : Active c) (a2 : Active c) → a1 ≡ a2
-  ActiveNotRel {⋆ ⇒ ⋆} (activeId {a = a1} _) (activeId {a = a2} _)
-      with AtomicNotRel a1 a2
-  ... | refl = refl
-  ActiveNotRel {⋆ ⇒ ⋆} (activeId _) (activeProj _ x) = ⊥-elimi (x refl)
-  ActiveNotRel {⋆ ⇒ ⋆} (activeId _) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ ⋆} (activeProj _ x) a2 = ⊥-elimi (x refl)
-  ActiveNotRel {⋆ ⇒ ⋆} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ ` x} (activeProj _ x₁) (activeProj _ x₂) = refl
-  ActiveNotRel {⋆ ⇒ ` x} (activeProj _ x₁) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ ` x} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeProj _ x) (activeProj _ x₁) = refl
-  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ (B ⇒ B₁)} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ B `× B₁} (activeProj _ x) (activeProj _ x₁) = refl
-  ActiveNotRel {⋆ ⇒ B `× B₁} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ B `× B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeProj _ x) (activeProj _ x₁) = refl
-  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeProj _ x) (activeErr _ nsc) = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {⋆ ⇒ B `⊎ B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣L)
-  ActiveNotRel {` x ⇒ ⋆} (activeErr _ nsc) a2 = ⊥-elimi (nsc unk⌣R)
-  ActiveNotRel {` x ⇒ ` .x} (activeId {a = a1} _) (activeId {a = a2} _)
-      with AtomicNotRel a1 a2
-  ... | refl = refl
-  ActiveNotRel {` x ⇒ ` .x} (activeId _) (activeErr _ nsc) = ⊥-elimi (nsc base⌣)
-  ActiveNotRel {` x ⇒ ` .x} (activeErr _ nsc) (activeId _) = ⊥-elimi (nsc base⌣)
-  ActiveNotRel {` x ⇒ ` x₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {` x ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {` x ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {` x ⇒ B `⊎ B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeFun _) (activeFun _) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeFun _) (activeErr _ nsc) = ⊥-elimi (nsc fun⌣)
-  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeFun _) = ⊥-elimi (nsc fun⌣)
-  ActiveNotRel {(A ⇒ A₁) ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {(A ⇒ A₁) ⇒ B `⊎ B₁} (activeErr _ nsc₁) (activeErr _ nsc) = refl
-  ActiveNotRel {A `× A₁ ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `× A₁ ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `× A₁ ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activePair _) (activePair _) = refl
-  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activePair _) (activeErr _ nsc) = ⊥-elimi (nsc pair⌣)
-  ActiveNotRel {A `× A₁ ⇒ B `× B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc pair⌣)
-  ActiveNotRel {A `× A₁ ⇒ B `⊎ B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ ⋆} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ ` x} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ (B ⇒ B₁)} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ B `× B₁} (activeErr _ nsc) (activeErr _ nsc₁) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeSum _) (activeSum _) = refl
-  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeSum _) (activeErr _ nsc) = ⊥-elimi (nsc sum⌣)
-  ActiveNotRel {A `⊎ A₁ ⇒ B `⊎ B₁} (activeErr _ nsc) a2 = ⊥-elimi (nsc sum⌣)
-  
+  ActiveNotRel {.(A ⇒ A)} {cast A .A ℓ} (activeId {a = a1} .(cast A A ℓ)) (activeId {a = a2} .(cast A A ℓ))
+    rewrite AtomicNotRel a1 a2 = refl
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeId .(cast ⋆ ⋆ ℓ)) (activeInj .(cast ⋆ ⋆ ℓ) x x₁) = ⊥-elimi (x₁ refl)
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeId .(cast ⋆ ⋆ ℓ)) (activeProj .(cast ⋆ ⋆ ℓ) x) = ⊥-elimi (x refl)
+  ActiveNotRel {.(A ⇒ A)} {cast A .A ℓ} (activeId .(cast A A ℓ)) (activeErr .(cast A A ℓ) nsc) = ⊥-elimi (nsc (⌣-refl A))
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeInj .(cast ⋆ ⋆ ℓ) x x₁) (activeId .(cast ⋆ ⋆ ℓ)) = ⊥-elimi (x₁ refl)
+  ActiveNotRel {.(A ⇒ ⋆)} {cast A .⋆ ℓ} (activeInj .(cast A ⋆ ℓ) x x₁) (activeInj .(cast A ⋆ ℓ) x₂ x₃) = refl
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeInj .(cast ⋆ ⋆ ℓ) x x₁) (activeProj .(cast ⋆ ⋆ ℓ) x₂) = ⊥-elimi (x₂ refl)
+  ActiveNotRel {.(A ⇒ ⋆)} {cast A .⋆ ℓ} (activeInj .(cast A ⋆ ℓ) x x₁) (activeErr .(cast A ⋆ ℓ) nsc) = ⊥-elimi (nsc unk⌣R)
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeProj .(cast ⋆ ⋆ ℓ) x) (activeId .(cast ⋆ ⋆ ℓ)) = ⊥-elimi (x refl)
+  ActiveNotRel {.(⋆ ⇒ ⋆)} {cast .⋆ .⋆ ℓ} (activeProj .(cast ⋆ ⋆ ℓ) x) (activeInj .(cast ⋆ ⋆ ℓ) x₁ x₂) = ⊥-elimi (x₂ refl)
+  ActiveNotRel {.(⋆ ⇒ B)} {cast .⋆ B ℓ} (activeProj .(cast ⋆ B ℓ) x) (activeProj .(cast ⋆ B ℓ) x₁) = refl
+  ActiveNotRel {.(⋆ ⇒ B)} {cast .⋆ B ℓ} (activeProj .(cast ⋆ B ℓ) x) (activeErr .(cast ⋆ B ℓ) nsc) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {.((_ ⇒ _) ⇒ (_ ⇒ _))} {cast .(_ ⇒ _) .(_ ⇒ _) ℓ} (activeFun .(cast (_ ⇒ _) (_ ⇒ _) ℓ)) (activeFun .(cast (_ ⇒ _) (_ ⇒ _) ℓ)) = refl
+  ActiveNotRel {.((_ ⇒ _) ⇒ (_ ⇒ _))} {cast .(_ ⇒ _) .(_ ⇒ _) ℓ} (activeFun .(cast (_ ⇒ _) (_ ⇒ _) ℓ)) (activeErr .(cast (_ ⇒ _) (_ ⇒ _) ℓ) nsc) = ⊥-elimi (nsc fun⌣)
+  ActiveNotRel {.(_ `× _ ⇒ _ `× _)} {cast .(_ `× _) .(_ `× _) ℓ} (activePair .(cast (_ `× _) (_ `× _) ℓ)) (activePair .(cast (_ `× _) (_ `× _) ℓ)) = refl
+  ActiveNotRel {.(_ `× _ ⇒ _ `× _)} {cast .(_ `× _) .(_ `× _) ℓ} (activePair .(cast (_ `× _) (_ `× _) ℓ)) (activeErr .(cast (_ `× _) (_ `× _) ℓ) nsc) = ⊥-elimi (nsc pair⌣)
+  ActiveNotRel {.(_ `⊎ _ ⇒ _ `⊎ _)} {cast .(_ `⊎ _) .(_ `⊎ _) ℓ} (activeSum .(cast (_ `⊎ _) (_ `⊎ _) ℓ)) (activeSum .(cast (_ `⊎ _) (_ `⊎ _) ℓ)) = refl
+  ActiveNotRel {.(_ `⊎ _ ⇒ _ `⊎ _)} {cast .(_ `⊎ _) .(_ `⊎ _) ℓ} (activeSum .(cast (_ `⊎ _) (_ `⊎ _) ℓ)) (activeErr .(cast (_ `⊎ _) (_ `⊎ _) ℓ) nsc) = ⊥-elimi (nsc sum⌣)
+  ActiveNotRel {.(A ⇒ A)} {cast A .A ℓ} (activeErr .(cast A A ℓ) nsc) (activeId .(cast A A ℓ)) = ⊥-elimi (nsc (⌣-refl A))
+  ActiveNotRel {.(A ⇒ ⋆)} {cast A .⋆ ℓ} (activeErr .(cast A ⋆ ℓ) nsc) (activeInj .(cast A ⋆ ℓ) x x₁) = ⊥-elimi (nsc unk⌣R)
+  ActiveNotRel {.(⋆ ⇒ B)} {cast .⋆ B ℓ} (activeErr .(cast ⋆ B ℓ) nsc) (activeProj .(cast ⋆ B ℓ) x) = ⊥-elimi (nsc unk⌣L)
+  ActiveNotRel {.((_ ⇒ _) ⇒ (_ ⇒ _))} {cast .(_ ⇒ _) .(_ ⇒ _) ℓ} (activeErr .(cast (_ ⇒ _) (_ ⇒ _) ℓ) nsc) (activeFun .(cast (_ ⇒ _) (_ ⇒ _) ℓ)) = ⊥-elimi (nsc fun⌣)
+  ActiveNotRel {.(_ `× _ ⇒ _ `× _)} {cast .(_ `× _) .(_ `× _) ℓ} (activeErr .(cast (_ `× _) (_ `× _) ℓ) nsc) (activePair .(cast (_ `× _) (_ `× _) ℓ)) = ⊥-elimi (nsc pair⌣)
+  ActiveNotRel {.(_ `⊎ _ ⇒ _ `⊎ _)} {cast .(_ `⊎ _) .(_ `⊎ _) ℓ} (activeErr .(cast (_ `⊎ _) (_ `⊎ _) ℓ) nsc) (activeSum .(cast (_ `⊎ _) (_ `⊎ _) ℓ)) = ⊥-elimi (nsc sum⌣)
+  ActiveNotRel {.(A ⇒ B)} {cast A B ℓ} (activeErr .(cast A B ℓ) nsc) (activeErr .(cast A B ℓ) nsc₁) = refl
+
   open import ParamCastCalculus Cast Inert public
 
   ActiveOrInert : ∀{A} → (c : Cast A) → Active c ⊎ Inert c
@@ -97,29 +73,35 @@ module LazyGroundCast where
   ActiveOrInert (cast (` ι) B ℓ) with (` ι) `⌣ B
   ... | yes c with c
   ...    | base⌣ = inj₁ (activeId {a = A-Base} (cast (` ι) (` ι) ℓ))
-  ...    | unk⌣R = inj₂ (inert (λ ()) (cast (` ι) ⋆ ℓ))
+  ...    | unk⌣R = inj₂ (inert G-Base (cast (` ι) ⋆ ℓ))
   ActiveOrInert (cast (` ι) B ℓ) | no nc = inj₁ (activeErr (cast (` ι) B ℓ) nc)
   ActiveOrInert (cast (A₁ ⇒ A₂) B ℓ) with (A₁ ⇒ A₂) `⌣ B
   ... | no nc = inj₁ (activeErr (cast (A₁ ⇒ A₂) B ℓ) nc)
   ... | yes c with c
-  ...    | unk⌣R = inj₂ (inert (λ ()) (cast (A₁ ⇒ A₂) ⋆ ℓ))
   ...    | fun⌣{A' = A'}{B' = B'} =
             inj₁ (activeFun (cast (A₁ ⇒ A₂) (A' ⇒ B') ℓ))
+  ...    | unk⌣R with ground? (A₁ ⇒ A₂)
+  ...       | yes g = inj₂ (inert g (cast (A₁ ⇒ A₂) ⋆ ℓ))
+  ...       | no ¬g = inj₁ (activeInj (cast (A₁ ⇒ A₂) ⋆ ℓ) ¬g λ ())
   ActiveOrInert (cast (A₁ `× A₂) B ℓ) with (A₁ `× A₂) `⌣ B
   ... | no nc = inj₁ (activeErr (cast (A₁ `× A₂) B ℓ) nc)
   ... | yes c with c
-  ...    | unk⌣R = inj₂ (inert (λ ()) (cast (A₁ `× A₂) ⋆ ℓ))
   ...    | pair⌣{A' = A'}{B' = B'} =
              inj₁ (activePair (cast (A₁ `× A₂) (A' `× B') ℓ))
+  ...    | unk⌣R with ground? (A₁ `× A₂)
+  ...       | yes g = inj₂ (inert g (cast (A₁ `× A₂) ⋆ ℓ))
+  ...       | no ¬g = inj₁ (activeInj (cast (A₁ `× A₂) ⋆ ℓ) ¬g λ ())
   ActiveOrInert (cast (A₁ `⊎ A₂) B ℓ) with (A₁ `⊎ A₂) `⌣ B
   ... | no nc = inj₁ (activeErr (cast (A₁ `⊎ A₂) B ℓ) nc)
   ... | yes c with c
-  ...    | unk⌣R = inj₂ (inert (λ ()) (cast (A₁ `⊎ A₂) ⋆ ℓ))
   ...    | sum⌣{A' = A'}{B' = B'} =
              inj₁ (activeSum (cast (A₁ `⊎ A₂) (A' `⊎ B') ℓ))
-
+  ...    | unk⌣R with ground? (A₁ `⊎ A₂)
+  ...       | yes g = inj₂ (inert g (cast (A₁ `⊎ A₂) ⋆ ℓ))
+  ...       | no ¬g = inj₁ (activeInj (cast (A₁ `⊎ A₂) ⋆ ℓ) ¬g λ ())
   ActiveNotInert : ∀ {A} {c : Cast A} → Active c → ¬ Inert c
-  ActiveNotInert (activeId c) (inert neq .c) = ⊥-elimi (neq refl)
+  ActiveNotInert (activeId c) (inert () .c)
+  ActiveNotInert (activeInj c ng nd) (inert g .c) = ⊥-elimi (ng g)
   ActiveNotInert (activeProj c neq) (inert _ .c) = ⊥-elimi (neq refl)
   ActiveNotInert (activeErr c neq) (inert _ .c) = ⊥-elimi (neq unk⌣R)
 
@@ -168,7 +150,7 @@ module LazyGroundCast where
   baseNotInert c ()
 
   idNotInert : ∀ {A} → Atomic A → (c : Cast (A ⇒ A)) → ¬ Inert c
-  idNotInert a c (inert x .c) = ⊥-elimi (x refl)
+  idNotInert a c (inert () .c)
 
   projNotInert : ∀ {B} → B ≢ ⋆ → (c : Cast (⋆ ⇒ B)) → ¬ Inert c
   projNotInert j c = ActiveNotInert (activeProj c j)
@@ -204,6 +186,9 @@ module LazyGroundCast where
   applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
               → ∀ {a : Active c} → Γ ⊢ B
   applyCast M v (cast A A ℓ) {activeId (cast A A ℓ)} = M
+  applyCast M v (cast A ⋆ ℓ) {activeInj c ng nd}
+        with ground A {nd}
+  ... | ⟨ G , cns ⟩ = (M ⟨ cast A G ℓ ⟩) ⟨ cast G ⋆ ℓ ⟩
   applyCast M v (cast ⋆ B ℓ) {activeProj (cast ⋆ B ℓ) x}
         with canonical⋆ M v
   ... | ⟨ A , ⟨ M' , ⟨ c' , ⟨ _ , meq ⟩ ⟩ ⟩ ⟩ rewrite meq =
