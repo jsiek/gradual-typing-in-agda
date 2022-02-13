@@ -35,7 +35,7 @@ plug-blame-allsafe-inv : ∀ {Γ A B} {F : Frame {Γ = Γ} A B} {ℓ ℓ′}
 plug-blame-allsafe-inv {F = F-·₁ _} (allsafe-· (allsafe-blame-diff-ℓ ℓ≢ℓ′) _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-·₂ _} (allsafe-· _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-if _ _} (allsafe-if (allsafe-blame-diff-ℓ ℓ≢ℓ′) _ _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
-plug-blame-allsafe-inv {F = F-×₁ _} (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
+plug-blame-allsafe-inv {F = F-×₁ _ _} (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-×₂ _} (allsafe-cons (allsafe-blame-diff-ℓ ℓ≢ℓ′) _) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-fst} (allsafe-fst (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
 plug-blame-allsafe-inv {F = F-snd} (allsafe-snd (allsafe-blame-diff-ℓ ℓ≢ℓ′)) ℓ≡ℓ′ = ℓ≢ℓ′ ℓ≡ℓ′
@@ -60,7 +60,7 @@ preserve-allsafe : ∀ {Γ A} {M M′ : Γ ⊢ A} {ℓ}
 preserve-allsafe-plug {M = L} {L′} {F = F-·₁ M} (allsafe-· allsafe-L allsafe-M) rd = allsafe-· (preserve-allsafe allsafe-L rd) allsafe-M
 preserve-allsafe-plug {F = F-·₂ L {v}} (allsafe-· allsafe-L allsafe-M) rd = allsafe-· allsafe-L (preserve-allsafe allsafe-M rd)
 preserve-allsafe-plug {F = F-if M N} (allsafe-if allsafe-L allsafe-M allsafe-N) rd = allsafe-if (preserve-allsafe allsafe-L rd ) allsafe-M allsafe-N
-preserve-allsafe-plug {F = F-×₁ M} (allsafe-cons allsafe-M allsafe-N) rd = allsafe-cons allsafe-M (preserve-allsafe allsafe-N rd)
+preserve-allsafe-plug {F = F-×₁ M _} (allsafe-cons allsafe-M allsafe-N) rd = allsafe-cons allsafe-M (preserve-allsafe allsafe-N rd)
 preserve-allsafe-plug {F = F-×₂ N} (allsafe-cons allsafe-M allsafe-N) rd = allsafe-cons (preserve-allsafe allsafe-M rd) allsafe-N
 preserve-allsafe-plug {F = F-fst} (allsafe-fst allsafe-M) rd = allsafe-fst (preserve-allsafe allsafe-M rd)
 preserve-allsafe-plug {F = F-snd} (allsafe-snd allsafe-M) rd = allsafe-snd (preserve-allsafe allsafe-M rd)
@@ -103,7 +103,7 @@ plug-blame→¬allsafe : ∀ {Γ A B ℓ}
 plug-blame→¬allsafe (F-·₁ M) (allsafe-· (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ ≡̂-refl                               -- □ · M
 plug-blame→¬allsafe (F-·₂ L) (allsafe-· _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                               -- L · □
 plug-blame→¬allsafe (F-if M N) (allsafe-if (allsafe-blame-diff-ℓ ℓ≢ℓ) _ _) = ℓ≢ℓ ≡̂-refl                          -- if □ M N
-plug-blame→¬allsafe (F-×₁ M) (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                            -- cons M □
+plug-blame→¬allsafe (F-×₁ M _) (allsafe-cons _ (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                            -- cons M □
 plug-blame→¬allsafe (F-×₂ L) (allsafe-cons (allsafe-blame-diff-ℓ ℓ≢ℓ) _) = ℓ≢ℓ ≡̂-refl                            -- cons □ L
 plug-blame→¬allsafe F-fst (allsafe-fst (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- fst □
 plug-blame→¬allsafe F-snd (allsafe-snd (allsafe-blame-diff-ℓ ℓ≢ℓ)) = ℓ≢ℓ ≡̂-refl                                  -- snd □

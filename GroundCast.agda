@@ -87,7 +87,7 @@ module GroundCast where
   ActiveNotRel (A-proj _ x) (A-proj _ x₁) = refl
   ActiveNotRel (A-pair _) (A-pair _) = refl
   ActiveNotRel (A-sum _) (A-sum _) = refl
-  
+
   open import ParamCastCalculus Cast Inert public
 
   {-
@@ -216,6 +216,7 @@ module GroundCast where
    the Parametric Cast Calculus by applying the ParamCastAux module.
 
    -}
+
   open import PreCastStructure
 
   pcs : PreCastStruct
@@ -241,7 +242,8 @@ module GroundCast where
              ; InertNotRel = InertNotRel
              ; ActiveNotRel = ActiveNotRel
              }
-             
+
+
   open import ParamCastAux pcs public
 
   inert-ground : ∀{A} → (c : Cast (A ⇒ ⋆)) → Inert c → Ground A

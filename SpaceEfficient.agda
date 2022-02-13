@@ -212,7 +212,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   invert-plug M (F-·₂ M₁) (appOK {m = m} MFok MFok₁) = ⟨ m , MFok₁ ⟩
   invert-plug M (F-if x x₁) (ifOK {n = n} MFok MFok₁ MFok₂) =
      ⟨ n , MFok ⟩
-  invert-plug M (F-×₁ x) (consOK {m = m} MFok MFok₁) = ⟨ m , MFok₁ ⟩
+  invert-plug M (F-×₁ x _) (consOK {m = m} MFok MFok₁) = ⟨ m , MFok₁ ⟩
   invert-plug M (F-×₂ x) (consOK {n = n} MFok MFok₁) = ⟨ n , MFok ⟩
   invert-plug M F-fst (fstOK {n = n} MFok) = ⟨ n , MFok ⟩
   invert-plug M F-snd (sndOK {n = n} MFok) = ⟨ n , MFok ⟩
@@ -228,7 +228,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   plug-ok M M′ (F-·₁ x) (appOK y z) Mok = appOK Mok z
   plug-ok M M′ (F-·₂ M₁) (appOK y z) Mok = appOK y Mok
   plug-ok M M′ (F-if x x₁) (ifOK a b c) Mok = ifOK Mok b c
-  plug-ok M M′ (F-×₁ x) (consOK a b) Mok = consOK a Mok
+  plug-ok M M′ (F-×₁ x _) (consOK a b) Mok = consOK a Mok
   plug-ok M M′ (F-×₂ x) (consOK a b) Mok = consOK Mok b
   plug-ok M M′ F-fst (fstOK a) Mok = fstOK Mok
   plug-ok M M′ F-snd (sndOK a) Mok = sndOK Mok
@@ -242,7 +242,7 @@ module SpaceEfficient (ecs : EfficientCastStruct) where
   plug-ok0 M (F-·₁ x) (appOK a b) = refl
   plug-ok0 M (F-·₂ M₁) (appOK a b) = refl
   plug-ok0 M (F-if x x₁) (ifOK a b c) = refl
-  plug-ok0 M (F-×₁ x) (consOK a b) = refl
+  plug-ok0 M (F-×₁ x _) (consOK a b) = refl
   plug-ok0 M (F-×₂ x) (consOK a b) = refl
   plug-ok0 M F-fst (fstOK a) = refl
   plug-ok0 M F-snd (sndOK a) = refl

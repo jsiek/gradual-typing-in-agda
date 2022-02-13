@@ -98,20 +98,6 @@ module GroundInertXGG where
       → A `⊎ B ⊑⟪ I-sum c′ ⟫
 
 
-  inj-⊑-inj : ∀ {A A′ B′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ B′)}
-    → (i : Inert c) → (i′ : Inert c′)
-    → ⟪ i ⟫⊑⟪ i′ ⟫
-      --------------------
-    → (A′ ≡ A) × (B′ ≡ ⋆)
-  inj-⊑-inj .(I-inj g _) .(I-inj g _) (lpii-inj g) = [ refl , refl ]
-
-  ⋆-⋢-inert : ∀ {A′ B′} {c′ : Cast (A′ ⇒ B′)}
-    → (i′ : Inert c′)
-      ----------------
-    → ¬ (⋆ ⊑⟪ i′ ⟫)
-  ⋆-⋢-inert _ = λ ()
-
-
   ⊑→lpit : ∀ {A B A′} {c : Cast (A ⇒ B)}
     → (i : Inert c)
     → A ⊑ A′ → B ⊑ A′
@@ -156,8 +142,6 @@ module GroundInertXGG where
            ⟪_⟫⊑⟪_⟫ = ⟪_⟫⊑⟪_⟫;
            ⟪_⟫⊑_ = ⟪_⟫⊑_;
            _⊑⟪_⟫ = _⊑⟪_⟫;
-           inj-⊑-inj = inj-⊑-inj;
-           ⋆-⋢-inert = ⋆-⋢-inert;
            ⊑→lpit = ⊑→lpit;
            lpii→⊑ = lpii→⊑;
            lpit→⊑ = lpit→⊑;
@@ -172,7 +156,7 @@ module GroundInertXGG where
       → Γ , Γ′ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
         ------------------------
       → Γ , Γ′ ⊢ V ⊑ᶜ V′
-    wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi) = contradiction refl nd
+    wrapV-⊑-inv v v' (I-inj g c) nd (⊑ᶜ-wrap (lpii-inj .g) lpVi _) = contradiction refl nd
     wrapV-⊑-inv v v' i nd (⊑ᶜ-wrapl x lpVi) = lpVi
 
     ground-to-ndng-inert : ∀ {H B} {ℓ}
@@ -209,7 +193,7 @@ module GroundInertXGG where
     applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | yes b-g | [ G , [ V₁ , [ c₁ , [ I-inj g₁ _ , meq ] ] ] ] | no ap-b
       with lpV
     ...       | ⊑ᶜ-wrapl (lpit-inj _ lp₁) _ = contradiction (lp-consis-ground-eq g₁ g Refl~ lp₁ lp) ap-b
-    ...       | ⊑ᶜ-wrap (lpii-inj _) _ = contradiction lp (nd⋢⋆ nd)
+    ...       | ⊑ᶜ-wrap (lpii-inj _) _ _ = contradiction lp (nd⋢⋆ nd)
     applyCast-proj-g-catchup {c = cast .⋆ B ℓ _} nd g v v′ lp lpV | no b-ng = contradiction g b-ng
 
     applyCast-proj-ng-catchup : ∀ {Γ Γ′ A′ B} {V : Γ ⊢ ⋆} {V′ : Γ′ ⊢ A′} {c : Cast (⋆ ⇒ B)}
@@ -311,16 +295,16 @@ module GroundInertXGG where
       → ∅ , ∅ ⊢ V ⊑ᶜ V′
         -----------------------
       → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
-    dyn-value-⊑-wrap v v′ (Inert.I-inj () (cast .⋆ .⋆ _ _)) (⊑ᶜ-wrap (lpii-inj g) lpV)
+    dyn-value-⊑-wrap v v′ (Inert.I-inj () (cast .⋆ .⋆ _ _)) (⊑ᶜ-wrap (lpii-inj g) lpV _)
     dyn-value-⊑-wrap v v′ (Inert.I-inj g′ (cast A′ .⋆ _ _)) (⊑ᶜ-wrapl (lpit-inj g lp) lpV)
       with ground-⊑-eq g g′ lp
-    ... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV
+    ... | refl = ⊑ᶜ-wrap (inert-inj-⊑-inert-inj g g′ lp) lpV λ _ → refl
     dyn-value-⊑-wrap v v′ (Inert.I-fun (cast .(_ ⇒ _) .(_ ⇒ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpV) =
-      ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) lpV)
+      ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑)) lpV λ ())
     dyn-value-⊑-wrap v v′ (Inert.I-pair (cast .(_ `× _) .(_ `× _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ _ _)) lpV) =
-      ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) lpV)
+      ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑)) lpV λ ())
     dyn-value-⊑-wrap v v′ (Inert.I-sum (cast .(_ `⊎ _) .(_ `⊎ _) _ _)) (⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpV) =
-      ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) lpV)
+      ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑)) lpV λ ())
 
   open import ParamGradualGuaranteeAux pcsp
 
@@ -344,19 +328,19 @@ module GroundInertXGG where
     with ground _ {nd}
   ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
     ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
-                                             (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV))
+                                             (⊑ᶜ-castl (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑) lpV) λ ())
   applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-pair _) unk⊑ _ lpV = ⊥-elimi (nd refl)
   applyCast-⊑-wrap v v′ (A-inj (cast .(_ `× _) .⋆ _ _) ng nd) (I-pair _) (pair⊑ lp1 lp2) _ lpV
     with ground _ {nd}
   ... | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
     ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑))
-                                              (⊑ᶜ-castl (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑) lpV))
+                                              (⊑ᶜ-castl (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑) lpV) λ ())
   applyCast-⊑-wrap v v′ (A-inj (cast .⋆ .⋆ _ _) ng nd) (I-sum _) unk⊑ _ lpV = ⊥-elimi (nd refl)
   applyCast-⊑-wrap v v′ (A-inj (cast .(_ `⊎ _) .⋆ _ _) ng nd) (I-sum _) (sum⊑ lp1 lp2) _ lpV
     with ground _ {nd}
   ... | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
     ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) unk⊑ (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑))
-                                             (⊑ᶜ-castl (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑) lpV))
+                                             (⊑ᶜ-castl (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑) lpV) λ ())
   -- Proj
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ B _ _) nd) (I-inj x _) _ unk⊑ lpV = ⊥-elimi (nd refl)
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-fun _) _ unk⊑ lpV = ⊥-elimi (nd refl)
@@ -366,14 +350,14 @@ module GroundInertXGG where
     with canonical⋆ _ v
   ...   | [ G , [ W , [ c₁ , [ i₁ , meq ] ] ] ] rewrite meq
     with gnd-eq? G (A ⇒ B) {inert-ground _ i₁} {G-Fun}
-  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV) λ ()
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ _ _)) lpW = contradiction refl ap
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A ⇒ B) _ _) nd) (I-fun _) _ (fun⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ ⇒ ⋆ , [ G-Fun , _ ] ] =
     ⊑ᶜ-castl (fun⊑ unk⊑ unk⊑) (fun⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-fun (fun⊑ unk⊑ unk⊑) (fun⊑ unk⊑ unk⊑))
-                                                       (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV))
+                                                       (⊑ᶜ-castl unk⊑ (fun⊑ unk⊑ unk⊑) lpV) λ ())
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-pair _) _ unk⊑ lpV = ⊥-elimi (nd refl)
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) _) (I-pair _) _ (pair⊑ lp1 lp2) lpV
     with ground? (A `× B)
@@ -381,14 +365,14 @@ module GroundInertXGG where
     with canonical⋆ _ v
   ...   | [ G , [ W , [ c₁ , [ i₁ , meq ] ] ] ] rewrite meq
     with gnd-eq? G (A `× B) {inert-ground _ i₁} {G-Pair}
-  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV) λ ()
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ _ _)) lpW = contradiction refl ap
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `× B) _ _) nd) (I-pair _) _ (pair⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ `× ⋆ , [ G-Pair , _ ] ] =
     ⊑ᶜ-castl (pair⊑ unk⊑ unk⊑) (pair⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-pair (pair⊑ unk⊑ unk⊑) (pair⊑ unk⊑ unk⊑))
-                                                         (⊑ᶜ-castl unk⊑ (pair⊑ unk⊑ unk⊑) lpV))
+                                                         (⊑ᶜ-castl unk⊑ (pair⊑ unk⊑ unk⊑) lpV) λ ())
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ .⋆ _ _) nd) (I-sum _) _ unk⊑ lpV = ⊥-elimi (nd refl)
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) _) (I-sum _) _ (sum⊑ lp1 lp2) lpV
     with ground? (A `⊎ B)
@@ -396,14 +380,14 @@ module GroundInertXGG where
     with canonical⋆ _ v
   ...   | [ G , [ W , [ c₁ , [ i₁ , meq ] ] ] ] rewrite meq
     with gnd-eq? G (A `⊎ B) {inert-ground _ i₁} {G-Sum}
-  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV)
+  ...     | yes ap rewrite ap = ⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2)) (wrap-⊑-value-inv (λ ()) v v′ lpV) λ ()
   ...     | no  ap with lpV
   ...       | ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ _ _)) lpW = contradiction refl ap
   applyCast-⊑-wrap v v′ (A-proj (cast .⋆ (A `⊎ B) _ _) nd) (I-sum _) _ (sum⊑ lp1 lp2) lpV | no ng
     with ground _ {nd}
   ... | [ ⋆ `⊎ ⋆ , [ G-Sum , _ ] ] =
     ⊑ᶜ-castl (sum⊑ unk⊑ unk⊑) (sum⊑ lp1 lp2) (⊑ᶜ-wrapr (lpti-sum (sum⊑ unk⊑ unk⊑) (sum⊑ unk⊑ unk⊑))
-                                                       (⊑ᶜ-castl unk⊑ (sum⊑ unk⊑ unk⊑) lpV))
+                                                       (⊑ᶜ-castl unk⊑ (sum⊑ unk⊑ unk⊑) lpV) λ ())
 
 
   sim-cast : ∀ {A A′ B B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ B)} {c′ : Cast (A′ ⇒ B′)}
@@ -442,13 +426,13 @@ module GroundInertXGG where
   sim-wrap v v′ (Inert.I-inj g′ _) unk⊑ unk⊑ lpV =
     [ _ , [ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-inj g′ _) lpV ] ]
   sim-wrap v v′ (Inert.I-inj g′ _) base⊑ unk⊑ lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-inj g′ _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj g′) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-inj g′ _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj g′) lpV (λ _ → refl) ] ]
   sim-wrap v v′ (Inert.I-inj G-Fun _) (fun⊑ unk⊑ unk⊑) unk⊑ lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Fun) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Fun) lpV (λ _ → refl) ] ]
   sim-wrap v v′ (Inert.I-inj G-Pair _) (pair⊑ unk⊑ unk⊑) unk⊑ lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Pair) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Pair) lpV (λ _ → refl) ] ]
   sim-wrap v v′ (Inert.I-inj G-Sum _) (sum⊑ unk⊑ unk⊑) unk⊑ lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Sum) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-inj G-Sum) lpV (λ _ → refl) ] ]
 
   sim-wrap v v′ (Inert.I-fun _) unk⊑ unk⊑ lpV =
     [ _ , [ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-fun _) lpV ] ]
@@ -462,9 +446,9 @@ module GroundInertXGG where
   ... | inj₁ a = [ _ , [ _ —→⟨ cast v {a} ⟩ _ ∎ , applyCast-⊑-wrap v v′ a (Inert.I-fun _) (fun⊑ lp1 lp2) unk⊑ lpV ] ]
   ... | inj₂ (Inert.I-inj G-Fun _) =
     [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Fun c} ⟩ _ ∎ ,
-            ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV) ] ]
+            ⊑ᶜ-wrapl (lpit-inj G-Fun (fun⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ unk⊑ unk⊑)) lpV λ ()) ] ]
   sim-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-fun _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV (λ ()) ] ]
 
   sim-wrap v v′ (Inert.I-pair _) unk⊑ unk⊑ lpV =
     [ _ , [ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-pair _) lpV ] ]
@@ -478,9 +462,9 @@ module GroundInertXGG where
   ... | inj₁ a = [ _ , [ _ —→⟨ cast v {a} ⟩ _ ∎ , applyCast-⊑-wrap v v′ a (Inert.I-pair _) (pair⊑ lp1 lp2) unk⊑ lpV ] ]
   ... | inj₂ (Inert.I-inj G-Pair _) =
     [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Pair c} ⟩ _ ∎ ,
-            ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑)) lpV) ] ]
+            ⊑ᶜ-wrapl (lpit-inj G-Pair (pair⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ unk⊑ unk⊑)) lpV λ ()) ] ]
   sim-wrap v v′ (Inert.I-pair _) (pair⊑ lp1 lp2) (pair⊑ lp3 lp4) lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-pair _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV (λ ()) ] ]
 
   sim-wrap v v′ (Inert.I-sum _) unk⊑ unk⊑ lpV =
     [ _ , [ _ —→⟨ cast v {Active.A-id {a = A-Unk} _} ⟩ _ ∎ , dyn-value-⊑-wrap v v′ (Inert.I-sum _) lpV ] ]
@@ -494,9 +478,9 @@ module GroundInertXGG where
   ... | inj₁ a = [ _ , [ _ —→⟨ cast v {a} ⟩ _ ∎ , applyCast-⊑-wrap v v′ a (Inert.I-sum _) (sum⊑ lp1 lp2) unk⊑ lpV ] ]
   ... | inj₂ (Inert.I-inj G-Sum _) =
     [ _ , [ _ —→⟨ wrap v {Inert.I-inj G-Sum c} ⟩ _ ∎ ,
-            ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑)) lpV) ] ]
+            ⊑ᶜ-wrapl (lpit-inj G-Sum (sum⊑ unk⊑ unk⊑)) (⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ unk⊑ unk⊑)) lpV λ ()) ] ]
   sim-wrap v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) (sum⊑ lp3 lp4) lpV =
-    [ _ , [ _ —→⟨ wrap v {Inert.I-sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV ] ]
+    [ _ , [ _ —→⟨ wrap v {Inert.I-sum _} ⟩ _ ∎ , ⊑ᶜ-wrap (lpii-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV (λ ()) ] ]
 
 
   castr-cast : ∀ {A A′ B′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c′ : Cast (A′ ⇒ B′)}
@@ -533,13 +517,13 @@ module GroundInertXGG where
   castr-wrap v v′ (Inert.I-inj g′ _) lp1 unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-inj g′ _) lpV
   castr-wrap v v′ (Inert.I-fun _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-fun _) lpV
   castr-wrap v v′ (Inert.I-fun _) (fun⊑ lp1 lp2) (fun⊑ lp3 lp4) lpV =
-    ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV
+    ⊑ᶜ-wrapr (lpti-fun (fun⊑ lp1 lp2) (fun⊑ lp3 lp4)) lpV λ ()
   castr-wrap v v′ (Inert.I-pair _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-pair _) lpV
   castr-wrap v v′ (Inert.I-pair _) (pair⊑ lp1 lp2) (pair⊑ lp3 lp4) lpV =
-    ⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV
+    ⊑ᶜ-wrapr (lpti-pair (pair⊑ lp1 lp2) (pair⊑ lp3 lp4)) lpV λ ()
   castr-wrap v v′ (Inert.I-sum _) unk⊑ unk⊑ lpV = dyn-value-⊑-wrap v v′ (Inert.I-sum _) lpV
   castr-wrap v v′ (Inert.I-sum _) (sum⊑ lp1 lp2) (sum⊑ lp3 lp4) lpV =
-    ⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV
+    ⊑ᶜ-wrapr (lpti-sum (sum⊑ lp1 lp2) (sum⊑ lp3 lp4)) lpV λ ()
 
 
   open import CastStructureWithPrecision

@@ -225,4 +225,3 @@ module GroundInertX where
   {- We now instantiate the module ParamCastReduction and thereby prove type safety. -}
   open import ParamCastReduction cs public
   open import ParamCastDeterministic cs public
-

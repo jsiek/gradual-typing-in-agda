@@ -29,13 +29,13 @@ value-⊑-wrap-inv : ∀ {A′} {V : ∅ ⊢ ⋆} {V′ : ∅ ⊢ A′} {c′ : 
   → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫
     -----------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrap lpii lpW)
+value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrap lpii lpW imp)
   with lpii→⊑ lpii
 ... | ⟨ lp , unk⊑ ⟩ = ⊑ᶜ-wrapl (⊑→lpit _ lp unk⊑) lpW
 value-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl lpit lpV)
   with lpit→⊑ lpit
 ... | ⟨ unk⊑ , unk⊑ ⟩ = contradiction i (idNotInert A-Unk _)
-value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+value-⊑-wrap-inv v (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}
 
 wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {i : Inert c}
   → A′ ≢ ⋆
@@ -43,10 +43,13 @@ wrap-⊑-value-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cas
   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′
     ----------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
+wrap-⊑-value-inv nd v w (⊑ᶜ-wrap lpii lpV imp) = ⊥-elim (nd (imp refl))
+{-
 wrap-⊑-value-inv nd v w (⊑ᶜ-wrap lpii lpV) with inj-⊑-inj _ _ lpii
 ... | ⟨ refl , refl ⟩ = contradiction refl nd
+-}
 wrap-⊑-value-inv nd v w (⊑ᶜ-wrapl _ lpV) = lpV
-wrap-⊑-value-inv nd v w (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+wrap-⊑-value-inv nd v w (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}
 
 wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast (A ⇒ ⋆)} {c′ : Cast (A′ ⇒ ⋆)}
                     {i : Inert c} {i′ : Inert c′}
@@ -54,8 +57,8 @@ wrap-⊑-wrap-inv : ∀ {A A′} {V : ∅ ⊢ A} {V′ : ∅ ⊢ A′} {c : Cast
   → ∅ , ∅ ⊢ V ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
     -----------------------------
   → ∅ , ∅ ⊢ V ⊑ᶜ V′
-wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrap _ lpV) = lpV
+wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrap _ lpV imp) = lpV
 wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapl lpit lpV)
   with lpit→⊑ lpit
 ... | ⟨ unk⊑ , unk⊑ ⟩ = contradiction i (idNotInert A-Unk _)
-wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV) = contradiction lpti (⋆-⋢-inert _)
+wrap-⊑-wrap-inv (V-wrap v i) (V-wrap v′ i′) (⊑ᶜ-wrapr lpti lpV A≢⋆) = ⊥-elim (A≢⋆ refl) {- contradiction lpti (⋆-⋢-inert _) -}

@@ -31,6 +31,10 @@ data Op : Set where
   op-inl : Type → Op
   op-inr : Type → Op
   op-case : Label → Type → Type → Op
+  -- mutable reference
+  -- op-ref : Op
+  -- op-deref : Label → Op
+  -- op-assign : Label → Op
 
 sig : Op → List Sig
 sig (op-lam A) = (ν ■) ∷ []
@@ -43,6 +47,10 @@ sig (op-snd ℓ) = ■ ∷ []
 sig (op-inl B) = ■ ∷ []
 sig (op-inr A) = ■ ∷ []
 sig (op-case ℓ A B) = ■ ∷ (ν ■) ∷ (ν ■) ∷ []
+-- mutable reference
+-- sig op-ref = ■ ∷ []
+-- sig (op-deref ℓ) = ■ ∷ []
+-- sig (op-assign ℓ) = ■ ∷ ■ ∷ []
 
 open Syntax.OpSig Op sig
   renaming (ABT to Term) public
@@ -66,9 +74,13 @@ pattern inl_other_ M B = (op-inl B) ⦅ cons (ast M) nil ⦆
 
 pattern inr_other_ M A = (op-inr A) ⦅ cons (ast M) nil ⦆
 
-pattern case_of_⇒_∣_⇒_at_ L A M B N ℓ =
-  (op-case ℓ A B) ⦅ cons (ast L) (cons (bind (ast M))
-                         (cons (bind (ast N)) nil)) ⦆
+pattern case_of_⇒_∣_⇒_at_ L A M B N ℓ = (op-case ℓ A B) ⦅ cons (ast L)
+                                                               (cons (bind (ast M))
+                                                               (cons (bind (ast N)) nil)) ⦆
+
+-- pattern ref_ M = op-ref ⦅ cons (ast M) nil ⦆
+-- pattern !_at_ M ℓ = (op-deref ℓ) ⦅ cons (ast M) nil ⦆
+-- pattern _:=_at_ L M ℓ = (op-assign ℓ) ⦅ cons (ast L) (cons (ast M) nil) ⦆
 
 data _∋_⦂_ : Context → ℕ → Type → Set where
 
@@ -150,6 +162,26 @@ data _⊢G_⦂_ : Context → Term → Type → Set where
     → (bc : B₂ ~ C₂)
       -----------------------------------------
     → Γ ⊢G case L of B₁ ⇒ M ∣ C₁ ⇒ N at ℓ ⦂ ⨆ bc
+
+  -- ⊢ref : ∀ {Γ A} {M}
+  --   → Γ ⊢G M ⦂ A
+  --     -------------------
+  --   → Γ ⊢G ref M ⦂ Ref A
+
+  -- ⊢deref : ∀ {Γ A A₁} {M} {ℓ}
+  --   → Γ ⊢G M ⦂ A
+  --   → A ▹Ref A₁
+  --     -------------------
+  --   → Γ ⊢G ! M at ℓ ⦂ A₁
+
+  -- ⊢assign : ∀ {Γ A A' A₁} {L M} {ℓ}
+  --   → Γ ⊢G L ⦂ A
+  --   → Γ ⊢G M ⦂ A'
+  --   → A ▹Ref A₁
+  --   → A' ~ A₁
+  --     ----------------------
+  --   → Γ ⊢G L := M at ℓ ⦂ A
+
 
 {-
 

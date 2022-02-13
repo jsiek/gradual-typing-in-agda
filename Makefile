@@ -18,7 +18,7 @@ AGDA = Labels.agda Types.agda Variables.agda \
 	LazyCoercions.agda LazyCoercionsBlame.agda \
 	EfficientParamCasts.agda SpaceEfficient.agda PreserveHeight.agda \
 	EfficientGroundCoercions.agda \
-	HyperCoercions.agda 
+	HyperCoercions.agda
 
 AGDAI = $(AGDA:%.agda=%.agdai)
 

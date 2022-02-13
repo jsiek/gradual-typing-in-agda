@@ -67,7 +67,7 @@ module ParamCastDeterministic (cs : CastStruct) where
   blame? (blame ℓ) = yes (⟨ ℓ , refl ⟩)
 
   plug-not-value : ∀{Γ}{A B : Type}{M : Γ ⊢ A}{F : Frame A B} → ¬ Value M → ¬ Value (plug M F)
-  plug-not-value {F = F-×₁ M {v}} nvm (V-pair vp vp₁) = nvm vp₁
+  plug-not-value {F = F-×₁ M v} nvm (V-pair vp vp₁) = nvm vp₁
   plug-not-value {F = F-×₂ x} nvm (V-pair vp vp₁) = nvm vp
   plug-not-value {F = F-inl} nvm (V-inl a) = nvm a
   plug-not-value {F = F-inr} nvm (V-inr a) = nvm a
@@ -78,7 +78,7 @@ module ParamCastDeterministic (cs : CastStruct) where
   plug-not-var {F = F-·₁ x} ()
   plug-not-var {F = F-·₂ M} ()
   plug-not-var {F = F-if x x₁} ()
-  plug-not-var {F = F-×₁ M {v}} ()
+  plug-not-var {F = F-×₁ M v} ()
   plug-not-var {F = F-×₂ x} ()
   plug-not-var {F = F-fst} ()
   plug-not-var {F = F-snd} ()
@@ -299,7 +299,7 @@ module ParamCastDeterministic (cs : CastStruct) where
   ... | no nbl
       with reduce→hop L→L' nvl
   ... | refl = refl
-  reduce→hop (ξ {M = M₂}{F = F-×₁ M₁ {vm1}} M→N) nv
+  reduce→hop (ξ {M = M₂}{F = F-×₁ M₁ vm1} M→N) nv
       with value? M₁
   ... | no nvm = ⊥-elimi (nvm vm1)
   ... | yes vm
@@ -389,7 +389,7 @@ module ParamCastDeterministic (cs : CastStruct) where
   ... | no nvm1 = ⊥-elim (nvm1 v)
   ... | yes vm1 = refl
   reduce→hop (ξ-blame {F = F-if x x₁}) nv = refl
-  reduce→hop (ξ-blame {F = F-×₁ M₁ {vm1}}) nv
+  reduce→hop (ξ-blame {F = F-×₁ M₁ vm1}) nv
       with value? M₁
   ... | no nvm1 = ⊥-elimi (nvm1 vm1)
   ... | yes _ = refl
