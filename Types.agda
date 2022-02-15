@@ -10,7 +10,7 @@ module Types where
   open import Data.Sum using (_⊎_; inj₁; inj₂)
   open import Data.Unit renaming (⊤ to Top)
   open import PrimitiveTypes
-     renaming (Prim to PrimD; Void to ⊥; rep to prim-rep; Label to DenotLabel)
+     renaming (Prim to PrimD; rep to prim-rep)
      public
   open import Relation.Binary.PropositionalEquality
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
