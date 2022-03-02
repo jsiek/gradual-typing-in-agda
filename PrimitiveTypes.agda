@@ -16,7 +16,6 @@ data Base : Set where
   Int : Base
   𝔹 : Base
   Unit : Base
-  Blame : Base
 
 data Prim : Set where
   base : Base → Prim
@@ -27,7 +26,6 @@ base-rep Nat = ℕ
 base-rep Int = ℤ
 base-rep 𝔹 = Bool
 base-rep Unit = Top
-base-rep Blame = Label
 
 rep : Prim → Set
 rep (base b) = base-rep b
@@ -38,41 +36,22 @@ base-eq? Nat Nat = yes refl
 base-eq? Nat Int = no (λ ())
 base-eq? Nat 𝔹 = no (λ ())
 base-eq? Nat Unit = no (λ ())
-base-eq? Nat Blame  = no (λ ())
 base-eq? Int Nat = no (λ ())
 base-eq? Int Int = yes refl
 base-eq? Int 𝔹 = no (λ ())
 base-eq? Int Unit = no (λ ())
-base-eq? Int Blame  = no (λ ())
 base-eq? 𝔹 Nat = no (λ ())
 base-eq? 𝔹 Int = no (λ ())
 base-eq? 𝔹 𝔹 = yes refl
 base-eq? 𝔹 Unit = no (λ ())
-base-eq? 𝔹 Blame  = no (λ ())
 base-eq? Unit Nat = no (λ ())
 base-eq? Unit Int = no (λ ())
 base-eq? Unit 𝔹 = no (λ ())
 base-eq? Unit Unit = yes refl
-base-eq? Unit Blame  = no (λ ())
-base-eq? Blame Nat = no (λ ())
-base-eq? Blame Int = no (λ ())
-base-eq? Blame 𝔹 = no (λ ())
-base-eq? Blame Unit = no (λ ())
-base-eq? Blame Blame = yes refl
 
 base-rep-eq? : ∀{B} → (k : base-rep B) (k′ : base-rep B) → Dec (k ≡ k′)
 base-rep-eq? {Nat} k k′ = k ≟ k′
 base-rep-eq? {Int} k k′ = k =int k′
 base-rep-eq? {𝔹} k k′ = k =? k′
 base-rep-eq? {Unit} tt tt = yes refl
-base-rep-eq? {Blame} (pos ℓ) (pos ℓ′)
-    with ℓ ≟ ℓ′
-... | yes refl = yes refl
-... | no neq = no λ { refl → neq refl }
-base-rep-eq? {Blame} (pos x) (neg x₁) = no λ ()
-base-rep-eq? {Blame} (neg x) (pos x₁) = no λ ()
-base-rep-eq? {Blame} (neg ℓ) (neg ℓ′)
-    with ℓ ≟ ℓ′
-... | yes refl = yes refl
-... | no neq = no λ { refl → neq refl }
 
