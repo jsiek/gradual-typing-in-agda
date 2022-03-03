@@ -32,12 +32,11 @@ data Val : Set where
 {- Abstraction  ---------------------------------------------------------------}
 
 data Λ : (𝒫 Val → 𝒫 Val) → 𝒫 Val where
-  Λ-const : ∀{f B k} → Λ f (const {B} k)
-  Λ-↦ : ∀{f V w }
+  Λ-↦ : ∀{f V w}
      → w ∈ f (mem V)
      → V ≢ []  {- call by value -}
-     → Λ f (V ↦ w)
-  Λ-ν : ∀{f} → Λ f ν
+     → (V ↦ w) ∈ Λ f 
+  Λ-ν : ∀{f} → ν ∈ Λ f
 
 {- Application -----------------------------------------------------------------}
 
@@ -103,4 +102,13 @@ data cond : 𝒫 Val → (𝒫 Val → 𝒫 Val) → (𝒫 Val → 𝒫 Val) →
     → inr V ∈ D  → w ∈ F₂ (mem V) → w ∈ cond D F₁ F₂
   cond-blame : ∀{D F₁ F₂ ℓ}
     → blame ℓ ∈ D  →  blame ℓ ∈ cond D F₁ F₂
+
+{- Primitive operators ------------------------------------------------}
+
+data ℘ : ∀{A} (P : Prim A) → rep A → 𝒫 Val where
+  ℘-base : ∀{B k} → (const {B} k) ∈ ℘ (P-Base {B}) k 
+  ℘-fun : ∀{A B P f k w}
+       → w ∈ ℘ {A} P (f k)
+       → (((const {B} k) ∷ []) ↦ w) ∈ ℘ (P-Fun {B} P) f
+  ℘-ν : ∀{A B P f} → ν ∈ ℘ (P-Fun {A}{B} P) f
 

@@ -29,6 +29,8 @@ _∷_ : ∀{Γ B} → 𝒫 Val → (∀{A} → Γ ∋ A → 𝒫 Val) → (∀{A
 (D ∷ ρ) Z = D
 (D ∷ ρ) (S x) = ρ x
 
+{- Semantics of Types -}
+
 data ℬ⟦_⟧ : Base → 𝒫 Val where
   ℬ-const : ∀{ι k}
     → const {ι} k ∈ ℬ⟦ ι ⟧
@@ -46,31 +48,35 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
   𝒯-⊎-inr : ∀{A B V} → mem V ⊆ 𝒯⟦ B ⟧ → inr V ∈ 𝒯⟦ A `⊎ B ⟧
   𝒯-blame : ∀{A ℓ} → blame ℓ ∈ 𝒯⟦ A ⟧
 
--- coerce : ∀ {A B : Type} → (c : A ~ B) → Label → 𝒫 Val → 𝒫 Val
--- coerce {⋆} {B} unk~L ℓ D v = v ∈ D × v ∈ 𝒯⟦ B ⟧
--- coerce {A} {⋆} unk~R ℓ D = D
--- coerce {` ι} {` ι} base~ ℓ D = D
--- coerce {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~ c d) ℓ D =
---     Λ λ X → coerce d ℓ (D • (coerce c ℓ X))
--- coerce {.(_ `× _)} {.(_ `× _)} (pair~ c d) ℓ D = {!!}
--- coerce {.(_ `⊎ _)} {.(_ `⊎ _)} (sum~ c d) ℓ D = {!!}
+{- Semantics of Casts -}
 
--- ⟦_⟧ : ∀{Γ A} → Γ ⊢ A → (Env Γ) → 𝒫 Val
--- ⟦ ` x ⟧ ρ = ρ x
--- ⟦ ƛ M ⟧ ρ = Λ λ D → ⟦ M ⟧ (D ∷ ρ)
--- ⟦ L · M ⟧ ρ = ⟦ L ⟧ ρ  •  ⟦ M ⟧ ρ
--- ⟦ $_ {Γ}{A} k {p} ⟧ ρ = ℘ {A}{p} k
--- ⟦ if L M N ⟧ ρ w = (const true ∈ ⟦ L ⟧ ρ  ×  w ∈ ⟦ M ⟧ ρ)
---                  ⊎ (const false ∈ ⟦ L ⟧ ρ  ×  w ∈ ⟦ N ⟧ ρ)
--- ⟦ cons M N ⟧ ρ = pair (⟦ M ⟧ ρ) (⟦ N ⟧ ρ)
--- ⟦ fst M ⟧ ρ = car (⟦ M ⟧ ρ)
--- ⟦ snd M ⟧ ρ = cdr (⟦ M ⟧ ρ)
--- ⟦ inl M ⟧ ρ = pair (℘ {P = P-Base} true) (⟦ M ⟧ ρ)
--- ⟦ inr M ⟧ ρ = pair (℘ {P = P-Base} false) (⟦ M ⟧ ρ)
--- ⟦ case L M N ⟧ ρ = cond (⟦ L ⟧ ρ) (λ D → ⟦ M ⟧ (D ∷ ρ)) λ D → ⟦ N ⟧ (D ∷ ρ)
--- ⟦ M ⟨ cast A B ℓ c ⟩ ⟧ ρ = coerce {A}{B} c ℓ (⟦ M ⟧ ρ) 
--- ⟦ M ⟪ inert {A} g c ⟫ ⟧ ρ = coerce {A}{⋆} unk~R (pos 0) (⟦ M ⟧ ρ)
--- ⟦ blame ℓ ⟧ ρ = ↓ (blame! ℓ)
+𝒞⟦_⟧ : ∀ {A B : Type} → (c : A ~ B) → Label → 𝒫 Val → 𝒫 Val
+𝒞⟦_⟧ {⋆} {B} unk~L ℓ D = D ∩ 𝒯⟦ B ⟧
+𝒞⟦_⟧ {A} {⋆} unk~R ℓ D = D
+𝒞⟦_⟧ {` ι} {` ι} base~ ℓ D = D
+𝒞⟦_⟧ {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~ c d) ℓ D =
+    Λ λ X → 𝒞⟦_⟧ d ℓ (D • (𝒞⟦_⟧ c ℓ X))
+𝒞⟦_⟧ {.(_ `× _)} {.(_ `× _)} (pair~ c d) ℓ D =
+    pair (𝒞⟦_⟧ c ℓ (car D)) (𝒞⟦_⟧ d ℓ (cdr D))
+𝒞⟦_⟧ {.(_ `⊎ _)} {.(_ `⊎ _)} (sum~ c d) ℓ D =
+    cond D (λ X → 𝒞⟦_⟧ c ℓ X) (λ X → 𝒞⟦_⟧ d ℓ X)
+
+⟦_⟧ : ∀{Γ A} → Γ ⊢ A → (Env Γ) → 𝒫 Val
+⟦ ` x ⟧ ρ = ρ x
+⟦ ƛ M ⟧ ρ = Λ λ D → ⟦ M ⟧ (D ∷ ρ)
+⟦ L · M ⟧ ρ = ⟦ L ⟧ ρ  •  ⟦ M ⟧ ρ
+⟦ $_ {Γ}{A} k {p} ⟧ ρ = ℘ {A} p k
+⟦ if L M N ⟧ ρ w = (const true ∈ ⟦ L ⟧ ρ  ×  w ∈ ⟦ M ⟧ ρ)
+                 ⊎ (const false ∈ ⟦ L ⟧ ρ  ×  w ∈ ⟦ N ⟧ ρ)
+⟦ cons M N ⟧ ρ = pair (⟦ M ⟧ ρ) (⟦ N ⟧ ρ)
+⟦ fst M ⟧ ρ = car (⟦ M ⟧ ρ)
+⟦ snd M ⟧ ρ = cdr (⟦ M ⟧ ρ)
+⟦ inl M ⟧ ρ = inleft (⟦ M ⟧ ρ)
+⟦ inr M ⟧ ρ = inright (⟦ M ⟧ ρ)
+⟦ case L M N ⟧ ρ = cond (⟦ L ⟧ ρ) (λ D → ⟦ M ⟧ (D ∷ ρ)) λ D → ⟦ N ⟧ (D ∷ ρ)
+⟦ M ⟨ cast A B ℓ c ⟩ ⟧ ρ = 𝒞⟦ c ⟧ ℓ (⟦ M ⟧ ρ) 
+⟦ M ⟪ inert {A} g c ⟫ ⟧ ρ = 𝒞⟦ unk~R{A = A} ⟧ (pos 0) (⟦ M ⟧ ρ)
+⟦ blame ℓ ⟧ ρ v = v ≡ blame ℓ
 
 -- base-non-empty : ∀{ι : Base}{k : rep-base ι}
 --   → const k ∈ ℘ {` ι}{P-Base} k
@@ -94,12 +100,12 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 -- ... | ⟨ w , w∈ ⟩ =    
 --       ⟨ const rep-base-inhabit ↦ w , ⟨ rep-base-inhabit , ⟨ ⊑-const , w∈ ⟩ ⟩ ⟩
 
--- coerce-inj-id : ∀ {D : 𝒫 Val}{ℓ} A → coerce{A}{⋆} unk~R ℓ D ≡ D
--- coerce-inj-id ⋆ = refl
--- coerce-inj-id (` ι) = refl
--- coerce-inj-id (A ⇒ B) = refl
--- coerce-inj-id (A `× B) = refl
--- coerce-inj-id (A `⊎ B) = refl
+-- 𝒞⟦_⟧-inj-id : ∀ {D : 𝒫 Val}{ℓ} A → 𝒞⟦_⟧{A}{⋆} unk~R ℓ D ≡ D
+-- 𝒞⟦_⟧-inj-id ⋆ = refl
+-- 𝒞⟦_⟧-inj-id (` ι) = refl
+-- 𝒞⟦_⟧-inj-id (A ⇒ B) = refl
+-- 𝒞⟦_⟧-inj-id (A `× B) = refl
+-- 𝒞⟦_⟧-inj-id (A `⊎ B) = refl
 
 -- values-non-empty : ∀{Γ A} (V : Γ ⊢ A) (v : Value V) (ρ : Env Γ)
 --   → Σ[ v ∈ Val ] v ∈ ⟦ V ⟧ ρ
@@ -110,7 +116,7 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 -- values-non-empty {Γ} {.(_ `⊎ _)} .(inr _) (V-inr v) ρ = {!!}
 -- values-non-empty {Γ} {_} (V ⟪ inert {A} g c ⟫) (V-wrap v _) ρ
 --     with values-non-empty V v ρ
--- ... | ⟨ v , v∈V ⟩ rewrite coerce-inj-id {⟦ V ⟧ ρ}{pos 0} A = ⟨ v , v∈V ⟩
+-- ... | ⟨ v , v∈V ⟩ rewrite 𝒞⟦_⟧-inj-id {⟦ V ⟧ ρ}{pos 0} A = ⟨ v , v∈V ⟩
 
 -- _⊧_ : (Γ : Context) → Env Γ → Set
 -- Γ ⊧ ρ = (∀ {A} (x : Γ ∋ A) → ρ x ⊆ 𝒯⟦ A ⟧)
@@ -136,10 +142,10 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 --   → ℘ {A}{P} k ⊆ 𝒯⟦ A ⟧
 -- prim-sound = {!!}
 
--- coerce-sound : ∀{A B ℓ}{D} (c : A ~ B)
+-- 𝒞⟦_⟧-sound : ∀{A B ℓ}{D} (c : A ~ B)
 --   → D ⊆ 𝒯⟦ A ⟧
---   → coerce c ℓ D ⊆ 𝒯⟦ B ⟧
--- coerce-sound c D⊆A = {!!}
+--   → 𝒞⟦_⟧ c ℓ D ⊆ 𝒯⟦ B ⟧
+-- 𝒞⟦_⟧-sound c D⊆A = {!!}
 
 -- sem-sound : ∀{Γ A}{ρ : Env Γ} (M : Γ ⊢ A)
 --   → Γ ⊧ ρ
@@ -175,11 +181,11 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 -- sem-sound {ρ = ρ}(M ⟨ cast A B ℓ c ⟩) Γ⊧ρ =
 --   let IH  : ⟦ M ⟧ ρ ⊆ 𝒯⟦ A ⟧
 --       IH = sem-sound M Γ⊧ρ in
---   coerce-sound c IH
+--   𝒞⟦_⟧-sound c IH
 -- sem-sound {ρ = ρ} (M ⟪ inert {A} g c ⟫) Γ⊧ρ =
 --   let IH  : ⟦ M ⟧ ρ ⊆ 𝒯⟦ A ⟧
 --       IH = sem-sound M Γ⊧ρ in
---   coerce-sound {A = A}{ℓ = pos 0} unk~R IH
+--   𝒞⟦_⟧-sound {A = A}{ℓ = pos 0} unk~R IH
 -- sem-sound {A = A} (blame ℓ) Γ⊧ρ v v∈ = {!!} 
 
 
@@ -209,11 +215,11 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 -- _≅⟨_⟩_ : ∀ {E F : 𝒫 Val} (D : 𝒫 Val) → D ≅ E → E ≅ F → D ≅ F
 -- D ≅⟨ D≅E ⟩ E≅F = ≅-trans D≅E E≅F
 
--- coerce-atomic-id : ∀{A ℓ} (D : 𝒫 Val) → (A~A : A ~ A) → (a : Atomic A)
---   → coerce {A}{A} A~A ℓ D ≅ D
--- coerce-atomic-id D unk~L A-Unk = ≅-intro (λ { x ⟨ fst₁ , snd₁ ⟩ → fst₁}) λ { x x₁ → ⟨ x₁ , tt ⟩}
--- coerce-atomic-id D unk~R A-Unk = ≅-refl {D}
--- coerce-atomic-id D base~ A-Base = ≅-refl {D}
+-- 𝒞⟦_⟧-atomic-id : ∀{A ℓ} (D : 𝒫 Val) → (A~A : A ~ A) → (a : Atomic A)
+--   → 𝒞⟦_⟧ {A}{A} A~A ℓ D ≅ D
+-- 𝒞⟦_⟧-atomic-id D unk~L A-Unk = ≅-intro (λ { x ⟨ fst₁ , snd₁ ⟩ → fst₁}) λ { x x₁ → ⟨ x₁ , tt ⟩}
+-- 𝒞⟦_⟧-atomic-id D unk~R A-Unk = ≅-refl {D}
+-- 𝒞⟦_⟧-atomic-id D base~ A-Base = ≅-refl {D}
 
 -- shift⟦⟧ : ∀{Γ A B} (V : Γ ⊢ A) (D : 𝒫 Val) (ρ : ∀{A} → Γ ∋ A → 𝒫 Val)
 --   → ⟦ rename (S_{B = B}) V ⟧ (D ∷ ρ) ≅ ⟦ V ⟧ ρ
@@ -230,15 +236,15 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 --   → D₁ • D₂ ≅ E₁ • E₂
 -- •-cong de1 de2 = {!!}
 
--- coerce-cong : ∀{D E ℓ A B} (c : A ~ B)
+-- 𝒞⟦_⟧-cong : ∀{D E ℓ A B} (c : A ~ B)
 --   → D ≅ E
---   → coerce c ℓ D ≅ coerce c ℓ E
--- coerce-cong de = {!!}
+--   → 𝒞⟦_⟧ c ℓ D ≅ 𝒞⟦_⟧ c ℓ E
+-- 𝒞⟦_⟧-cong de = {!!}
 
--- coerce-retract : ∀{G B ℓ ℓ'}{D : 𝒫 Val}{g : Ground G}
+-- 𝒞⟦_⟧-retract : ∀{G B ℓ ℓ'}{D : 𝒫 Val}{g : Ground G}
 --   → (c : G ~ ⋆) → (d : ⋆ ~ B) → (e : G ~ B)
---   → coerce d ℓ (coerce c ℓ' D) ≅ coerce e ℓ D
--- coerce-retract {G}{B}{ℓ}{ℓ'}{D}{g} c d e = {!!}
+--   → 𝒞⟦_⟧ d ℓ (𝒞⟦_⟧ c ℓ' D) ≅ 𝒞⟦_⟧ e ℓ D
+-- 𝒞⟦_⟧-retract {G}{B}{ℓ}{ℓ'}{D}{g} c d e = {!!}
 
 -- 𝒯-ground : ∀ A G
 --   → Ground G
@@ -285,21 +291,21 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 -- 𝒯-conflict .(⋆ `× ⋆) H v G-Pair h neq = {!!}
 -- 𝒯-conflict .(⋆ `⊎ ⋆) H v G-Sum h neq = {!!}
 
--- coerce-blame : ∀{G B H ℓ ℓ'}{D : 𝒫 Val}{g : Ground G}{h : Ground H}
+-- 𝒞⟦_⟧-blame : ∀{G B H ℓ ℓ'}{D : 𝒫 Val}{g : Ground G}{h : Ground H}
 --   → D ⊆ 𝒯⟦ G ⟧
 --   → (c : G ~ ⋆) → (d : ⋆ ~ B) → (bh : B ~ H) → (G ≢ H) → .(B ≢ ⋆)
---   → coerce d ℓ (coerce c ℓ' D) ≅ ↓ (blame! ℓ)
--- coerce-blame {G} {.⋆} {H} {ℓ} {ℓ'} {D} {g} D⊆G unk~R unk~R bh G≢H nd = ⊥-elimi (nd refl)
--- coerce-blame {G} {B} {H} {ℓ} {ℓ'} {D} {g} D⊆G unk~R unk~L bh G≢H nd = {!!}
+--   → 𝒞⟦_⟧ d ℓ (𝒞⟦_⟧ c ℓ' D) ≅ ↓ (blame! ℓ)
+-- 𝒞⟦_⟧-blame {G} {.⋆} {H} {ℓ} {ℓ'} {D} {g} D⊆G unk~R unk~R bh G≢H nd = ⊥-elimi (nd refl)
+-- 𝒞⟦_⟧-blame {G} {B} {H} {ℓ} {ℓ'} {D} {g} D⊆G unk~R unk~L bh G≢H nd = {!!}
 -- {-
 --   ≅-intro G1 G2
 --   where
---   G1 : coerce d ℓ (coerce c ℓ' D) ⊆ (λ w → w ≡ blame! ℓ)
+--   G1 : 𝒞⟦_⟧ d ℓ (𝒞⟦_⟧ c ℓ' D) ⊆ (λ w → w ≡ blame! ℓ)
 --   G1 v v∈dcD =
 -- {-     let v∈ι = D⊆G  -}
 --      {!!}
   
---   G2 : (λ w → w ≡ blame! ℓ) ⊆ coerce d ℓ (coerce c ℓ' D)
+--   G2 : (λ w → w ≡ blame! ℓ) ⊆ 𝒞⟦_⟧ d ℓ (𝒞⟦_⟧ c ℓ' D)
 --   G2 = {!!}
 -- -}
 
@@ -308,27 +314,27 @@ data 𝒯⟦_⟧ : Type → 𝒫 Val where
 --   → Γ ⊧ ρ
 --   → ⟦ V ⟨ c ⟩ ⟧ ρ ≅ ⟦ applyCast V v c {a} ⟧ ρ
 -- ⟦⟧-cast V (cast A .A ℓ A~B) (activeId {a = a} .(cast A A ℓ _)) {v}{ρ} Γ⊧ρ =
---     coerce-atomic-id (⟦ V ⟧ ρ) A~B a 
+--     𝒞⟦_⟧-atomic-id (⟦ V ⟧ ρ) A~B a 
 -- ⟦⟧-cast V (cast A .⋆ ℓ A~B) (activeInj .(cast A ⋆ ℓ _) ng nd) {v}{ρ} Γ⊧ρ = {!!}
 -- ⟦⟧-cast (V ⟪ inert {G} g c ⟫) (cast .⋆ B ℓ ⋆~B) (activeProj _ nd)
 --         {V-wrap v _} {ρ} Γ⊧ρ
 --     with ground B {nd}
 -- ... | ⟨ H , ⟨ h , B~H ⟩ ⟩
 --     with gnd-eq? G H {g}{h}
--- ... | yes refl = coerce-retract {g = g} unk~R ⋆~B (Sym~ B~H)
+-- ... | yes refl = 𝒞⟦_⟧-retract {g = g} unk~R ⋆~B (Sym~ B~H)
 -- ... | no neq =
 --       let xx = {!!} in
---       coerce-blame{g = g}{h = h} (sem-sound V Γ⊧ρ) unk~R ⋆~B B~H neq {!nd!} 
+--       𝒞⟦_⟧-blame{g = g}{h = h} (sem-sound V Γ⊧ρ) unk~R ⋆~B B~H neq {!nd!} 
 -- ⟦⟧-cast V (cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c d)) (activeFun .(cast (A ⇒ B) (A' ⇒ B') ℓ (fun~ c d))) {v}{ρ} Γ⊧ρ =
 --     Λ-cong G 
 --     where
 --     G : ∀ {X : 𝒫 Val} →
---          coerce d ℓ (⟦ V ⟧ ρ • coerce c ℓ X)
---        ≅ coerce d ℓ (⟦ rename S_ V ⟧ (X ∷ ρ) • coerce c ℓ X)
+--          𝒞⟦_⟧ d ℓ (⟦ V ⟧ ρ • 𝒞⟦_⟧ c ℓ X)
+--        ≅ 𝒞⟦_⟧ d ℓ (⟦ rename S_ V ⟧ (X ∷ ρ) • 𝒞⟦_⟧ c ℓ X)
 --     G {X} =
---             coerce d ℓ (⟦ V ⟧ ρ • coerce c ℓ X)
---           ≅⟨ coerce-cong d (•-cong (≅-sym (shift⟦⟧{B = A'} V X ρ)) ≅-refl) ⟩
---             coerce d ℓ (⟦ rename S_ V ⟧ (X ∷ ρ) • coerce c ℓ X)
+--             𝒞⟦_⟧ d ℓ (⟦ V ⟧ ρ • 𝒞⟦_⟧ c ℓ X)
+--           ≅⟨ 𝒞⟦_⟧-cong d (•-cong (≅-sym (shift⟦⟧{B = A'} V X ρ)) ≅-refl) ⟩
+--             𝒞⟦_⟧ d ℓ (⟦ rename S_ V ⟧ (X ∷ ρ) • 𝒞⟦_⟧ c ℓ X)
 --           ■
 -- ⟦⟧-cast V (cast .(_ `× _) .(_ `× _) ℓ A~B) (activePair .(cast (_ `× _) (_ `× _) ℓ _)) Γ⊧ρ = {!!}
 -- ⟦⟧-cast V (cast .(_ `⊎ _) .(_ `⊎ _) ℓ A~B) (activeSum .(cast (_ `⊎ _) (_ `⊎ _) ℓ _)) Γ⊧ρ = {!!}
