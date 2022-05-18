@@ -69,7 +69,7 @@ record DenotCastStruct : Set₁ where
     semantics = record { interp-op = 𝕆 ;
                          mono-op = 𝕆-mono ;
                          error = ERR }
-  open Semantics {{...}} public
+  open Semantics semantics public
 
   {- possible other fields include: 
       + denotApplyCast-wt

@@ -17,6 +17,8 @@ open import PrimitiveTypes using (Base)
 open import Relation.Binary.PropositionalEquality
     using (_≡_; _≢_; refl; sym; subst)
 open import Relation.Nullary using (¬_; Dec; yes; no)
+open import Relation.Nullary.Product using (_×-dec_)
+open import Relation.Nullary.Implication using (_→-dec_)
 open import SetsAsPredicates
 open import Types
 
@@ -38,12 +40,117 @@ data Val : Set where
 ⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set
 ⟦ [] ∶ τ ⟧₊ = ⊤
 ⟦ (v ∷ V) ∶ τ ⟧₊ = ⟦ v ∶ τ ⟧ × ⟦ V ∶ τ ⟧₊
+⟦ v ∶ ⋆ ⟧ = ⊤
+⟦ (const {b'} k) ∶ ` b ⟧ with base-eq? b b'
+... | yes refl = ⊤
+... | no neq = ⊥
+⟦ ERR ∶ ` b ⟧ = ⊤
+⟦ blame ℓ ∶ ` b ⟧ = ⊤
+⟦ v ∶ ` b ⟧ = ⊥
+⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
+⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ → ⟦ w ∶ τ ⟧
+⟦ ERR ∶ σ ⇒ τ ⟧ = ⊤
+⟦ blame ℓ ∶ σ ⇒ τ ⟧ = ⊤
+⟦ v ∶ σ ⇒ τ ⟧ = ⊥
+⟦ fst v ∶ σ `× τ ⟧ = ⟦ v ∶ σ ⟧
+⟦ snd v ∶ σ `× τ ⟧ = ⟦ v ∶ τ ⟧
+⟦ ERR ∶ σ `× τ ⟧ = ⊤
+⟦ blame ℓ ∶ σ `× τ ⟧ = ⊤
+⟦ v ∶ σ `× τ ⟧ = ⊥
+⟦ inl V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ σ ⟧₊
+⟦ inr V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ τ ⟧₊
+⟦ ERR ∶ σ `⊎ τ ⟧ = ⊤
+⟦ blame ℓ ∶ σ `⊎ τ ⟧ = ⊤
+⟦ v ∶ σ `⊎ τ ⟧ = ⊥
+
+⟦ERR∶τ⟧ : ∀ τ → ⟦ ERR ∶ τ ⟧
+⟦ERR∶τ⟧ ⋆ = tt
+⟦ERR∶τ⟧ (` x) = tt
+⟦ERR∶τ⟧ (τ ⇒ τ₁) = tt
+⟦ERR∶τ⟧ (τ `× τ₁) = tt
+⟦ERR∶τ⟧ (τ `⊎ τ₁) = tt
+
+⟦blame∶τ⟧ : ∀ τ {ℓ} → ⟦ blame ℓ ∶ τ ⟧
+⟦blame∶τ⟧ ⋆ = tt
+⟦blame∶τ⟧ (` x) = tt
+⟦blame∶τ⟧ (τ ⇒ τ₁) = tt
+⟦blame∶τ⟧ (τ `× τ₁) = tt
+⟦blame∶τ⟧ (τ `⊎ τ₁) = tt
+
+⟦V∶⋆⟧₊ : ∀ {V} → ⟦ V ∶ ⋆ ⟧₊
+⟦V∶⋆⟧₊ {[]} = tt
+⟦V∶⋆⟧₊ {x ∷ V} = tt , ⟦V∶⋆⟧₊
+
+⟦_∶_⟧? : ∀ v τ → Dec (⟦ v ∶ τ ⟧)
+⟦_∶_⟧₊? : ∀ V τ → Dec (⟦ V ∶ τ ⟧₊)
+⟦ [] ∶ τ ⟧₊? = yes tt
+⟦ v ∷ V ∶ τ ⟧₊? = ⟦ v ∶ τ ⟧? ×-dec ⟦ V ∶ τ ⟧₊? 
+⟦ v ∶ ⋆ ⟧? = yes tt
+⟦ ERR ∶ τ ⟧? = yes (⟦ERR∶τ⟧ τ)
+⟦ blame ℓ ∶ τ ⟧? = yes (⟦blame∶τ⟧ τ)
+⟦ const {b'} k ∶ ` b ⟧? with base-eq? b b'
+... | yes refl = yes tt
+... | no neq = no (λ z → z)
+⟦ ν ∶ τ ⇒ τ₁ ⟧? = yes tt
+⟦ V ↦ w ∶ τ ⇒ τ₁ ⟧? = ⟦ V ∶ τ ⟧₊? →-dec ⟦ w ∶ τ₁ ⟧?
+⟦ fst v ∶ τ `× τ₁ ⟧? = ⟦ v ∶ τ ⟧?
+⟦ snd v ∶ τ `× τ₁ ⟧? = ⟦ v ∶ τ₁ ⟧?
+⟦ inl V ∶ τ `⊎ τ₁ ⟧? = ⟦ V ∶ τ ⟧₊?
+⟦ inr V ∶ τ `⊎ τ₁ ⟧? = ⟦ V ∶ τ₁ ⟧₊?
+⟦ x ↦ v ∶ ` b ⟧? = no (λ z → z)
+⟦ ν ∶ ` b ⟧? = no (λ z → z)
+⟦ fst v ∶ ` b ⟧? = no (λ z → z)
+⟦ snd v ∶ ` b ⟧? = no (λ z → z)
+⟦ inl x ∶ ` b ⟧? = no (λ z → z)
+⟦ inr x ∶ ` b ⟧? = no (λ z → z)
+⟦ const x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ fst v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ snd v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ inl x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ inr x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ const x ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ x ↦ v ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ ν ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ inl x ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ inr x ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ const x ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ x ↦ v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ ν ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ fst v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ snd v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+
+
+{-
 ⟦ const {B} k ∶ ` B' ⟧ with base-eq? B B'
 ... | yes refl = ⊤
 ... | no neq = ⊥
 ⟦ const {B} k ∶ τ ⟧ = ⊥
-⟦ blame ℓ ∶ τ ⟧ = ⊥   {- want types for this? -}
-⟦ ERR ∶ τ ⟧ = ⊥  {- want types for this? -}
+⟦ blame ℓ ∶ τ ⟧ = ⊤   {- want types for this? -}
+⟦ ERR ∶ τ ⟧ = ⊤  {- want types for this? -}
+⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
+⟦ ν ∶ τ ⟧ = ⊥
+⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ → ⟦ w ∶ τ ⟧
+⟦ V ↦ w ∶ τ ⟧ = ⊥
+⟦ fst v ∶ σ `× τ ⟧ = ⟦ v ∶ σ ⟧
+⟦ fst v ∶ τ ⟧ = ⊥
+⟦ snd v ∶ σ `× τ ⟧ = ⟦ v ∶ τ ⟧
+⟦ snd v ∶ τ ⟧ = ⊥
+⟦ inl V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ σ ⟧₊
+⟦ inl V ∶ τ ⟧ = ⊥
+⟦ inr V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ τ ⟧₊
+⟦ inr V ∶ τ ⟧ = ⊥ -}
+{-
+
+⟦_∶_⟧ : (v : Val) → (τ : Type) → Set
+⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set
+⟦ [] ∶ τ ⟧₊ = ⊤
+⟦ (v ∷ V) ∶ τ ⟧₊ = ⟦ v ∶ τ ⟧ × ⟦ V ∶ τ ⟧₊
+⟦ const {B} k ∶ ` B' ⟧ with base-eq? B B'
+... | yes refl = ⊤
+... | no neq = ⊥
+⟦ const {B} k ∶ τ ⟧ = ⊥
+⟦ blame ℓ ∶ τ ⟧ = ⊤   {- want types for this? -}
+⟦ ERR ∶ τ ⟧ = ⊤  {- want types for this? -}
 ⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ ν ∶ τ ⟧ = ⊥
 ⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ × ⟦ w ∶ τ ⟧
@@ -56,6 +163,9 @@ data Val : Set where
 ⟦ inl V ∶ τ ⟧ = ⊥
 ⟦ inr V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ τ ⟧₊
 ⟦ inr V ∶ τ ⟧ = ⊥
+
+
+
 
 data `⟦_∶_⟧ : (v : Val) → (τ : Type) → Set
 data `⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set where
@@ -70,6 +180,10 @@ data `⟦_∶_⟧ where
   Prod-snd : ∀ {v σ τ} → `⟦ v ∶ τ ⟧ → `⟦ snd v ∶ σ `× τ ⟧
   Sum-inl : ∀ {V σ τ} → `⟦ V ∶ σ ⟧₊ → `⟦ inl V ∶ σ `⊎ τ ⟧
   Sum-inr : ∀ {V σ τ} → `⟦ V ∶ τ ⟧₊ → `⟦ inr V ∶ σ `⊎ τ ⟧
+
+-}
+
+
 
   
   
