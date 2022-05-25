@@ -1,7 +1,7 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Bool using (Bool; true; false)
-open import Data.Nat using (ℕ; _≤_; _⊔_; _+_; _*_)
+open import Data.Nat using (ℕ; zero; _≤_; _⊔_; _+_; _*_)
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
    renaming (_,_ to ⟨_,_⟩)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
@@ -12,6 +12,7 @@ open import Relation.Binary.PropositionalEquality
 open import Relation.Nullary using (¬_)
 
 open import Types
+open import Labels
 open import PreCastStructure
 open import CastStructureABT
 open import Pow2
@@ -54,10 +55,7 @@ record DenotCastStruct : Set₁ where
   𝕆 (op-inr x) ⟨ D , ptt ⟩ = inright D
   𝕆 (op-case x₁ x₂) ⟨ D , ⟨ F₁ , ⟨ F₂ , ptt ⟩ ⟩ ⟩ = cond D F₁ F₂
   𝕆 (op-cast c) ⟨ D , ptt ⟩ = 𝒞 c D
-  𝕆 (op-wrap c x) ⟨ D , ptt ⟩ = D 
-     {- inert casts shouldn't change values or cause blame -}
-     {- is this true? or should they be considered regular casts? 
-        is this the base case of cast, or are there other base cases we should appeal to? -}
+  𝕆 (op-wrap c x) ⟨ D , ptt ⟩ = 𝒞 c D
   𝕆 (op-blame x ℓ) Ds = ℬ ℓ
   {- add proof of monotonicity -}
   𝕆-mono : 𝕆-monotone sig 𝕆
@@ -68,7 +66,7 @@ record DenotCastStruct : Set₁ where
     semantics : Semantics
     semantics = record { interp-op = 𝕆 ;
                          mono-op = 𝕆-mono ;
-                         error = ERR }
+                         error = Val.blame (neg zero) }
   open Semantics semantics public
 
   {- possible other fields include: 

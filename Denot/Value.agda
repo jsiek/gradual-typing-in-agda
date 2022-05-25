@@ -1,14 +1,12 @@
-{-
 
-  P(ω) or Engeler style graph model
-  
--}
 
 module Denot.Value where
 
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List using (List ; _∷_ ; []; _++_; length)
 open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
+open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
@@ -31,7 +29,6 @@ data Val : Set where
   inl : List Val → Val                   {- right injection of a sum -}
   inr : List Val → Val                   {- left injection of a sum -}
   blame : Label → Val
-  ERR : Val                              {- default value for environments -}
 
 
 
@@ -44,31 +41,21 @@ data Val : Set where
 ⟦ (const {b'} k) ∶ ` b ⟧ with base-eq? b b'
 ... | yes refl = ⊤
 ... | no neq = ⊥
-⟦ ERR ∶ ` b ⟧ = ⊤
 ⟦ blame ℓ ∶ ` b ⟧ = ⊤
 ⟦ v ∶ ` b ⟧ = ⊥
 ⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ → ⟦ w ∶ τ ⟧
-⟦ ERR ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ blame ℓ ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ v ∶ σ ⇒ τ ⟧ = ⊥
 ⟦ fst v ∶ σ `× τ ⟧ = ⟦ v ∶ σ ⟧
 ⟦ snd v ∶ σ `× τ ⟧ = ⟦ v ∶ τ ⟧
-⟦ ERR ∶ σ `× τ ⟧ = ⊤
 ⟦ blame ℓ ∶ σ `× τ ⟧ = ⊤
 ⟦ v ∶ σ `× τ ⟧ = ⊥
 ⟦ inl V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ σ ⟧₊
 ⟦ inr V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ τ ⟧₊
-⟦ ERR ∶ σ `⊎ τ ⟧ = ⊤
 ⟦ blame ℓ ∶ σ `⊎ τ ⟧ = ⊤
 ⟦ v ∶ σ `⊎ τ ⟧ = ⊥
 
-⟦ERR∶τ⟧ : ∀ τ → ⟦ ERR ∶ τ ⟧
-⟦ERR∶τ⟧ ⋆ = tt
-⟦ERR∶τ⟧ (` x) = tt
-⟦ERR∶τ⟧ (τ ⇒ τ₁) = tt
-⟦ERR∶τ⟧ (τ `× τ₁) = tt
-⟦ERR∶τ⟧ (τ `⊎ τ₁) = tt
 
 ⟦blame∶τ⟧ : ∀ τ {ℓ} → ⟦ blame ℓ ∶ τ ⟧
 ⟦blame∶τ⟧ ⋆ = tt
@@ -86,7 +73,6 @@ data Val : Set where
 ⟦ [] ∶ τ ⟧₊? = yes tt
 ⟦ v ∷ V ∶ τ ⟧₊? = ⟦ v ∶ τ ⟧? ×-dec ⟦ V ∶ τ ⟧₊? 
 ⟦ v ∶ ⋆ ⟧? = yes tt
-⟦ ERR ∶ τ ⟧? = yes (⟦ERR∶τ⟧ τ)
 ⟦ blame ℓ ∶ τ ⟧? = yes (⟦blame∶τ⟧ τ)
 ⟦ const {b'} k ∶ ` b ⟧? with base-eq? b b'
 ... | yes refl = yes tt
@@ -126,7 +112,6 @@ data Val : Set where
 ... | no neq = ⊥
 ⟦ const {B} k ∶ τ ⟧ = ⊥
 ⟦ blame ℓ ∶ τ ⟧ = ⊤   {- want types for this? -}
-⟦ ERR ∶ τ ⟧ = ⊤  {- want types for this? -}
 ⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ ν ∶ τ ⟧ = ⊥
 ⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ → ⟦ w ∶ τ ⟧
@@ -150,7 +135,6 @@ data Val : Set where
 ... | no neq = ⊥
 ⟦ const {B} k ∶ τ ⟧ = ⊥
 ⟦ blame ℓ ∶ τ ⟧ = ⊤   {- want types for this? -}
-⟦ ERR ∶ τ ⟧ = ⊤  {- want types for this? -}
 ⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
 ⟦ ν ∶ τ ⟧ = ⊥
 ⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ × ⟦ w ∶ τ ⟧
@@ -174,7 +158,6 @@ data `⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set where
 data `⟦_∶_⟧ where
   Const : ∀ {B} k → `⟦ const {B} k ∶ ` B ⟧
   Blame : ∀ ℓ → `⟦ blame ℓ ∶ ⋆ ⟧
-  Error : `⟦ ERR ∶ ⋆ ⟧
   Fun : ∀ {V w σ τ} → `⟦ V ∶ σ ⟧₊ → `⟦ w ∶ τ ⟧ → `⟦ V ↦ w ∶ σ ⇒ τ ⟧
   Prod-fst : ∀ {v σ τ} → `⟦ v ∶ σ ⟧ → `⟦ fst v ∶ σ `× τ ⟧
   Prod-snd : ∀ {v σ τ} → `⟦ v ∶ τ ⟧ → `⟦ snd v ∶ σ `× τ ⟧
@@ -185,7 +168,12 @@ data `⟦_∶_⟧ where
 
 
 
-  
+⟦∶⟧₊→All : ∀ {A V} → ⟦ V ∶ A ⟧₊ → All (λ v → ⟦ v ∶ A ⟧) V
+⟦∶⟧₊→All {V = []} tt = []
+⟦∶⟧₊→All {V = (v ∷ V)} (v∶A , V∶A) = v∶A ∷ ⟦∶⟧₊→All V∶A
+
+⟦∶⟧₊→∈ : ∀ {A V} → ⟦ V ∶ A ⟧₊ → ∀ v → v ∈ mem V → ⟦ v ∶ A ⟧
+⟦∶⟧₊→∈ V∶A v = lookup (⟦∶⟧₊→All V∶A) {v}
   
 {- Abstraction  ---------------------------------------------------------------}
 
@@ -196,52 +184,85 @@ data Λ : (𝒫 Val → 𝒫 Val) → 𝒫 Val where
      → (V ↦ w) ∈ Λ f 
   Λ-ν : ∀{f} → ν ∈ Λ f
 
+
+Λ-mono : ∀ {F F' : 𝒫 Val → 𝒫 Val} → 
+    (∀ D D' → D ⊆ D' → F D ⊆ F' D') → Λ F ⊆ Λ F'
+Λ-mono {F} {F'} F⊆ (V ↦ d) (Λ-↦ x₁ x₂) = 
+  Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d x₁) x₂
+Λ-mono {F} {F'} F⊆ ν Λ-ν = Λ-ν
+
 {- Application -----------------------------------------------------------------}
 
 infix 6 _∗_
 data _∗_ : 𝒫 Val → 𝒫 Val → 𝒫 Val where
-   ∗-app : ∀ D₁ D₂ {V w}
+   ∗-app : ∀ {D₁ D₂ V w}
       → (V ↦ w) ∈ D₁
       → mem V ⊆ D₂
-      → w ∈ (D₁ ∗ D₂) 
-   ∗-blame-rator : ∀ D₁ D₂ {ℓ}
+      → w ∈ (D₁ ∗ D₂)
+   ∗-blame-rator : ∀ {D₁ D₂ ℓ}
       → blame ℓ ∈ D₁
       → blame ℓ ∈ (D₁ ∗ D₂) 
-   ∗-blame-rand : ∀ D₁ D₂ {ℓ}
+   ∗-blame-rand : ∀ {D₁ D₂ ℓ}
       → blame ℓ ∈ D₂
       → blame ℓ ∈ (D₁ ∗ D₂) 
+
+∗-mono : ∀ {D E D' E'} → D ⊆ D' → E ⊆ E' → (D ∗ E) ⊆ (D' ∗ E')
+∗-mono {D}{E}{D'}{E'} D⊆ E⊆ d (∗-app {V = V} x x₁) = 
+  ∗-app (D⊆ (V ↦ d) x) (λ d z → E⊆ d (x₁ d z))
+∗-mono {D}{E}{D'}{E'} D⊆ E⊆ (blame ℓ) (∗-blame-rator x) = 
+  ∗-blame-rator (D⊆ (blame ℓ) x)
+∗-mono {D}{E}{D'}{E'} D⊆ E⊆ (blame ℓ) (∗-blame-rand x) = 
+  ∗-blame-rand (E⊆ (blame ℓ) x)
 
 {- Pairs -}
 
 data pair : 𝒫 Val → 𝒫 Val → 𝒫 Val where
-   pair-fst : ∀ D E {u v}
+   pair-fst : ∀ {D E u v}
       → u ∈ D → v ∈ E
       → fst u ∈ pair D E
-   pair-snd : ∀ D E {u v}
+   pair-snd : ∀ {D E u v}
       → u ∈ D → v ∈ E
       → snd v ∈ pair D E
-   pair-blame-fst : ∀ D E {ℓ}
+   pair-blame-fst : ∀ {D E ℓ}
       → blame ℓ ∈ D
       → blame ℓ ∈ pair D E
-   pair-blame-snd : ∀ D E {ℓ}
+   pair-blame-snd : ∀ {D E ℓ}
       → blame ℓ ∈ E
       → blame ℓ ∈ pair D E
 
+pair-mono : ∀ {D E D' E'} → D ⊆ D' → E ⊆ E' → (pair D E) ⊆ (pair D' E')
+pair-mono {D} {E} {D'} {E'} D⊆ E⊆ (fst u) (pair-fst {v = v} x x₁) = 
+  pair-fst (D⊆ u x) (E⊆ v x₁)
+pair-mono {D} {E} {D'} {E'} D⊆ E⊆ (snd v) (pair-snd {u = u} x x₁) = 
+  pair-snd (D⊆ u x) (E⊆ v x₁)
+pair-mono {D} {E} {D'} {E'} D⊆ E⊆ (blame ℓ) (pair-blame-fst x) = 
+  pair-blame-fst (D⊆ (blame ℓ) x)
+pair-mono {D} {E} {D'} {E'} D⊆ E⊆ (blame ℓ) (pair-blame-snd x) = 
+  pair-blame-snd (E⊆ (blame ℓ) x)
+
 data car : 𝒫 Val → 𝒫 Val where
-   car-fst : ∀ D {u}
+   car-fst : ∀ {D u}
       → fst u ∈ D
       → u ∈ car D
-   car-blame : ∀ D {ℓ}
+   car-blame : ∀ {D ℓ}
       → blame ℓ ∈ D
       → blame ℓ ∈ car D
 
+car-mono : ∀ {D D'} → D ⊆ D' → car D ⊆ car D'
+car-mono {D} {D'} D⊆ d (car-fst x) = car-fst (D⊆ (fst d) x)
+car-mono {D} {D'} D⊆ (blame ℓ) (car-blame x) = car-blame (D⊆ (blame ℓ) x)
+
 data cdr : 𝒫 Val → 𝒫 Val where
-   cdr-snd : ∀ D {u}
+   cdr-snd : ∀ {D u}
       → snd u ∈ D
       → u ∈ cdr D
-   cdr-blame : ∀ D {ℓ}
+   cdr-blame : ∀ {D ℓ}
       → blame ℓ ∈ D
       → blame ℓ ∈ cdr D
+
+cdr-mono : ∀ {D D'} → D ⊆ D' → cdr D ⊆ cdr D'
+cdr-mono {D} {D'} D⊆ d (cdr-snd x) = cdr-snd (D⊆ (snd d) x)
+cdr-mono {D} {D'} D⊆ (blame ℓ) (cdr-blame x) = cdr-blame (D⊆ (blame ℓ) x)
 
 {- Sums -}
 
@@ -249,9 +270,17 @@ data inleft : 𝒫 Val → 𝒫 Val where
   inleft-inl : ∀{V D} → mem V ⊆ D → inl V ∈ inleft D
   inleft-blame : ∀{ℓ D} → blame ℓ ∈ D → blame ℓ ∈ inleft D
 
+inleft-mono : ∀ {D D'} → D ⊆ D' → inleft D ⊆ inleft D'
+inleft-mono {D} {D'} D⊆ (inl x) (inleft-inl x₁) = inleft-inl (λ d z → D⊆ d (x₁ d z))
+inleft-mono {D} {D'} D⊆ (blame x) (inleft-blame x₁) = inleft-blame (D⊆ (blame x) x₁)
+
 data inright : 𝒫 Val → 𝒫 Val where
   inright-inr : ∀{V D} → mem V ⊆ D → inr V ∈ inright D
   inright-blame : ∀{ℓ D} → blame ℓ ∈ D → blame ℓ ∈ inright D
+
+inright-mono : ∀ {D D'} → D ⊆ D' → inright D ⊆ inright D'
+inright-mono {D} {D'} D⊆ (inr x) (inright-inr x₁) = inright-inr (λ d z → D⊆ d (x₁ d z))
+inright-mono {D} {D'} D⊆ (blame x) (inright-blame x₁) = inright-blame (D⊆ (blame x) x₁)
 
 data cond : 𝒫 Val → (𝒫 Val → 𝒫 Val) → (𝒫 Val → 𝒫 Val) → 𝒫 Val where
   cond-inl : ∀{D F₁ F₂ V w}
@@ -260,6 +289,16 @@ data cond : 𝒫 Val → (𝒫 Val → 𝒫 Val) → (𝒫 Val → 𝒫 Val) →
     → inr V ∈ D  → w ∈ F₂ (mem V) → w ∈ cond D F₁ F₂
   cond-blame : ∀{D F₁ F₂ ℓ}
     → blame ℓ ∈ D  →  blame ℓ ∈ cond D F₁ F₂
+
+cond-mono :  ∀ {T D E T' D' E'} → T ⊆ T' 
+          → (∀ a a' → a ⊆ a' → D a ⊆ D' a') → (∀ b b' → b ⊆ b' → E b ⊆ E' b') 
+          → cond T D E ⊆ cond T' D' E'
+cond-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ d (cond-inl {V = V} x x₁) = 
+  cond-inl (T⊆ (inl V) x) (D⊆ (mem V) (mem V) (λ d z → z) d x₁)
+cond-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ d (cond-inr {V = V} x x₁) = 
+  cond-inr (T⊆ (inr V) x) (E⊆ (mem V) (mem V) (λ d z → z) d x₁)
+cond-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ (blame ℓ) (cond-blame x) = 
+  cond-blame (T⊆ (blame ℓ) x)
 
 {- Primitive operators ------------------------------------------------}
 
@@ -279,8 +318,70 @@ data If : 𝒫 Val → 𝒫 Val → 𝒫 Val → 𝒫 Val where
   If-blame : ∀{D E₁ E₂ ℓ}
     → blame ℓ ∈ D  →  blame ℓ ∈ If D E₁ E₂
 
-data ℬ : (ℓ : Label) → 𝒫 Val where
-  blame : ∀ ℓ → blame ℓ ∈ ℬ ℓ 
+If-mono : ∀ {T D E T' D' E'} → T ⊆ T' → D ⊆ D' → E ⊆ E' → If T D E ⊆ If T' D' E'
+If-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ d (If-then x x₁) = 
+  If-then (T⊆ (const true) x) (D⊆ d x₁)
+If-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ d (If-else x x₁) = 
+  If-else (T⊆ (const false) x) (E⊆ d x₁)
+If-mono {T} {D} {E} {T'} {D'} {E'} T⊆ D⊆ E⊆ (blame ℓ) (If-blame x) = 
+  If-blame (T⊆ (blame ℓ) x)
+
+ℬ : (ℓ : Label) → 𝒫 Val
+ℬ ℓ (blame ℓ') = ℓ' ≡ ℓ
+ℬ ℓ v = ⊥
+
+
+
+
+{- Single value operators, can be useful for abbreviated blame handling  ---- -}
+
+δb : Val → Val → Val
+δb (blame ℓ) w = blame ℓ
+δb v w = w
+
+
+fst-val : Val → Val
+fst-val (blame ℓ) = blame ℓ
+fst-val v = fst v
+
+snd-val : Val → Val
+snd-val (blame ℓ) = blame ℓ
+snd-val v = snd v
+
+
+isBlame : Val → Set
+isBlame (blame ℓ) = ⊤
+isBlame v = ⊥
+
+hasBlame : List Val → Set
+hasBlame V = Any isBlame V
+
+blame? : ∀ v → Dec (isBlame v)
+blame? (blame ℓ) = yes tt
+blame? (const x) = no (λ z → z)
+blame? (x ↦ v) = no (λ z → z)
+blame? ν = no (λ z → z)
+blame? (fst v) = no (λ z → z)
+blame? (snd v) = no (λ z → z)
+blame? (inl x) = no (λ z → z)
+blame? (inr x) = no (λ z → z)
+
+blame₊? : ∀ V → Dec (hasBlame V)
+blame₊? V = any? blame? V
+
+Blameless : Val → Set
+Blameless₊ : List Val → Set
+Blameless₊ [] = ⊤
+Blameless₊ (x ∷ V) = Blameless x × Blameless₊ V
+Blameless (const x) = ⊤
+Blameless (x ↦ v) = Blameless v
+Blameless ν = ⊤
+Blameless (fst v) = Blameless v
+Blameless (snd v) = Blameless v
+Blameless (inl x) = Blameless₊ x
+Blameless (inr x) = Blameless₊ x
+Blameless (blame x) = ⊥
+
 
 
 

@@ -21,12 +21,13 @@ module Denot.LazyCoercions where
 
 
   infix 4 _↝⟨_⟩↝_
-  infix 4 _↝⟪_⟫↝_
+  infix 4 _↝⟨_⟩₊↝_
 
   data _↝⟨_⟩↝_ : ∀ {A B} → (v : Val) → (c : Cast (A ⇒ B)) → (v' : Val) → Set
-  data _↝⟪_⟫↝_ : ∀ {A B} → (V : List Val) → (c : Cast (A ⇒ B)) → (V' : List Val) → Set where
-    [] : ∀ {A B}{c : Cast (A ⇒ B)} → [] ↝⟪ c ⟫↝ []
-    _∷_ : ∀ {A B}{c : Cast (A ⇒ B)}{v v' V V'} → v ↝⟨ c ⟩↝ v' → V ↝⟪ c ⟫↝ V' → (v ∷ V) ↝⟪ c ⟫↝ (v' ∷ V')
+  data _↝⟨_⟩₊↝_ : ∀ {A B} → (V : List Val) → (c : Cast (A ⇒ B)) → (V' : List Val) → Set where
+    [] : ∀ {A B}{c : Cast (A ⇒ B)} → [] ↝⟨ c ⟩₊↝ []
+    _∷_ : ∀ {A B}{c : Cast (A ⇒ B)}{v v' V V'} 
+        → v ↝⟨ c ⟩↝ v' → V ↝⟨ c ⟩₊↝ V' → (v ∷ V) ↝⟨ c ⟩₊↝ (v' ∷ V')
   data _↝⟨_⟩↝_ where 
     ⟦id⟧ : ∀{v}{A}{a} → v ↝⟨ id {A}{a} ⟩↝ v
     ⟦inj⟧ : ∀{v}{A}{a} → v ↝⟨ (_!! A {a}) ⟩↝ v
@@ -36,7 +37,7 @@ module Denot.LazyCoercions where
       → ¬ ⟦ v ∶ τ ⟧
       → v ↝⟨ _??_ τ ℓ {a} ⟩↝ blame ℓ   {- originally "blame! (cvt-label ℓ)", need to check -}
     ⟦cfun⟧ : ∀{V w V′ w′}{A B A′ B′}{c : Cast (B ⇒ A)}{d : Cast (A′ ⇒ B′)}
-      → V′ ↝⟪ c ⟫↝ V   →   w ↝⟨ d ⟩↝ w′
+      → V′ ↝⟨ c ⟩₊↝ V   →   w ↝⟨ d ⟩↝ w′
       → (V ↦ w) ↝⟨ c ↣ d ⟩↝ (V′ ↦ w′)
     ⟦cprod⟧-fst : ∀{u v}{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
       → u ↝⟨ c ⟩↝ v
@@ -45,10 +46,10 @@ module Denot.LazyCoercions where
       → u ↝⟨ d ⟩↝ v
       → snd u ↝⟨ c `× d ⟩↝ snd v
     ⟦csum⟧-inl : ∀{V V'}{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
-      → V ↝⟪ c ⟫↝ V'
+      → V ↝⟨ c ⟩₊↝ V'
       → inl V ↝⟨ c `+ d ⟩↝ inl V'
     ⟦csum⟧-inr : ∀{V V'}{A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}
-      → V ↝⟪ d ⟫↝ V'
+      → V ↝⟨ d ⟩₊↝ V'
       → inr V ↝⟨ c `+ d ⟩↝ inr V'
     ⟦cfail⟧ : ∀{v}{ℓ}{A}{B} 
       → v ↝⟨ ⊥ A ⟨ ℓ ⟩ B ⟩↝ blame ℓ

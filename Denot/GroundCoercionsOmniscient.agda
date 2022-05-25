@@ -1,4 +1,4 @@
-
+{-# OPTIONS --allow-unsolved-metas #-}
 
 open import Data.Nat
 open import Data.Empty using (⊥-elim) renaming (⊥ to False)
@@ -68,15 +68,12 @@ module Denot.GroundCoercionsOmniscient where
   ... | no ¬V∶A = get-blame-label₊ c V V∶A' ¬V∶A
   get-blame-label {.(_ ⇒ _)} {.(_ ⇒ _)} (cfun c c₁) ν v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
   get-blame-label {.(_ ⇒ _)} {.(_ ⇒ _)} (cfun c c₁) (Val.blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ ⇒ _)} {.(_ ⇒ _)} (cfun c c₁) ERR v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
   get-blame-label {.(_ `× _)} {.(_ `× _)} (cpair c d) (Val.fst v) v∶A ¬v∶B = get-blame-label c v v∶A ¬v∶B
   get-blame-label {.(_ `× _)} {.(_ `× _)} (cpair c d) (Val.snd v) v∶A ¬v∶B = get-blame-label d v v∶A ¬v∶B
   get-blame-label {.(_ `× _)} {.(_ `× _)} (cpair c d) (Val.blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ `× _)} {.(_ `× _)} (cpair c d) ERR v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
   get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (csum c d) (inl x) v∶A ¬v∶B = get-blame-label₊ c x v∶A ¬v∶B
   get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (csum c d) (inr x) v∶A ¬v∶B = get-blame-label₊ d x v∶A ¬v∶B
   get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (csum c d) (Val.blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (csum c d) ERR v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
   get-blame-label {A} {C} (cseq {B = B} c d) v v∶A ¬v∶C with ⟦ v ∶ B ⟧?
   ... | yes v∶B = get-blame-label d v v∶B ¬v∶C
   ... | no ¬v∶B = get-blame-label c v v∶A ¬v∶B
@@ -96,12 +93,68 @@ module Denot.GroundCoercionsOmniscient where
     coerce-fail : ∀ {A B}{c : Cast (A ⇒ B)}{v} 
       → (v∶A : ⟦ v ∶ A ⟧) (¬v∶B : ¬ ⟦ v ∶ B ⟧)
       → ∀ {ℓ} → ℓ ∈ mem (get-blame-label c v v∶A ¬v∶B) → v ↝⟦ c ⟧↝ Val.blame ℓ
-    fun-regular : ∀ {A B A' B'}{c : Cast (A' ⇒ A)}{d : Cast (B ⇒ B')}{V w V' w'}
-      → V' ↝⟦ c ⟧₊↝ V → w ↝⟦ d ⟧↝ w'
-      → V ↦ w ↝⟦ (cfun c d) ⟧↝ V' ↦ w'
     𝒪seq : ∀ {A B C} {c : Cast (A ⇒ B)}{d : Cast (B ⇒ C)}{u v w}
       → u ↝⟦ c ⟧↝ v → v ↝⟦ d ⟧↝ w
       → u ↝⟦ cseq c d ⟧↝ w
+
+  𝒞⟦_⟧ : ∀ {A B} → (c : Cast (A ⇒ B)) → 𝒫 Val → 𝒫 Val
+  𝒞⟦ c ⟧ D v = Σ[ u ∈ Val ] u ∈ D × u ↝⟦ c ⟧↝ v
+
+
+{- V ↦ blame ℓ  ~>  V' ↦ blame ℓ -}
+{-
+what omniscient is supposed to look like
+   - (((λ x∶Nat. λ y:Nat. true)⟨ ℓ1: Nat → (Nat → Bool) ⇒ ⋆ ⟩ ⟨ ℓ2: ⋆ ⇒ Nat → (Nat → Nat) ⟩) 3)
+omniscient -> blame ℓ2
+
+{-
+casting a function 
+
+application  (blame  ∗  something) -> blame
+
+let f = {2 -> 3 -> blame 1};
+    g = {f but with different labels 2};
+   apply  f 2;
+   apply  g 2 3;
+   ... return 42
+
+let f = {blame 1};
+    g = {blame 2}
+   apply  f 2;
+   apply  g 2 3;
+   ... return 42
+
+-}
+
+
+regular : produce values   like   3 ↦ blame ℓ2
+                                  4 ↦ blame ℓ2
+
+   - ((λx:Nat. if x==0 then 0 ⟨ℓ1: Nat ⇒ ⋆ ⟩ else true ⟨ℓ2: bool ⇒ ⋆ ⟩)⟨ℓ3: Nat → Nat ⟩  0)
+   omniscient :  2 ↦ true ~> blame ℓ3, 0 ↦ 0 ~> 0 ↦ 0
+   - soundness of regular wrt. omniscient
+
+has-no-blame-at-all v →  v ∈ ⟦ M ⟧ → v ∈ 𝒪⟦ M ⟧
+blame ℓ ∈ ⟦ M ⟧ → blame ℓ ∈ 𝒪⟦ M ⟧
+3 ↦ blame ℓ2 ∈ ⟦ M ⟧   ...    blame ℓ2 ∈ 
+
+
+-}
+
+  omni-preserves-type : ∀ {A B} (c : Cast (A ⇒ B))
+           → ∀ u v → u ↝⟦ c ⟧↝ v → ⟦ u ∶ A ⟧ → ⟦ v ∶ B ⟧
+  omni-preserves-type₊ : ∀ {A B} (c : Cast (A ⇒ B))
+           → ∀ U V → U ↝⟦ c ⟧₊↝ V → ⟦ U ∶ A ⟧₊ → ⟦ V ∶ B ⟧₊
+  omni-preserves-type₊ c .[] .[] [] V∶A = tt
+  omni-preserves-type₊ c (u ∷ U) (v ∷ V) (x ∷ U↝V) ⟨ u∶A , U∶A ⟩ = 
+    ⟨ omni-preserves-type c u v x u∶A , omni-preserves-type₊ c U V U↝V U∶A ⟩
+  omni-preserves-type c u .u (coerce-ok x) u∶A = x
+  omni-preserves-type {B = B} c u .(Val.blame _) (coerce-fail v∶A ¬v∶B x) u∶A = ⟦blame∶τ⟧ B
+  omni-preserves-type (cseq c d) u w (𝒪seq {v = v} u↝v v↝w) u∶A = 
+    omni-preserves-type d v w v↝w (omni-preserves-type c u v u↝v u∶A)
+ 
+ 
+
 
 {-
   infix 4 _↝⟨_⟩↝_
@@ -116,7 +169,6 @@ module Denot.GroundCoercionsOmniscient where
   ¬blame (inl x) = True
   ¬blame (inr x) = True
   ¬blame (blame x) = False
-  ¬blame ERR = True
 -}
 
   -- this is the right idea, but it isn't strictly positive

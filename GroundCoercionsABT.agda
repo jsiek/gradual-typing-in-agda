@@ -15,15 +15,13 @@ module GroundCoercionsABT where
 
   open import PreCastStructure
   open import GroundCoercions 
-    using (pcs; id; inj; proj; cfun; cpair; csum; cseq; C-pair; C-sum) public
+    using (pcs; id; inj; proj; cfun; cpair; csum; cseq; C-pair; C-sum; I-inj) public
   open PreCastStruct pcs public
 
   import ParamCastCalculusABT
   import ParamCastAuxABT
-  open ParamCastCalculusABT pcs public
+  open ParamCastCalculusABT pcs renaming (fst_ to first_; snd_ to second_; blame to mkblame) public
   open ParamCastAuxABT pcs public
-
-
 
   applyCast : ∀ {Γ A B} → (M : Term) → Γ ⊢ M ⦂ A → (Value M) → (c : Cast (A ⇒ B))
               → ∀ {a : Active c} → Term
@@ -31,7 +29,7 @@ module GroundCoercionsABT where
   applyCast {Γ} {.⋆} {B} M Γ⊢M∶A vM (proj .B ℓ {gb}) {a} with canonical⋆ Γ⊢M∶A vM
   ... | ⟨ G , ⟨ V , ⟨ .(inj G) , ⟨ GroundCoercions.I-inj {G}{ga} , ⟨ q , refl ⟩ ⟩ ⟩ ⟩ ⟩
      with gnd-eq? G B {ga} {gb} 
-  ... | no neq = blame B ℓ
+  ... | no neq = mkblame B ℓ
   ... | yes refl = V
   applyCast {Γ} {.(_ `× _)} {.(_ `× _)} M Γ⊢M∶A vM (cpair c d) {a} = eta× M (cpair c d) C-pair
   applyCast {Γ} {.(_ `⊎ _)} {.(_ `⊎ _)} M Γ⊢M∶A vM (csum c d) {a} = eta⊎ M (csum c d) C-sum
@@ -51,11 +49,13 @@ module GroundCoercionsABT where
   cs = record { precast = pcs 
               ; applyCast = applyCast 
               ; applyCast-wt = applyCast-wt }
-  
-{-
-  open import ParamCastReduction cs public
-  open import ParamCastDeterministic cs public
 
+
+  open import ParamCastReductionABT cs public
+  
+
+{-
+  open import ParamCastDeterministic cs public
   import GTLC2CC
   open GTLC2CC Cast Inert (λ A B ℓ {c} → coerce A B ℓ) public
 -}
