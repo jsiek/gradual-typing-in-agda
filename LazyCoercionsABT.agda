@@ -1,3 +1,5 @@
+{-# OPTIONS --allow-unsolved-metas #-}
+
 module LazyCoercionsABT where
 
   open import Data.Nat
@@ -13,12 +15,12 @@ module LazyCoercionsABT where
      using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
 
   open import PreCastStructure
-  open import LazyCoercions using (pcs; id; _??_; _↣_; _`×_; _`+_; ⊥_⟨_⟩_; coerce; ƛ_)
+  open import LazyCoercions using (pcs; id; _??_; _!!; _↣_; _`×_; _`+_; ⊥_⟨_⟩_; coerce; ƛ_) public
   open PreCastStruct pcs public
 
   import ParamCastCalculusABT
   import ParamCastAuxABT
-  open ParamCastCalculusABT pcs public
+  open ParamCastCalculusABT pcs renaming (fst_ to first_; snd_ to second_; blame to mkblame) public
   open ParamCastAuxABT pcs public
 
   applyCast : ∀ {Γ A B} → (M : Term) → Γ ⊢ M ⦂ A → (Value M) → (c : Cast (A ⇒ B))
@@ -29,12 +31,12 @@ module LazyCoercionsABT where
   applyCast {A = A ⇒ B} {B = A' ⇒ B'} M Γ⊢M∶A v (c ↣ d) {a} = 
     ƛ A' ˙ ((rename suc M · ((` zero) ⟨ c ⟩)) ⟨ d ⟩)
   applyCast M Γ⊢M∶A v (c `× d) {a} = 
-    ⟦ fst M ⟨ c ⟩ , snd M ⟨ d ⟩ ⟧
+    ⟦ first M ⟨ c ⟩ , second M ⟨ d ⟩ ⟧
   applyCast {A = A `⊎ B} {B = A' `⊎ B'} M Γ⊢M∶A v (c `+ d) {a} =
     let L = inl ((` zero) ⟨ c ⟩) other B' in
     let R = inr ((` zero) ⟨ d ⟩) other A' in
         case M of A ⇒ L ∣ B ⇒ R
-  applyCast M Γ⊢M∶A v (⊥ A ⟨ ℓ ⟩ B) {a} = blame B ℓ
+  applyCast M Γ⊢M∶A v (⊥ A ⟨ ℓ ⟩ B) {a} = mkblame B ℓ
 
 
   applyCast-wt : ∀ {Γ A B} {V : Term} {c : Cast (A ⇒ B)}
@@ -51,8 +53,10 @@ module LazyCoercionsABT where
               ; applyCast = applyCast 
               ; applyCast-wt = applyCast-wt }
   
+
+  open import ParamCastReductionABT cs public
+
 {-
-  open import ParamCastReduction cs public
   open import ParamCastDeterministic cs public
 
   import GTLC2CC

@@ -196,27 +196,6 @@ module LazyCoercions where
   applyCast M v (⊥ A ⟨ ℓ ⟩ B) = blame ℓ
 
 
-{-
-  applyCast : ∀ {Γ A B} → (M : Γ ⊢ A) → (Value M) → (c : Cast (A ⇒ B))
-            → ∀ {a : Active c} → Γ ⊢ B
-  applyCast M v id {a} = M
-  applyCast M v (proj B ℓ {gb}) {a} with canonical⋆ M v
-  ... | ⟨ G , ⟨ V , ⟨ c , ⟨ I-inj {G}{ga} , meq ⟩ ⟩ ⟩ ⟩
-         rewrite meq
-         with gnd-eq? G B {ga} {gb}
-  ...    | no neq = blame ℓ
-  ...    | yes eq
-            with eq
-  ...       | refl = V
-  applyCast M v (cseq c d) = (M ⟨ c ⟩) ⟨ d ⟩
-  applyCast M v (cpair c d) {a} = eta× M (cpair c d) C-pair
-  applyCast M v (csum c d) {a} = eta⊎ M (csum c d) C-sum
-  applyCast M v (cfun c d) {()}
-  applyCast M v (inj A) {()}
-
--}
-
-
   open import CastStructure
 
   cs : CastStruct

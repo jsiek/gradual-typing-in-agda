@@ -14,7 +14,7 @@ module Denot.LazyCoercions where
   open import Variables
   open import Labels
   open import CastStructureABT
-  open import LazyCoercions
+  open import LazyCoercionsABT
   open import Denot.Value
 
 
@@ -59,11 +59,9 @@ module Denot.LazyCoercions where
   open import Denot.CastStructure
 
 -- This won't typecheck; LazyCoercions and GroundCoercions are written
--- using CastStructureOrig instead of CasStructureABT
- {-  
+-- using CastStructureOrig instead of CasStructureABT 
   instance 
     dcs : DenotCastStruct
     dcs = record 
             { cast = cs
             ; _↝⟨_⟩↝_ = _↝⟨_⟩↝_ }
-  -}
