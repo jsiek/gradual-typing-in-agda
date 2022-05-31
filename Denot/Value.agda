@@ -1,4 +1,4 @@
-
+{-# OPTIONS --allow-unsolved-metas #-}
 
 module Denot.Value where
 
@@ -269,10 +269,12 @@ data _∗_ : 𝒫 Val → 𝒫 Val → 𝒫 Val where
 
 data pair : 𝒫 Val → 𝒫 Val → 𝒫 Val where
    pair-fst : ∀ {D E u v}
-      → (u∈ : u ∈ D) → (v∈ : v ∈ E) → (nbu : ¬ (isBlame u))
+      → (u∈ : u ∈ D) → (v∈ : v ∈ E) 
+      → (nbu : ¬ (isBlame u)) → (nbv : ¬ (isBlame v))
       → fst u ∈ pair D E
    pair-snd : ∀ {D E u v}
-      → (u∈ : u ∈ D) → (v∈ : v ∈ E) → (nbv : ¬ (isBlame v))
+      → (u∈ : u ∈ D) → (v∈ : v ∈ E) 
+      → (nbu : ¬ (isBlame u)) → (nbv : ¬ (isBlame v))
       → snd v ∈ pair D E
    pair-blame-fst : ∀ {D E ℓ}
       → (bl∈ : blame ℓ ∈ D)
