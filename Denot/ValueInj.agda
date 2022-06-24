@@ -1,6 +1,6 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
-module Denot.Value where
+module Denot.ValueInj where
 
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List using (List ; _∷_ ; []; _++_; length)
@@ -8,6 +8,7 @@ open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
 open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
 open import Labels
@@ -21,6 +22,7 @@ open import SetsAsPredicates
 open import Types
 
 data Val : Set where
+  inj : (A : Type) → (v : Val) → Val
   const : {B : Base} → (k : rep-base B) → Val  {- A primitive constant of type B. -}
   _↦_ : (V : List Val) → (w : Val) → Val       {- one entry in a function's graph -}
   ν : Val                                      {- empty function -}
@@ -30,7 +32,6 @@ data Val : Set where
   inr : (V : List Val) → Val                   {- left injection of a sum -}
   blame : (ℓ : Label) → Val
 
-
 {- =========================================================================
    Denotational Typing
   ========================================================================= -}
@@ -39,7 +40,9 @@ data Val : Set where
 ⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set
 ⟦ [] ∶ τ ⟧₊ = ⊤
 ⟦ (v ∷ V) ∶ τ ⟧₊ = ⟦ v ∶ τ ⟧ × ⟦ V ∶ τ ⟧₊
-⟦ v ∶ ⋆ ⟧ = ⊤
+⟦ inj A v ∶ ⋆ ⟧ = ⊤
+⟦ blame ℓ ∶ ⋆ ⟧ = ⊤
+⟦ v ∶ ⋆ ⟧ = ⊥
 ⟦ (const {b'} k) ∶ ` b ⟧ with base-eq? b b'
 ... | yes refl = ⊤
 ... | no neq = ⊥
@@ -66,15 +69,11 @@ data Val : Set where
 ⟦blame∶τ⟧ (τ `× τ₁) = tt
 ⟦blame∶τ⟧ (τ `⊎ τ₁) = tt
 
-⟦V∶⋆⟧₊ : ∀ {V} → ⟦ V ∶ ⋆ ⟧₊
-⟦V∶⋆⟧₊ {[]} = tt
-⟦V∶⋆⟧₊ {x ∷ V} = tt , ⟦V∶⋆⟧₊
-
 ⟦_∶_⟧? : ∀ v τ → Dec (⟦ v ∶ τ ⟧)
 ⟦_∶_⟧₊? : ∀ V τ → Dec (⟦ V ∶ τ ⟧₊)
 ⟦ [] ∶ τ ⟧₊? = yes tt
 ⟦ v ∷ V ∶ τ ⟧₊? = ⟦ v ∶ τ ⟧? ×-dec ⟦ V ∶ τ ⟧₊? 
-⟦ v ∶ ⋆ ⟧? = yes tt
+⟦ inj A v ∶ ⋆ ⟧? = yes tt
 ⟦ blame ℓ ∶ τ ⟧? = yes (⟦blame∶τ⟧ τ)
 ⟦ const {b'} k ∶ ` b ⟧? with base-eq? b b'
 ... | yes refl = yes tt
@@ -91,21 +90,32 @@ data Val : Set where
 ⟦ snd v ∶ ` b ⟧? = no (λ z → z)
 ⟦ inl x ∶ ` b ⟧? = no (λ z → z)
 ⟦ inr x ∶ ` b ⟧? = no (λ z → z)
+⟦ inj A v ∶ ` b ⟧? = no (λ z → z)
 ⟦ const x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
 ⟦ fst v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
 ⟦ snd v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
 ⟦ inl x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
 ⟦ inr x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
+⟦ inj A v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
 ⟦ const x ∶ τ `× τ₁ ⟧? = no (λ z → z)
 ⟦ x ↦ v ∶ τ `× τ₁ ⟧? = no (λ z → z)
 ⟦ ν ∶ τ `× τ₁ ⟧? = no (λ z → z)
 ⟦ inl x ∶ τ `× τ₁ ⟧? = no (λ z → z)
 ⟦ inr x ∶ τ `× τ₁ ⟧? = no (λ z → z)
+⟦ inj A v ∶ τ `× τ₁ ⟧? = no (λ z → z)
 ⟦ const x ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
 ⟦ x ↦ v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
 ⟦ ν ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
 ⟦ fst v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
 ⟦ snd v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ inj A v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
+⟦ const k ∶ ⋆ ⟧? = no (λ z → z)
+⟦ V ↦ v ∶ ⋆ ⟧? = no (λ z → z)
+⟦ ν ∶ ⋆ ⟧? = no (λ z → z)
+⟦ fst v ∶ ⋆ ⟧? = no (λ z → z)
+⟦ snd v ∶ ⋆ ⟧? = no (λ z → z)
+⟦ inl V ∶ ⋆ ⟧? = no (λ z → z)
+⟦ inr V ∶ ⋆ ⟧? = no (λ z → z)
 
 
 ∈⟦_∶_⟧ : ∀ (D : 𝒫 Val) (τ : Type) → Set
@@ -158,6 +168,7 @@ blame? (fst v) = no (λ z → z)
 blame? (snd v) = no (λ z → z)
 blame? (inl x) = no (λ z → z)
 blame? (inr x) = no (λ z → z)
+blame? (inj A v) = no (λ z → z)
 
 blame₊? : ∀ V → Dec (isBlame₊ V)
 blame₊? V = any? blame? V
@@ -173,6 +184,7 @@ Blameless (fst v) = Blameless v
 Blameless (snd v) = Blameless v
 Blameless (inl x) = Blameless₊ x
 Blameless (inr x) = Blameless₊ x
+Blameless (inj A v) = Blameless v
 Blameless (blame x) = ⊥
 
 
@@ -193,6 +205,7 @@ cbv-blameless-∈ D (fst d) d∈ = ¬isBlame d
 cbv-blameless-∈ D (snd d) d∈ = ¬isBlame d
 cbv-blameless-∈ D (inl V) d∈ = ¬isBlame₊ V
 cbv-blameless-∈ D (inr V) d∈ = ¬isBlame₊ V
+cbv-blameless-∈ D (inj A v) d∈ = ¬isBlame v
 cbv-blameless-∈ D (blame ℓ) d∈ = ⊤
 
 cbv-blameless : (D : 𝒫 Val) → Set

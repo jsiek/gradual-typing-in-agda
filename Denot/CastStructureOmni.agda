@@ -17,6 +17,7 @@ open import PreCastStructure
 open import CastStructureABT
 open import Pow2
 open import Denot.Value
+open import Denot.OpOmni
 open import Primitives hiding (_⇒_)
 open import ScopedTuple hiding (𝒫)
 open import NewSigUtil
@@ -25,7 +26,7 @@ open import SetsAsPredicates
 open import NewDenotProperties
 
 
-module Denot.CastStructure where
+module Denot.CastStructureOmni where
 
 import ParamCastCalculusABT
 import ParamCastAuxABT
@@ -39,12 +40,12 @@ record DenotCastStruct : Set₁ where
   open ParamCastCalculusABT precast
   open ParamCastAuxABT precast
   field
-    _↝⟨_⟩↝_ : ∀ {A B : Type}  → (v : Val) → (c : Cast (A ⇒ B)) → (v' : Val) → Set
+    _↝⟨_∶_⟩↝_ : ∀ {A B : Type}  → (v : Val) → (c : Cast (A ⇒ B)) → ⟦ v ∶ A ⟧ → (v' : Val) → Set
   𝒞 : ∀ {A B : Type} → Cast (A ⇒ B) → 𝒫 Val → 𝒫 Val
-  𝒞 c D v = Σ[ u ∈ Val ] D u × u ↝⟨ c ⟩↝ v
-{- add monotone field for ↝⟨_⟩↝ -}
+  𝒞 {A} c D v = Σ[ u ∈ Val ] D u × Σ[ u∶A ∈ ⟦ u ∶ A ⟧ ] u ↝⟨ c ∶ u∶A ⟩↝ v
+{- add monotone field for ↝⟨_∶_⟩↝ -}
   𝕆 : DOpSig (𝒫 Val) sig
-  𝕆 (op-lam x) ⟨ F , ptt ⟩ = Λ F
+  𝕆 (op-lam A) ⟨ F , ptt ⟩ = Λ A F
   𝕆 op-app ⟨ D , ⟨ E , ptt ⟩ ⟩ = D ∗ E
   𝕆 (op-lit f P) ptt = ℘ P f
   𝕆 op-if ⟨ D , ⟨ E₁ , ⟨ E₂ , ptt ⟩ ⟩ ⟩ = If D E₁ E₂
