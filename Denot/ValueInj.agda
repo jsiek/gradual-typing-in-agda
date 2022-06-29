@@ -139,6 +139,10 @@ data Val : Set where
 δb (blame ℓ) w = blame ℓ
 δb v w = w
 
+bl[_,_] : ∀ {B : Set} → (Val → B) → (Label → B) → Val → B
+bl[ f , g ] (blame ℓ) = g ℓ
+bl[ f , g ] v = f v
+
 isBlame : Val → Set
 isBlame (blame ℓ) = ⊤
 isBlame v = ⊥

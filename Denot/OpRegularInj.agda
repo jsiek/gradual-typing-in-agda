@@ -47,6 +47,10 @@ module Denot.OpRegularInj where
     inj-ok : ∀ {A D v} → v ∈ D → ⟦ v ∶ A ⟧ → inj A v ∈ Inj A D
 
 
+  Inj-mono : ∀ A {D D'} → D ⊆ D' → Inj A D ⊆ Inj A D'
+  Inj-mono A D⊆ (blame ℓ) (inj-blame x) = inj-blame (D⊆ (blame ℓ) x)
+  Inj-mono A D⊆ (inj A v) (inj-ok x x₁) = inj-ok (D⊆ v x) x₁
+
   -------------------------------------------------------------------------
   -- Functions
     -- simply-typed lambda abstraction : Λ
@@ -206,58 +210,58 @@ module Denot.OpRegularInj where
     Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d w∈) V∶A nbV neV 
   Λ-mono F⊆ ν Λ-ν = Λ-ν
 
-  ∗-mono : ∀ {D E D' E'} → ¬isBlame-∈ D' → ¬isBlame-∈ E' 
+  ∗-mono' : ∀ {D E D' E'} → ¬isBlame-∈ D' → ¬isBlame-∈ E' 
          → D ⊆ D' → E ⊆ E' → (D ∗ E) ⊆ (D' ∗ E')
-  ∗-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ d (∗-app {V = V} nbD nbE V↦w∈ V⊆) = 
+  ∗-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ d (∗-app {V = V} nbD nbE V↦w∈ V⊆) = 
     ∗-app nbD' nbE' (D⊆ (V ↦ d) V↦w∈) (λ d z → E⊆ d (V⊆ d z))
-  ∗-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (∗-blame-rator x) = 
+  ∗-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (∗-blame-rator x) = 
     ∗-blame-rator (D⊆ (blame ℓ) x)
-  ∗-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (∗-blame-rand nbD x) = 
+  ∗-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (∗-blame-rand nbD x) = 
     ∗-blame-rand nbD' (E⊆ (blame ℓ) x)
 
-  pair-mono : ∀ {D E D' E'} → ¬isBlame-∈ D' → ¬isBlame-∈ E'
+  pair-mono' : ∀ {D E D' E'} → ¬isBlame-∈ D' → ¬isBlame-∈ E'
           → D ⊆ D' → E ⊆ E' → (pair D E) ⊆ (pair D' E')
-  pair-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (pair-blame-fst bl∈) = 
+  pair-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (pair-blame-fst bl∈) = 
     pair-blame-fst (D⊆ (blame ℓ) bl∈)
-  pair-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (pair-blame-snd nbfst bl∈) = 
+  pair-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (blame ℓ) (pair-blame-snd nbfst bl∈) = 
     pair-blame-snd nbD' (E⊆ (blame ℓ) bl∈)
-  pair-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (fst u) (pair-fst {v = v} nbfst nbsnd u∈ v∈) = 
+  pair-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (fst u) (pair-fst {v = v} nbfst nbsnd u∈ v∈) = 
     pair-fst nbD' nbE' (D⊆ u u∈) (E⊆ v v∈)
-  pair-mono {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (snd v) (pair-snd {u = u} nbfst nbsnd u∈ v∈) = 
+  pair-mono' {D}{E}{D'}{E'} nbD' nbE' D⊆ E⊆ (snd v) (pair-snd {u = u} nbfst nbsnd u∈ v∈) = 
     pair-snd nbD' nbE' (D⊆ u u∈) (E⊆ v v∈)
 
-  car-mono : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → car D ⊆ car D'
-  car-mono {D}{D'} nbD' D⊆ d (car-fst nbD x) = car-fst nbD' (D⊆ (fst d) x)
-  car-mono {D}{D'} nbD' D⊆ (blame ℓ) (car-blame x) = car-blame (D⊆ (blame ℓ) x)
+  car-mono' : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → car D ⊆ car D'
+  car-mono' {D}{D'} nbD' D⊆ d (car-fst nbD x) = car-fst nbD' (D⊆ (fst d) x)
+  car-mono' {D}{D'} nbD' D⊆ (blame ℓ) (car-blame x) = car-blame (D⊆ (blame ℓ) x)
 
-  cdr-mono : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → cdr D ⊆ cdr D'
-  cdr-mono {D}{D'} nbD' D⊆ d (cdr-snd nbD x) = cdr-snd nbD' (D⊆ (snd d) x)
-  cdr-mono {D}{D'} nbD' D⊆ (blame ℓ) (cdr-blame x) = cdr-blame (D⊆ (blame ℓ) x)
+  cdr-mono' : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → cdr D ⊆ cdr D'
+  cdr-mono' {D}{D'} nbD' D⊆ d (cdr-snd nbD x) = cdr-snd nbD' (D⊆ (snd d) x)
+  cdr-mono' {D}{D'} nbD' D⊆ (blame ℓ) (cdr-blame x) = cdr-blame (D⊆ (blame ℓ) x)
 
-  inleft-mono : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → inleft D ⊆ inleft D'
-  inleft-mono {D}{D'} nbD' D⊆ (inl x) (inleft-inl nbD V⊆) = inleft-inl nbD' (λ d z → D⊆ d (V⊆ d z))
-  inleft-mono {D}{D'} nbD' D⊆ (blame x) (inleft-blame x₁) = inleft-blame (D⊆ (blame x) x₁)
+  inleft-mono' : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → inleft D ⊆ inleft D'
+  inleft-mono' {D}{D'} nbD' D⊆ (inl x) (inleft-inl nbD V⊆) = inleft-inl nbD' (λ d z → D⊆ d (V⊆ d z))
+  inleft-mono' {D}{D'} nbD' D⊆ (blame x) (inleft-blame x₁) = inleft-blame (D⊆ (blame x) x₁)
 
-  inright-mono : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → inright D ⊆ inright D'
-  inright-mono {D}{D'} nbD' D⊆ (inr x) (inright-inr nbD V⊆) = inright-inr nbD' (λ d z → D⊆ d (V⊆ d z))
-  inright-mono {D}{D'} nbD' D⊆ (blame x) (inright-blame x₁) = inright-blame (D⊆ (blame x) x₁)
+  inright-mono' : ∀ {D D'} → ¬isBlame-∈ D' → D ⊆ D' → inright D ⊆ inright D'
+  inright-mono' {D}{D'} nbD' D⊆ (inr x) (inright-inr nbD V⊆) = inright-inr nbD' (λ d z → D⊆ d (V⊆ d z))
+  inright-mono' {D}{D'} nbD' D⊆ (blame x) (inright-blame x₁) = inright-blame (D⊆ (blame x) x₁)
 
-  cond-mono :  ∀ {T D E T' D' E'} → ¬isBlame-∈ T' → T ⊆ T' 
+  cond-mono' :  ∀ {T D E T' D' E'} → ¬isBlame-∈ T' → T ⊆ T' 
           → (∀ a a' → a ⊆ a' → D a ⊆ D' a') → (∀ b b' → b ⊆ b' → E b ⊆ E' b') 
           → cond T D E ⊆ cond T' D' E'
-  cond-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (cond-inl {V = V} nbD x x₁) = 
+  cond-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (cond-inl {V = V} nbD x x₁) = 
     cond-inl nbT' (T⊆ (inl V) x) (D⊆ (mem V) (mem V) (λ d z → z) d x₁)
-  cond-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (cond-inr {V = V} nbD x x₁) = 
+  cond-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (cond-inr {V = V} nbD x x₁) = 
     cond-inr nbT' (T⊆ (inr V) x) (E⊆ (mem V) (mem V) (λ d z → z) d x₁)
-  cond-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ (blame ℓ) (cond-blame x) = 
+  cond-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ (blame ℓ) (cond-blame x) = 
     cond-blame (T⊆ (blame ℓ) x)
 
-  If-mono : ∀ {T D E T' D' E'} → ¬isBlame-∈ T' → T ⊆ T' → D ⊆ D' → E ⊆ E' → If T D E ⊆ If T' D' E'
-  If-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (If-then nbD x x₁) = 
+  If-mono' : ∀ {T D E T' D' E'} → ¬isBlame-∈ T' → T ⊆ T' → D ⊆ D' → E ⊆ E' → If T D E ⊆ If T' D' E'
+  If-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (If-then nbD x x₁) = 
     If-then nbT' (T⊆ (const true) x) (D⊆ d x₁)
-  If-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (If-else nbD x x₁) = 
+  If-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ d (If-else nbD x x₁) = 
     If-else nbT' (T⊆ (const false) x) (E⊆ d x₁)
-  If-mono {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ (blame ℓ) (If-blame x) = 
+  If-mono' {T}{D}{E}{T'}{D'}{E'} nbT' T⊆ D⊆ E⊆ (blame ℓ) (If-blame x) = 
     If-blame (T⊆ (blame ℓ) x)
 
 
