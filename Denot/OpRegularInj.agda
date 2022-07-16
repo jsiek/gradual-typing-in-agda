@@ -6,6 +6,7 @@ open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
 open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
 open import Labels
@@ -18,6 +19,7 @@ open import Relation.Nullary.Implication using (_→-dec_)
 open import SetsAsPredicates
 open import Types
 open import Denot.ValueInj
+open import Denot.ConsisRegularInj
 
 
 module Denot.OpRegularInj where
@@ -42,14 +44,14 @@ module Denot.OpRegularInj where
     -- inject values to dynamically typed values : Inj
     -- the projection of values always depends on the cast/coercion calculus
 
-  data Inj : (A : Type) → (D : 𝒫 Val) → 𝒫 Val where
-    inj-blame : ∀ {A D ℓ} → blame ℓ ∈ D → blame ℓ ∈ Inj A D
-    inj-ok : ∀ {A D v} → v ∈ D → ⟦ v ∶ A ⟧ → inj A v ∈ Inj A D
+  data Inj : (A : Type) → {¬⋆ : ¬ (A ≡ ⋆)} → (D : 𝒫 Val) → 𝒫 Val where
+    inj-blame : ∀ {A D ℓ ¬⋆} → (bl∈ : blame ℓ ∈ D) → blame ℓ ∈ Inj A {¬⋆} D
+    inj-ok : ∀ {A D v ¬⋆} → (nbv : ¬isBlame v ) → (v∈ : v ∈ D) → (v∶A : ⟦ v ∶ A ⟧) → inj A v ∈ Inj A {¬⋆} D
 
 
-  Inj-mono : ∀ A {D D'} → D ⊆ D' → Inj A D ⊆ Inj A D'
+  Inj-mono : ∀ A {¬⋆ D D'} → D ⊆ D' → Inj A {¬⋆} D ⊆ Inj A {¬⋆} D'
   Inj-mono A D⊆ (blame ℓ) (inj-blame x) = inj-blame (D⊆ (blame ℓ) x)
-  Inj-mono A D⊆ (inj A v) (inj-ok x x₁) = inj-ok (D⊆ v x) x₁
+  Inj-mono A D⊆ (inj A v) (inj-ok nbv x x₁) = inj-ok nbv (D⊆ v x) x₁
 
   -------------------------------------------------------------------------
   -- Functions
@@ -62,6 +64,7 @@ module Denot.OpRegularInj where
         → (w∈ : w ∈ f (mem V))
         → (V∶A : ⟦ V ∶ A ⟧₊)  -- could omit; b/c checked at app
         → (nbV : ¬isBlame₊ V)  -- ditto
+        → (scV : scD (mem V))
         → (neV : V ≢ [])  -- call by value
         → (V ↦ w) ∈ Λ A f
     Λ-ν : ∀{A f} → ν ∈ Λ A f
@@ -193,10 +196,13 @@ module Denot.OpRegularInj where
      ℘-typing B P (f k) w x
   ℘-typing .(` ι ⇒ B) (P-Fun {ι = ι} {B = B} P) f .ν ℘-ν = tt
 
-
   ℬ : Label → 𝒫 Val
   ℬ ℓ (blame ℓ') = ℓ' ≡ ℓ
-  ℬ ℓ v = ⊥  
+  ℬ ℓ v = ⊥
+  
+  ℬ' : Label → 𝒫 Val → 𝒫 Val
+  ℬ' ℓ D (blame ℓ') = (blame ℓ' ∈ D) ⊎ (Σ[ d ∈ Val ] d ∈ D × ¬isBlame d × ℓ' ≡ ℓ)
+  ℬ' ℓ D v = ⊥
 
 
 
@@ -205,9 +211,9 @@ module Denot.OpRegularInj where
   ========================================================================= -}
 
   Λ-mono : ∀ {A}{F F' : 𝒫 Val → 𝒫 Val} → 
-    (∀ D D' → D ⊆ D' → F D ⊆ F' D') → Λ A F ⊆ Λ A F'
-  Λ-mono F⊆ (V ↦ d) (Λ-↦ w∈ V∶A nbV neV) = 
-    Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d w∈) V∶A nbV neV 
+    monoD-1 F F' → Λ A F ⊆ Λ A F'
+  Λ-mono F⊆ (V ↦ d) (Λ-↦ w∈ V∶A nbV scV neV) = 
+    Λ-↦ (F⊆ (mem V) (mem V) scV (λ d z → z) d w∈) V∶A nbV scV neV 
   Λ-mono F⊆ ν Λ-ν = Λ-ν
 
   ∗-mono' : ∀ {D E D' E'} → ¬isBlame-∈ D' → ¬isBlame-∈ E' 

@@ -28,7 +28,7 @@ infix 5 _∼₊_
 _∼_ : (u : Val) → (v : Val) → Set
 _∼₊_ : (u : Val) → (V : List Val) → Set
 _≈₊_ : (U : List Val) → (V : List Val) → Set
-inj A u ∼ inj A' v = u ∼ v 
+inj A u ∼ inj A' v = A ≡ A' × u ∼ v 
 inj A u ∼ v = ⊥
 const {ι} k ∼ const {ι'} k' = Σ[ ι≡ ∈ ι ≡ ι' ] subst base-rep ι≡ k ≡ k'
 const k ∼ v = ⊥
@@ -59,10 +59,15 @@ U ≈₊ V = All (_∼₊ V) U
 scD : 𝒫 Val → Set
 scD D = ∀ u v → u ∈ D → v ∈ D → u ∼ v
 
+scD-1 : (𝒫 Val → 𝒫 Val) → Set₁
+scD-1 F = ∀ D → scD D → scD (F D)
+
+monoD-1 : (F F' : 𝒫 Val → 𝒫 Val) → Set₁
+monoD-1 F F' = ∀ D D' → scD D' → D ⊆ D' → F D ⊆ F' D'
 
 ∼-Type : ∀ {u v A} → ⟦ u ∶ A ⟧ → u ∼ v → ⟦ v ∶ A ⟧
 ∼-Type₊ : ∀ {U V A} → ⟦ U ∶ A ⟧₊ → U ≈₊ V → ⟦ V ∶ A ⟧₊
-∼-Type {inj A₁ u} {inj A v} {⋆} u∶A u~v = tt
+∼-Type {inj A u} {inj .A v} {⋆} u∶A (refl , u~v) = ∼-Type u∶A u~v
 ∼-Type {const {B} k} {const {B₁} k₁} {` x} u∶A (B≡ , k≡) with base-eq? x B₁
 ... | yes refl = tt
 ... | no neq with base-eq? x B

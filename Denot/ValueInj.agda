@@ -6,7 +6,7 @@ open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List using (List ; _∷_ ; []; _++_; length)
 open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
 open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup; tabulate)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
 open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Unit using (⊤; tt)
@@ -36,11 +36,18 @@ data Val : Set where
    Denotational Typing
   ========================================================================= -}
 
+data InjType : Type → Set where
+  I` : ∀ ι → InjType (` ι)
+  I⋆ : ∀ (A : Type) → InjType ⋆
+  _I⇒_ : ∀ {σ τ} → InjType σ → InjType τ → InjType (σ ⇒ τ)
+  _I×_ : ∀ {σ τ} → InjType σ → InjType τ → InjType (σ `× τ)
+  _I⊎_ : ∀ {σ τ} → InjType σ → InjType τ → InjType (σ `⊎ τ)
+
 ⟦_∶_⟧ : (v : Val) → (τ : Type) → Set
 ⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set
 ⟦ [] ∶ τ ⟧₊ = ⊤
 ⟦ (v ∷ V) ∶ τ ⟧₊ = ⟦ v ∶ τ ⟧ × ⟦ V ∶ τ ⟧₊
-⟦ inj A v ∶ ⋆ ⟧ = ⊤
+⟦ inj A v ∶ ⋆ ⟧ = ⟦ v ∶ A ⟧
 ⟦ blame ℓ ∶ ⋆ ⟧ = ⊤
 ⟦ v ∶ ⋆ ⟧ = ⊥
 ⟦ (const {b'} k) ∶ ` b ⟧ with base-eq? b b'
@@ -61,6 +68,30 @@ data Val : Set where
 ⟦ blame ℓ ∶ σ `⊎ τ ⟧ = ⊤
 ⟦ v ∶ σ `⊎ τ ⟧ = ⊥
 
+⟦_I∶_⟧ : (v : Val) → ∀ {τ} → (Iτ : InjType τ) → Set
+⟦_I∶_⟧₊ : (V : List Val) → ∀ {τ} → (Iτ : InjType τ) → Set
+⟦ [] I∶ τ ⟧₊ = ⊤
+⟦ (v ∷ V) I∶ τ ⟧₊ = ⟦ v I∶ τ ⟧ × ⟦ V I∶ τ ⟧₊
+⟦ inj A' v I∶ I⋆ A ⟧ = A' ≡ A × ⟦ v ∶ A ⟧
+⟦ blame ℓ I∶ I⋆ A ⟧ = ⊤
+⟦ v I∶ I⋆ A ⟧ = ⊥
+⟦ (const {b'} k) I∶ I` b ⟧ with base-eq? b b'
+... | yes refl = ⊤
+... | no neq = ⊥
+⟦ blame ℓ I∶ I` b ⟧ = ⊤
+⟦ v I∶ I` b ⟧ = ⊥
+⟦ ν I∶ σ I⇒ τ ⟧ = ⊤
+⟦ V ↦ w I∶ σ I⇒ τ ⟧ = ⟦ V I∶ σ ⟧₊ → ⟦ w I∶ τ ⟧
+⟦ blame ℓ I∶ σ I⇒ τ ⟧ = ⊤
+⟦ v I∶ σ I⇒ τ ⟧ = ⊥
+⟦ fst v I∶ σ I× τ ⟧ = ⟦ v I∶ σ ⟧
+⟦ snd v I∶ σ I× τ ⟧ = ⟦ v I∶ τ ⟧
+⟦ blame ℓ I∶ σ I× τ ⟧ = ⊤
+⟦ v I∶ σ I× τ ⟧ = ⊥
+⟦ inl V I∶ σ I⊎ τ ⟧ = ⟦ V I∶ σ ⟧₊
+⟦ inr V I∶ σ I⊎ τ ⟧ = ⟦ V I∶ τ ⟧₊
+⟦ blame ℓ I∶ σ I⊎ τ ⟧ = ⊤
+⟦ v I∶ σ I⊎ τ ⟧ = ⊥
 
 ⟦blame∶τ⟧ : ∀ τ {ℓ} → ⟦ blame ℓ ∶ τ ⟧
 ⟦blame∶τ⟧ ⋆ = tt
@@ -73,7 +104,7 @@ data Val : Set where
 ⟦_∶_⟧₊? : ∀ V τ → Dec (⟦ V ∶ τ ⟧₊)
 ⟦ [] ∶ τ ⟧₊? = yes tt
 ⟦ v ∷ V ∶ τ ⟧₊? = ⟦ v ∶ τ ⟧? ×-dec ⟦ V ∶ τ ⟧₊? 
-⟦ inj A v ∶ ⋆ ⟧? = yes tt
+⟦ inj A v ∶ ⋆ ⟧? = ⟦ v ∶ A ⟧?
 ⟦ blame ℓ ∶ τ ⟧? = yes (⟦blame∶τ⟧ τ)
 ⟦ const {b'} k ∶ ` b ⟧? with base-eq? b b'
 ... | yes refl = yes tt
@@ -126,9 +157,15 @@ data Val : Set where
 ⟦∶⟧₊→All {V = []} tt = []
 ⟦∶⟧₊→All {V = (v ∷ V)} (v∶A , V∶A) = v∶A ∷ ⟦∶⟧₊→All V∶A
 
+All→⟦∶⟧₊ : ∀ {A V} → All (λ v → ⟦ v ∶ A ⟧) V → ⟦ V ∶ A ⟧₊
+All→⟦∶⟧₊ [] = tt
+All→⟦∶⟧₊ (v∶A ∷ V∶A) = v∶A , All→⟦∶⟧₊ V∶A
+
 ⟦∶⟧₊→∈ : ∀ {A V} → ⟦ V ∶ A ⟧₊ → ∀ v → v ∈ mem V → ⟦ v ∶ A ⟧
 ⟦∶⟧₊→∈ V∶A v = lookup (⟦∶⟧₊→All V∶A) {v}
 
+∈→⟦∶⟧₊ : ∀ {A V} → ∈⟦ mem V ∶ A ⟧ → ⟦ V ∶ A ⟧₊
+∈→⟦∶⟧₊ ∈⟦memV∶A⟧ = All→⟦∶⟧₊ (tabulate λ {d} d∈ → ∈⟦memV∶A⟧ d d∈)
 
 {- =========================================================================
    Single Value Operators and Blame Handling
