@@ -52,27 +52,6 @@ module Denot.LazyCoercionsRegularInj where
   coerce-aux (sum⌣{A₁}{A₂}{B₁}{B₂}) ℓ = (coerce A₁ B₁ ℓ) `+ (coerce A₂ B₂ ℓ)
 -}
 
-  wfb : Val → Set
-  wfb₊ : List Val → Set
-  wfb₊ [] = True
-  wfb₊ (v ∷ V) = wfb v × wfb₊ V
-  wfb (inj A v) = ¬isBlame v × wfb v
-  wfb (const k) = True
-  wfb (V ↦ v) = wfb₊ V × wfb v
-  wfb ν = True
-  wfb (fst v) = ¬isBlame v × wfb v
-  wfb (snd v) = ¬isBlame v × wfb v
-  wfb (inl V) = ¬isBlame₊ V × wfb₊ V
-  wfb (inr V) = ¬isBlame₊ V × wfb₊ V
-  wfb (blame ℓ) = True
-
-
-{-
- we could require coerce-val etc. to have nbu and wfbu arguments.
-
-But for the moment, let's see if we can write the definition as if these were invariants
-  and enforce these properties after the fact.
--}
 
   data coerce-val : ∀ (A B : Type) (ℓ : Label) → (u : Val) → (v : Val) → Set
   data coerce-val-aux : ∀ A B (ℓ : Label) (A⌣B : A ⌣ B) → (u : Val) → (v : Val) → Set
@@ -261,12 +240,7 @@ failure in the codomain cast coincides with blame from the body
   open DenotCastStruct dcs using (⟦_⟧)
 
   _⟶_ = _—→_
-  
-  ⟦_`∶_⟧ : (ℕ → 𝒫 Val) → List Type → Set
-  ⟦ ρ `∶ Γ ⟧ = ∀ i d {A} → d ∈ ρ i → Γ ∋ i ⦂ A → ⟦ d ∶ A ⟧
 
-  ∈⟦_I∶_⟧ : (D : 𝒫 Val) → ∀ {τ} → (A : InjType τ) → Set
-  ∈⟦ D I∶ A ⟧ = ∀ d → D d → ⟦ d I∶ A ⟧
 
   postulate
     ⟦⟧-scD : ∀ M ρ (scDρ : ∀ i → scD (ρ i)) → scD (⟦ M ⟧ ρ)

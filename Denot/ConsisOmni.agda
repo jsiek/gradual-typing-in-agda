@@ -1,6 +1,6 @@
 {-# OPTIONS --allow-unsolved-metas #-}
 
-module Denot.Value where
+module Denot.ConsisOmni where
 
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List using (List ; _∷_ ; []; _++_; length)
@@ -8,212 +8,91 @@ open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
 open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
 open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
 open import Labels
 open import PrimitiveTypes using (Base)
 open import Relation.Binary.PropositionalEquality
-    using (_≡_; _≢_; refl; sym; subst)
+    using (_≡_; _≢_; refl; sym; trans; subst)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Product using (_×-dec_)
 open import Relation.Nullary.Implication using (_→-dec_)
 open import SetsAsPredicates
 open import Types
+open import Denot.Value
 
-data Val : Set where
-  const : {B : Base} → (k : rep-base B) → Val  {- A primitive constant of type B. -}
-  _↦_ : (V : List Val) → (w : Val) → Val       {- one entry in a function's graph -}
-  ν : Val                                      {- empty function -}
-  fst : (u : Val) → Val                        {- first component of a pair -}
-  snd : (v : Val) → Val                        {- second component of a pair -}
-  inl : (V : List Val) → Val                   {- right injection of a sum -}
-  inr : (V : List Val) → Val                   {- left injection of a sum -}
-  blame : (ℓ : Label) → Val
+infix 5 _∼_
+infix 5 _∼₊_
 
-
-{- =========================================================================
-   Denotational Typing
-  ========================================================================= -}
-
-⟦_∶_⟧ : (v : Val) → (τ : Type) → Set
-⟦_∶_⟧₊ : (V : List Val) → (τ : Type) → Set
-⟦ [] ∶ τ ⟧₊ = ⊤
-⟦ (v ∷ V) ∶ τ ⟧₊ = ⟦ v ∶ τ ⟧ × ⟦ V ∶ τ ⟧₊
-⟦ v ∶ ⋆ ⟧ = ⊤
-⟦ (const {b'} k) ∶ ` b ⟧ with base-eq? b b'
-... | yes refl = ⊤
-... | no neq = ⊥
-⟦ blame ℓ ∶ ` b ⟧ = ⊤
-⟦ v ∶ ` b ⟧ = ⊥
-⟦ ν ∶ σ ⇒ τ ⟧ = ⊤
-⟦ V ↦ w ∶ σ ⇒ τ ⟧ = ⟦ V ∶ σ ⟧₊ → ⟦ w ∶ τ ⟧
-⟦ blame ℓ ∶ σ ⇒ τ ⟧ = ⊤
-⟦ v ∶ σ ⇒ τ ⟧ = ⊥
-⟦ fst v ∶ σ `× τ ⟧ = ⟦ v ∶ σ ⟧
-⟦ snd v ∶ σ `× τ ⟧ = ⟦ v ∶ τ ⟧
-⟦ blame ℓ ∶ σ `× τ ⟧ = ⊤
-⟦ v ∶ σ `× τ ⟧ = ⊥
-⟦ inl V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ σ ⟧₊
-⟦ inr V ∶ σ `⊎ τ ⟧ = ⟦ V ∶ τ ⟧₊
-⟦ blame ℓ ∶ σ `⊎ τ ⟧ = ⊤
-⟦ v ∶ σ `⊎ τ ⟧ = ⊥
-
-
-⟦blame∶τ⟧ : ∀ τ {ℓ} → ⟦ blame ℓ ∶ τ ⟧
-⟦blame∶τ⟧ ⋆ = tt
-⟦blame∶τ⟧ (` x) = tt
-⟦blame∶τ⟧ (τ ⇒ τ₁) = tt
-⟦blame∶τ⟧ (τ `× τ₁) = tt
-⟦blame∶τ⟧ (τ `⊎ τ₁) = tt
-
-⟦V∶⋆⟧₊ : ∀ {V} → ⟦ V ∶ ⋆ ⟧₊
-⟦V∶⋆⟧₊ {[]} = tt
-⟦V∶⋆⟧₊ {x ∷ V} = tt , ⟦V∶⋆⟧₊
-
-⟦_∶_⟧? : ∀ v τ → Dec (⟦ v ∶ τ ⟧)
-⟦_∶_⟧₊? : ∀ V τ → Dec (⟦ V ∶ τ ⟧₊)
-⟦ [] ∶ τ ⟧₊? = yes tt
-⟦ v ∷ V ∶ τ ⟧₊? = ⟦ v ∶ τ ⟧? ×-dec ⟦ V ∶ τ ⟧₊? 
-⟦ v ∶ ⋆ ⟧? = yes tt
-⟦ blame ℓ ∶ τ ⟧? = yes (⟦blame∶τ⟧ τ)
-⟦ const {b'} k ∶ ` b ⟧? with base-eq? b b'
-... | yes refl = yes tt
-... | no neq = no (λ z → z)
-⟦ ν ∶ τ ⇒ τ₁ ⟧? = yes tt
-⟦ V ↦ w ∶ τ ⇒ τ₁ ⟧? = ⟦ V ∶ τ ⟧₊? →-dec ⟦ w ∶ τ₁ ⟧?
-⟦ fst v ∶ τ `× τ₁ ⟧? = ⟦ v ∶ τ ⟧?
-⟦ snd v ∶ τ `× τ₁ ⟧? = ⟦ v ∶ τ₁ ⟧?
-⟦ inl V ∶ τ `⊎ τ₁ ⟧? = ⟦ V ∶ τ ⟧₊?
-⟦ inr V ∶ τ `⊎ τ₁ ⟧? = ⟦ V ∶ τ₁ ⟧₊?
-⟦ x ↦ v ∶ ` b ⟧? = no (λ z → z)
-⟦ ν ∶ ` b ⟧? = no (λ z → z)
-⟦ fst v ∶ ` b ⟧? = no (λ z → z)
-⟦ snd v ∶ ` b ⟧? = no (λ z → z)
-⟦ inl x ∶ ` b ⟧? = no (λ z → z)
-⟦ inr x ∶ ` b ⟧? = no (λ z → z)
-⟦ const x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
-⟦ fst v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
-⟦ snd v ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
-⟦ inl x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
-⟦ inr x ∶ τ ⇒ τ₁ ⟧? = no (λ z → z)
-⟦ const x ∶ τ `× τ₁ ⟧? = no (λ z → z)
-⟦ x ↦ v ∶ τ `× τ₁ ⟧? = no (λ z → z)
-⟦ ν ∶ τ `× τ₁ ⟧? = no (λ z → z)
-⟦ inl x ∶ τ `× τ₁ ⟧? = no (λ z → z)
-⟦ inr x ∶ τ `× τ₁ ⟧? = no (λ z → z)
-⟦ const x ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
-⟦ x ↦ v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
-⟦ ν ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
-⟦ fst v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
-⟦ snd v ∶ τ `⊎ τ₁ ⟧? = no (λ z → z)
-
-
-∈⟦_∶_⟧ : ∀ (D : 𝒫 Val) (τ : Type) → Set
-∈⟦ D ∶ τ ⟧ = ∀ d → d ∈ D → ⟦ d ∶ τ ⟧
-
-
-⟦∶⟧₊→All : ∀ {A V} → ⟦ V ∶ A ⟧₊ → All (λ v → ⟦ v ∶ A ⟧) V
-⟦∶⟧₊→All {V = []} tt = []
-⟦∶⟧₊→All {V = (v ∷ V)} (v∶A , V∶A) = v∶A ∷ ⟦∶⟧₊→All V∶A
-
-⟦∶⟧₊→∈ : ∀ {A V} → ⟦ V ∶ A ⟧₊ → ∀ v → v ∈ mem V → ⟦ v ∶ A ⟧
-⟦∶⟧₊→∈ V∶A v = lookup (⟦∶⟧₊→All V∶A) {v}
-
-
-{- =========================================================================
-   Single Value Operators and Blame Handling
-  ========================================================================= -}
-
-
-δb : Val → Val → Val
-δb (blame ℓ) w = blame ℓ
-δb v w = w
-
-isBlame : Val → Set
-isBlame (blame ℓ) = ⊤
-isBlame v = ⊥
-
-isBlame₊ : List Val → Set
-isBlame₊ V = Any isBlame V
-
-¬isBlame : Val → Set
-¬isBlame v = ¬ (isBlame v)
-
-¬isBlame₊ : List Val → Set
-¬isBlame₊ V = All ¬isBlame V
-
-
-¬isBlame-∈ : 𝒫 Val → Set
-¬isBlame-∈ D = ∀ d → d ∈ D → ¬isBlame d
-
-¬isBlame-⊆ : ∀ {D D' : 𝒫 Val} → D' ⊆ D → ¬isBlame-∈ D → ¬isBlame-∈ D'
-¬isBlame-⊆ D'⊆D nbD d d∈ = nbD d (D'⊆D d d∈)
-
-blame? : ∀ v → Dec (isBlame v)
-blame? (blame ℓ) = yes tt
-blame? (const x) = no (λ z → z)
-blame? (x ↦ v) = no (λ z → z)
-blame? ν = no (λ z → z)
-blame? (fst v) = no (λ z → z)
-blame? (snd v) = no (λ z → z)
-blame? (inl x) = no (λ z → z)
-blame? (inr x) = no (λ z → z)
-
-blame₊? : ∀ V → Dec (isBlame₊ V)
-blame₊? V = any? blame? V
-
-Blameless : Val → Set
-Blameless₊ : List Val → Set
-Blameless₊ [] = ⊤
-Blameless₊ (x ∷ V) = Blameless x × Blameless₊ V
-Blameless (const x) = ⊤
-Blameless (x ↦ v) = Blameless v
-Blameless ν = ⊤
-Blameless (fst v) = Blameless v
-Blameless (snd v) = Blameless v
-Blameless (inl x) = Blameless₊ x
-Blameless (inr x) = Blameless₊ x
-Blameless (blame x) = ⊥
+_∼_ : (u : Val) → (v : Val) → Set
+_∼₊_ : (u : Val) → (V : List Val) → Set
+_≈₊_ : (U : List Val) → (V : List Val) → Set
+const {ι} k ∼ const {ι'} k' = Σ[ ι≡ ∈ ι ≡ ι' ] subst base-rep ι≡ k ≡ k'
+const k ∼ blame ℓ = ⊤
+const k ∼ v = ⊥
+(V ↦ w) ∼ ν = ⊤
+(V ↦ w) ∼ blame ℓ = ⊤
+(V ↦ w) ∼ V' ↦ w' = V ≈₊ V' × w ∼ w' ⊎ ¬ (V ≈₊ V')
+(V ↦ w) ∼ v = ⊥
+ν ∼ ν = ⊤
+ν ∼ blame ℓ = ⊤
+ν ∼ (V' ↦ w') = ⊤
+ν ∼ v = ⊥
+fst u ∼ fst v = u ∼ v
+fst u ∼ snd v = ⊤
+fst u ∼ blame ℓ = ⊤
+fst u ∼ v = ⊥
+snd u ∼ snd v = u ∼ v
+snd u ∼ fst v = ⊤
+snd u ∼ blame ℓ = ⊤
+snd u ∼ v = ⊥
+inl U ∼ inl V = U ≈₊ V
+inl U ∼ (blame ℓ) = ⊤
+inl U ∼ v = ⊥
+inr U ∼ inr V = U ≈₊ V
+inr U ∼ blame ℓ = ⊤
+inr U ∼ v = ⊥
+blame ℓ ∼ v = ⊤
+u ∼₊ [] = ⊤
+u ∼₊ (v ∷ V) = u ∼ v × u ∼₊ V
+U ≈₊ V = All (_∼₊ V) U
 
 
 
-{- =========================================================================
-   Properties of Denotations and Operators
-  ========================================================================= -}
+scD : 𝒫 Val → Set
+scD D = ∀ u v → u ∈ D → v ∈ D → u ∼ v
 
-pair-complete : ∀ (D : 𝒫 Val) → Set
-pair-complete D = ((Σ[ u ∈ Val ] fst u ∈ D) → (Σ[ v ∈ Val ] snd v ∈ D))
-                × ((Σ[ v ∈ Val ] snd v ∈ D) → (Σ[ u ∈ Val ] fst u ∈ D)) 
+scD-1 : (𝒫 Val → 𝒫 Val) → Set₁
+scD-1 F = ∀ D → scD D → scD (F D)
 
-cbv-blameless-∈ : (D : 𝒫 Val) (d : Val) (d∈ : d ∈ D) → Set
-cbv-blameless-∈ D (const k) d∈ = ⊤
-cbv-blameless-∈ D (V ↦ d) d∈ = ⊤
-cbv-blameless-∈ D ν d∈ = ⊤
-cbv-blameless-∈ D (fst d) d∈ = ¬isBlame d
-cbv-blameless-∈ D (snd d) d∈ = ¬isBlame d
-cbv-blameless-∈ D (inl V) d∈ = ¬isBlame₊ V
-cbv-blameless-∈ D (inr V) d∈ = ¬isBlame₊ V
-cbv-blameless-∈ D (blame ℓ) d∈ = ⊤
+monoD-1 : (F F' : 𝒫 Val → 𝒫 Val) → Set₁
+monoD-1 F F' = ∀ D D' → scD D' → D ⊆ D' → F D ⊆ F' D'
 
-cbv-blameless : (D : 𝒫 Val) → Set
-cbv-blameless D = ∀ d d∈ → cbv-blameless-∈ D d d∈
+∼-Type : ∀ {u v A} → ⟦ u ∶ A ⟧ → u ∼ v → ⟦ v ∶ A ⟧
+∼-Type₊ : ∀ {U V A} → ⟦ U ∶ A ⟧₊ → U ≈₊ V → ⟦ V ∶ A ⟧₊
+∼-Type {const k} {v} {A} u∶A u∼v = {!   !}
+∼-Type {V ↦ u} {v} {A} u∶A u∼v = {!   !}
+∼-Type {ν} {v} {A} u∶A u∼v = {!   !}
+∼-Type {fst u} {v} {A} u∶A u∼v = {!   !}
+∼-Type {snd u} {v} {A} u∶A u∼v = {!   !}
+∼-Type {inl V} {v} {A} u∶A u∼v = {!   !}
+∼-Type {inr V} {v} {A} u∶A u∼v = {!   !}
+∼-Type {blame ℓ} {v} {A} u∶A u∼v = {!   !}
+∼-Type₊ {U}{V}{A} U∶A U∼V = {!   !}
 
-infix 4 _d⊑_
-infix 4 _d⊑₊_
+data ∼-Class : Set where
+  [bl_] : (ℓ : Label) → ∼-Class
+  [const_] : ∀ {ι} (k : base-rep ι) → ∼-Class
+  [_×_] : ([A] : ∼-Class) → ([B] : ∼-Class) → ∼-Class
+  [_⊎_] : ([A] : ∼-Class) → ([B] : ∼-Class) → ∼-Class
+  [_⇒_] : ([A] : ∼-Class) → ([B] : ∼-Class) → ∼-Class
 
-data _d⊑_ : Val → Val → Set
-data _d⊑₊_ : List Val → List Val → Set where
-  [] : ∀ {V} → [] d⊑₊ V
-  _∷_ : ∀ {u U v V} → v ∈ mem V → u d⊑ v → U d⊑₊ V → (u ∷ U) d⊑₊ V
-data _d⊑_ where
-  ⊑-const : ∀ {B k} → const {B} k d⊑ const {B} k
-  ⊑-ν-ν : ν d⊑ ν
-  ⊑-ν-↦ : ∀ {V w} → ν d⊑ V ↦ w
-  ⊑-↦ : ∀ {U v V w} → V d⊑₊ U → v d⊑ w → U ↦ v d⊑ V ↦ w
-  ⊑-fst : ∀ {u v} → u d⊑ v → fst u d⊑ fst v
-  ⊑-snd : ∀ {u v} → u d⊑ v → snd u d⊑ snd v
-  ⊑-inl : ∀ {U V} → U d⊑₊ V → inl U d⊑ inl V
-  ⊑-blame : ∀ {ℓ} → blame ℓ d⊑ blame ℓ
-    -- curious if there's a version of this last rule that works
-    -- maybe with a condition like ¬(blame ℓ ∈ mem V)
-  ⊑-blame-↦ : ∀ {ℓ V} → blame ℓ d⊑ V ↦ blame ℓ
+_[∼]_ : (u : Val) → ([v] : ∼-Class) → Set
+(blame ℓ) [∼] [bl ℓ' ] = ℓ ≡ ℓ'
+u [∼] [bl ℓ' ] = ⊥
+u [∼] [const_] {ι'} k' = {!   !}
+u [∼] [ [v] × [v]₁ ] = {!   !}
+u [∼] [ [v] ⊎ [v]₁ ] = {!   !}
+u [∼] [ [v] ⇒ [v]₁ ] = {!   !}
+

@@ -18,6 +18,7 @@ open import Relation.Nullary.Implication using (_→-dec_)
 open import SetsAsPredicates
 open import Types
 open import Denot.Value
+open import Denot.ConsisOmni
 
 
 module Denot.OpOmni where
@@ -44,16 +45,22 @@ module Denot.OpOmni where
     Λ-↦ : ∀{A f V w}
         → (w∈ : w ∈ f (mem V))
         → (V∶A : ⟦ V ∶ A ⟧₊)  -- could omit; b/c checked at app
+        → (scV : scD (mem V))
         → (nbV : ¬isBlame₊ V)  -- ditto
         → (neV : V ≢ [])  {- call by value -}
         → (V ↦ w) ∈ Λ A f
     Λ-ν : ∀{A f} → ν ∈ Λ A f
+
+   -- an omniscient semantics could produce shallow blame for uncalled function bodies
+   -- but I don't think we need that info to verify anything wrt Lazy vs Ground
+    {-
     Λ-blame : ∀{A f V ℓ}
         → (w∈ : blame ℓ ∈ f (mem V))
         → (V∶A : ⟦ V ∶ A ⟧₊)
         → (nbV : ¬isBlame₊ V)
         → (neV : V ≢ [])  {- call by value -}
         → blame ℓ ∈ Λ A f
+    -}
   {-
   why we want conditions on V:
   λ x∶Int.  ⟨Int ℓ⟩⟨⋆⟩x
@@ -175,11 +182,13 @@ module Denot.OpOmni where
 
   Λ-mono : ∀ {A}{F F' : 𝒫 Val → 𝒫 Val} → 
     (∀ D D' → D ⊆ D' → F D ⊆ F' D') → Λ A F ⊆ Λ A F'
-  Λ-mono F⊆ (V ↦ d) (Λ-↦ w∈ V∶A nbV neV) = 
-    Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d w∈) V∶A nbV neV 
+  Λ-mono F⊆ (V ↦ d) (Λ-↦ w∈ V∶A scV nbV neV) = 
+    Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d w∈) V∶A scV nbV neV 
   Λ-mono F⊆ ν Λ-ν = Λ-ν
+
+  {-
   Λ-mono F⊆ (blame ℓ) (Λ-blame {V = V} w∈ V∶A nbV neV) = 
-    Λ-blame (F⊆ (mem V) (mem V) (λ d z → z) (blame ℓ) w∈) V∶A nbV neV
+    Λ-blame (F⊆ (mem V) (mem V) (λ d z → z) (blame ℓ) w∈) V∶A nbV neV -}
 
   ∗-mono : ∀ {D E D' E'} → D ⊆ D' → E ⊆ E' → (D ∗ E) ⊆ (D' ∗ E')
   ∗-mono {D}{E}{D'}{E'} D⊆ E⊆ d (∗-app {V = V} V↦w∈ V⊆ nbV) = 

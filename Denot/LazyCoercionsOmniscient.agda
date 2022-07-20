@@ -1,15 +1,19 @@
-open import Data.Nat
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥-elim) renaming (⊥ to False)
 open import Data.Unit using (tt) renaming (⊤ to True)
+open import Data.Bool using (Bool; true; false)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Relation.Nullary.Negation using (contradiction)
-open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Sum using (_⊎_; inj₁; inj₂; [_,_])
 open import Data.Product using (_×_; proj₁; proj₂; Σ; Σ-syntax)
      renaming (_,_ to ⟨_,_⟩)
 open import Data.List using (List; []; _∷_; _++_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
 open import Relation.Binary.PropositionalEquality
-     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app)
+     using (_≡_;_≢_; refl; trans; sym; cong; cong₂; cong-app;
+            inspect; [_])
+open import Level using (lower)
 
 module Denot.LazyCoercionsOmniscient where
 
@@ -17,251 +21,193 @@ module Denot.LazyCoercionsOmniscient where
   open import Labels
   open import CastStructureABT
   open import LazyCoercionsABT
+  open import LazyCoercions using (I-inj; coerce-aux)
   open import Denot.Value
+  open import Denot.OpOmni
+  open import Denot.ConsisOmni
   open import SetsAsPredicates
+  open import Syntax hiding (id)
 
 
-  infix 4 _↝⟦_⟧↝_
 
-  data _↝⟦_∶_⟧↝_ : ∀ {A B} → Val → (c : Cast (A ⇒ B)) → Val → Set where
-    coerce-ok : ∀ {A B}{c : Cast (A ⇒ B)}{v} 
-      → ⟦ v ∶ B ⟧ 
-      → v ↝⟦ c ⟧↝ v
-        V ↦ blame ℓ
-    coerce-ok : ∀ {A B}{c : Cast (A ⇒ B)}{v} 
-      → ⟦ v ∶ A ⟧ → ⟦ v ∶ B ⟧ 
-      → v ↝⟦ ⊥ A ⟨ ℓ ⟩ B "A inconsistent with B" ⟧↝ v
-    coerce-fail-proj : ∀ {B}{v ℓ}
-      (¬⋆ : B ≢  ⋆ ) → (¬v∶B : ¬ ⟦ v ∶ B ⟧) 
-      → v ↝⟦ _??_ B ℓ {¬⋆} ⟧↝ blame ℓ
-    coerce-fail-cod : ∀{A B A′ B′}{c : Cast (A′ ⇒ A)}{d : Cast (B ⇒ B′)}{V w ℓ}
-      -- blame is produced by a failure of the codomain cast d
-      → (V∶A' : ⟦ V ∶ A′ ⟧₊) → (V∶A : ⟦ V ∶ A ⟧₊) 
-      → (nbV : ¬isBlame₊ V) → (nbw : ¬isBlame w) 
-      → (w↝bl : w ↝⟦ d ⟧↝ blame ℓ)
-      → (V ↦ w) ↝⟦ c ↣ d ⟧↝ blame ℓ
-    coerce-fail-dom : ∀{A B A′ B′}{c : Cast (B ⇒ A)}{d : Cast (A′ ⇒ B′)}{V v ℓ u}
-      -- blame is produced by a failure of the domain cast c
-         → (v∈ : v ∈ mem V) → (v↝bl : v ↝⟦ c ⟧↝ blame ℓ) → (nbV : ¬isBlame₊ V)
-         → u ↝⟦ c ↣ d ⟧↝ V ↦ blame ℓ
-    coerce-fail-fst : ∀ {A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}{v ℓ} 
-      → (v↝bl : v ↝⟦ c ⟧↝ blame ℓ) → (nbv : ¬isBlame v)
-      → fst v ↝⟦ c `× d ⟧↝ blame ℓ
-    coerce-fail-snd : ∀ {A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}{v ℓ} 
-      → (v↝bl : v ↝⟦ d ⟧↝ blame ℓ) → (nbv : ¬isBlame v)
-      → snd v ↝⟦ c `× d ⟧↝ blame ℓ
-    coerce-fail-inl : ∀ {A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}{V v ℓ} 
-      → (v∈ : v ∈ mem V) → (nbv : ¬isBlame v) → (v↝bl : v ↝⟦ c ⟧↝ blame ℓ) 
-      → inl V ↝⟦ c `+ d ⟧↝ blame ℓ
-    coerce-fail-inr : ∀ {A B A' B'}{c : Cast (A ⇒ B)}{d : Cast (A' ⇒ B')}{V v ℓ} 
-      → (v∈ : v ∈ mem V) → (nbv : ¬isBlame v) → (v↝bl : v ↝⟦ d ⟧↝ blame ℓ) 
-      → inr V ↝⟦ c `+ d ⟧↝ blame ℓ
-    coerce-fail : ∀ {A B ℓ v}
-      → v ↝⟦ ⊥ A ⟨ ℓ ⟩ B ⟧↝ blame ℓ
+  data Proj : (B : Type) (ℓ : Label) (D : 𝒫 Val) → 𝒫 Val where
+      proj-ok : ∀ {B ℓ D u} → u ∈ D → (nbu : ¬isBlame u) → ⟦ u ∶ B ⟧ → u ∈ Proj B ℓ D
+      proj-fail : ∀ {B ℓ D u} → u ∈ D → (nbu : ¬isBlame u) → ¬ ⟦ u ∶ B ⟧ → (blame ℓ) ∈ Proj B ℓ D
+      proj-blame : ∀ {B ℓ ℓ' D} → (bl∈ : blame ℓ ∈ D) → blame ℓ ∈ Proj B ℓ' D
 
 
-    {- 
-    -- this case exists conceptually as blame-handling by a coercion,
-           but is subsumed by coerce-ok because the cast technically succeeds here
-      coerce-fail-↦ : ∀{A B A′ B′}{c : Cast (B ⇒ A)}{d : Cast (A′ ⇒ B′)}{V w V′ w′}
-      -- blame is produced in the body of the function itself
-      → ⟦ V ∶ A ⟧₊ → ¬isBlame₊ V →
-      → (V ↦ blame ℓ) ↝⟦ c ↣ d ⟧↝ V ↦ blame ℓ 
-    -}
+  data Fun-cast : (A' : Type) → (Fc : 𝒫 Val → 𝒫 Val) (Fd : 𝒫 Val → 𝒫 Val)
+                → (F : 𝒫 Val → 𝒫 Val) → 𝒫 Val
+    FC-↦ : ∀ {A' Fc Fd F V w}
+          → ⟦ V ∶ A' ⟧₊
+          → (scV : scD (mem V))
+          → (nbV : ¬isBlame-∈ (mem V))
+          → w ∈ (Fd (F (Fc (mem V))))
+          → V ↦ w ∈ Fun-cast A' Fc Fd F
+    Fc-ν : ∀{A' Fc Fd F} → ν ∈ FC-↦ A' Fc Fd F
+    Fc-blame-dom : ∀ {A' Fc Fd F V ℓ}
+          → (nbV )
+          → blame ℓ ∈ Fc (mem V)
+          → blame ℓ ∈ Fun-cast A' Fc Fd F
+    Fc-blame-cod : ?
+    
+    -blame : ∀{A f V ℓ}
+        → (bl∈ : blame ℓ ∈ f (mem V))
+        → (V∶A : ⟦ V ∶ A ⟧₊)
+        → (nbV : ¬isBlame₊ V)
+        → (neV : V ≢ [])  {- call by value -}
+        → blame ℓ ∈ Λ A f
+    
 
-{- examples:
-
-  (((λx∶Int.x) ⟨ℓ₁ ⋆ ⇒ Int ⟩) · True ⟨ℓ₂ ⋆ ⟩)
-
-   (λz∶⋆.((λx∶Int.x) · (z⟨ℓ₁ Int⟩))) · True⟨ℓ₂ ⋆⟩
-
-      c : Cast (⋆ ⇒ Int)
-      d : Cast (Int ⇒ Int)
-      c ↣ d : Cast ((Int ⇒ Int) ⇒ (⋆ ⇒ Int))
- 
-    true ↝⟦ c ⟧↝ blame ℓ₁
- ------------------------------------------
-    V ↦ w ↝⟦ c ↣ d ⟧↝ true ↦ blame ℓ₁
-
-    V ↝⟦ c ⟧↝ blame ℓ
- ------------------------------------------
-    _ ↝⟦ c ↣ d ⟧↝ V ↦ blame ℓ
-
-
-    42 ↝⟦ c ⟧↝ 42   w ↝⟦ d ⟧↝ w'
- ------------------------------------------
-    42 ↦ w ↝⟦ c ↣ d ⟧↝ 42 ↦ w'
-
-
-   ((λx∶⋆.42⟨ℓ₁ ⋆⟩) ⟨ℓ₂ ⋆ ⇒ Bool ⟩)
-
-  we _do_ want to blame ℓ₂
+  𝒞_⟨_⟩ : ∀ {A B} → (D : 𝒫 Val) → (c : Cast (A ⇒ B)) → 𝒫 Val
+  𝒞 D ⟨ id ⟩ = D
+  𝒞 D ⟨ _!! A {j} ⟩ = D
+  𝒞 D ⟨ (B ?? ℓ) {¬⋆} ⟩ = Proj B ℓ D
+  𝒞_⟨_⟩ {A ⇒ B} {A' ⇒ B'} D (c ↣ d) = (Λ A' (λ X → 𝒞 (D ∗ (𝒞 X ⟨ c ⟩)) ⟨ d ⟩))
+  𝒞 D ⟨ c `× d ⟩ = pair (𝒞 (car D) ⟨ c ⟩) (𝒞 (cdr D) ⟨ d ⟩)
+  𝒞 D ⟨ c `+ d ⟩ = cond D (λ X → inleft (𝒞 X ⟨ c ⟩)) (λ Y → inright (𝒞 Y ⟨ d ⟩))
+  𝒞 D ⟨ ⊥ A ⟨ ℓ ⟩ B ⟩ (blame ℓ') = blame ℓ' ∈ D ⊎ (Σ[ v ∈ Val ] v ∈ D × ¬isBlame v × ℓ' ≡ ℓ)
+  𝒞 D ⟨ ⊥ A ⟨ ℓ ⟩ B ⟩ v = False
 
 
-   zero ↝⟦ c ⟧↝ zero   42 ↝⟦ d ⟧↝ blame ℓ₁
- ------------------------------------------
-    zero ↦ 42 ↝⟦ c ↣ d ⟧↝ zero ↦ blame ℓ₁
+  𝒞-mono : ∀ {A B} (c : Cast (A ⇒ B)) {D D'} → scD D' → D ⊆ D' → 𝒞 D ⟨ c ⟩ ⊆ 𝒞 D' ⟨ c ⟩
+  𝒞-mono = {!   !}
 
-    zero ↝⟦ c ⟧↝ zero     w 
----------------------------------------------
+  postulate
+    Λ-scD : ∀ A {F} → scD-1 F → scD (Λ A F)
+    ∗-scD : ∀ {D E} → scD D → scD E → scD (D ∗ E)
+    pair-scD : ∀ {D E} → scD D → scD E → scD (pair D E)
+    car-scD : ∀ {D} → scD D → scD (car D)
+    cdr-scD : ∀ {D} → scD D → scD (cdr D)
+    inleft-scD : ∀ {D} → scD D → scD (inleft D)
+    inright-scD : ∀ {D} → scD D → scD (inright D)
+    cond-scD : ∀ {T D E} → scD T → scD-1 D → scD-1 E → scD (cond T D E)
+    If-scD : ∀ {T D E} → scD T → scD D → scD E → scD (If T D E)
+    𝒞-scD : ∀ {A B} (c : Cast (A ⇒ B)) {D} → scD D → scD (𝒞 D ⟨ c ⟩)
+    ℘-scD : ∀ {B P f} → scD (℘ {B} P f )
 
-     coerce-fail-cod : ∀{A B A′ B′}{c : Cast (B ⇒ A)}{d : Cast (A′ ⇒ B′)}{V w ℓ}
-      
-      → V ↝⟦ c ⟧₊↝ V   →   w ↝⟦ d ⟧↝ blame ℓ
-      -- do we need a side-condition here where w is blameless? or where V is blameless?
-      → (V ↦ w) ↝⟦ c ↣ d ⟧↝ blame ℓ       
-
-
-   (λz∶⋆.((λx∶Int.x) · (z⟨ℓ₁ Int⟩)))
-
--}
-
-  𝒞⟦_⟧ : ∀ {A B} → (c : Cast (A ⇒ B)) → 𝒫 Val → 𝒫 Val
-  𝒞⟦ c ⟧ D v = Σ[ u ∈ Val ] u ∈ D × u ↝⟦ c ⟧↝ v
-
-
-  omni-preserves-type : ∀ {A B} (c : Cast (A ⇒ B))
-           → ∀ u v → u ↝⟦ c ⟧↝ v → ⟦ u ∶ A ⟧ → ⟦ v ∶ B ⟧
-  omni-preserves-type {A} {B} c u .u (coerce-ok x) u∶A = x
-  omni-preserves-type {.⋆} {B} .(B ?? _) u .(blame _) (coerce-fail-proj ¬⋆ x) u∶A = ⟦blame∶τ⟧ B
-  omni-preserves-type {.(_ ⇒ _)} {.(_ ⇒ _)} .(_ ↣ _) .(_ ↦ _) .(blame _) (coerce-fail-cod V∶A' V∶A nbV nbw w↝bl) u∶A = tt
-  omni-preserves-type {.(_ ⇒ _)} {A' ⇒ B'} .(_ ↣ _) d .(_ ↦ blame _) (coerce-fail-dom v∈ v↝bl nbV) u∶A _ = ⟦blame∶τ⟧ B'
-  omni-preserves-type {.(_ `× _)} {.(_ `× _)} (_ `× _) .(fst _) .(blame _) (coerce-fail-fst u↝v nbv) u∶A = tt
-  omni-preserves-type {.(_ `× _)} {.(_ `× _)} .(_ `× _) .(snd _) .(blame _) (coerce-fail-snd u↝v nbv) u∶A = tt
-  omni-preserves-type {.(_ `⊎ _)} {.(_ `⊎ _)} .(_ `+ _) .(inl _) .(blame _) (coerce-fail-inl v∈ nbv v↝bl) u∶A = tt
-  omni-preserves-type {.(_ `⊎ _)} {.(_ `⊎ _)} .(_ `+ _) .(inr _) .(blame _) (coerce-fail-inr v∈ nbv v↝bl) u∶A = tt
-  omni-preserves-type {A} {B} .(⊥ A ⟨ _ ⟩ B) u .(blame _) coerce-fail u∶A = ⟦blame∶τ⟧ B
-
-
-  -- ===========================================================================
- -- Classifying Coercions
--- ===========================================================================
-
-{- inspired by : 
-     data Progress (M : Term) : Set where
-    step : ∀ {N : Term} → M —→ N → Progress M
-    done : Value M → Progress M
-    error : Error M → Progress M
--}
-  {- if one value casts to another, u ↝⟦ c ⟧↝ v,
-     where (c : Cast (A ⇒ B)) 
-     then exactly one holds:
-     + ∃ℓ. u ≡ v ≡ blame ℓ
-     + ¬isBlame u and ⟦ u ∶ B ⟧ and v ≡ u
-     + ¬isBlame u and ¬ ⟦ u ∶ B ⟧ and ∃ℓ. u ≡ blame ℓ  (or, more specifically, ∃ℓ ∈ get-label.'')
+{-
+  postulate
+    ∗-mono : ∀ {D E D' E'} → scD D' → scD E' → D ⊆ D' → E ⊆ E' → (D ∗ E) ⊆ (D' ∗ E')
+    pair-mono : ∀ {D E D' E'} → scD D' → scD E' → D ⊆ D' → E ⊆ E' → (pair D E) ⊆ (pair D' E')
+    car-mono : ∀ {D D'} → scD D' → D ⊆ D' → car D ⊆ car D'
+    cdr-mono : ∀ {D D'} → scD D' → D ⊆ D' → cdr D ⊆ cdr D'
+    inleft-mono : ∀ {D D'} → scD D' → D ⊆ D' → inleft D ⊆ inleft D'
+    inright-mono : ∀ {D D'} → scD D' → D ⊆ D' → inright D ⊆ inright D'
+    cond-mono : ∀ {T D E T' D' E'} → scD T' → T ⊆ T' 
+      → (monoD-1 D D') → (monoD-1 E E') → cond T D E ⊆ cond T' D' E'
+    If-mono : ∀ {T D E T' D' E'} → scD T' → T ⊆ T' → D ⊆ D' → E ⊆ E' → If T D E ⊆ If T' D' E'
   -}
 
-  get-blame-label : ∀ {A B} (c : Cast (A ⇒ B)) (v : Val)
-    → ⟦ v ∶ A ⟧ → ¬ ⟦ v ∶ B ⟧ → List Label
-  get-blame-label₊ : ∀ {A B} (c : Cast (A ⇒ B)) (V : List Val)
-    → ⟦ V ∶ A ⟧₊ → ¬ ⟦ V ∶ B ⟧₊ → List Label
-  get-blame-label₊ c [] V∶A ¬V∶B = ⊥-elim (¬V∶B tt)
-  get-blame-label₊ {A}{B} c (v ∷ V) ⟨ v∶A , V∶A ⟩ ¬V∶B with ⟦ v ∶ B ⟧? | ⟦ V ∶ B ⟧₊?
-  ... | yes v∶B | yes V∶B = ⊥-elim (¬V∶B ⟨ v∶B , V∶B ⟩) 
-  ... | yes v∶B | no ¬V∶B = get-blame-label₊ c V V∶A ¬V∶B
-  ... | no ¬v∶B | yes V∶B = get-blame-label c v v∶A ¬v∶B
-  ... | no ¬v∶B | no ¬V∶B = get-blame-label c v v∶A ¬v∶B ++ get-blame-label₊ c V V∶A ¬V∶B
-  get-blame-label {A} {.A} id v v∶A ¬v∶B = ⊥-elim (¬v∶B v∶A)
-  get-blame-label {A} {.⋆} (.A !!) v v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.⋆} {B} (.B ?? ℓ) v v∶A ¬v∶B = ℓ ∷ []
-  get-blame-label {(A ⇒ B)} {(A' ⇒ B')} (c ↣ d) (V ↦ w) V∶A→w∶B ¬[V∶A'→w∶B']
-    with ⟦ V ∶ A' ⟧₊?
-  ... | no ¬V∶A' = ⊥-elim (¬[V∶A'→w∶B'] (λ z → ⊥-elim (¬V∶A' z)))
-  ... | yes V∶A' with ⟦ w ∶ B' ⟧?
-  ... | yes w∶B' = ⊥-elim (¬[V∶A'→w∶B'] (λ _ → w∶B'))
-  ... | no ¬w∶B' with ⟦ V ∶ A ⟧₊?
-  ... | yes V∶A = get-blame-label d w (V∶A→w∶B V∶A) (λ z → ¬[V∶A'→w∶B'] (λ _ → z))
-  ... | no ¬V∶A = get-blame-label₊ c V V∶A' ¬V∶A
-  get-blame-label {.(_ ⇒ _)} {.(_ ⇒ _)} (c ↣ d) ν v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ ⇒ _)} {.(_ ⇒ _)} (c ↣ d) (blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ `× _)} {.(_ `× _)} (c `× d) (fst v) v∶A ¬v∶B = 
-    get-blame-label c v v∶A ¬v∶B
-  get-blame-label {.(_ `× _)} {.(_ `× _)} (c `× d) (snd v) v∶A ¬v∶B = 
-    get-blame-label d v v∶A ¬v∶B
-  get-blame-label {.(_ `× _)} {.(_ `× _)} (c `× d) (blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (c `+ d) (inl V) V∶A ¬V∶B = 
-    get-blame-label₊ c V V∶A ¬V∶B
-  get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (c `+ d) (inr V) V∶A ¬V∶B = 
-    get-blame-label₊ d V V∶A ¬V∶B
-  get-blame-label {.(_ `⊎ _)} {.(_ `⊎ _)} (c `+ d) (blame x) v∶A ¬v∶B = ⊥-elim (¬v∶B tt)
-  get-blame-label {A} {B} (⊥ .A ⟨ ℓ ⟩ .B) v v∶A ¬v∶B = ℓ ∷ []
-
-
-  data Coerce : ∀ {A B} → (c : Cast (A ⇒ B)) → (u : Val) → (v : Val) → Set where
-    pass-value : ∀ {A B c u}
-               → (u∶B : ⟦ u ∶ B ⟧) 
-               → Coerce {A}{B} c u u
-    new-blame : ∀ {A B c u ℓ}
-               → (u∶A : ⟦ u ∶ A ⟧)
-               → (¬u∶B : ¬ ⟦ u ∶ B ⟧)
-               → (ℓ∈ : ℓ ∈ mem (get-blame-label c u u∶A ¬u∶B))
-               → Coerce {A}{B} c u (blame ℓ)
-    dom-blame : ∀{A B A′ B′}{c : Cast (A′ ⇒ A)}{d : Cast (B ⇒ B′)}{V v ℓ u}
-               → (v∈ : v ∈ mem V) → (nbV : ¬isBlame₊ V) → (cfail : Coerce c v (blame ℓ)) 
-               → Coerce {A ⇒ B}{A′ ⇒ B′} (c ↣ d) u (V ↦ blame ℓ)
-    const-blame : ∀ {A B v ℓ} → Coerce (⊥ A ⟨ ℓ ⟩ B) v (blame ℓ)
-
-  classify-coercion : ∀ {A}{B} {c : Cast (A ⇒ B)} {u v} → ⟦ u ∶ A ⟧ → u ↝⟦ c ⟧↝ v → Coerce c u v
-  classify-coercion u∶A (coerce-ok u∶B) = pass-value u∶B
-  classify-coercion u∶A (coerce-fail-proj ¬⋆ ¬v∶B) = new-blame tt ¬v∶B (here refl)
-  classify-coercion {A ⇒ B}{A' ⇒ B'} {c = c ↣ d} u∶A (coerce-fail-cod {V = V}{w = w}{ℓ = ℓ} V∶A' V∶A nbV nbw u↝v) 
-    with classify-coercion (u∶A V∶A) u↝v
-  ... | pass-value u∶B = ⊥-elim (nbw tt)
-  ... | const-blame = new-blame u∶A (λ z → {! z V∶A'   !}) {!   !}
-  ... | new-blame u∶A ¬u∶B ℓ∈ = new-blame (λ z → u∶A) (λ z → ¬u∶B (z V∶A')) ℓ∈'
-     where
-     ℓ∈' : ℓ ∈ mem (get-blame-label (c ↣ d) (V ↦ w) (λ z → u∶A) (λ z → ¬u∶B (z V∶A')))
-     ℓ∈' with ⟦ V ∶ A' ⟧₊? 
-     ... | no ¬V∶A'' = ⊥-elim (¬V∶A'' V∶A')
-     ... | yes V∶A'' with ⟦ w ∶ B' ⟧?
-     ... | yes w∶B' = ⊥-elim (¬u∶B w∶B')
-     ... | no ¬w∶B' with ⟦ V ∶ A ⟧₊?
-     ... | no ¬V∶A = ⊥-elim (¬V∶A V∶A)
-     ... | yes V∶Aagain = ℓ∈
-  classify-coercion u∶A (coerce-fail-dom v∈ u↝v nbV) = dom-blame v∈ nbV (classify-coercion {!   !} u↝v)
-  classify-coercion u∶A (coerce-fail-fst u↝v nbv) 
-    with classify-coercion u∶A u↝v
-  ... | pass-value u∶B = ⊥-elim (nbv tt)
-  ... | new-blame u∶A ¬u∶B x = new-blame u∶A ¬u∶B x
-  classify-coercion u∶A (coerce-fail-snd u↝v nbv)
-    with classify-coercion u∶A u↝v
-  ... | pass-value u∶B = ⊥-elim (nbv tt)
-  ... | new-blame u∶A ¬u∶B ℓ∈ = new-blame u∶A ¬u∶B ℓ∈
-  classify-coercion u∶A (coerce-fail-inl {v = v} v∈ nbv v↝bl) 
-    with classify-coercion (⟦∶⟧₊→∈ u∶A v v∈) v↝bl
-  ... | pass-value u∶B = ⊥-elim (nbv tt)
-  ... | new-blame v∶A ¬v∶B ℓ∈ = new-blame u∶A (λ z → ¬v∶B (⟦∶⟧₊→∈ z v v∈)) {! ℓ∈  !}
-  classify-coercion u∶A (coerce-fail-inr {v = v} v∈ nbv v↝bl)
-    with classify-coercion ((⟦∶⟧₊→∈ u∶A v v∈)) v↝bl
-  ... | pass-value u∶B = ⊥-elim (nbv tt)
-  ... | new-blame v∶A ¬v∶B ℓ∈ = new-blame u∶A (λ z → ¬v∶B (⟦∶⟧₊→∈ z v v∈)) {! ℓ∈  !}
-  classify-coercion u∶A coerce-fail = new-blame u∶A {!   !} {!   !}
-
-  {- if one value casts to another, u ↝⟦ c ⟧↝ v,
-     where (c : Cast (A ⇒ B)) 
-     then exactly one holds:
-     + ∃ℓ. u ≡ v ≡ blame ℓ
-     + ¬isBlame u and ⟦ u ∶ B ⟧ and v ≡ u
-     + ¬isBlame u and ¬ ⟦ u ∶ B ⟧ and ∃ℓ. u ≡ blame ℓ  (or, more specifically, ∃ℓ ∈ get-label.'')
-  -}
-
-  coerce-fun : ∀ {A B A' B'}{c : Cast (A' ⇒ A)}{d : Cast (B ⇒ B')}{V V' w w'} 
-     → (mem V) ⊆ 𝒞⟦ c ⟧ (mem V')
-     → w ↝⟦ d ⟧↝ w'
-     → V ↦ w ↝⟦ c ↣ d ⟧↝ V' ↦ w'
-  coerce-fun {A}{B}{A'}{B'}{c}{d}{V}{V'}{w}{w'} V⊆ w↝w' 
-    with ⟦ V' ∶ A ⟧₊?
-  ... | no ¬V'∶A = {!   !} 
-  ... | yes V'∶A with ⟦ w ∶ B' ⟧?
-  ... | no ¬w∶B' = {!  !}
-  ... | yes w∶B' = {!   !}
- 
-
-  open import Denot.CastStructure
-
+  open import Denot.CastStructureOmni
 
   instance 
     dcs : DenotCastStruct
-    dcs = record 
+    dcs = record
             { cast = cs
-            ; _↝⟨_⟩↝_ = _↝⟦_⟧↝_ }
+            ; 𝒞 = λ c D → 𝒞 D ⟨ c ⟩ }
+
+  
+  open DenotCastStruct dcs using () renaming (⟦_⟧ to 𝒪⟦_⟧)
+
+  _⟶_ = _—→_
+
+
+  postulate
+    𝒪-scD : ∀ M ρ (scDρ : ∀ i → scD (ρ i)) → scD (𝒪⟦ M ⟧ ρ)
+    𝒪-mono : ∀ M ρ ρ' (monoρ : ∀ i → ρ i ⊆ ρ' i) → 𝒪⟦ M ⟧ ρ ⊆ 𝒪⟦ M ⟧ ρ'
+    rebind : ∀ {X X' Y ρ} N → X ⊆ X' → 𝒪⟦ rename (ext suc) N ⟧ (X • Y • ρ) ⊆ 𝒪⟦ N ⟧ (X' • ρ)
+    𝒪-wt : ∀ M ρ {A Γ} → (ρ∶Γ : ⟦ ρ `∶ Γ ⟧) → (Γ⊢M∶A : Γ ⊢ M ⦂ A) → ∈⟦ 𝒪⟦ M ⟧ ρ ∶ A ⟧
+    nb∈mem→nb₊ : ∀ {V} → ¬isBlame-∈ (mem V) → ¬isBlame₊ V
+    ∈mem→ne : ∀ {A}{V : List A} v → v ∈ mem V → V ≢ []
+    ne→∈mem : ∀ {A}{V : List A} → V ≢ [] → Σ[ a ∈ A ] a ∈ mem V
+    ¬isBlame-∈-℘ : ∀ {B} (P : Prim B) f → ¬isBlame-∈ (℘ P f)
+    ¬isBlame-∈-Λ : ∀ A F → ¬isBlame-∈ (Λ A F)
+    neValue : ∀ V ρ → (vV : Value V) → Σ[ d ∈ Val ] d ∈ 𝒪⟦ V ⟧ ρ × ¬isBlame d
+    car-wt : ∀ {D A B} → ∈⟦ D ∶ A `× B ⟧ → ∈⟦ car D ∶ A ⟧
+    cdr-wt : ∀ {D A B} → ∈⟦ D ∶ A `× B ⟧ → ∈⟦ cdr D ∶ B ⟧
+
+  β-⊇ : ∀ {A} (F : 𝒫 Val → 𝒫 Val) D
+    → (D∶A : ∈⟦ D ∶ A ⟧)
+    → (scD : scD D)
+    → (nbD : ¬isBlame-∈ D)
+    → (F-cont : ∀ D' d → d ∈ F D' → Σ[ V ∈ List Val ] (mem V) ⊆ D' × d ∈ F (mem V) × V ≢ [])
+    → F D ⊆ ((Λ A F) ∗ D)
+  β-⊇ {A} F D D∶A scD nbD F-cont d d∈ with F-cont D d d∈
+  ... | ⟨ V , ⟨ V⊆ , ⟨ d∈' , neV ⟩ ⟩ ⟩ = {!   !}
+    {- ∗-app {V = V} (Λ-↦ d∈' (∈→⟦∶⟧₊ (λ d z → D∶A d (V⊆ d z))) 
+      (nb∈mem→nb₊ (λ d z → nbD d (V⊆ d z))) (λ u v z z₁ → scD u v (V⊆ u z) (V⊆ v z₁)) neV) V⊆ -}
+
+  coerce-sound-⊇ : ∀ {A B Γ}
+                 → (c : Cast (A ⇒ B)) → {a : Active c}
+                 → ∀ V → (vV : Value V) 
+                 → ∀ ρ → (scρ : ∀ i → scD (ρ i)) → (ρ∶Γ : ⟦ ρ `∶ Γ ⟧) 
+                 → (Γ⊢V∶A : Γ ⊢ V ⦂ A) 
+                 → 𝒪⟦ applyCast V Γ⊢V∶A vV c {a} ⟧ ρ ⊆ (𝒞_⟨_⟩ (𝒪⟦ V ⟧ ρ) c)
+  coerce-sound-⊇ {A}{.A}{Γ} id V vV ρ scρ ρ∶Γ Γ⊢V∶A v v∈ = v∈
+  coerce-sound-⊇ {.⋆}{B}{Γ} (_??_ .B x {j}) V vV ρ scρ ρ∶Γ Γ⊢V∶A v v∈ 
+    with canonical⋆ Γ⊢V∶A vV
+  ... | ⟨ A' , ⟨ M , ⟨ (_!! A' {j'}) , ⟨ i , ⟨ Γ⊢M∶A' , 𝐶⊢-blame ⟩ ⟩ ⟩ ⟩ ⟩ = {!   !}
+  coerce-sound-⊇ {A ⇒ B}{A' ⇒ B'}{Γ} (c ↣ d) V vV ρ scρ ρ∶Γ Γ⊢V∶A v v∈
+    with V | vV | Γ⊢V∶A
+  ... | (ƛ A ˙ N) | vV | (⊢ƛ A ⊢N ⟨ refl , refl ⟩) = 
+    β-⊇  (λ z → Λ A' (λ z₁ → 𝒞 z ∗ 𝒞 z₁ ⟨ c ⟩ ⟨ d ⟩)) (Λ A (λ X → 𝒪⟦ N ⟧ (X • ρ))) 
+          (𝒪-wt (ƛ A ˙ N) ρ {Γ = Γ} ρ∶Γ (⊢ƛ A ⊢N ⟨ refl , refl ⟩)) 
+          (𝒪-scD (ƛ A ˙ N) ρ scρ) (¬isBlame-∈-Λ A (λ X → 𝒪⟦ N ⟧ (X • ρ))) 
+       {!   !} 
+       v 
+       {!   !} {- (Λ-mono (λ X X' scX' X⊆ → 𝒞-mono d 
+          (∗-scD (Λ-scD A (λ X scX → 𝒪-scD N (X • ρ) 
+                    (λ {zero → scX ; (suc i) → scρ i}))) (𝒞-scD c scX')) 
+          (∗-mono (Λ-scD A (λ X scX → 𝒪-scD  N (X • ρ) 
+                    (λ {zero → scX ; (suc i) → scρ i}))) (𝒞-scD c scX') 
+                  (Λ-mono (λ X X' scX' X⊆ → rebind N X⊆)) 
+                  (𝒞-mono c scX' X⊆))) v v∈) -} 
+  ... | ($ f # (P-Fun P)) | vV | (⊢$ f (P-Fun {ι}{τ} P) refl) = 
+     β-⊇ (λ z → Λ A' (λ z₁ → 𝒞 z ∗ 𝒞 z₁ ⟨ c ⟩ ⟨ d ⟩)) (℘ (P-Fun P) f) 
+         (𝒪-wt ($ f # (P-Fun P)) ρ {` ι ⇒ τ}{Γ} ρ∶Γ (⊢$ f (P-Fun P) refl)) 
+         ℘-scD (¬isBlame-∈-℘ (P-Fun P) f) 
+         {!   !} 
+         v v∈
+  ... | ⟦ M , N ⟧ | vV | (⊢cons ⊢M ⊢N ())
+  ... | (inl M other B) | vV | (⊢inl B ⊢M ())
+  ... | (inr M other A) | vV | (⊢inr A ⊢M ())
+  ... | (M ⟨ c₁ ₍ I-inj ₎⟩) | vV | (⊢wrap c₁ I-inj ⊢M ⟨ eq₁ , () ⟩)
+  coerce-sound-⊇ {(A `× B)}{(A' `× B')}{Γ} (c `× c₁) V vV ρ scρ ρ∶Γ Γ⊢V∶A v v∈ = v∈
+  coerce-sound-⊇ {(A `⊎ B)}{(A' `⊎ B')}{Γ} (c `+ c₁) V vV ρ scρ ρ∶Γ Γ⊢V∶A v v∈ = v∈
+  coerce-sound-⊇ {A}{B}{Γ}(⊥ .A ⟨ x ⟩ .B) V vV ρ scρ ρ∶Γ Γ⊢V∶A (blame ℓ) v∈ with neValue V ρ vV
+  ... | ⟨ d , ⟨ d∈ , nbd ⟩ ⟩  = inj₂ ⟨ d , ⟨ d∈ , ⟨ nbd , v∈ ⟩ ⟩ ⟩
+
+
+  postulate
+    subst-⊇ : ∀ M N ρ → 𝒪⟦ _[_] M N ⟧ ρ ⊆ 𝒪⟦ M ⟧ ((𝒪⟦ N ⟧ ρ) • ρ)
+    ξ-⊇ : ∀ {A B M N ρ} (F : Frame A B) → M ⟶ N → 𝒪⟦ plug N F ⟧ ρ ⊆ 𝒪⟦ plug M F ⟧ ρ
+    ξ-blame-⊇ : ∀ {A B} (F : Frame A B) {ℓ ρ} → ℬ ℓ ⊆ 𝒪⟦ plug (mkblame A ℓ) F ⟧ ρ
+    β-⊇' : ∀ {A F D} → F D ⊆ ((Λ A F) ∗ D)
+    δ-⊇ : ∀ {A B} {a : Prim A} {b : Prim B} {ab : Prim (A ⇒ B)}{f k} → ℘ b (f k) ⊆ (℘ ab f  ∗ ℘ a k)
+    β-if-true-⊇ : ∀ {P D E} → D ⊆ If (℘ P true) D E
+    β-if-false-⊇ : ∀ {P D E} → E ⊆ If (℘ P false) D E
+    β-fst-⊇ : ∀ {D E} → D ⊆ car (pair D E)
+    β-snd-⊇ : ∀ {D E} → E ⊆ cdr (pair D E)
+    β-caseL-⊇ : ∀ {D F G} → F D ⊆ cond (inleft D) F G
+    β-caseR-⊇ : ∀ {D F G} → G D ⊆ cond (inright D) F G
+
+  𝒪-sound-⊇ : ∀ {M N ρ} → M ⟶ N
+     → ∀ {Γ A} 
+     → (scρ : ∀ i → scD (ρ i))
+     → (ρ∶Γ : ⟦ ρ `∶ Γ ⟧) 
+     → (Γ⊢M∶A : Γ ⊢ M ⦂ A)
+     → 𝒪⟦ N ⟧ ρ ⊆ 𝒪⟦ M ⟧ ρ
+  𝒪-sound-⊇ (ξ {F = F} ⊢M M⟶N) scρ ρ∶Γ Γ⊢M∶A = ξ-⊇ F M⟶N
+  𝒪-sound-⊇ (ξ-blame {F = F}) scρ ρ∶Γ Γ⊢M∶A = ξ-blame-⊇ F
+  𝒪-sound-⊇ {M · N}{N'}{ρ} (β x) scρ ρ∶Γ Γ⊢M∶A d d∈ = β-⊇' d (subst-⊇ {!  M !} {!   !} ρ d {!   !})
+  𝒪-sound-⊇ δ scρ ρ∶Γ Γ⊢M∶A = δ-⊇
+  𝒪-sound-⊇ β-if-true scρ ρ∶Γ Γ⊢M∶A = β-if-true-⊇
+  𝒪-sound-⊇ β-if-false scρ ρ∶Γ Γ⊢M∶A = β-if-false-⊇
+  𝒪-sound-⊇ (β-fst vM vN) scρ ρ∶Γ Γ⊢M∶A = β-fst-⊇
+  𝒪-sound-⊇ (β-snd vM vN) scρ ρ∶Γ Γ⊢M∶A = β-snd-⊇
+  𝒪-sound-⊇ {M}{N}{ρ}(β-caseL vT) scρ ρ∶Γ Γ⊢M∶A d d∈ = β-caseL-⊇ d (subst-⊇ {! M !} {!   !} {!   !} d d∈)
+  𝒪-sound-⊇ {M}{N}{ρ}(β-caseR vT) scρ ρ∶Γ Γ⊢M∶A d d∈ = β-caseR-⊇ d (subst-⊇ {!   !} {!   !} {!   !} d {!   !})
+  𝒪-sound-⊇ {V ⟨ c ⟩} {ρ = ρ} (cast ⊢V v) scρ ρ∶Γ (⊢cast c ⊢M ⟨ refl , refl ⟩) = 
+    {!   !}
+  𝒪-sound-⊇ (wrap v) scρ ρ∶Γ Γ⊢M∶A = λ d z → z

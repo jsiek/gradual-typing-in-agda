@@ -59,3 +59,18 @@ module GroundCoercionsABT where
   import GTLC2CC
   open GTLC2CC Cast Inert (λ A B ℓ {c} → coerce A B ℓ) public
 -}
+
+  ex-id : ∀ (A : Type) {a : Ground A} → Term
+  ex-id A = ƛ A ˙ (` zero)
+
+  ex-f : ∀ (ℓ₁ : Label) (A : Type) {a : Ground A} → Term
+  ex-f ℓ₁ A {a} = ((ex-id A {a}) ⟨ cfun (proj A ℓ₁ {a}) (inj A {a}) ⟩) ⟨ inj (⋆ ⇒ ⋆) {G-Fun} ⟩
+
+  ex-g : ∀ (ℓ₁ ℓ₂ : Label) (A : Type) {a : Ground A} → Term
+  ex-g ℓ₁ ℓ₂ A {a} = ((ex-f ℓ₁ A {a}) ⟨ proj (⋆ ⇒ ⋆) ℓ₂ {G-Fun} ⟩) ⟨ cfun (cseq (cfun (proj A ℓ₂ {a}) (inj A {a})) (inj (⋆ ⇒ ⋆) {G-Fun})) (proj A ℓ₂ {a}) ⟩ 
+
+  ex-app : ∀ (ℓ₁ ℓ₂ : Label) (A : Type) {a : Ground A} → Term
+  ex-app ℓ₁ ℓ₂ A {a} = (ex-g ℓ₁ ℓ₂ A {a}) · (ex-id A {a})
+
+  ex-reduction : ∀ ℓ₁ ℓ₂ A {a} → ex-app ℓ₁ ℓ₂ A {a} —↠ mkblame A ℓ₁
+  ex-reduction ℓ₁ ℓ₂ A {a} = {!   !}

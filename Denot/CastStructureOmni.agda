@@ -40,10 +40,8 @@ record DenotCastStruct : Set₁ where
   open ParamCastCalculusABT precast
   open ParamCastAuxABT precast
   field
-    _↝⟨_∶_⟩↝_ : ∀ {A B : Type}  → (v : Val) → (c : Cast (A ⇒ B)) → ⟦ v ∶ A ⟧ → (v' : Val) → Set
-  𝒞 : ∀ {A B : Type} → Cast (A ⇒ B) → 𝒫 Val → 𝒫 Val
-  𝒞 {A} c D v = Σ[ u ∈ Val ] D u × Σ[ u∶A ∈ ⟦ u ∶ A ⟧ ] u ↝⟨ c ∶ u∶A ⟩↝ v
-{- add monotone field for ↝⟨_∶_⟩↝ -}
+    𝒞 : ∀ {A B : Type} → Cast (A ⇒ B) → 𝒫 Val → 𝒫 Val
+{- add monotone field for 𝒞  -}
   𝕆 : DOpSig (𝒫 Val) sig
   𝕆 (op-lam A) ⟨ F , ptt ⟩ = Λ A F
   𝕆 op-app ⟨ D , ⟨ E , ptt ⟩ ⟩ = D ∗ E

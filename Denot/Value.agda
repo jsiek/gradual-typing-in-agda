@@ -2,11 +2,12 @@
 
 module Denot.Value where
 
+open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥-elim; ⊥)
 open import Data.List using (List ; _∷_ ; []; _++_; length)
 open import Data.List.Membership.Propositional renaming (_∈_ to _⋵_)
 open import Data.List.Relation.Unary.Any using (Any; here; there; any?)
-open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup)
+open import Data.List.Relation.Unary.All using (All; []; _∷_; lookup; tabulate)
 open import Data.Product using (_×_; _,_; Σ; Σ-syntax; proj₁; proj₂)
 open import Data.Unit using (⊤; tt)
 open import Data.Bool using (Bool; true; false)
@@ -19,6 +20,7 @@ open import Relation.Nullary.Product using (_×-dec_)
 open import Relation.Nullary.Implication using (_→-dec_)
 open import SetsAsPredicates
 open import Types
+open import Var
 
 data Val : Set where
   const : {B : Base} → (k : rep-base B) → Val  {- A primitive constant of type B. -}
@@ -111,13 +113,22 @@ data Val : Set where
 ∈⟦_∶_⟧ : ∀ (D : 𝒫 Val) (τ : Type) → Set
 ∈⟦ D ∶ τ ⟧ = ∀ d → d ∈ D → ⟦ d ∶ τ ⟧
 
+⟦_`∶_⟧ : (ℕ → 𝒫 Val) → List Type → Set
+⟦ ρ `∶ Γ ⟧ = ∀ i d {A} → d ∈ ρ i → Γ ∋ i ⦂ A → ⟦ d ∶ A ⟧
 
 ⟦∶⟧₊→All : ∀ {A V} → ⟦ V ∶ A ⟧₊ → All (λ v → ⟦ v ∶ A ⟧) V
 ⟦∶⟧₊→All {V = []} tt = []
 ⟦∶⟧₊→All {V = (v ∷ V)} (v∶A , V∶A) = v∶A ∷ ⟦∶⟧₊→All V∶A
 
+All→⟦∶⟧₊ : ∀ {A V} → All (λ v → ⟦ v ∶ A ⟧) V → ⟦ V ∶ A ⟧₊
+All→⟦∶⟧₊ [] = tt
+All→⟦∶⟧₊ (v∶A ∷ V∶A) = v∶A , All→⟦∶⟧₊ V∶A
+
 ⟦∶⟧₊→∈ : ∀ {A V} → ⟦ V ∶ A ⟧₊ → ∀ v → v ∈ mem V → ⟦ v ∶ A ⟧
 ⟦∶⟧₊→∈ V∶A v = lookup (⟦∶⟧₊→All V∶A) {v}
+
+∈→⟦∶⟧₊ : ∀ {A V} → ∈⟦ mem V ∶ A ⟧ → ⟦ V ∶ A ⟧₊
+∈→⟦∶⟧₊ ∈⟦memV∶A⟧ = All→⟦∶⟧₊ (tabulate λ {d} d∈ → ∈⟦memV∶A⟧ d d∈)
 
 
 {- =========================================================================
