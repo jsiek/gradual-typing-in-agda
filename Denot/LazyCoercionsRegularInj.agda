@@ -162,7 +162,7 @@ failure in the codomain cast coincides with blame from the body
   𝒞 D ⟨ ⊥ A ⟨ ℓ ⟩ B ⟩ (blame ℓ') = blame ℓ' ∈ D ⊎ (Σ[ v ∈ Val ] v ∈ D × ¬isBlame v × ℓ' ≡ ℓ)
   𝒞 D ⟨ ⊥ A ⟨ ℓ ⟩ B ⟩ v = False
 
-
+ 
   postulate
     Λ-scD : ∀ A {F} → scD-1 F → scD (Λ A F)
     ∗-scD : ∀ {D E} → scD D → scD E → scD (D ∗ E)

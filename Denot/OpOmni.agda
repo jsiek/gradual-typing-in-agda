@@ -181,9 +181,9 @@ module Denot.OpOmni where
   ========================================================================= -}
 
   Λ-mono : ∀ {A}{F F' : 𝒫 Val → 𝒫 Val} → 
-    (∀ D D' → D ⊆ D' → F D ⊆ F' D') → Λ A F ⊆ Λ A F'
+    (∀ D D' → scD D' → D ⊆ D' → F D ⊆ F' D') → Λ A F ⊆ Λ A F'
   Λ-mono F⊆ (V ↦ d) (Λ-↦ w∈ V∶A scV nbV neV) = 
-    Λ-↦ (F⊆ (mem V) (mem V) (λ d z → z) d w∈) V∶A scV nbV neV 
+    Λ-↦ (F⊆ (mem V) (mem V) scV (λ d z → z) d w∈) V∶A scV nbV neV 
   Λ-mono F⊆ ν Λ-ν = Λ-ν
 
   {-
