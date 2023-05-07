@@ -1,3 +1,3 @@
 name: gradual-typing
-depend: standard-library abt denot
+depend: standard-library abt denot sil
 include: .
