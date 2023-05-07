@@ -23,18 +23,6 @@ open import LogRel.CastLogRel
  Analogous to sem-type-safety.
 -}
 
-data Finished (M : Term) : Set where
-  done :
-      Value M
-      ----------
-    → Finished M
-    
-  error :
-      Blame M
-      --------------
-    → Finished M
-
-
 ℰ-steps : ∀{c : Prec}
     (k : ℕ)
   → (M M′ : Term)
@@ -43,7 +31,7 @@ data Finished (M : Term) : Set where
         (len M→V + len M′→V′ ≤ k) × ∃[ m ] #(𝒱⟦ c ⟧ V V′) (suc m))
     ⊎ (M′ —↠ blame)
     ⊎ (∃[ N ] ∃[ N′ ]  Σ[ M→N ∈ M —↠ N ] Σ[ M′→N′ ∈ M′ —↠ N′ ]
-        {- TODO:  ¬ Finished N × ¬ Finished N′ × -}
+        {- TODO:  reducible N × reducible N′ × -}
         len M→N + len M′→N′ ≡ k)
 ℰ-steps {c} zero M M′ ℰMM′sk
     with ⇔-to (ℰ-suc{c}{k = 0}) ℰMM′sk
