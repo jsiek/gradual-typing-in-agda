@@ -205,20 +205,28 @@ len-concat : ∀ {L}{M}{N} (s : L —↠ M) (r : M —↠ N)
 len-concat (_ END) r = refl
 len-concat (_ —→⟨ x ⟩ s) r rewrite len-concat s r = refl
 
+halt-exp : ∀ M N
+  → halt N
+  → M —→ N
+  → halt M
+halt-exp M N (inj₁ N—↠blame) M—→N = inj₁ (M —→⟨ M—→N ⟩ N—↠blame)
+halt-exp M N (inj₂ (V , N—↠V , v)) M—→N = inj₂ (V , (M —→⟨ M—→N ⟩ N—↠V) , v)
+
+not-halt-pres : ∀ M N
+  → ¬ halt M
+  → M —→ N
+  → ¬ halt N
+not-halt-pres M N nhM M→N hN = ⊥-elim (nhM (halt-exp M N hN M→N))
+
 not-halt⇒diverge : ∀{A} M
   → [] ⊢ M ⦂ A
   → ¬ halt M
   → diverge M
 not-halt⇒diverge M ⊢M ¬haltM zero = M , (M END) , refl
-not-halt⇒diverge M ⊢M ¬haltM (suc k)
-    with trichotomy M k ⊢M
-... | inj₁ (M—↠blame , r<k) = ⊥-elim (¬haltM (inj₁ M—↠blame))
-... | inj₂ (inj₁ (V , M—↠V , r<k , v)) = ⊥-elim (¬haltM (inj₂ (V , M—↠V , v)))
-... | inj₂ (inj₂ (N , M—↠N , refl))
-    with progress (multi-preservation ⊢M M—↠N)
-... | done v = ⊥-elim (¬haltM (inj₂ (_ , (M—↠N , v))))
-... | error isBlame = ⊥-elim (¬haltM (inj₁ M—↠N))
-... | step r = _ , ((M—↠N ++ unit r) , EQ)
-    where
-    EQ : suc (len M—↠N) ≡ len (M—↠N ++ unit r)
-    EQ rewrite len-concat (M—↠N) (unit r) = +-comm 1 (len M—↠N)
+not-halt⇒diverge M ⊢M ¬haltM (suc k) 
+    with progress ⊢M
+... | done v = ⊥-elim (¬haltM (inj₂ (_ , ((M END) , v))))
+... | error isBlame = ⊥-elim (¬haltM (inj₁ (blame END)))
+... | step{N = N} M—→N
+    with not-halt⇒diverge N (preservation ⊢M M—→N) (not-halt-pres M N ¬haltM M—→N) k
+... | L , N—↠L , refl = L , ((M —→⟨ M—→N ⟩ N—↠L) , refl)
