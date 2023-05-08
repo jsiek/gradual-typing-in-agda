@@ -437,8 +437,16 @@ len : ∀{M N : Term} → (M→N : M —↠ N) → ℕ
 len (_ END) = 0
 len (_ —→⟨ x ⟩ red) = suc (len red)
 
+len-concat : ∀ {L}{M}{N} (s : L —↠ M) (r : M —↠ N)
+  → len (s ++ r) ≡ len s + len r
+len-concat (_ END) r = refl
+len-concat (_ —→⟨ x ⟩ s) r rewrite len-concat s r = refl
+
 diverge : Term → Set
 diverge M = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
+
+diverge⊎blame : Term → Set
+diverge⊎blame M = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
 
 ToVal : Term → Set
 ToVal M = ∃[ V ] (M —↠ V) × Value V
@@ -453,7 +461,7 @@ halt M  = (M —↠ blame) ⊎ (ToVal M)
      (ToVal M′ → ToVal M)
    × (diverge M′ → diverge M)
    × (ToVal M → ToVal M′ ⊎ M′ —↠ blame)
-   × (diverge M → diverge M′ ⊎ M′ —↠ blame)
+   × (diverge M → diverge⊎blame M′)
 
 
 

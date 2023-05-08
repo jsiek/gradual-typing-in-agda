@@ -194,11 +194,6 @@ trichotomy M (suc k) ⊢M
 ... | inj₂ (inj₂ (N , N₁—↠N , refl)) =
       inj₂ (inj₂ (N , ((M —→⟨ M→N ⟩ N₁—↠N) , refl)))
 
-len-concat : ∀ {L}{M}{N} (s : L —↠ M) (r : M —↠ N)
-  → len (s ++ r) ≡ len s + len r
-len-concat (_ END) r = refl
-len-concat (_ —→⟨ x ⟩ s) r rewrite len-concat s r = refl
-
 halt-exp : ∀ M N
   → halt N
   → M —→ N
