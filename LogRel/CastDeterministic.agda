@@ -150,3 +150,26 @@ frame-inv2 {L} {N} {□⟨ H ?⟩} (L′ , L→L′) (collapse v refl) =
 frame-inv2 {L} {.blame} {□⟨ H ?⟩} (L′ , L→L′) (collide v neq refl) =
     ⊥-elim (value-irreducible (v 〈 _ 〉) L→L′)
 
+{- Possibly-empty Frame -}
+
+data PEFrame : Set where
+  `_ : Frame → PEFrame
+  □ : PEFrame
+
+_⦉_⦊ : PEFrame → Term → Term
+(` F) ⦉ M ⦊ = F ⟦ M ⟧
+□ ⦉ M ⦊ = M
+
+frame-inv3 : ∀{L N : Term}{F : PEFrame}
+   → reducible L
+   → F ⦉ L ⦊ —→ N
+   → ∃[ L′ ] ((L —→ L′) × (N ≡ F ⦉ L′ ⦊))
+frame-inv3 {L}{N}{□} rL FL→N = _ , (FL→N , refl)
+frame-inv3 {L}{N}{` F} rL FL→N = frame-inv2 rL FL→N
+
+blame-frame2 : ∀{F}{N}
+   → (F ⦉ blame ⦊) —→ N
+   → N ≡ blame
+blame-frame2 {□}{N} Fb→N = ⊥-elim (blame-irreducible Fb→N)
+blame-frame2 {` F}{N} Fb→N = blame-frame Fb→N
+

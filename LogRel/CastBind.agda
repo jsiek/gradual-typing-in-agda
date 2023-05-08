@@ -21,14 +21,6 @@ open import LogRel.CastLogRel
 
 {----------------- ℰ-bind (Monadic Bind Lemma) -------------------------------}
 
-data PEFrame : Set where
-  `_ : Frame → PEFrame
-  □ : PEFrame
-
-_⦉_⦊ : PEFrame → Term → Term
-(` F) ⦉ M ⦊ = F ⟦ M ⟧
-□ ⦉ M ⦊ = M
-
 𝒱→ℰF : Prec → Prec → PEFrame → PEFrame → Term → Term → Setᵒ
 𝒱→ℰF c d F F′ M M′ = ∀ᵒ[ V ] ∀ᵒ[ V′ ] (M —↠ V)ᵒ →ᵒ (M′ —↠ V′)ᵒ
                    →ᵒ 𝒱⟦ d ⟧ V V′ →ᵒ ℰ⟦ c ⟧ (F ⦉ V ⦊) (F′ ⦉ V′ ⦊)
@@ -67,11 +59,6 @@ _⦉_⦊ : PEFrame → Term → Term
                in appᵒ (appᵒ (appᵒ 𝒱→ℰF[MM′]VV′ (constᵒI M—↠V)) M′—↠V′) Zᵒ
   in →ᵒI (→ᵒI (→ᵒI 𝒱→ℰF[MN′]))
 
-
-ℰ-blame : ∀{𝒫}{c}{M} → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ M blame
-ℰ-blame {𝒫}{c}{M} = substᵒ (≡ᵒ-sym ℰ-stmt)
-                            (inj₂ᵒ (inj₂ᵒ (inj₂ᵒ (constᵒI isBlame))))
-
 ξ′ : ∀ {M N : Term} {M′ N′ : Term}
     → (F : PEFrame)
     → M′ ≡ F ⦉ M ⦊
@@ -89,19 +76,6 @@ _⦉_⦊ : PEFrame → Term → Term
    → M′ —→ blame ⊎ M′ ≡ blame
 ξ′-blame (` F) refl = inj₁ (ξ-blame F)
 ξ′-blame □ refl = inj₂ refl
-
-frame-inv3 : ∀{L N : Term}{F : PEFrame}
-   → reducible L
-   → F ⦉ L ⦊ —→ N
-   → ∃[ L′ ] ((L —→ L′) × (N ≡ F ⦉ L′ ⦊))
-frame-inv3 {L}{N}{□} rL FL→N = _ , (FL→N , refl)
-frame-inv3 {L}{N}{` F} rL FL→N = frame-inv2 rL FL→N
-
-blame-frame2 : ∀{F}{N}
-   → (F ⦉ blame ⦊) —→ N
-   → N ≡ blame
-blame-frame2 {□}{N} Fb→N = ⊥-elim (blame-irreducible Fb→N)
-blame-frame2 {` F}{N} Fb→N = blame-frame Fb→N
 
 ℰ-bind-M : Prec → Prec → PEFrame → PEFrame → Term → Term → Setᵒ
 ℰ-bind-M c d F F′ M M′ = ℰ⟦ d ⟧ M M′ →ᵒ 𝒱→ℰF c d F F′ M M′
@@ -224,8 +198,7 @@ blame-frame2 {` F}{N} Fb→N = blame-frame Fb→N
                            (constᵒE Zᵒ λ {isBlame → redFblame ,ᵒ presFblame}))))
     where
     redFblame : (Blame blame)ᵒ ∷ 𝒫′ ⊢ᵒ (reducible (F′ ⟦ blame ⟧))ᵒ
-    redFblame =
-     constᵒE Zᵒ λ {isBlame → constᵒI (_ , (ξ-blame F′)) }
+    redFblame = constᵒE Zᵒ λ {isBlame → constᵒI (_ , (ξ-blame F′)) }
     
     presFblame : (Blame blame)ᵒ ∷ 𝒫′ ⊢ᵒ preserve-R c (F ⦉ M ⦊) (F′ ⟦ blame ⟧)
     presFblame = Λᵒ[ N′ ] →ᵒI (constᵒE Zᵒ λ Fb→N′ →

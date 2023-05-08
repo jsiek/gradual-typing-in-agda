@@ -729,4 +729,3 @@ blame-frame {□⟨ H ?⟩} {N} (ξξ □⟨ _ ?⟩ refl refl Fb→N) =
     ⊥-elim (blame-irreducible Fb→N)
 blame-frame {□⟨ H ?⟩} {.blame} (ξξ-blame □⟨ _ ?⟩ x) = refl
 
-
