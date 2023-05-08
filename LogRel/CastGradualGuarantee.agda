@@ -21,6 +21,9 @@ open import LogRel.CastLogRel
 
 {-
  Analogous to sem-type-safety.
+
+ Think of this as expanding the ℰ relation by adding
+ reductions into ℰ using preserve-L and preserve-R.
 -}
 
 ℰ-steps : ∀{c : Prec}
