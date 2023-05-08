@@ -194,12 +194,6 @@ trichotomy M (suc k) ⊢M
 ... | inj₂ (inj₂ (N , N₁—↠N , refl)) =
       inj₂ (inj₂ (N , ((M —→⟨ M→N ⟩ N₁—↠N) , refl)))
 
-diverge : Term → Set
-diverge M = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
-
-halt : Term → Set
-halt M  = (M —↠ blame) ⊎ (∃[ V ] (M —↠ V) × Value V)
-
 len-concat : ∀ {L}{M}{N} (s : L —↠ M) (r : M —↠ N)
   → len (s ++ r) ≡ len s + len r
 len-concat (_ END) r = refl

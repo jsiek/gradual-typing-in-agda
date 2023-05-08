@@ -26,6 +26,7 @@ open import Sig
 open import Var
 open import Structures using (extensionality)
 open import LogRel.Cast
+open import LogRel.CastReduction
 
 inject-eq : ∀{G}{N N′}
    → (N ⟨ G !⟩) ≡ (N′ ⟨ G !⟩)
