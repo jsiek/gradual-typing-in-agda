@@ -59,24 +59,6 @@ open import LogRel.CastLogRel
                in appᵒ (appᵒ (appᵒ 𝒱→ℰF[MM′]VV′ (constᵒI M—↠V)) M′—↠V′) Zᵒ
   in →ᵒI (→ᵒI (→ᵒI 𝒱→ℰF[MN′]))
 
-ξ′ : ∀ {M N : Term} {M′ N′ : Term}
-    → (F : PEFrame)
-    → M′ ≡ F ⦉ M ⦊
-    → N′ ≡ F ⦉ N ⦊
-    → M —→ N
-      --------
-    → M′ —→ N′
-ξ′ (` F) refl refl M→N = ξ F M→N
-ξ′ □ refl refl M→N = M→N
-
-ξ′-blame : ∀ {M′ : Term}
-   → (F : PEFrame)
-   → M′ ≡ F ⦉ blame ⦊
-     ------------------------
-   → M′ —→ blame ⊎ M′ ≡ blame
-ξ′-blame (` F) refl = inj₁ (ξ-blame F)
-ξ′-blame □ refl = inj₂ refl
-
 ℰ-bind-M : Prec → Prec → PEFrame → PEFrame → Term → Term → Setᵒ
 ℰ-bind-M c d F F′ M M′ = ℰ⟦ d ⟧ M M′ →ᵒ 𝒱→ℰF c d F F′ M M′
     →ᵒ ℰ⟦ c ⟧ (F ⦉ M ⦊) (F′ ⦉ M′ ⦊)

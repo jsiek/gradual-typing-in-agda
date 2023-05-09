@@ -329,13 +329,23 @@ data Frame : Set where
       -----
     → Frame
 
-{- The plug function inserts an expression into the hole of a frame. -}
+{- Plug an expression into a frame. -}
 
 _⟦_⟧ : Frame → Term → Term
 (□· M) ⟦ L ⟧        =  L · M
 (v ·□) ⟦ M ⟧        =  value v · M
 (□⟨ G !⟩) ⟦ M ⟧  =  M ⟨ G !⟩
 (□⟨ H ?⟩) ⟦ M ⟧  =  M ⟨ H ?⟩
+
+{- Possibly-empty Frame -}
+
+data PEFrame : Set where
+  `_ : Frame → PEFrame
+  □ : PEFrame
+
+_⦉_⦊ : PEFrame → Term → Term
+(` F) ⦉ M ⦊ = F ⟦ M ⟧
+□ ⦉ M ⦊ = M
 
 {- Reduction -}
 
@@ -376,6 +386,32 @@ data _—→_ : Term → Term → Set where
 
 pattern ξ F M—→N = ξξ F refl refl M—→N
 pattern ξ-blame F = ξξ-blame F refl
+
+ξ′ : ∀ {M N : Term} {M′ N′ : Term}
+    → (F : PEFrame)
+    → M′ ≡ F ⦉ M ⦊
+    → N′ ≡ F ⦉ N ⦊
+    → M —→ N
+      --------
+    → M′ —→ N′
+ξ′ (` F) refl refl M→N = ξ F M→N
+ξ′ □ refl refl M→N = M→N
+
+ξ′-blame : ∀ {M′ : Term}
+   → (F : PEFrame)
+   → M′ ≡ F ⦉ blame ⦊
+     ------------------------
+   → M′ —→ blame ⊎ M′ ≡ blame
+ξ′-blame (` F) refl = inj₁ (ξ-blame F)
+ξ′-blame □ refl = inj₂ refl
+
+ξ″-blame : ∀ {M′ : Term}
+   → (F : PEFrame)
+   → M′ ≡ F ⦉ blame ⦊
+     ----------------------------------
+   → M′ —→ blame ⊎ (M′ ≡ blame × F ≡ □)
+ξ″-blame (` F) refl = inj₁ (ξ-blame F)
+ξ″-blame □ refl = inj₂ (refl , refl)
 
 {- Reflexive and transitive closure of reduction -}
 

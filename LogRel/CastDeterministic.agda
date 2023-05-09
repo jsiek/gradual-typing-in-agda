@@ -151,16 +151,6 @@ frame-inv2 {L} {N} {□⟨ H ?⟩} (L′ , L→L′) (collapse v refl) =
 frame-inv2 {L} {.blame} {□⟨ H ?⟩} (L′ , L→L′) (collide v neq refl) =
     ⊥-elim (value-irreducible (v 〈 _ 〉) L→L′)
 
-{- Possibly-empty Frame -}
-
-data PEFrame : Set where
-  `_ : Frame → PEFrame
-  □ : PEFrame
-
-_⦉_⦊ : PEFrame → Term → Term
-(` F) ⦉ M ⦊ = F ⟦ M ⟧
-□ ⦉ M ⦊ = M
-
 frame-inv3 : ∀{L N : Term}{F : PEFrame}
    → reducible L
    → F ⦉ L ⦊ —→ N
@@ -174,3 +164,79 @@ blame-frame2 : ∀{F}{N}
 blame-frame2 {□}{N} Fb→N = ⊥-elim (blame-irreducible Fb→N)
 blame-frame2 {` F}{N} Fb→N = blame-frame Fb→N
 
+step-value-plus-one : ∀{M N V}
+   → (M→N : M —↠ N)
+   → (M→V : M —↠ V)
+   → Value V
+   → len M→N ≡ suc (len M→V)
+   → ⊥
+step-value-plus-one (_ —→⟨ r ⟩ _ END) (_ END) v eq = value-irreducible v r
+step-value-plus-one (_ —→⟨ r1 ⟩ M→N) (_ —→⟨ r2 ⟩ M→V) v eq
+    with deterministic r1 r2
+... | refl = step-value-plus-one M→N M→V v (suc-injective eq)
+
+step-blame-plus-one : ∀{M N}
+   → (M→N : M —↠ N)
+   → (M→b : M —↠ blame)
+   → len M→N ≡ suc (len M→b)
+   → ⊥
+step-blame-plus-one (_ —→⟨ r ⟩ _ END) (_ END) eq = blame-irreducible r
+step-blame-plus-one (_ —→⟨ r1 ⟩ M→N) (_ —→⟨ r2 ⟩ M→b) eq
+    with deterministic r1 r2
+... | refl = step-blame-plus-one M→N M→b (suc-injective eq)
+
+diverge-not-halt : ∀{M}
+  → diverge M
+  → ¬ halt M
+diverge-not-halt divM (inj₁ M→blame)
+    with divM (suc (len M→blame))
+... | N , M→N , eq = step-blame-plus-one M→N M→blame (sym eq)    
+diverge-not-halt divM (inj₂ (V , M→V , v))
+    with divM (suc (len M→V))
+... | N , M→N , eq = step-value-plus-one M→N M→V v (sym eq)    
+  
+{-
+determinism : ∀{M N}
+  → (r1 : M —→ N)
+  → (r2 : M —→ N)
+  → r1 ≡ r2
+determinism {M} {N} (ξξ (□· M₁) eq1 eq2 r1) (ξξ (□· M₂) eq3 eq4 r2)
+    with eq1 | eq2 | eq3 | eq4 
+... | refl | refl | refl | refl
+    with deterministic r1 r2
+... | refl rewrite determinism r1 r2 = refl    
+determinism {M} {N} (ξξ (□· M₁) eq1 eq2 r1) (ξξ (v ·□) eq3 eq4 r2)
+    with eq1 | eq2 | eq3 | eq4 
+... | refl | refl | refl | refl = ⊥-elim (value-irreducible v r1)
+determinism {M} {N} (ξξ (□· M₁) eq1 eq2 r1) (ξξ □⟨ G !⟩ eq3 eq4 r2)
+    with eq1 | eq2 | eq3
+... | refl | refl | ()
+determinism {M} {N} (ξξ (□· M₁) eq1 eq2 r1) (ξξ □⟨ H ?⟩ eq3 eq4 r2)
+    with eq1 | eq2 | eq3
+... | refl | refl | ()
+determinism {.(ƛ _ · _)} {_} (ξξ (□· M₁) eq1 eq2 r1) (β x₂)
+    with eq1
+... | refl = ⊥-elim (value-irreducible (ƛ̬ _) r1)
+determinism {M} {N} (ξξ (v ·□) eq1 eq2 r1) r2 = {!!}
+determinism {M} {N} (ξξ □⟨ G !⟩ x x₁ r1) r2 = {!!}
+determinism {M} {N} (ξξ □⟨ H ?⟩ x x₁ r1) r2 = {!!}
+determinism {M} {.blame} (ξξ-blame F x) r2 = {!!}
+determinism {.(ƛ _ · _)} {_} (β x) r2 = {!!}
+determinism {.(_ ⟨ _ ?⟩)} {N} (collapse x x₁) r2 = {!!}
+determinism {.(_ ⟨ _ ?⟩)} {.blame} (collide x x₁ x₂) r2 = {!!}
+
+triangle—↠ : ∀{L M N : Term}
+   → (L→M : L —↠ M)
+   → (L→N : L —↠ N)
+   → (len L→M ≤ len L→N)
+   → (Σ[ M→N ∈ (M —↠ N) ] (L→N ≡ (L→M ++ M→N)))
+triangle—↠ (_ END) L→N m≤n  = L→N , refl 
+triangle—↠ (_ —→⟨ L→M₁ ⟩ M₁→M)
+            (_ —→⟨ L→M₂ ⟩ M₂→N) (s≤s m≤n)
+    with deterministic L→M₁ L→M₂
+... | refl
+    with triangle—↠ M₁→M M₂→N m≤n
+... | M→N , refl
+    with determinism L→M₁ L→M₂
+... | refl = M→N , refl    
+-}
