@@ -448,11 +448,24 @@ unit {M = M} {N = N} M—→N  =  M —→⟨ M—→N ⟩ (N END)
 ξ* F (M END) = F ⟦ M ⟧ END
 ξ* F (L —→⟨ L—→M ⟩ M—↠N) = (F ⟦ L ⟧ —→⟨ ξ F L—→M ⟩ ξ* F M—↠N)
 
+ξ′* : ∀{M N} → (F : PEFrame) → M —↠ N → F ⦉ M ⦊ —↠ F ⦉ N ⦊
+ξ′* {M} {N} (` F) M→N = ξ* F M→N
+ξ′* {M} {N} □ M→N = M→N
+
 {- Concatenate two sequences. -}
 
 _++_ : ∀ {L M N : Term} → L —↠ M → M —↠ N → L —↠ N
 (M END) ++ M—↠N                =  M—↠N
 (L —→⟨ L—→M ⟩ M—↠N) ++ N—↠P  =  L —→⟨ L—→M ⟩ (M—↠N ++ N—↠P)
+
+ξ-blame₃ : ∀ {M}{M′ : Term}
+   → (F : PEFrame)
+   → M —↠ blame
+   → M′ ≡ F ⦉ M ⦊
+     -----------
+   → M′ —↠ blame
+ξ-blame₃ (` F) M→b refl = (ξ* F M→b) ++ unit (ξ-blame F)
+ξ-blame₃ □ M→b refl = M→b
 
 {- Alternative notation for sequence concatenation. -}
 

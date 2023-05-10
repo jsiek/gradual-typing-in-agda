@@ -219,3 +219,19 @@ not-halt⇒diverge M ⊢M ¬haltM (suc k)
 ... | step{N = N} M—→N
     with not-halt⇒diverge N (preservation ⊢M M—→N) (not-halt-pres M N ¬haltM M—→N) k
 ... | L , N—↠L , refl = L , ((M —→⟨ M—→N ⟩ N—↠L) , refl)
+
+ξ-preservation : ∀{Γ}{F}{M}{N}{A}
+  → Γ ⊢ F ⦉ M ⦊ ⦂ A
+  → M —→ N
+  → Γ ⊢ F ⦉ N ⦊ ⦂ A
+ξ-preservation {Γ} {` (□· M₁)} {M} {N} {A} (⊢· ⊢L ⊢M) M→N =
+   ⊢· (preservation ⊢L M→N) ⊢M
+ξ-preservation {Γ} {` (v ·□)} {M} {N} {A} (⊢· ⊢L ⊢M) M→N =
+   ⊢· ⊢L (preservation ⊢M M→N)
+ξ-preservation {Γ} {` □⟨ G !⟩} {M} {N} {.★} (⊢⟨!⟩ ⊢M) M→N =
+   ⊢⟨!⟩ (preservation ⊢M M→N)
+ξ-preservation {Γ} {` □⟨ H ?⟩} {M} {N} {.(gnd⇒ty H)} (⊢⟨?⟩ ⊢M .H) M→N =
+   ⊢⟨?⟩ (preservation ⊢M M→N) H
+ξ-preservation {Γ} {□} {M} {N} {A} ⊢FM M→N =
+   preservation ⊢FM M→N
+

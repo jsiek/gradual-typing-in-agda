@@ -304,6 +304,19 @@ anti-reduction-≺-R {c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
 ... | inj₂ (inj₂ (m , inj₂ (V′ , N′→V′ , v′ , 𝒱MV′))) =
       inj₂ (inj₂ (m , inj₂ (V′ , (M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 
+anti-reduction-≻-L : ∀{c}{M}{N}{M′}{i}
+  → #(ℰ⟦ c ⟧ ≻ N M′) i
+  → (M→N : M —↠ N)
+  → #(ℰ⟦ c ⟧ ≻ M M′) i
+anti-reduction-≻-L {c} {M} {M′} {N′} {zero} ℰNM′ M→N = tz (ℰ⟦ c ⟧ ≻ M N′)
+anti-reduction-≻-L {c} {M} {N}{M′}  {suc i} ℰNM′ M→N
+    with ℰNM′
+... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
+      inj₁ (N′ , (M′→N′ , (anti-reduction-≻-L ▷ℰMN′ M→N)))
+... | inj₂ (inj₁ isBlame) = inj₂ (inj₁ isBlame)
+... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
+      inj₂ (inj₂ (m′ , V , (M→N ++ N→V) , v , 𝒱VM′))
+
 reduction-≺ : ∀{c}{M}{N}{M′}{i}
   → #(ℰ⟦ c ⟧ ≺ M M′) (suc i)
   → (M→N : M —→ N)
@@ -344,3 +357,8 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
   substᵒ (≡ᵒ-sym (ℰ-stmt{c}{≻}{M}{M′}))
   (inj₁ᵒ (⊢ᵒ-∃-intro N′ (constᵒI M′→N′ ,ᵒ ⊢▷ℰMN′)))
 
+ℰ-blame : ∀{c}{dir}{M}{k}
+   → #(ℰ⟦ c ⟧ dir M blame) k
+ℰ-blame {c} {dir} {M} {zero} = tz (ℰ⟦ c ⟧ dir M blame)
+ℰ-blame {c} {≺} {M} {suc k} = inj₂ (inj₁ (blame END))
+ℰ-blame {c} {≻} {M} {suc k} = inj₂ (inj₁ isBlame)
