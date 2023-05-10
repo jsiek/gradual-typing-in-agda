@@ -15,6 +15,7 @@ open import Relation.Binary.PropositionalEquality as Eq
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import LogRel.Cast
+open import LogRel.CastReduction
 open import LogRel.CastDeterministic
 open import StepIndexedLogic
 open import LogRel.CastLogRel
@@ -162,33 +163,6 @@ compatible-inj-R{Γ}{G}{c }{M}{M′} ⊨M⊑M′ γ γ′ =
   ⊢ℰVV′⟨G!⟩ : ∀{V V′} → 𝒫₁ V V′ ⊢ᵒ  ℰ⟦ ★ , ★ , unk⊑ ⟧ V (V′ ⟨ G !⟩)
   ⊢ℰVV′⟨G!⟩ = 𝒱⇒ℰ (𝒱-dyn-R Zᵒ)
 
-collapse-inv : ∀{V}{N}{G}
-   → Value V
-   → ((V ⟨ G !⟩) ⟨ G ?⟩) —→ N
-   → N ≡ V
-collapse-inv {V} {N} v (ξξ □⟨ G ?⟩ refl x₁ r) =
-  ⊥-elim (value-irreducible (v 〈 G 〉) r)
-collapse-inv {V} {.blame} v (ξξ-blame (□· M) ())
-collapse-inv {V} {.blame} v (ξξ-blame (v₁ ·□) ())
-collapse-inv {V} {.blame} v (ξξ-blame □⟨ G !⟩ ())
-collapse-inv {V} {.blame} v (ξξ-blame □⟨ H ?⟩ ())
-collapse-inv {V} {.V} v (collapse x refl) = refl
-collapse-inv {V} {.blame} v (collide x x₁ refl) = ⊥-elim (x₁ refl)
-
-collide-inv : ∀{V}{N}{G}{H}
-   → G ≢ H
-   → Value V
-   → ((V ⟨ G !⟩) ⟨ H ?⟩) —→ N
-   → N ≡ blame
-collide-inv {V} {N} {G} {H} neq v (ξξ □⟨ H₁ ?⟩ refl x₁ red) =
-  ⊥-elim (value-irreducible (v 〈 G 〉) red)
-collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame (□· M) ())
-collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame (v₁ ·□) ())
-collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame □⟨ G₁ !⟩ ())
-collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame □⟨ H₁ ?⟩ ())
-collide-inv {V} {N} {G} {H} neq v (collapse x refl) = ⊥-elim (neq refl)
-collide-inv {V} {.blame} {G} {H} neq v (collide x x₁ refl) = refl
-
 compatible-proj-L : ∀{Γ}{H}{A′}{c : gnd⇒ty H ⊑ A′}{M}{M′}
    → Γ ⊨ M ⊑ M′ ⦂ (★ , A′ ,  unk⊑)
    → Γ ⊨ M ⟨ H ?⟩ ⊑ M′ ⦂ (gnd⇒ty H , A′ , c)
@@ -313,29 +287,3 @@ compatible-proj-R {Γ}{H′}{c}{M}{M′} ⊨M⊑M′ γ γ′ =
        (▷→▷ ⊢▷𝒱V₁V₁′ (𝒱⇒ℰ (𝒱-dyn-L Zᵒ)))
        }}
        
-fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
-  → Γ ⊩ M ⊑ M′ ⦂ A⊑A′
-    ----------------------------
-  → Γ ⊨ M ⊑ M′ ⦂ (A , A′ , A⊑A′)
-fundamental {Γ} {A} {A′} {A⊑A′} .(` _) .(` _) (⊑-var ∋x) =
-   compatibility-var ∋x
-fundamental {Γ} {_} {_} {base⊑} ($ (Num n)) ($ (Num n)) ⊑-lit =
-   compatible-nat
-fundamental {Γ} {_} {_} {base⊑} ($ (Bool b)) ($ (Bool b)) ⊑-lit =
-   compatible-bool
-fundamental {Γ} {A} {A′} {A⊑A′} (L · M) (L′ · M′) (⊑-app ⊢L⊑L′ ⊢M⊑M′) =
-    compatible-app{L = L}{L′}{M}{M′} (fundamental L L′ ⊢L⊑L′)
-                                     (fundamental M M′ ⊢M⊑M′)
-fundamental {Γ} {.(_ ⇒ _)} {.(_ ⇒ _)} {.(fun⊑ _ _)} (ƛ N)(ƛ N′) (⊑-lam ⊢N⊑N′) =
-    compatible-lambda{N = N}{N′} (fundamental N N′ ⊢N⊑N′)
-fundamental {Γ} {★} {A′} {unk⊑} (M ⟨ G !⟩) M′ (⊑-inj-L ⊢M⊑M′) =
-    compatible-inj-L{G =  G}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
-fundamental {Γ} {★} {★} {.unk⊑} M (M′ ⟨ G !⟩) (⊑-inj-R ⊢M⊑M′) =
-    compatible-inj-R{Γ}{G = G}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
-fundamental {Γ} {_} {A′} {A⊑A′} (M ⟨ H ?⟩) M′ (⊑-proj-L ⊢M⊑M′) =
-    compatible-proj-L{Γ}{H}{A′}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
-fundamental {Γ} {A} {.(gnd⇒ty _)} {A⊑A′} M (M′ ⟨ H′ ?⟩) (⊑-proj-R ⊢M⊑M′) =
-    compatible-proj-R{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
-fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
-   compatible-blame ⊢M∶A
-

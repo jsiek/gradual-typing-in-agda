@@ -326,3 +326,30 @@ blame-frame {□⟨ H ?⟩} {N} (ξξ □⟨ _ ?⟩ refl refl Fb→N) =
     ⊥-elim (blame-irreducible Fb→N)
 blame-frame {□⟨ H ?⟩} {.blame} (ξξ-blame □⟨ _ ?⟩ x) = refl
 
+collapse-inv : ∀{V}{N}{G}
+   → Value V
+   → ((V ⟨ G !⟩) ⟨ G ?⟩) —→ N
+   → N ≡ V
+collapse-inv {V} {N} v (ξξ □⟨ G ?⟩ refl x₁ r) =
+  ⊥-elim (value-irreducible (v 〈 G 〉) r)
+collapse-inv {V} {.blame} v (ξξ-blame (□· M) ())
+collapse-inv {V} {.blame} v (ξξ-blame (v₁ ·□) ())
+collapse-inv {V} {.blame} v (ξξ-blame □⟨ G !⟩ ())
+collapse-inv {V} {.blame} v (ξξ-blame □⟨ H ?⟩ ())
+collapse-inv {V} {.V} v (collapse x refl) = refl
+collapse-inv {V} {.blame} v (collide x x₁ refl) = ⊥-elim (x₁ refl)
+
+collide-inv : ∀{V}{N}{G}{H}
+   → G ≢ H
+   → Value V
+   → ((V ⟨ G !⟩) ⟨ H ?⟩) —→ N
+   → N ≡ blame
+collide-inv {V} {N} {G} {H} neq v (ξξ □⟨ H₁ ?⟩ refl x₁ red) =
+  ⊥-elim (value-irreducible (v 〈 G 〉) red)
+collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame (□· M) ())
+collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame (v₁ ·□) ())
+collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame □⟨ G₁ !⟩ ())
+collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame □⟨ H₁ ?⟩ ())
+collide-inv {V} {N} {G} {H} neq v (collapse x refl) = ⊥-elim (neq refl)
+collide-inv {V} {.blame} {G} {H} neq v (collide x x₁ refl) = refl
+

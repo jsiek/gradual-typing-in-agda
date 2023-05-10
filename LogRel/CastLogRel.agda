@@ -1,6 +1,14 @@
 {-# OPTIONS --rewriting #-}
 module LogRel.CastLogRel where
 
+{-
+
+The logical relation defined in this file is not quite correct.
+It does not imply the gradual guarantee, only parts of it.
+
+-}
+
+
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
 open import Data.Bool using (true; false) renaming (Bool to 𝔹)

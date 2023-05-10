@@ -15,6 +15,7 @@ open import Relation.Binary.PropositionalEquality as Eq
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import LogRel.Cast
+open import LogRel.CastReduction
 open import LogRel.CastDeterministic
 open import StepIndexedLogic
 open import LogRel.CastLogRel
