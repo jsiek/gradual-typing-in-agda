@@ -217,7 +217,8 @@ not-halt⇒diverge M ⊢M ¬haltM (suc k)
 ... | done v = ⊥-elim (¬haltM (inj₂ (_ , ((M END) , v))))
 ... | error isBlame = ⊥-elim (¬haltM (inj₁ (blame END)))
 ... | step{N = N} M—→N
-    with not-halt⇒diverge N (preservation ⊢M M—→N) (not-halt-pres M N ¬haltM M—→N) k
+    with not-halt⇒diverge N (preservation ⊢M M—→N)
+                          (not-halt-pres M N ¬haltM M—→N) k
 ... | L , N—↠L , refl = L , ((M —→⟨ M—→N ⟩ N—↠L) , refl)
 
 ξ-preservation : ∀{Γ}{F}{M}{N}{A}
