@@ -1,6 +1,18 @@
 {-# OPTIONS --rewriting #-}
 module LogRel.GradualGuarantee where
 
+{-
+
+This is a proof of the gradual guarantee using
+step-indexed logical relations by Jeremy Siek, Phil Wadler, and Peter
+Thiemann.
+
+The proof technique and definitions are a mixture of those used
+by Max New in his thesis (Chapter 10) and
+by Dreyer, Ahmed, and Birkedal in "Logical Step-Indexed Logical Relations".
+
+-}
+
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
 open import Data.Bool using (true; false) renaming (Bool to 𝔹)
