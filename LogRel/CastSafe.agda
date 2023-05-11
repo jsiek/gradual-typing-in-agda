@@ -25,7 +25,7 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 open import Structures using (extensionality)
-open import LogRel.Cast
+open import LogRel.CastCalculus
 
 {-------------      Proof of Progress    -------------}
 

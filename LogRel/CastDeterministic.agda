@@ -25,8 +25,8 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 open import Structures using (extensionality)
-open import LogRel.Cast
-open import LogRel.CastReduction
+open import LogRel.CastCalculus
+open import LogRel.Reduction
 
 inject-eq : ∀{G}{N N′}
    → (N ⟨ G !⟩) ≡ (N′ ⟨ G !⟩)

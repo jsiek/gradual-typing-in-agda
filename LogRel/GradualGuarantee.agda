@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.CastFundamentalDir2 where
+module LogRel.GradualGuarantee where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -14,11 +14,11 @@ open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
-open import LogRel.Cast
-open import LogRel.CastPrec2
+open import LogRel.CastCalculus
+open import LogRel.Precision
 open import StepIndexedLogic
-open import LogRel.CastLogRelDir2
-open import LogRel.CastCompatibilityDir2
+open import LogRel.LogRel
+open import LogRel.CompatibilityLemmas
 
 fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
   → Γ ⊩ M ⊑ M′ ⦂ A⊑A′

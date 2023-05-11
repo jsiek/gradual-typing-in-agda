@@ -1,0 +1,8 @@
+
+This directory contains a proof of the gradual guarantee using
+step-indexed logical relations by Jeremy Siek, Phil Wadler, and Peter
+Thiemann.
+
+The proof technique and definitions are a mixture of those used
+by Max New in his thesis (Chapter 10) and
+by Dreyer, Ahmed, and Birkedal in "Logical Step-Indexed Logical Relations".

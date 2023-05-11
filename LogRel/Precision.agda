@@ -24,9 +24,9 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 
-open import LogRel.Cast
+open import LogRel.CastCalculus
 
-module LogRel.CastPrec2 where
+module LogRel.Precision where
 
 {----------------------- Type Precision ------------------------}
 
