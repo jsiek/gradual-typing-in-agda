@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.CastLogRelDir where
+module LogRel.CastLogRelDir2 where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -15,7 +15,7 @@ open import Relation.Binary.PropositionalEquality as Eq
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import LogRel.Cast
-open import LogRel.CastPrec
+open import LogRel.CastPrec2
 open import LogRel.CastDeterministic
 open import LogRel.CastReduction
 open import StepIndexedLogic
@@ -42,26 +42,26 @@ data Dir : Set where
 𝒱ˢ⟦ A⊑B ⟧ dir V V′ = (inj₁ (A⊑B , dir , V , V′)) ∈ zeroˢ
 
 pre-𝒱 : Prec → Dir → Term → Term → Setˢ ℰ⊎𝒱-ctx (cons Later ∅)
-pre-𝒱 (.★ , ★ , unk⊑) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
+pre-𝒱 (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
     with G ≡ᵍ H
 ... | yes refl = let g = gnd⇒ty G in
                  (Value V)ˢ ×ˢ (Value V′)ˢ
                  ×ˢ (▷ˢ (𝒱ˢ⟦ (g , g , Refl⊑) ⟧ dir V V′))
 ... | no neq = ⊥ ˢ
-pre-𝒱 (.★ , $ₜ ι′ , unk⊑) dir (V ⟨ $ᵍ ι !⟩) ($ c)
-    with ($ᵍ ι) ≡ᵍ ($ᵍ ι′)
-... | yes refl = (Value V)ˢ ×ˢ ▷ˢ (𝒱ˢ⟦ ($ₜ ι , $ₜ ι , Refl⊑) ⟧ dir V ($ c))
-... | no new = ⊥ ˢ
-pre-𝒱 (.★ , $ₜ ι′ , unk⊑) dir V V′ = ⊥ ˢ
-pre-𝒱 (.★ , A′ ⇒ B′ , unk⊑) dir (V ⟨ ★⇒★ !⟩) V′ =
-    (Value V)ˢ ×ˢ (Value V′)ˢ
-    ×ˢ ▷ˢ (𝒱ˢ⟦ (★ ⇒ ★ , A′ ⇒ B′ , fun⊑ unk⊑ unk⊑) ⟧ dir V V′)
-pre-𝒱 ($ₜ ι , $ₜ ι , base⊑) dir ($ c) ($ c′) = (c ≡ c′) ˢ
-pre-𝒱 ($ₜ ι , $ₜ ι , base⊑) dir V V′ = ⊥ ˢ
-pre-𝒱 ((A ⇒ B) , (A′ ⇒ B′) , fun⊑ A⊑A′ B⊑B′) dir (ƛ N) (ƛ N′) =
+pre-𝒱 (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
+pre-𝒱 (.★ , .A′ , unk⊑{H}{A′} d) dir (V ⟨ G !⟩) V′
+    with G ≡ᵍ H
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
+                 ×ˢ (pre-𝒱 (gnd⇒ty G , A′ , d) dir V V′)
+... | no neq = ⊥ ˢ
+pre-𝒱 (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
+pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
+pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
+pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N) (ƛ N′) =
     ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (𝒱ˢ⟦ (A , A′ , A⊑A′) ⟧ dir W W′)
                   →ˢ ▷ˢ (ℰˢ⟦ (B , B′ , B⊑B′) ⟧ dir (N [ W ]) (N′ [ W′ ])) 
-pre-𝒱 (A , A′ , A⊑A′) dir V V′ = ⊥ ˢ
+pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
+--pre-𝒱 (A , A′ , A⊑A′) dir V V′ = ⊥ ˢ
 
 {-
 
@@ -444,21 +444,19 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
    → # (𝒱⟦ c ⟧ dir M M′) (suc k)
      ----------------------------
    → Value M × Value M′
-𝒱⇒Value {k} (.★ , ★ , unk⊑) (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
+𝒱⇒Value {k} (.★ , ★ , unk⊑unk) (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
     with G ≡ᵍ H
 ... | no neq = ⊥-elim 𝒱MM′
 ... | yes refl
     with 𝒱MM′
 ... | v , v′ , _ = (v 〈 G 〉) , (v′ 〈 G 〉)
-𝒱⇒Value {k} (.★ , $ₜ ι′ , unk⊑) (V ⟨ $ᵍ ι !⟩) ($ c) 𝒱MM′
-    with  ($ᵍ ι) ≡ᵍ ($ᵍ ι′)
-... | no neq = ⊥-elim 𝒱MM′
+𝒱⇒Value {k} (★ , A′ , unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+    with G ≡ᵍ H
 ... | yes refl
-    with 𝒱MM′
-... | v , _ = (v 〈 $ᵍ ι′ 〉) , ($̬ c)
-𝒱⇒Value {k} (.★ , A′ ⇒ B′ , unk⊑) (V ⟨ ★⇒★ !⟩) V′ 𝒱VV′
-    with 𝒱VV′
-... | v , v′ , _ = (v 〈 ★⇒★ 〉) , v′
+    with 𝒱VGV′
+... | v , v′ , _ = (v 〈 _ 〉) , v′
+𝒱⇒Value {k} (★ , A′ , unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+    | no neq = ⊥-elim 𝒱VGV′
 𝒱⇒Value {k} ($ₜ ι , $ₜ ι , base⊑) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
 𝒱⇒Value {k} ((A ⇒ B) , (A′ ⇒ B′) , fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
     (ƛ̬ N) , (ƛ̬ N′)
@@ -541,159 +539,52 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
   G {ƛ N}{ƛ N′}{n} 𝒱VV′ ⊢𝒱VV′ cont = cont N N′ refl refl λ {W}{W′} →
      instᵒ (instᵒ (substᵒ 𝒱-fun ⊢𝒱VV′) W) W′ 
 
-𝒱-dyn-base : ∀{V}{ι}{k}{dir}
-   → 𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir (V ⟨ $ᵍ ι !⟩) ($ k)
-     ≡ᵒ (Value V)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ ($ₜ ι , $ₜ ι , Refl⊑) ⟧ dir V ($ k))
-𝒱-dyn-base {V}{ι}{k}{dir} =
-  let X = inj₁ ((★ , $ₜ ι , unk⊑) , dir , (V ⟨ $ᵍ ι !⟩) , ($ k)) in
-  𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir (V ⟨ $ᵍ ι !⟩) ($ k)
-    ⩦⟨ ≡ᵒ-refl refl ⟩
+𝒱-dyn-any : ∀{V}{V′}{G}{A′}{dir}{d : gnd⇒ty G ⊑ A′}
+   → 𝒱⟦ ★ , A′ , unk⊑{G}{A′} d ⟧ dir (V ⟨ G !⟩) V′ 
+     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ dir V V′)
+𝒱-dyn-any {V}{V′}{G}{A′}{dir}{d} = 
+  𝒱⟦ ★ , A′ , unk⊑ d ⟧ dir (V ⟨ G !⟩) V′
+     ⩦⟨ ≡ᵒ-refl refl ⟩
   ℰ⊎𝒱 X
     ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
   # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ⩦⟨ EQ1 ⟩
-  (Value V)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ ($ₜ ι , $ₜ ι , Refl⊑) ⟧ dir V ($ k)) ∎
+    ⩦⟨ Goal ⟩
+  (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ dir V V′)
+  ∎
   where
-  X = inj₁ ((★ , $ₜ ι , unk⊑) , dir , (V ⟨ $ᵍ ι !⟩) , ($ k))
-  EQ1 : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ≡ᵒ (Value V)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ ($ₜ ι , $ₜ ι , Refl⊑) ⟧ dir V ($ k))
-  EQ1
-      with ($ᵍ ι) ≡ᵍ ($ᵍ ι)
-  ... | no neq = ⊥-elim (neq refl)    
-  ... | yes refl = ≡ᵒ-refl refl
+  X = inj₁ ((★ , A′ , unk⊑ d) , dir , (V ⟨ G !⟩) , V′)
+  Goal : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
+         ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ dir V V′)
+  Goal
+      with G ≡ᵍ G
+  ... | yes refl = cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
+            (≡ᵒ-sym (fixpointᵒ pre-ℰ⊎𝒱
+                        (inj₁ ((gnd⇒ty G , A′ , d) , dir , V , V′)))))
+  ... | no neq = ⊥-elim (neq refl)
 
-𝒱-dyn-base-elim-step : ∀{ι}{V}{V′}{dir}{j}
-   → #(𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir V V′) (suc j)
-   → ∃[ V₁ ] ∃[ k ] V ≡ V₁ ⟨ $ᵍ ι !⟩ × V′ ≡ ($ k)
-      × Value V₁ × #(𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir V₁ ($ k)) j
-𝒱-dyn-base-elim-step {ι}{V ⟨ $ᵍ ι′ !⟩}{$ k}{dir}{j} 𝒱VV′
-    with ($ᵍ ι′) ≡ᵍ ($ᵍ ι)
-... | no neq = ⊥-elim 𝒱VV′
+𝒱-dyn-any-elim-step : ∀{V}{V′}{dir}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
+   → #(𝒱⟦ ★ , A′ , unk⊑ c ⟧ dir V V′) (suc k)
+   → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
+             × #(𝒱⟦ gnd⇒ty H , A′ , c ⟧ dir V₁ V′) (suc k)
+𝒱-dyn-any-elim-step {V ⟨ G !⟩}{V′}{dir}{k}{H}{A′}{c} 𝒱VGV′
+    with G ≡ᵍ H
+... | no neq = ⊥-elim 𝒱VGV′
 ... | yes refl
-    with 𝒱VV′
-... | v , ▷𝒱VV′ =
-      V , k , refl , refl , v , ▷𝒱VV′
-
-𝒱-dyn-base-elim : ∀{𝒫}{ι}{V}{V′}{R}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir V V′
-   → (∀{V₁}{k} → V ≡ V₁ ⟨ $ᵍ ι !⟩ → V′ ≡ ($ k)
-      → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ ▷ᵒ 𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir V₁ ($ k) → 𝒫 ⊢ᵒ R)
-   → 𝒫 ⊢ᵒ R
-𝒱-dyn-base-elim {𝒫}{ι}{V}{V′}{R}{dir} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ { 𝒱VV′sn → G 𝒱VV′sn ⊢𝒱VV′ cont }
-  where
-  G : ∀{V}{V′}{n}
-     → # (𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir V V′) (suc n)
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir V V′
-     → (∀{V₁}{k} → V ≡ V₁ ⟨ $ᵍ ι !⟩ → V′ ≡ ($ k)
-       → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ ▷ᵒ 𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir V₁ ($ k) → 𝒫 ⊢ᵒ R)
-     → 𝒫 ⊢ᵒ R
-  G {V₁ ⟨ $ᵍ ι′ !⟩}{$ k}{n} 𝒱VV′ ⊢𝒱VV′ cont
-      with ($ᵍ ι′) ≡ᵍ ($ᵍ ι)
-  ... | no neq = ⊥-elim 𝒱VV′
-  ... | yes refl = cont refl refl (substᵒ (𝒱-dyn-base{V₁}{ι}{k}) ⊢𝒱VV′)
-  G {L · M}{V′}{n} () ⊢𝒱VV′ cont
-  G {ƛ N}{V′}{n} () ⊢𝒱VV′ cont
-  G {` x}{V′}{n} () ⊢𝒱VV′ cont
-  G {V₁ ⟨ H ?⟩}{V′}{n} () ⊢𝒱VV′ cont
+    with 𝒱VGV′
+... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
 
 Value-inj-inv : ∀{V}{G}
    → Value (V ⟨ G !⟩)
    → Value V
 Value-inj-inv {V} {G} (v 〈 .G 〉) = v
 
-𝒱-dyn-fun : ∀{A′}{B′}{V}{V′}{dir}
-   → 𝒱⟦ ★ , A′ ⇒ B′ , unk⊑ ⟧ dir (V ⟨ ★⇒★ !⟩) V′
-     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ
-        ×ᵒ ▷ᵒ (𝒱⟦ (★ ⇒ ★ , A′ ⇒ B′ , fun⊑ unk⊑ unk⊑) ⟧ dir V V′)
-𝒱-dyn-fun {A′}{B′}{V}{V′}{dir} =
-  let X = inj₁ ((★ , A′ ⇒ B′ , unk⊑) , dir , (V ⟨ ★⇒★ !⟩) , V′) in
-  𝒱⟦ ★ , A′ ⇒ B′ , unk⊑ ⟧ dir (V ⟨ ★⇒★ !⟩) V′
-     ⩦⟨ ≡ᵒ-refl refl ⟩
-  ℰ⊎𝒱 X
-    ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
-  # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ⩦⟨ ≡ᵒ-refl refl ⟩
-  (Value V)ᵒ ×ᵒ (Value V′)ᵒ
-        ×ᵒ ▷ᵒ (𝒱⟦ (★ ⇒ ★ , A′ ⇒ B′ , fun⊑ unk⊑ unk⊑) ⟧ dir V V′)
-  ∎ 
-
-𝒱-dyn-fun-elim-step : ∀{V}{V′}{dir}{k}{A}{B}
-   → #(𝒱⟦ ★ , A ⇒ B , unk⊑ ⟧ dir V V′) (suc k)
-   → ∃[ V₁ ] V ≡ V₁ ⟨ ★⇒★ !⟩ × Value V₁ × Value V′
-             × #(𝒱⟦ ★ ⇒ ★ , A ⇒ B , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′) k
-𝒱-dyn-fun-elim-step {V ⟨ ★⇒★ !⟩}{V′}{dir}{k} (v , v′ , 𝒱VV′) =
-  V , refl , v , v′ , 𝒱VV′
-
-𝒱-dyn-any-elim-step : ∀{V}{V′}{dir}{k}{G}{A′}{c : gnd⇒ty G ⊑ A′}
-   → #(𝒱⟦ ★ , A′ , unk⊑ ⟧ dir V V′) (suc k)
-   → ∃[ V₁ ] V ≡ V₁ ⟨ G !⟩ × Value V₁ × Value V′
-             × #(𝒱⟦ gnd⇒ty G , A′ , c ⟧ dir V₁ V′) k
-𝒱-dyn-any-elim-step {V} {V′} {dir} {k} {$ᵍ ι} {.($ₜ ι)} {base⊑} 𝒱VV′
-    with 𝒱-dyn-base-elim-step{ι}{V}{V′}{dir}{k} 𝒱VV′
-... | V₁ , k , refl , refl , v₁ , 𝒱V₁k = V₁ , refl , v₁ , $̬ k , 𝒱V₁k
-𝒱-dyn-any-elim-step{V}{V′}{dir}{k}{★⇒★}{.(_ ⇒ _)} {fun⊑ unk⊑ unk⊑} 𝒱VV′ =
-    𝒱-dyn-fun-elim-step 𝒱VV′
-
-{-
-𝒱-dyn-any-elim-step2 : ∀{V}{V′}{dir}{k}{A′}
-   → #(𝒱⟦ ★ , A′ , unk⊑ ⟧ dir V V′) (suc k)
-   → ∃[ V₁ ] ∃[ G ] V ≡ V₁ ⟨ G !⟩ × Value V₁ × Value V′
-             × Σ[ c ∈ gnd⇒ty G ⊑ A′ ] #(𝒱⟦ gnd⇒ty G , A′ , c ⟧ dir V₁ V′) k
-𝒱-dyn-any-elim-step2 {V} {V′} {dir} {k} {★} 𝒱VV′ = {!!}
-𝒱-dyn-any-elim-step2 {V} {V′} {dir} {k} {$ₜ ι} 𝒱VV′ = {!!}
-𝒱-dyn-any-elim-step2 {V} {V′} {dir} {k} {A′ ⇒ A′₁} 𝒱VV′ = {!!}
--}
-
-𝒱-dyn-fun-elim : ∀{𝒫}{V}{V′}{R}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ ⇒ ★ , unk⊑ ⟧ dir V V′
-   → (∀{V₁} → V ≡ V₁ ⟨ ★⇒★ !⟩ 
-         → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V′)ᵒ
-             ×ᵒ ▷ᵒ 𝒱⟦ ★ ⇒ ★ , ★ ⇒ ★ , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′ → 𝒫 ⊢ᵒ R)
-   → 𝒫 ⊢ᵒ R
-𝒱-dyn-fun-elim {𝒫}{V}{V′}{R}{dir} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ { 𝒱VV′sn → G 𝒱VV′sn ⊢𝒱VV′ cont }
-  where
-  G : ∀{V}{V′}{n}
-     → # (𝒱⟦ ★ , ★ ⇒ ★ , unk⊑ ⟧ dir V V′) (suc n)
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ ⇒ ★ , unk⊑ ⟧ dir V V′
-     → (∀{V₁} → V ≡ V₁ ⟨ ★⇒★ !⟩
-        → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V′)ᵒ
-                ×ᵒ ▷ᵒ 𝒱⟦ ★ ⇒ ★ , ★ ⇒ ★ , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′
-        → 𝒫 ⊢ᵒ R)
-     → 𝒫 ⊢ᵒ R
-  G {V₁ ⟨ ★⇒★ !⟩}{V′}{n} 𝒱V!V′ ⊢𝒱V!V′ cont =
-    let ⊢𝒱VV′ = substᵒ 𝒱-dyn-fun ⊢𝒱V!V′ in
-    cont refl ⊢𝒱VV′
-
-𝒱-dyn-fun-elim2 : ∀{𝒫}{V}{V′}{R}{A}{B}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , A ⇒ B , unk⊑ ⟧ dir V V′
-   → (∀{V₁} → V ≡ V₁ ⟨ ★⇒★ !⟩ 
-         → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V′)ᵒ
-             ×ᵒ ▷ᵒ 𝒱⟦ ★ ⇒ ★ , A ⇒ B , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′ → 𝒫 ⊢ᵒ R)
-   → 𝒫 ⊢ᵒ R
-𝒱-dyn-fun-elim2 {𝒫}{V}{V′}{R}{A}{B}{dir} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ { 𝒱VV′sn → G 𝒱VV′sn ⊢𝒱VV′ cont }
-  where
-  G : ∀{V}{V′}{n}
-     → # (𝒱⟦ ★ , A ⇒ B , unk⊑ ⟧ dir V V′) (suc n)
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , A ⇒ B , unk⊑ ⟧ dir V V′
-     → (∀{V₁} → V ≡ V₁ ⟨ ★⇒★ !⟩
-        → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V′)ᵒ
-                ×ᵒ ▷ᵒ 𝒱⟦ ★ ⇒ ★ , A ⇒ B , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′
-        → 𝒫 ⊢ᵒ R)
-     → 𝒫 ⊢ᵒ R
-  G {V₁ ⟨ ★⇒★ !⟩}{V′}{n} 𝒱V!V′ ⊢𝒱V!V′ cont =
-    let ⊢𝒱VV′ = substᵒ 𝒱-dyn-fun ⊢𝒱V!V′ in
-    cont refl ⊢𝒱VV′
-
 𝒱-dyn-dyn : ∀{V}{V′}{G}{dir}
-   → 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
+   → 𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
      ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ
          ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′))
 𝒱-dyn-dyn {V}{V′}{G}{dir} =
-  let X = inj₁ ((★ , ★ , unk⊑) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩)) in 
-  𝒱⟦ ★ , ★ , unk⊑ ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
+  let X = inj₁ ((★ , ★ , unk⊑unk) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩)) in 
+  𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
     ⩦⟨ ≡ᵒ-refl refl ⟩
   ℰ⊎𝒱 X
     ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
@@ -702,7 +593,7 @@ Value-inj-inv {V} {G} (v 〈 .G 〉) = v
    (Value V)ᵒ ×ᵒ (Value V′)ᵒ
          ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′)) ∎
   where
-  X = inj₁ ((★ , ★ , unk⊑) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩))
+  X = inj₁ ((★ , ★ , unk⊑unk) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩))
   EQ : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ
          ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′))
@@ -711,97 +602,96 @@ Value-inj-inv {V} {G} (v 〈 .G 〉) = v
   ... | yes refl = ≡ᵒ-refl refl
   ... | no neq = ⊥-elim (neq refl)
 
+unk⊑gnd-inv : ∀{G}
+   → (c : ★ ⊑ gnd⇒ty G)
+   → ∃[ d ] c ≡ unk⊑{G}{gnd⇒ty G} d
+unk⊑gnd-inv {$ᵍ ι} (unk⊑ {$ᵍ .ι} base⊑) = base⊑ , refl
+unk⊑gnd-inv {★⇒★} (unk⊑ {★⇒★} (fun⊑ c d)) = fun⊑ c d , refl
+
 𝒱-dyn-R-step : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{dir}{k}
    → #(𝒱⟦ ★ , gnd⇒ty G , c ⟧ dir V V′) k
-   → #(𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ G !⟩)) k
-𝒱-dyn-R-step {G} {unk⊑} {V} {V′} {dir} {zero} 𝒱VV′ =
-    tz (𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ G !⟩))
-𝒱-dyn-R-step {$ᵍ ι} {unk⊑} {V} {V′} {dir} {suc k} 𝒱VV′
-    with 𝒱-dyn-base-elim-step{ι}{V}{V′}{dir}{k} 𝒱VV′
-... | V₁ , c , refl , refl , v₁ , 𝒱V₁c
-    with ($ᵍ ι) ≡ᵍ ($ᵍ ι)
-... | yes refl = v₁ , $̬ c , 𝒱V₁c
-... | no neq = neq refl
-𝒱-dyn-R-step {★⇒★} {unk⊑} {V} {V′} {dir} {suc k} 𝒱VV′
-    with 𝒱-dyn-fun-elim-step{V}{V′}{dir}{k} 𝒱VV′
-... | V₁ , refl , v₁ , v′ , 𝒱V₁V′ =
-    v₁ , v′ , 𝒱V₁V′
+   → #(𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir V (V′ ⟨ G !⟩)) k
+𝒱-dyn-R-step {G} {c} {V} {V′} {dir} {zero} 𝒱VV′ =
+     tz (𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir V (V′ ⟨ G !⟩))
+𝒱-dyn-R-step {G} {c} {V} {V′} {dir} {suc k} 𝒱VV′
+    with unk⊑gnd-inv c
+... | d , refl
+    with 𝒱-dyn-any-elim-step {V}{V′}{dir}{k}{G}{_}{d} 𝒱VV′
+... | V₁ , refl , v₁ , v′ , 𝒱V₁V′
+    with G ≡ᵍ G
+... | no neq = ⊥-elim 𝒱VV′
+... | yes refl
+    with gnd-prec-unique d Refl⊑
+... | refl =
+    let 𝒱V₁V′k = down (𝒱⟦ gnd⇒ty G , gnd⇒ty G , d ⟧ dir V₁ V′)
+                       (suc k) 𝒱V₁V′ k (n≤1+n k) in
+    v₁ , v′ , 𝒱V₁V′k
 
-𝒱-dyn-R : ∀{𝒫}{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , gnd⇒ty G , c ⟧ dir V V′
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ G !⟩)
-𝒱-dyn-R {𝒫} {$ᵍ ι} {unk⊑} {V} {V′}{dir} ⊢𝒱VV′ =
-  𝒱-dyn-base-elim ⊢𝒱VV′ G
-  where
-  G : ∀{V₁} {k} → V ≡ (V₁ ⟨ $ᵍ ι !⟩) → V′ ≡ $ k
-     → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (▷ᵒ 𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir V₁ ($ k))
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ $ᵍ ι !⟩)
-  G {V₁} {k} refl refl ⊢v₁×𝒱V₁k =
-    substᵒ (≡ᵒ-sym 𝒱-dyn-dyn)
-      (proj₁ᵒ ⊢v₁×𝒱V₁k ,ᵒ (constᵒI ($̬ k) ,ᵒ proj₂ᵒ ⊢v₁×𝒱V₁k))
-𝒱-dyn-R {𝒫} {★⇒★} {unk⊑} {V} {V′}{dir} ⊢𝒱VV′ = 𝒱-dyn-fun-elim ⊢𝒱VV′ G
-  where
-  G : ∀ {V₁} → V ≡ (V₁ ⟨ ★⇒★ !⟩)
-     → 𝒫 ⊢ᵒ Value V₁ ᵒ ×ᵒ Value V′ ᵒ
-          ×ᵒ (▷ᵒ 𝒱⟦ ★ ⇒ ★ , ★ ⇒ ★ , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′)
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ ★⇒★ !⟩)
-  G {V₁} refl ⊢v×v′×▷𝒱V₁V′ = substᵒ (≡ᵒ-sym 𝒱-dyn-dyn) ⊢v×v′×▷𝒱V₁V′
+-- 𝒱-dyn-R : ∀{𝒫}{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{dir}
+--    → 𝒫 ⊢ᵒ 𝒱⟦ ★ , gnd⇒ty G , c ⟧ dir V V′
+--    → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ G !⟩)
+-- 𝒱-dyn-R {𝒫} {$ᵍ ι} {unk⊑} {V} {V′}{dir} ⊢𝒱VV′ =
+--   𝒱-dyn-base-elim ⊢𝒱VV′ G
+--   where
+--   G : ∀{V₁} {k} → V ≡ (V₁ ⟨ $ᵍ ι !⟩) → V′ ≡ $ k
+--      → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (▷ᵒ 𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir V₁ ($ k))
+--      → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ $ᵍ ι !⟩)
+--   G {V₁} {k} refl refl ⊢v₁×𝒱V₁k =
+--     substᵒ (≡ᵒ-sym 𝒱-dyn-dyn)
+--       (proj₁ᵒ ⊢v₁×𝒱V₁k ,ᵒ (constᵒI ($̬ k) ,ᵒ proj₂ᵒ ⊢v₁×𝒱V₁k))
+-- 𝒱-dyn-R {𝒫} {★⇒★} {unk⊑} {V} {V′}{dir} ⊢𝒱VV′ = 𝒱-dyn-fun-elim ⊢𝒱VV′ G
+--   where
+--   G : ∀ {V₁} → V ≡ (V₁ ⟨ ★⇒★ !⟩)
+--      → 𝒫 ⊢ᵒ Value V₁ ᵒ ×ᵒ Value V′ ᵒ
+--           ×ᵒ (▷ᵒ 𝒱⟦ ★ ⇒ ★ , ★ ⇒ ★ , fun⊑ unk⊑ unk⊑ ⟧ dir V₁ V′)
+--      → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V (V′ ⟨ ★⇒★ !⟩)
+--   G {V₁} refl ⊢v×v′×▷𝒱V₁V′ = substᵒ (≡ᵒ-sym 𝒱-dyn-dyn) ⊢v×v′×▷𝒱V₁V′
 
-𝒱-dyn-dyn-elim : ∀{𝒫}{V}{V′}{R}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′
-   → (∀{V₁}{V₁′}{G} → V ≡ V₁ ⟨ G !⟩ → V′ ≡ V₁′ ⟨ G !⟩
-         → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V₁′)ᵒ
-             ×ᵒ ▷ᵒ 𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ dir V₁ V₁′ → 𝒫 ⊢ᵒ R)
-   → 𝒫 ⊢ᵒ R
-𝒱-dyn-dyn-elim {𝒫}{V}{V′}{R}{dir} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ → G 𝒱VV′ ⊢𝒱VV′ cont
-  where
-  G : ∀{V}{V′}{n}
-     → # (𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′) (suc n)
-     → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′
-     → (∀{V₁}{V₁′}{G} → V ≡ V₁ ⟨ G !⟩ → V′ ≡ V₁′ ⟨ G !⟩
-         → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V₁′)ᵒ
-             ×ᵒ ▷ᵒ 𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ dir V₁ V₁′ → 𝒫 ⊢ᵒ R)
-     → 𝒫 ⊢ᵒ R
-  G {V₁ ⟨ G !⟩}{V₁′ ⟨ H !⟩}{n} 𝒱VV′ ⊢𝒱VV′ cont
-      with G ≡ᵍ H
-  ... | no neq = ⊥-elim 𝒱VV′
-  ... | yes refl = cont refl refl (substᵒ 𝒱-dyn-dyn ⊢𝒱VV′)
+-- 𝒱-dyn-dyn-elim : ∀{𝒫}{V}{V′}{R}{dir}
+--    → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′
+--    → (∀{V₁}{V₁′}{G} → V ≡ V₁ ⟨ G !⟩ → V′ ≡ V₁′ ⟨ G !⟩
+--          → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V₁′)ᵒ
+--              ×ᵒ ▷ᵒ 𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ dir V₁ V₁′ → 𝒫 ⊢ᵒ R)
+--    → 𝒫 ⊢ᵒ R
+-- 𝒱-dyn-dyn-elim {𝒫}{V}{V′}{R}{dir} ⊢𝒱VV′ cont =
+--   ⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ → G 𝒱VV′ ⊢𝒱VV′ cont
+--   where
+--   G : ∀{V}{V′}{n}
+--      → # (𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′) (suc n)
+--      → 𝒫 ⊢ᵒ 𝒱⟦ ★ , ★ , unk⊑ ⟧ dir V V′
+--      → (∀{V₁}{V₁′}{G} → V ≡ V₁ ⟨ G !⟩ → V′ ≡ V₁′ ⟨ G !⟩
+--          → 𝒫 ⊢ᵒ (Value V₁)ᵒ ×ᵒ (Value V₁′)ᵒ
+--              ×ᵒ ▷ᵒ 𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ dir V₁ V₁′ → 𝒫 ⊢ᵒ R)
+--      → 𝒫 ⊢ᵒ R
+--   G {V₁ ⟨ G !⟩}{V₁′ ⟨ H !⟩}{n} 𝒱VV′ ⊢𝒱VV′ cont
+--       with G ≡ᵍ H
+--   ... | no neq = ⊥-elim 𝒱VV′
+--   ... | yes refl = cont refl refl (substᵒ 𝒱-dyn-dyn ⊢𝒱VV′)
 
 𝒱-dyn-L-step : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}{k}
    → #(𝒱⟦ gnd⇒ty G , A′ , c ⟧ dir V V′) k
-   → #(𝒱⟦ ★ , A′ , unk⊑ ⟧ dir (V ⟨ G !⟩) V′) k
+   → #(𝒱⟦ ★ , A′ , unk⊑ c ⟧ dir (V ⟨ G !⟩) V′) k
 𝒱-dyn-L-step {G}{A′}{c}{V}{V′}{dir}{zero} 𝒱VV′k =
-    tz (𝒱⟦ ★ , A′ , unk⊑ ⟧ dir (V ⟨ G !⟩) V′)
-𝒱-dyn-L-step {$ᵍ ι} {.($ₜ ι)} {base⊑} {V} {V′} {dir} {suc k} 𝒱VV′k
-    with 𝒱-base-elim-step{ι}{ι}{base⊑}{V}{V′}{dir}{k} 𝒱VV′k
-... | c , refl , refl , refl
-    with ($ᵍ ι) ≡ᵍ ($ᵍ ι)
+    tz (𝒱⟦ ★ , A′ , unk⊑ c ⟧ dir (V ⟨ G !⟩) V′)
+𝒱-dyn-L-step {G} {A′} {c} {V} {V′} {dir} {suc k} 𝒱VV′k
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
-      ($̬ c) , G
-      where
-      G : ∀{k : ℕ} → #((c ≡ c)ᵒ) k
-      G {zero} = tt
-      G {suc k} = refl
-... | no neq = neq refl
-𝒱-dyn-L-step {★⇒★} {(C ⇒ D)} {fun⊑ unk⊑ unk⊑} {ƛ N} {ƛ N′} {dir} {suc k}
-  𝒱VV′sk =
-  let 𝒱VV′k = down (𝒱⟦ ★ ⇒ ★ , C ⇒ D , fun⊑ unk⊑ unk⊑ ⟧ dir (ƛ N) (ƛ N′))
-                    (suc k) 𝒱VV′sk k (n≤1+n k) in
-  (ƛ̬ N) , (ƛ̬ N′) , 𝒱VV′k
+      let (v , v′) = 𝒱⇒Value (gnd⇒ty G , A′ , c) V V′ 𝒱VV′k in
+      v , v′ , 𝒱VV′k
 
-𝒱-dyn-L : ∀{𝒫}{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ gnd⇒ty G , A′ , c ⟧ dir V V′
-   → 𝒫 ⊢ᵒ 𝒱⟦ ★ , A′ , unk⊑ ⟧ dir (V ⟨ G !⟩) V′
-𝒱-dyn-L {𝒫} {$ᵍ ι} {$ₜ ι′} {c} {V} {V′}{dir} 𝒱VV′ =
-  𝒱-base-elim 𝒱VV′ λ {k refl refl refl → G}
-  where
-  G : ∀{k} → 𝒫 ⊢ᵒ 𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir ($ k ⟨ $ᵍ ι !⟩) ($ k)
-  G {k} = substᵒ (≡ᵒ-sym 𝒱-dyn-base) (constᵒI ($̬ k) ,ᵒ monoᵒ 𝒱-base-intro)
-𝒱-dyn-L {𝒫} {★⇒★} {A′ ⇒ B′} {fun⊑ unk⊑ unk⊑} {V} {V′} ⊢𝒱VV′ =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ →
-  let (v , v′) = 𝒱⇒Value (★ ⇒ ★ , A′ ⇒ B′ , fun⊑ unk⊑ unk⊑) V V′ 𝒱VV′ in
-  substᵒ (≡ᵒ-sym 𝒱-dyn-fun) (constᵒI v ,ᵒ (constᵒI v′ ,ᵒ monoᵒ ⊢𝒱VV′))
+-- 𝒱-dyn-L : ∀{𝒫}{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}
+--    → 𝒫 ⊢ᵒ 𝒱⟦ gnd⇒ty G , A′ , c ⟧ dir V V′
+--    → 𝒫 ⊢ᵒ 𝒱⟦ ★ , A′ , unk⊑ ⟧ dir (V ⟨ G !⟩) V′
+-- 𝒱-dyn-L {𝒫} {$ᵍ ι} {$ₜ ι′} {c} {V} {V′}{dir} 𝒱VV′ =
+--   𝒱-base-elim 𝒱VV′ λ {k refl refl refl → G}
+--   where
+--   G : ∀{k} → 𝒫 ⊢ᵒ 𝒱⟦ ★ , $ₜ ι , unk⊑ ⟧ dir ($ k ⟨ $ᵍ ι !⟩) ($ k)
+--   G {k} = substᵒ (≡ᵒ-sym 𝒱-dyn-base) (constᵒI ($̬ k) ,ᵒ monoᵒ 𝒱-base-intro)
+-- 𝒱-dyn-L {𝒫} {★⇒★} {A′ ⇒ B′} {fun⊑ unk⊑ unk⊑} {V} {V′} ⊢𝒱VV′ =
+--   ⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ →
+--   let (v , v′) = 𝒱⇒Value (★ ⇒ ★ , A′ ⇒ B′ , fun⊑ unk⊑ unk⊑) V V′ 𝒱VV′ in
+--   substᵒ (≡ᵒ-sym 𝒱-dyn-fun) (constᵒI v ,ᵒ (constᵒI v′ ,ᵒ monoᵒ ⊢𝒱VV′))
 
 {--------------- Related values are related expressions -----------------------}
 

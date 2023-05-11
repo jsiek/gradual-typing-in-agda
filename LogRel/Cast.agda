@@ -79,36 +79,6 @@ _≡ᵍ_ : ∀ (G : Ground) (H : Ground) → Dec (G ≡ H)
 ★⇒★ ≡ᵍ ($ᵍ ι) = no λ ()
 ★⇒★ ≡ᵍ ★⇒★ = yes refl
 
-{----------------------- Type Precision ------------------------}
-
-infixr 6 _⊑_
-data _⊑_ : Type → Type → Set where
-
-  unk⊑ : ∀{B} → ★ ⊑ B
-  
-  base⊑ : ∀{ι} → $ₜ ι ⊑ $ₜ ι
-
-  fun⊑ : ∀{A B C D}
-     → A ⊑ C
-     → B ⊑ D
-     → A ⇒ B ⊑ C ⇒ D
-
-Refl⊑ : ∀{A} → A ⊑ A
-Refl⊑ {★} = unk⊑
-Refl⊑ {$ₜ ι} = base⊑
-Refl⊑ {A ⇒ B} = fun⊑ Refl⊑ Refl⊑
-
-Trans⊑ : ∀ {A B C} → A ⊑ B → B ⊑ C → A ⊑ C
-Trans⊑ unk⊑ b = unk⊑
-Trans⊑ base⊑ b = b
-Trans⊑ (fun⊑ a a₁) (fun⊑ b b₁) = fun⊑ (Trans⊑ a b) (Trans⊑ a₁ b₁)
-
-AntiSym⊑ : ∀ {A B} → A ⊑ B → B ⊑ A → A ≡ B
-AntiSym⊑ unk⊑ unk⊑ = refl
-AntiSym⊑ base⊑ base⊑ = refl
-AntiSym⊑ {A ⇒ B}{A' ⇒ B'} (fun⊑ a a₁) (fun⊑ b b₁) =
-  cong₂ (_⇒_) (AntiSym⊑ a b) (AntiSym⊑ a₁ b₁)
-
 {------------------------ Terms --------------------------------}
 
 data Lit : Set where
@@ -242,65 +212,7 @@ data _⊢_⦂_ where
       ---------------
     → Γ ⊢ blame ⦂ A
 
-
-{----------------------- Term Precision ------------------------}
-
-infix 3 _⊩_⊑_⦂_
-
-Prec : Set
-Prec = (∃[ A ] ∃[ B ] A ⊑ B)
-
-data _⊩_⊑_⦂_ : List Prec → Term → Term → ∀{A B : Type} → A ⊑ B → Set 
-
-data _⊩_⊑_⦂_ where
-
-  ⊑-var : ∀ {Γ x A⊑B}
-     → Γ ∋ x ⦂ A⊑B
-       -------------------------------------
-     → Γ ⊩ (` x) ⊑ (` x) ⦂ proj₂ (proj₂ A⊑B)
-
-  ⊑-lit : ∀ {Γ c}
-       -----------------------------------
-     → Γ ⊩ ($ c) ⊑ ($ c) ⦂ base⊑{typeof c}
-
-  ⊑-app : ∀{Γ L M L′ M′ A B C D}{c : A ⊑ C}{d : B ⊑ D}
-     → Γ ⊩ L ⊑ L′ ⦂ fun⊑ c d
-     → Γ ⊩ M ⊑ M′ ⦂ c
-       -----------------------
-     → Γ ⊩ L · M ⊑ L′ · M′ ⦂ d
-
-  ⊑-lam : ∀{Γ N N′ A B C D}{c : A ⊑ C}{d : B ⊑ D}
-     → (A , C , c) ∷ Γ ⊩ N ⊑ N′ ⦂ d
-       ----------------------------
-     → Γ ⊩ ƛ N ⊑ ƛ N′ ⦂ fun⊑ c d
-
-  ⊑-inj-L : ∀{Γ M M′}{G B}{c : (gnd⇒ty G) ⊑ B}
-     → Γ ⊩ M ⊑ M′ ⦂ c
-       ---------------------------
-     → Γ ⊩ M ⟨ G !⟩ ⊑ M′ ⦂ unk⊑{B}
-
-  ⊑-inj-R : ∀{Γ M M′}{G}{c : ★ ⊑ (gnd⇒ty G)}
-     → Γ ⊩ M ⊑ M′ ⦂ c
-       ---------------------------
-     → Γ ⊩ M ⊑ M′ ⟨ G !⟩ ⦂ unk⊑{★}
-
-  ⊑-proj-L : ∀{Γ M M′ H B}{c : (gnd⇒ty H) ⊑ B}
-     → Γ ⊩ M ⊑ M′ ⦂ unk⊑{B}
-       ---------------------
-     → Γ ⊩ M ⟨ H ?⟩ ⊑ M′ ⦂ c
-
-  ⊑-proj-R : ∀{Γ M M′ H}{c : ★ ⊑ (gnd⇒ty H)}
-     → Γ ⊩ M ⊑ M′ ⦂ unk⊑{★}
-       ---------------------
-     → Γ ⊩ M ⊑ M′ ⟨ H ?⟩  ⦂ c
-
-  ⊑-blame : ∀{Γ M A}
-     → map proj₁ Γ ⊢ M ⦂ A
-       ------------------------
-     → Γ ⊩ M ⊑ blame ⦂ Refl⊑{A}
-
 {----------------------- Frames ------------------------}
-
 
 infix  6 □·_
 infix  6 _·□

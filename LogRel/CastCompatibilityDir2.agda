@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.CastCompatibilityDir where
+module LogRel.CastCompatibilityDir2 where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -16,10 +16,11 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import LogRel.Cast
 open import LogRel.CastReduction
+open import LogRel.CastPrec2
 open import LogRel.CastDeterministic
 open import StepIndexedLogic
-open import LogRel.CastLogRelDir
-open import LogRel.CastBindDir
+open import LogRel.CastLogRelDir2
+open import LogRel.CastBindDir2
 
 {---------------- Compatibility Lemmas ----------------------------------------}
 
@@ -126,41 +127,42 @@ compatible-app {Γ}{A}{A′}{B}{B′}{c}{d}{L}{L′}{M}{M′} ⊨L⊑L′ ⊨M�
 
 compatible-inj-L : ∀{Γ}{G A′}{c : gnd⇒ty G ⊑ A′}{M M′}
    → Γ ⊨ M ⊑ M′ ⦂ (gnd⇒ty G , A′ , c)
-     ------------------------------------
-   → Γ ⊨ M ⟨ G !⟩ ⊑ M′ ⦂ (★ , A′ , unk⊑)
+     ---------------------------------------------
+   → Γ ⊨ M ⟨ G !⟩ ⊑ M′ ⦂ (★ , A′ , unk⊑{G}{A′} c)
 compatible-inj-L{Γ}{G}{A′}{c}{M}{M′} ⊨M⊑M′ =
   (λ γ γ′ → ℰMGM′) , (λ γ γ′ → ℰMGM′)
   where
   ℰMGM′ : ∀ {γ}{γ′}{dir}
-    → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ ℰ⟦ ★ , A′ , unk⊑ ⟧ dir (⟪ γ ⟫ M ⟨ G !⟩) (⟪ γ′ ⟫ M′)
+    → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ ℰ⟦ ★ , A′ , unk⊑ c ⟧ dir (⟪ γ ⟫ M ⟨ G !⟩) (⟪ γ′ ⟫ M′)
   ℰMGM′{γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   ℰ-bind-step{★ , A′ , unk⊑}{gnd⇒ty G , A′ , c}
+   ℰ-bind-step{★ , A′ , unk⊑ c}{gnd⇒ty G , A′ , c}
               {F = ` (□⟨ G !⟩)}{F′ = □}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
-   𝒱⇒ℰ-step{★ , A′ , unk⊑}{V ⟨ G !⟩}{V′}{dir}{j}
+   𝒱⇒ℰ-step{★ , A′ , unk⊑ c}{V ⟨ G !⟩}{V′}{dir}{j}
    (𝒱-dyn-L-step{G}{A′}{c}{V}{V′}{dir}{j} 𝒱VV′j)
 
 compatible-inj-R : ∀{Γ}{G}{c : ★ ⊑ gnd⇒ty G }{M M′}
    → Γ ⊨ M ⊑ M′ ⦂ (★ , gnd⇒ty G , c)
-   → Γ ⊨ M ⊑ M′ ⟨ G !⟩ ⦂ (★ , ★ , unk⊑)
-compatible-inj-R{Γ}{G}{unk⊑}{M}{M′} ⊨M⊑M′ =
-  (λ γ γ′ → ℰMM′G) , λ γ γ′ → ℰMM′G
+   → Γ ⊨ M ⊑ M′ ⟨ G !⟩ ⦂ (★ , ★ , unk⊑unk)
+compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
+    with unk⊑gnd-inv c
+... | d , refl = (λ γ γ′ → ℰMM′G) , λ γ γ′ → ℰMM′G
   where
   ℰMM′G : ∀{γ}{γ′}{dir}
-    → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ ℰ⟦ ★ , ★ , unk⊑ ⟧ dir (⟪ γ ⟫ M) (⟪ γ′ ⟫ M′ ⟨ G !⟩)
+    → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ ℰ⟦ ★ , ★ , unk⊑unk ⟧ dir (⟪ γ ⟫ M) (⟪ γ′ ⟫ M′ ⟨ G !⟩)
   ℰMM′G {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   ℰ-bind-step{★ , ★ , unk⊑}{★ , gnd⇒ty G , unk⊑}
+   ℰ-bind-step{★ , ★ , unk⊑unk}{★ , gnd⇒ty G , unk⊑ d}
               {F = □}{F′ = ` (□⟨ G !⟩)}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
-   𝒱⇒ℰ-step{★ , ★ , unk⊑}{V}{V′ ⟨ G !⟩}{dir}{j}
-   (𝒱-dyn-R-step{G}{unk⊑}{V}{V′}{dir}{j} 𝒱VV′j)
+   𝒱⇒ℰ-step{★ , ★ , unk⊑unk}{V}{V′ ⟨ G !⟩}{dir}{j}
+   (𝒱-dyn-R-step{G}{unk⊑ d}{V}{V′}{dir}{j} 𝒱VV′j)
 
 compatible-proj-L : ∀{Γ}{H}{A′}{c : gnd⇒ty H ⊑ A′}{M}{M′}
-   → Γ ⊨ M ⊑ M′ ⦂ (★ , A′ ,  unk⊑)
+   → Γ ⊨ M ⊑ M′ ⦂ (★ , A′ ,  unk⊑ c)
    → Γ ⊨ M ⟨ H ?⟩ ⊑ M′ ⦂ (gnd⇒ty H , A′ , c)
 compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
   (λ γ γ′ → ℰMHM′) , λ γ γ′ → ℰMHM′
@@ -168,25 +170,95 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
   ℰMHM′ : ∀{γ}{γ′}{dir} → 𝓖⟦ Γ ⟧ dir γ γ′
        ⊢ᵒ ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (⟪ γ ⟫ M ⟨ H ?⟩) (⟪ γ′ ⟫ M′)
   ℰMHM′ {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   ℰ-bind-step{gnd⇒ty H , A′ , c}{★ , A′ , unk⊑}
+   ℰ-bind-step{gnd⇒ty H , A′ , c}{★ , A′ , unk⊑ c}
               {F = ` (□⟨ H ?⟩)}{F′ = □}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
-   λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j → Goal 𝒱VV′j 
+   λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j → Goal{j}{V}{V′}{dir} 𝒱VV′j 
    where
    Goal : ∀{j}{V}{V′}{dir}
-       → #(𝒱⟦ ★ , A′ , unk⊑ ⟧ dir V V′) j
+       → #(𝒱⟦ ★ , A′ , unk⊑ c ⟧ dir V V′) j
        → #(ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (V ⟨ H ?⟩) V′) j
    Goal {zero} {V} {V′}{dir} 𝒱VV′j =
        tz (ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (V ⟨ H ?⟩) V′)
    Goal {suc j} {V} {V′}{≺} 𝒱VV′j
        with 𝒱-dyn-any-elim-step{V}{V′}{≺}{j}{H}{A′}{c} 𝒱VV′j
-   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′j =
+   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
+       let 𝒱V₁V′j = down (𝒱⟦ gnd⇒ty H , A′ , c ⟧ ≺ V₁ V′) (suc j) 𝒱V₁V′sj
+                          j (n≤1+n j) in
        let ℰV₁V′j = 𝒱⇒ℰ-step{gnd⇒ty H , A′ , c}{V₁}{V′}{≺}{j} 𝒱V₁V′j in
        anti-reduction-≺ ℰV₁V′j (unit V₁HH→V₁)
    Goal {suc j} {V} {V′}{≻} 𝒱VV′j
        with 𝒱-dyn-any-elim-step{V}{V′}{≻}{j}{H}{A′}{c} 𝒱VV′j
-   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′j =
+   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
-       inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , {!!}))
+       inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
+
+compatible-proj-R : ∀{Γ}{H}{c : ★ ⊑ gnd⇒ty H}{M}{M′}
+   → Γ ⊨ M ⊑ M′ ⦂ (★ , ★ , unk⊑unk)
+   → Γ ⊨ M ⊑ M′ ⟨ H ?⟩ ⦂ (★ , gnd⇒ty H , c)
+compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
+    with unk⊑gnd-inv c
+... | d , refl = (λ γ γ′ → ℰMM′H) , λ γ γ′ → ℰMM′H
+    where
+    ℰMM′H : ∀{γ}{γ′}{dir} → 𝓖⟦ Γ ⟧ dir γ γ′
+        ⊢ᵒ ℰ⟦ ★ , gnd⇒ty H , unk⊑ d ⟧ dir (⟪ γ ⟫ M) (⟪ γ′ ⟫ M′ ⟨ H ?⟩)
+    ℰMM′H {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
+     ℰ-bind-step{★ , gnd⇒ty H , c}{★ , ★ , unk⊑unk}
+                {F = □}{F′ = ` □⟨ H ?⟩}
+                {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
+     (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
+     λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
+     Goal {j}{V}{V′}{dir} 𝒱VV′j 
+     where
+     {-
+        M′⟨ H ?⟩  -->*   V′ ⟨ G !⟩⟨ H ?⟩  --> V′     if G = H
+        ⊑                                 --> blame  if G ≠ H
+        M         -->*   V ⟨ G !⟩
+     -}
+     Goal : ∀{j}{V}{V′}{dir}
+        → # (𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir V V′) j
+        → # (ℰ⟦ ★ , gnd⇒ty H , unk⊑ d ⟧ dir V (V′ ⟨ H ?⟩)) j
+     Goal {zero} {V} {V′}{dir} 𝒱VV′j =
+         tz (ℰ⟦ ★ , gnd⇒ty H , unk⊑ d ⟧ dir V (V′ ⟨ H ?⟩))
+     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
+         with G ≡ᵍ H₂ | 𝒱VV′j
+     ... | no neq | ()
+     ... | yes refl | v , v′ , 𝒱VV′
+         with G ≡ᵍ G
+     ... | no neq = ⊥-elim (neq refl)
+     ... | yes refl
+         with G ≡ᵍ H
+     ... | no neq
+         with dir
+     ... | ≺ = inj₂ (inj₁ (unit (collide v′ neq refl)))
+     ... | ≻ = 
+         anti-reduction-≻ (ℰ-blame-step{★ , gnd⇒ty H , unk⊑ d}{≻})
+                          (unit (collide v′ neq refl))
+     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
+         | yes refl | v , v′ , 𝒱VV′ | yes refl
+         | yes refl 
+         with dir
+     ... | ≺
+         with G ≡ᵍ G
+     ... | no neq = ⊥-elim (neq refl)
+     ... | yes refl 
+         with gnd-prec-unique d Refl⊑
+     ... | refl =
+           let 𝒱VV′j : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) j
+               𝒱VV′j = 𝒱VV′ in
+           let 𝒱VV′sj : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) (suc j)
+               𝒱VV′sj = {!!} in
+           inj₂ (inj₂ ((v 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
+               v , v′ , 𝒱VV′sj)))
+     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
+         | yes refl | v , v′ , 𝒱VV′ | yes refl
+         | yes refl 
+         | ≻
+         with gnd-prec-unique d Refl⊑
+     ... | refl =
+         let 𝒱VGV′ = 𝒱-dyn-L-step{G}{gnd⇒ty G}{d} 𝒱VV′ in
+         anti-reduction-≻ (𝒱⇒ℰ-step{V = V ⟨ G !⟩}{V′}{≻} 𝒱VGV′)
+                          (unit (collapse v′ refl))
+     
