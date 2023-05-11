@@ -159,7 +159,7 @@ compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
    𝒱⇒ℰ-step{★ , ★ , unk⊑unk}{V}{V′ ⟨ G !⟩}{dir}{j}
-   (𝒱-dyn-R-step{G}{unk⊑ d}{V}{V′}{dir}{j} 𝒱VV′j)
+   (𝒱-dyn-R-step{G}{unk⊑ d}{V}{V′}{j} 𝒱VV′j )
 
 compatible-proj-L : ∀{Γ}{H}{A′}{c : gnd⇒ty H ⊑ A′}{M}{M′}
    → Γ ⊨ M ⊑ M′ ⦂ (★ , A′ ,  unk⊑ c)
@@ -182,15 +182,13 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
    Goal {zero} {V} {V′}{dir} 𝒱VV′j =
        tz (ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (V ⟨ H ?⟩) V′)
    Goal {suc j} {V} {V′}{≺} 𝒱VV′j
-       with 𝒱-dyn-any-elim-step{V}{V′}{≺}{j}{H}{A′}{c} 𝒱VV′j
+       with 𝒱-dyn-any-elim-step-≺{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
-       let 𝒱V₁V′j = down (𝒱⟦ gnd⇒ty H , A′ , c ⟧ ≺ V₁ V′) (suc j) 𝒱V₁V′sj
-                          j (n≤1+n j) in
-       let ℰV₁V′j = 𝒱⇒ℰ-step{gnd⇒ty H , A′ , c}{V₁}{V′}{≺}{j} 𝒱V₁V′j in
+       let ℰV₁V′j = 𝒱⇒ℰ-step{gnd⇒ty H , A′ , c}{V₁}{V′}{≺}{j} 𝒱V₁V′sj in
        anti-reduction-≺ ℰV₁V′j (unit V₁HH→V₁)
    Goal {suc j} {V} {V′}{≻} 𝒱VV′j
-       with 𝒱-dyn-any-elim-step{V}{V′}{≻}{j}{H}{A′}{c} 𝒱VV′j
+       with 𝒱-dyn-any-elim-step-≻{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
@@ -246,20 +244,8 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
      ... | yes refl 
          with gnd-prec-unique d Refl⊑
      ... | refl =
-           let x = {!!} in
-           let 𝒱VV′j : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) j
-               𝒱VV′j = 𝒱VV′ in
-           let 𝒱VV′sj : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) (suc j)
-               𝒱VV′sj = {!!} in
-           --𝒱⇒ℰ-step{★ , gnd⇒ty G , unk⊑ d}{V ⟨ G !⟩}{V′ ⟨ G !⟩ ⟨ G ?⟩}{≺} {!!}
-           let ℰVGV′GG : # (ℰ⟦ ★ , gnd⇒ty H , unk⊑ d ⟧ ≺
-                                 (V ⟨ G !⟩) (V′ ⟨ G !⟩ ⟨ G ?⟩)) (suc j )
-               ℰVGV′GG = {!!} in
-           {!ℰVGV′GG!}
-{-  
            inj₂ (inj₂ ((v 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
-               v , v′ , 𝒱VV′sj)))
--}               
+               v , v′ , 𝒱VV′)))
      Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
          | yes refl | v , v′ , 𝒱VV′ | yes refl
          | yes refl 

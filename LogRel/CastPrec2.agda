@@ -91,6 +91,12 @@ gnd-prec-unique {★⇒★} {.(_ ⇒ _)} (fun⊑ c c₁) (fun⊑ d d₁)
     with dyn-prec-unique c d | dyn-prec-unique c₁ d₁
 ... | refl | refl = refl
 
+unk⊑gnd-inv : ∀{G}
+   → (c : ★ ⊑ gnd⇒ty G)
+   → ∃[ d ] c ≡ unk⊑{G}{gnd⇒ty G} d
+unk⊑gnd-inv {$ᵍ ι} (unk⊑ {$ᵍ .ι} base⊑) = base⊑ , refl
+unk⊑gnd-inv {★⇒★} (unk⊑ {★⇒★} (fun⊑ c d)) = fun⊑ c d , refl
+
 {----------------------- Term Precision ------------------------}
 
 infix 3 _⊩_⊑_⦂_
