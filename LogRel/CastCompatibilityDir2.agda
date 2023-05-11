@@ -213,8 +213,8 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
      Goal {j}{V}{V′}{dir} 𝒱VV′j 
      where
      {-
-        M′⟨ H ?⟩  -->*   V′ ⟨ G !⟩⟨ H ?⟩  --> V′     if G = H
-        ⊑                                 --> blame  if G ≠ H
+        M′⟨ H ?⟩  -->*   V′⟨ G !⟩⟨ H ?⟩  --> V′     if G = H
+        ⊑                                --> blame  if G ≠ H
         M         -->*   V ⟨ G !⟩
      -}
      Goal : ∀{j}{V}{V′}{dir}
@@ -246,12 +246,20 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
      ... | yes refl 
          with gnd-prec-unique d Refl⊑
      ... | refl =
+           let x = {!!} in
            let 𝒱VV′j : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) j
                𝒱VV′j = 𝒱VV′ in
            let 𝒱VV′sj : # (𝒱⟦ gnd⇒ty G , gnd⇒ty G , Refl⊑ ⟧ ≺ V V′) (suc j)
                𝒱VV′sj = {!!} in
+           --𝒱⇒ℰ-step{★ , gnd⇒ty G , unk⊑ d}{V ⟨ G !⟩}{V′ ⟨ G !⟩ ⟨ G ?⟩}{≺} {!!}
+           let ℰVGV′GG : # (ℰ⟦ ★ , gnd⇒ty H , unk⊑ d ⟧ ≺
+                                 (V ⟨ G !⟩) (V′ ⟨ G !⟩ ⟨ G ?⟩)) (suc j )
+               ℰVGV′GG = {!!} in
+           {!ℰVGV′GG!}
+{-  
            inj₂ (inj₂ ((v 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
                v , v′ , 𝒱VV′sj)))
+-}               
      Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
          | yes refl | v , v′ , 𝒱VV′ | yes refl
          | yes refl 
