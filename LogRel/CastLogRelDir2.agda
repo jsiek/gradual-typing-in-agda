@@ -345,19 +345,6 @@ anti-reduction-≻-L {c} {M} {N}{M′}  {suc i} ℰNM′ M→N
 ... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
       inj₂ (inj₂ (m′ , V , (M→N ++ N→V) , v , 𝒱VM′))
 
-{-
-ℰ-anti-reduction-L : ∀{c}{M}{N}{M′}{i}{dir}
-  → #(ℰ⟦ c ⟧ dir N M′) i
-  → (M→N : M —→ N)
-  → #(ℰ⟦ c ⟧ dir M M′) (suc i)
-ℰ-anti-reduction-L {c} {M} {N} {M′} {i} {≺} ℰNM′ M→N =
-    let xx = anti-reduction-≺ ℰNM′ (unit M→N) in
-    xx
-ℰ-anti-reduction-L {c} {M} {N} {M′} {i} {≻} ℰNM′ M→N =
-    let xx = anti-reduction-≻-L ℰNM′ (unit M→N) in
-    {!!}
--}
-
 anti-reduction : ∀{c}{M}{N}{M′}{N′}{i}{dir}
   → #(ℰ⟦ c ⟧ dir N N′) i
   → (M→N : M —→ N)
