@@ -21,157 +21,145 @@ open import InjProj.Reduction
 open import StepIndexedLogic
 open import EquivalenceRelation
 
-instance
-  TermInhabited : Inhabited Term
-  TermInhabited = record { elt = ` 0 }
+{----------- Definition of Semantic Approximation -----------------------------}
 
 data Dir : Set where
   ≺ : Dir
   ≻ : Dir
 
-ℰ⊎𝒱-type : Set
-ℰ⊎𝒱-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
+_⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
 
-ℰ⊎𝒱-ctx : Context
-ℰ⊎𝒱-ctx = ℰ⊎𝒱-type ∷ []
+≺ ⊨ M ⊑ M′ for k = (ToVal M × ToVal M′)
+                    ⊎ (M′ —↠ blame)
+                    ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
+                    
+≻ ⊨ M ⊑ M′ for k = (ToVal M × ToVal M′)
+                    ⊎ (M′ —↠ blame)
+                    ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
 
-ℰˢ⟦_⟧ : Prec → Dir → Term → Term → Setˢ ℰ⊎𝒱-ctx (cons Now ∅)
-ℰˢ⟦ A⊑B ⟧ dir M M′ = (inj₂ (A⊑B , dir , M , M′)) ∈ zeroˢ
+{----------- Definition of the Logical Relation -------------------------------}
 
-𝒱ˢ⟦_⟧ : Prec → Dir → Term → Term → Setˢ ℰ⊎𝒱-ctx (cons Now ∅)
-𝒱ˢ⟦ A⊑B ⟧ dir V V′ = (inj₁ (A⊑B , dir , V , V′)) ∈ zeroˢ
+instance
+  TermInhabited : Inhabited Term
+  TermInhabited = record { elt = ` 0 }
 
-pre-𝒱 : Prec → Dir → Term → Term → Setˢ ℰ⊎𝒱-ctx (cons Later ∅)
-pre-𝒱 (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
+LR-type : Set
+LR-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
+
+LR-ctx : Context
+LR-ctx = LR-type ∷ []
+
+{- todo: rename to use ˢ⊑ᴸᴿₜ -}
+LRˢₜ⟦_⟧ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Now ∅)
+LRˢₜ⟦ A⊑B ⟧ dir M M′ = (inj₂ (A⊑B , dir , M , M′)) ∈ zeroˢ
+
+{- todo: rename to use ˢ⊑ᴸᴿᵥ -}
+LRˢᵥ⟦_⟧ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Now ∅)
+LRˢᵥ⟦ A⊑B ⟧ dir V V′ = (inj₁ (A⊑B , dir , V , V′)) ∈ zeroˢ
+
+LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
+LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
     with G ≡ᵍ H
 ... | yes refl = let g = gnd⇒ty G in
                  (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ (▷ˢ (𝒱ˢ⟦ (g , g , Refl⊑) ⟧ dir V V′))
+                 ×ˢ (▷ˢ (LRˢᵥ⟦ (g , g , Refl⊑) ⟧ dir V V′))
 ... | no neq = ⊥ ˢ
-pre-𝒱 (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
-pre-𝒱 (.★ , .A′ , unk⊑{H}{A′} d) ≺ (V ⟨ G !⟩) V′
+LRᵥ (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
+LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≺ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
 ... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ ▷ˢ (𝒱ˢ⟦ gnd⇒ty G , A′ , d ⟧ ≺ V V′)
+                 ×ˢ ▷ˢ (LRˢᵥ⟦ gnd⇒ty G , A′ , d ⟧ ≺ V V′)
 ... | no neq = ⊥ ˢ
-pre-𝒱 (.★ , .A′ , unk⊑{H}{A′} d) ≻ (V ⟨ G !⟩) V′
+LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≻ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
 ... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ (pre-𝒱 (gnd⇒ty G , A′ , d) ≻ V V′)
+                 ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≻ V V′)
 ... | no neq = ⊥ ˢ
-pre-𝒱 (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
-pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
-pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
-pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
-    ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (𝒱ˢ⟦ (A , A′ , A⊑A′) ⟧ dir W W′)
-                  →ˢ ▷ˢ (ℰˢ⟦ (B , B′ , B⊑B′) ⟧ dir (N [ W ]) (N′ [ W′ ])) 
-pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
+LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
+LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
+LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
+LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
+    ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (LRˢᵥ⟦ (A , A′ , A⊑A′) ⟧ dir W W′)
+                  →ˢ ▷ˢ (LRˢₜ⟦ (B , B′ , B⊑B′) ⟧ dir (N [ W ]) (N′ [ W′ ])) 
+LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
 
-{-
-
-   Gradual Guarantee (GG):
-   
-                         M′ (more precise)
-   M           value   blame   diverge
-   value        ✓        ✓  
-   ---------|--------|-------|--------
-   blame                 ✓   
-   ---------|--------|-------|--------
-   diverge               ✓      ✓
-
-   We express the GG in terms of two directional
-   predicates, ℰ≺ and ℰ≻, whose intersection
-   is equivalent to the GG.
-   
-   ℰ≺ accepts the following:
-
-                         M′ (more precise)
-   M           value   blame   diverge
-   value         ✓      ✓   
-   ---------|--------|-------|---------
-   blame                ✓    
-   ---------|--------|-------|---------
-   diverge      ✓       ✓       ✓ 
-
--}
-
-pre-ℰ : Prec → Dir → Term → Term → Setˢ ℰ⊎𝒱-ctx (cons Later ∅)
-pre-ℰ c ≺ M M′ =
-   (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (ℰˢ⟦ c ⟧ ≺ N M′))
+LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
+LRₜ c ≺ M M′ =
+   (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (LRˢₜ⟦ c ⟧ ≺ N M′))
    ⊎ˢ (M′ —↠ blame)ˢ
    ⊎ˢ ((Value M)ˢ ×ˢ ((M′ —↠ blame)ˢ ⊎ˢ
-                    (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ ×ˢ (pre-𝒱 c ≺ M V′))))
+                    (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ c ≺ M V′))))
 
-{-
-
-   ℰ≻ accepts the following:
-
-                         M′ (more precise)
-   M           value   blame   diverge
-   value         ✓       ✓       ✓
-   ---------|--------|-------|---------
-   blame                 ✓       ✓
-   ---------|--------|-------|---------
-   diverge               ✓       ✓
-
--}
-pre-ℰ c ≻ M M′ =
-   (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (ℰˢ⟦ c ⟧ ≻ M N′))
+LRₜ c ≻ M M′ =
+   (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (LRˢₜ⟦ c ⟧ ≻ M N′))
    ⊎ˢ (Blame M′)ˢ
-   ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M —↠ V)ˢ ×ˢ (Value V)ˢ ×ˢ (pre-𝒱 c ≻ V M′)))
+   ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M —↠ V)ˢ ×ˢ (Value V)ˢ ×ˢ (LRᵥ c ≻ V M′)))
 
-pre-ℰ⊎𝒱 : ℰ⊎𝒱-type → Setˢ ℰ⊎𝒱-ctx (cons Later ∅)
-pre-ℰ⊎𝒱 (inj₁ (c , dir , V , V′)) = pre-𝒱 c dir V V′
-pre-ℰ⊎𝒱 (inj₂ (c , dir , M , M′)) = pre-ℰ c dir M M′
+LRₜ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
+LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ c dir V V′
+LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ c dir M M′
 
-ℰ⊎𝒱 : ℰ⊎𝒱-type → Setᵒ
-ℰ⊎𝒱 X = μᵒ pre-ℰ⊎𝒱 X
+ℰ⊎𝒱 : LR-type → Setᵒ
+ℰ⊎𝒱 X = μᵒ LRₜ⊎LRᵥ X
 
 𝒱⟦_⟧ : (c : Prec) → Dir → Term → Term → Setᵒ
 𝒱⟦ c ⟧ dir V V′ = ℰ⊎𝒱 (inj₁ (c , dir , V , V′))
 
+_∣_⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = ℰ⊎𝒱 (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
+
 ℰ⟦_⟧ : (c : Prec) → Dir → Term → Term → Setᵒ
 ℰ⟦ c ⟧ dir M M′ = ℰ⊎𝒱 (inj₂ (c , dir , M , M′))
 
-ℰ-def : Prec → Dir → Term → Term → Setᵒ
-ℰ-def c ≺ M M′ =
-   (∃ᵒ[ N ] (M —→ N)ᵒ ×ᵒ ▷ᵒ (ℰ⟦ c ⟧ ≺ N M′))
-   ⊎ᵒ (M′ —↠ blame)ᵒ  -- was ((Blame M)ᵒ ×ᵒ (M′ —↠ blame)ᵒ)
-   ⊎ᵒ ((Value M)ᵒ ×ᵒ ((M′ —↠ blame)ᵒ ⊎ᵒ
-                    (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ c ⟧ ≺ M V′))))
-ℰ-def c ≻ M M′ =
-   (∃ᵒ[ N′ ] (M′ —→ N′)ᵒ ×ᵒ ▷ᵒ (ℰ⟦ c ⟧ ≻ M N′))
-   ⊎ᵒ (Blame M′)ᵒ
-   ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M —↠ V)ᵒ ×ᵒ (Value V)ᵒ ×ᵒ (𝒱⟦ c ⟧ ≻ V M′)))
+_∣_⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = ℰ⊎𝒱 (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
 
-ℰ-stmt : ∀{c}{dir}{M}{M′} → ℰ⟦ c ⟧ dir M M′ ≡ᵒ ℰ-def c dir M M′
-ℰ-stmt {c}{dir}{M}{M′} =
-  ℰ⟦ c ⟧ dir M M′
+_⊑ᴸᴿₜ_⦂_ : Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (≺ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) ×ᵒ (≻ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′)
+
+LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term → Setᵒ
+LRₜ-def A⊑A′ ≺ M M′ =
+   (∃ᵒ[ N ] (M —→ N)ᵒ ×ᵒ ▷ᵒ (≺ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
+   ⊎ᵒ (M′ —↠ blame)ᵒ
+   ⊎ᵒ ((Value M)ᵒ ×ᵒ ((M′ —↠ blame)ᵒ ⊎ᵒ
+              (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≺ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′))))
+LRₜ-def A⊑A′ ≻ M M′ =
+   (∃ᵒ[ N′ ] (M′ —→ N′)ᵒ ×ᵒ ▷ᵒ (≻ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
+   ⊎ᵒ (Blame M′)ᵒ
+   ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M —↠ V)ᵒ ×ᵒ (Value V)ᵒ
+                               ×ᵒ (≻ ∣ V ⊑ᴸᴿᵥ M′ ⦂ A⊑A′)))
+
+LRₜ-stmt : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}
+   → dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ ≡ᵒ LRₜ-def A⊑A′ dir M M′
+LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
+  dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′
                  ⩦⟨ ≡ᵒ-refl refl ⟩
-  μᵒ pre-ℰ⊎𝒱 (X₂ dir)
-                 ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 (X₂ dir) ⟩
-  # (pre-ℰ⊎𝒱 (X₂ dir)) (ℰ⊎𝒱 , ttᵖ)
+  μᵒ LRₜ⊎LRᵥ (X₂ dir)
+                 ⩦⟨ fixpointᵒ LRₜ⊎LRᵥ (X₂ dir) ⟩
+  # (LRₜ⊎LRᵥ (X₂ dir)) (ℰ⊎𝒱 , ttᵖ)
                  ⩦⟨ EQ{dir} ⟩
-  ℰ-def c dir M M′
+  LRₜ-def A⊑A′ dir M M′
   ∎
   where
-  X₁ : Dir → ℰ⊎𝒱-type
+  c = (A , A′ , A⊑A′)
+  X₁ : Dir → LR-type
   X₁ = λ dir → inj₁ (c , dir , M , M′)
   X₂ = λ dir → inj₂ (c , dir , M , M′)
-  EQ : ∀{dir} → # (pre-ℰ⊎𝒱 (X₂ dir)) (ℰ⊎𝒱 , ttᵖ) ≡ᵒ ℰ-def c dir M M′
+  EQ : ∀{dir} → # (LRₜ⊎LRᵥ (X₂ dir)) (ℰ⊎𝒱 , ttᵖ) ≡ᵒ LRₜ-def A⊑A′ dir M M′
   EQ {≺} = cong-⊎ᵒ (≡ᵒ-refl refl)
            (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
              (cong-∃ λ V′ → cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
-              ((≡ᵒ-sym (fixpointᵒ pre-ℰ⊎𝒱 (inj₁ (c , ≺ , M , V′))))))))))
+              ((≡ᵒ-sym (fixpointᵒ LRₜ⊎LRᵥ (inj₁ (c , ≺ , M , V′))))))))))
   EQ {≻} = cong-⊎ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-∃ λ V → cong-×ᵒ (≡ᵒ-refl refl)
               (cong-×ᵒ (≡ᵒ-refl refl)
-               (≡ᵒ-sym (fixpointᵒ pre-ℰ⊎𝒱 (inj₁ (c , ≻ , V , M′))))))))
+               (≡ᵒ-sym (fixpointᵒ LRₜ⊎LRᵥ (inj₁ (c , ≻ , V , M′))))))))
 
-ℰ-suc : ∀{c}{dir}{M}{M′}{k}
-  → #(ℰ⟦ c ⟧ dir M M′) (suc k) ⇔ #(ℰ-def c dir M M′) (suc k)
-ℰ-suc {c}{dir}{M}{M′}{k} = ≡ᵒ⇒⇔{k = suc k} (ℰ-stmt{c}{dir}{M}{M′})
+LRₜ-suc : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}{k}
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k) ⇔ #(LRₜ-def A⊑A′ dir M M′) (suc k)
+LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
+   ≡ᵒ⇒⇔{k = suc k} (LRₜ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
 
 {----------- Relate Open Terms ------------------------------------------------}
 
@@ -195,114 +183,93 @@ proj : ∀ {Γ}{c}
 proj {Γ} {c} ≺ M M′ M⊑M′ = proj₁ M⊑M′
 proj {Γ} {c} ≻ M M′ M⊑M′ = proj₂ M⊑M′
 
-{----------- sanity checking ------------------------------------------------}
+{----------- Logical Relation implies Semantic Approximation ------------------}
 
-ℰ≺-steps : ∀{c}{M}{M′}{k}
-  → #(ℰ⟦ c ⟧ ≺ M M′) (suc k)
-  → (ToVal M × (ToVal M′ ⊎ (M′ —↠ blame)))
-    ⊎ (M′ —↠ blame)
-    ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
-ℰ≺-steps {c} {M} {M′} {zero} ℰ≺MM′sk = inj₂ (inj₂ (M , (M END) , refl))
-ℰ≺-steps {c} {M} {M′} {suc k} ℰ≺MM′sk
-    with ⇔-to (ℰ-suc{c}{≺}) ℰ≺MM′sk
+LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k)
+  → dir ⊨ M ⊑ M′ for k
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≺} M⊑M′sk =
+    inj₂ (inj₂ (M , (M END) , refl))
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≺} M⊑M′sk
+    with ⇔-to (LRₜ-suc{dir = ≺}) M⊑M′sk
 ... | inj₂ (inj₁ M′→blame) =
       inj₂ (inj₁ M′→blame)
 ... | inj₂ (inj₂ (m , inj₁ M′→blame)) =
-      inj₁ ((M , ((M END) , m)) , (inj₂ M′→blame))
+      inj₂ (inj₁ M′→blame)
 ... | inj₂ (inj₂ (m , inj₂ (V′ , M′→V′ , v′ , 𝒱≺V′M))) =
-      inj₁ ((M , (M END) , m) , (inj₁ (V′ , M′→V′ , v′)))
-... | inj₁ (N , M→N , ▷ℰ≺NM′)
-    with ℰ≺-steps ▷ℰ≺NM′
-... | inj₁ ((V , M→V , v) , inj₁ (V′ , M′→V′ , v′)) =
-      inj₁ ((V , (M —→⟨ M→N ⟩ M→V) , v) , (inj₁ (V′ , M′→V′ , v′)))
-... | inj₁ ((V , M→V , v) , inj₂ M′→blame) =
-      inj₁ ((V , (M —→⟨ M→N ⟩ M→V) , v) , (inj₂ M′→blame))
+      inj₁ ((M , (M END) , m) , (V′ , M′→V′ , v′))
+... | inj₁ (N , M→N , ▷N⊑M′)
+    with LR⇒sem-approx{dir = ≺} ▷N⊑M′
+... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
+      inj₁ ((V , (M —→⟨ M→N ⟩ M→V) , v) , (V′ , M′→V′ , v′))
 ... | inj₂ (inj₁ M′→blame) =
       inj₂ (inj₁ M′→blame)
 ... | inj₂ (inj₂ (L , N→L , eq)) =
       inj₂ (inj₂ (L , (M —→⟨ M→N ⟩ N→L) , cong suc eq))
-
-ℰ≻-steps : ∀{c}{M}{M′}{k}
-  → #(ℰ⟦ c ⟧ ≻ M M′) (suc k)
-  → (ToVal M × ToVal M′)
-    ⊎ (M′ —↠ blame)
-    ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
-ℰ≻-steps {c} {M} {M′} {zero} ℰ≻MM′sk = inj₂ (inj₂ (M′ , (M′ END) , refl))
-ℰ≻-steps {c} {M} {M′} {suc k} ℰ≻MM′sk
-    with ⇔-to (ℰ-suc{c}{≻}) ℰ≻MM′sk
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≻} M⊑M′sk =
+    inj₂ (inj₂ (M′ , (M′ END) , refl))
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≻} M⊑M′sk
+    with ⇔-to (LRₜ-suc{dir = ≻}) M⊑M′sk
 ... | inj₂ (inj₁ isBlame) =
       inj₂ (inj₁ (blame END))
 ... | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱≻VM′)) =
       inj₁ ((V , M→V , v) , M′ , (M′ END) , m′)
-... | inj₁ (N′ , M′→N′ , ▷ℰ≻MN′)
-    with ℰ≻-steps ▷ℰ≻MN′
+... | inj₁ (N′ , M′→N′ , ▷M⊑N′)
+    with LR⇒sem-approx{dir = ≻} ▷M⊑N′
 ... | inj₁ ((V , M→V , v) , (V′ , N′→V′ , v′)) =
       inj₁ ((V , M→V , v) , V′ , (M′ —→⟨ M′→N′ ⟩ N′→V′) , v′)
 ... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (M′ —→⟨ M′→N′ ⟩ N′→blame))
 ... | inj₂ (inj₂ (L′ , N′→L′ , eq)) =
       inj₂ (inj₂ (L′ , (M′ —→⟨ M′→N′ ⟩ N′→L′) , cong suc eq))
 
-{----------- ℰ implies the gradual guarantee ---------------------------------}
+{----------- Logical relation implies the gradual guarantee -------------------}
 
-cant-reduce-value-and-blame : ∀{M}{V}
-   → Value V
-   → M —↠ V
-   → M —↠ blame
-   → ⊥
-cant-reduce-value-and-blame v (M END) (M —→⟨ M→N ⟩ N→b) =
-  ⊥-elim (value-irreducible v M→N)
-cant-reduce-value-and-blame v (.blame —→⟨ M→N ⟩ N→V) (.blame END) =
-  ⊥-elim (blame-irreducible M→N)
-cant-reduce-value-and-blame v (M —→⟨ M→N ⟩ N→V) (.M —→⟨ M→N′ ⟩ N′→b)
-  rewrite deterministic M→N M→N′ = cant-reduce-value-and-blame v N→V N′→b
-
-ℰ≺≻⇒GG : ∀{c}{M}{M′}
-   → [] ⊢ᵒ ℰ⟦ c ⟧ ≺ M M′
-   → [] ⊢ᵒ ℰ⟦ c ⟧ ≻ M M′
-   → ⊨ M ⊑ M′
-ℰ≺≻⇒GG{c}{M}{M′} ℰ≺MM′ ℰ≻MM′ = GG1 , GG2 , GG3 , GG4
+LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
+   → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′
+   → (ToVal M′ → ToVal M)
+   × (diverge M′ → diverge M)
+   × (ToVal M → ToVal M′ ⊎ M′ —↠ blame)
+   × (diverge M → diverge⊎blame M′)
+LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
+  to-value-right , diverge-right , to-value-left , diverge-left
   where
-  GG1 : ToVal M′ → ToVal M
-  GG1 (V′ , M′→V′ , v′)
-      with ℰ≻-steps {k = suc (len M′→V′)}
-                    (⊢ᵒ-elim ℰ≻MM′ (suc (suc (len M′→V′))) tt)
+  to-value-right : ToVal M′ → ToVal M
+  to-value-right (V′ , M′→V′ , v′)
+      with LR⇒sem-approx {k = suc (len M′→V′)}{dir = ≻}
+                    (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc (suc (len M′→V′))) tt)
   ... | inj₁ ((V , M→V , v) , _) = V , M→V , v
   ... | inj₂ (inj₁ M′→blame) =
         ⊥-elim (cant-reduce-value-and-blame v′ M′→V′ M′→blame)
   ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) =
         ⊥-elim (step-value-plus-one M′→N′ M′→V′ v′ eq)
 
-  GG2 : diverge M′ → diverge M
-  GG2 divM′ k
-      with ℰ≺-steps {k = k} (⊢ᵒ-elim ℰ≺MM′ (suc k) tt)
-  ... | inj₁ ((V , M→V , v) , inj₁ (V′ , M′→V′ , v′)) =
+  diverge-right : diverge M′ → diverge M
+  diverge-right divM′ k
+      with LR⇒sem-approx {k = k}{dir = ≺} (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc k) tt)
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
         ⊥-elim (diverge-not-halt divM′ (inj₂ (V′ , M′→V′ , v′)))
-  ... | inj₁ ((V , M→V , v) , inj₂ M′→blame) =
-        ⊥-elim (diverge-not-halt divM′ (inj₁ M′→blame))
   ... | inj₂ (inj₁ M′→blame) =
         ⊥-elim (diverge-not-halt divM′ (inj₁ M′→blame))
   ... | inj₂ (inj₂ (N , M→N , eq)) = N , M→N , sym eq
 
-  GG3 : ToVal M → ToVal M′ ⊎ M′ —↠ blame
-  GG3 (V , M→V , v)
-      with ℰ≺-steps {k = suc (len M→V)} (⊢ᵒ-elim ℰ≺MM′ (suc (suc (len M→V)))tt)
-  ... | inj₁ ((V , M→V , v) , inj₁ (V′ , M′→V′ , v′)) = inj₁ (V′ , M′→V′ , v′)
-  ... | inj₁ ((V , M→V , v) , inj₂ M′→blame) = inj₂ M′→blame
+  to-value-left : ToVal M → ToVal M′ ⊎ M′ —↠ blame
+  to-value-left (V , M→V , v)
+      with LR⇒sem-approx{k = suc (len M→V)}{dir =  ≺}
+                        (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc (suc (len M→V))) tt)
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) = inj₁ (V′ , M′→V′ , v′)
   ... | inj₂ (inj₁ M′→blame) = inj₂ M′→blame
   ... | inj₂ (inj₂ (N , M→N , eq)) =
         ⊥-elim (step-value-plus-one M→N M→V v eq)
 
-  GG4 : diverge M → diverge⊎blame M′
-  GG4 divM k 
-      with ℰ≻-steps {k = k} (⊢ᵒ-elim ℰ≻MM′ (suc k) tt)
+  diverge-left : diverge M → diverge⊎blame M′
+  diverge-left divM k 
+      with LR⇒sem-approx {k = k}{dir = ≻} (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc k) tt)
   ... | inj₁ ((V , M→V , v) , _) =
         ⊥-elim (diverge-not-halt divM (inj₂ (V , M→V , v)))
   ... | inj₂ (inj₁ M′→blame) = blame , (M′→blame , (inj₂ refl))
   ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) = N′ , (M′→N′ , (inj₁ (sym eq))) 
 
-{----------- ℰ preserved by reduction and anti-reduction (i.e. expansion) ----}
-
-{- formulation with explicit step-indexing a la Max New -}
+{----------- LR preserved by anti-reduction (i.e. expansion) ------------------}
 
 anti-reduction-≺-one : ∀{c}{M}{N}{M′}{i}
   → #(ℰ⟦ c ⟧ ≺ N M′) i
@@ -333,7 +300,6 @@ anti-reduction-≺-R-one {c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
 ... | inj₂ (inj₂ (m , inj₂ (V′ , N′→V′ , v′ , 𝒱MV′))) =
       inj₂ (inj₂ (m , inj₂ (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 
-{- Used in the Bind Lemma -}
 anti-reduction-≺-R : ∀{c}{M}{M′}{N′}{i}
   → #(ℰ⟦ c ⟧ ≺ M N′) i
   → (M′→N′ : M′ —↠ N′)
@@ -355,7 +321,6 @@ anti-reduction-≻-L-one {c} {M} {N}{M′}  {suc i} ℰNM′ M→N
 ... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
       inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
 
-{- Used in the Bind Lemma -}
 anti-reduction-≻-L : ∀{c}{M}{N}{M′}{i}
   → #(ℰ⟦ c ⟧ ≻ N M′) i
   → (M→N : M —↠ N)
@@ -380,30 +345,30 @@ anti-reduction {c} {M} {N} {M′} {N′} {i} {≻} ℰNN′i M→N M′→N′ =
 
 {------------- Related values are syntactic values ----------------------------}
 
-𝒱⇒Value : ∀ {k}{dir} c M M′
-   → # (𝒱⟦ c ⟧ dir M M′) (suc k)
+𝒱⇒Value : ∀ {k}{dir}{A}{A′} (A⊑A′ : A ⊑ A′) M M′
+   → # (dir ∣ M ⊑ᴸᴿᵥ M′ ⦂ A⊑A′) (suc k)
      ----------------------------
    → Value M × Value M′
-𝒱⇒Value {k} (.★ , ★ , unk⊑unk) (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
+𝒱⇒Value {k}{dir} unk⊑unk (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
     with G ≡ᵍ H
 ... | no neq = ⊥-elim 𝒱MM′
 ... | yes refl
     with 𝒱MM′
 ... | v , v′ , _ = (v 〈 G 〉) , (v′ 〈 G 〉)
-𝒱⇒Value {k}{≺} (★ , A′ , unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+𝒱⇒Value {k}{≺} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
     with G ≡ᵍ H
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , _ = (v 〈 _ 〉) , v′
-𝒱⇒Value {k}{≻} (★ , A′ , unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+𝒱⇒Value {k}{≻} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
     with G ≡ᵍ H
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , _ = (v 〈 _ 〉) , v′
-𝒱⇒Value {k} (★ , A′ , unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+𝒱⇒Value {k}{dir} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
     | no neq = ⊥-elim 𝒱VGV′
-𝒱⇒Value {k} ($ₜ ι , $ₜ ι , base⊑) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
-𝒱⇒Value {k} ((A ⇒ B) , (A′ ⇒ B′) , fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
+𝒱⇒Value {k}{dir} (base⊑{ι}) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
+𝒱⇒Value {k}{dir} (fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
     (ƛ̬ N) , (ƛ̬ N′)
 
 {--------- Equations, intro, and elim rules for 𝒱 ----------------------------}
@@ -434,8 +399,8 @@ anti-reduction {c} {M} {N} {M′} {N′} {i} {≻} ℰNN′i M→N M′→N′ =
 𝒱-fun {A}{B}{A′}{B′}{A⊑A′}{B⊑B′}{N}{N′}{dir} =
    let X = inj₁ ((A ⇒ B , A′ ⇒ B′ , fun⊑ A⊑A′ B⊑B′) , dir , ƛ N , ƛ N′) in
    (𝒱⟦ A ⇒ B , A′ ⇒ B′ , fun⊑ A⊑A′ B⊑B′ ⟧ dir (ƛ N) (ƛ N′))  ⩦⟨ ≡ᵒ-refl refl ⟩
-   ℰ⊎𝒱 X                                              ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X ⟩
-   # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)                                 ⩦⟨ ≡ᵒ-refl refl ⟩
+   ℰ⊎𝒱 X                                              ⩦⟨ fixpointᵒ LRₜ⊎LRᵥ X ⟩
+   # (LRₜ⊎LRᵥ X) (ℰ⊎𝒱 , ttᵖ)                                 ⩦⟨ ≡ᵒ-refl refl ⟩
    (∀ᵒ[ W ] ∀ᵒ[ W′ ] ((▷ᵒ (𝒱⟦ A , A′ , A⊑A′ ⟧ dir W W′))
                  →ᵒ (▷ᵒ (ℰ⟦ B , B′ , B⊑B′ ⟧ dir (N [ W ]) (N′ [ W′ ]))))) ∎
 
@@ -526,7 +491,7 @@ anti-reduction {c} {M} {N} {M′} {N′} {i} {≻} ℰNN′i M→N M′→N′ =
     with G ≡ᵍ G
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
-    let (v , v′) = 𝒱⇒Value (gnd⇒ty G , A′ , c) V V′ 𝒱VV′sk in
+    let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′sk in
     let 𝒱VV′k = down (𝒱⟦ gnd⇒ty G , A′ , c ⟧ ≺ V V′) (suc k) 𝒱VV′sk
                       k (n≤1+n k) in
     v , v′ , 𝒱VV′k
@@ -534,39 +499,40 @@ anti-reduction {c} {M} {N} {M′} {N′} {i} {≻} ℰNN′i M→N M′→N′ =
     with G ≡ᵍ G
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
-      let (v , v′) = 𝒱⇒Value (gnd⇒ty G , A′ , c) V V′ 𝒱VV′k in
+      let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′k in
       v , v′ , 𝒱VV′k                  {- No use of down! -}
 
 {--------------- Related values are related expressions -----------------------}
 
-𝒱⇒ℰ-step : ∀{c : Prec}{V V′}{dir}{k}
-   → #(𝒱⟦ c ⟧ dir V V′) k
-     ---------------------
-   → #(ℰ⟦ c ⟧ dir V V′) k
-𝒱⇒ℰ-step {c} {V} {V′} {dir} {zero} 𝒱VV′k = tz (ℰ⟦ c ⟧ dir V V′)
-𝒱⇒ℰ-step {c} {V} {V′} {≺} {suc k} 𝒱VV′sk =
-  ⇔-fro (ℰ-suc{c}{≺})
-  (let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′sk in
+𝒱⇒ℰ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k
+     ---------------------------
+   → #(dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′) k
+𝒱⇒ℰ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
+   tz (dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′)
+𝒱⇒ℰ-step {A}{A′}{A⊑A′}{V} {V′} {≺} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≺})
+  (let (v , v′) = 𝒱⇒Value A⊑A′ V V′ 𝒱VV′sk in
   (inj₂ (inj₂ (v , inj₂ (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
-𝒱⇒ℰ-step {c} {V} {V′} {≻} {suc k} 𝒱VV′sk =
-  ⇔-fro (ℰ-suc{c}{≻})
-  (let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′sk in
+𝒱⇒ℰ-step {A}{A′}{A⊑A′}{V} {V′} {≻} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≻})
+  (let (v , v′) = 𝒱⇒Value A⊑A′ V V′ 𝒱VV′sk in
   inj₂ (inj₂ (v′ , V , (V END) , v , 𝒱VV′sk)))
 
-𝒱⇒ℰ : ∀{c : Prec}{𝒫}{V V′}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ c ⟧ dir V V′
-     ---------------------
-   → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ dir V V′
-𝒱⇒ℰ {c}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
+𝒱⇒ℰ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′
+     ---------------------------
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
+𝒱⇒ℰ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
   𝒱⇒ℰ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
 
 {--------------- Blame on the right -------------------------------------------}
 
-ℰ-blame-step : ∀{c}{dir}{M}{k}
-   → #(ℰ⟦ c ⟧ dir M blame) k
-ℰ-blame-step {c} {dir} {M} {zero} = tz (ℰ⟦ c ⟧ dir M blame)
-ℰ-blame-step {c} {≺} {M} {suc k} = inj₂ (inj₁ (blame END))
-ℰ-blame-step {c} {≻} {M} {suc k} = inj₂ (inj₁ isBlame)
+ℰ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
+   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
+ℰ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
+ℰ-blame-step {A}{A′}{A⊑A′}{≺} {M} {suc k} = inj₂ (inj₁ (blame END))
+ℰ-blame-step {A}{A′}{A⊑A′}{≻} {M} {suc k} = inj₂ (inj₁ isBlame)
 
-ℰ-blame : ∀{𝒫}{c}{M}{dir} → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ dir M blame
-ℰ-blame {𝒫}{c}{M}{dir} = ⊢ᵒ-intro λ n x → ℰ-blame-step{c}{dir}
+ℰ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir} → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
+ℰ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → ℰ-blame-step{dir = dir}

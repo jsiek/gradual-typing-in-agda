@@ -353,3 +353,4 @@ collide-inv {V} {.blame} {G} {H} neq v (ξξ-blame □⟨ H₁ ?⟩ ())
 collide-inv {V} {N} {G} {H} neq v (collapse x refl) = ⊥-elim (neq refl)
 collide-inv {V} {.blame} {G} {H} neq v (collide x x₁ refl) = refl
 
+

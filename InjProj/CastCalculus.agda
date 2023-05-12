@@ -414,15 +414,3 @@ ToVal M = ∃[ V ] (M —↠ V) × Value V
 
 halt : Term → Set
 halt M  = (M —↠ blame) ⊎ (ToVal M)
-
-{- The Gradual Guarantee Property, aka. Error Ordering -}
-
-⊨_⊑_ : Term → Term → Set
-⊨ M ⊑ M′ =
-     (ToVal M′ → ToVal M)
-   × (diverge M′ → diverge M)
-   × (ToVal M → ToVal M′ ⊎ M′ —↠ blame)
-   × (diverge M → diverge⊎blame M′)
-
-
-

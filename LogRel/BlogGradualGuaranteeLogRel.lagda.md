@@ -25,10 +25,9 @@ and Birkedal (LMCS 2011) regarding step-indexing using a modal logic
 and Max New (Ph.D. thesis 2020) regarding logical relations for
 gradual typing.
 
-To succinctly talk about the gradual guarantee, we first to define
-when one type is less precise than another one. The following
-definition says that the unknown type `★` is less precise than any
-other type.
+To talk about the gradual guarantee, we first to define when one type
+is less precise than another one. The following definition says that
+the unknown type `★` is less precise than any other type.
 
 ```
 infixr 6 _⊑_
@@ -69,12 +68,11 @@ Refl⊑ {$ₜ ι} = base⊑
 Refl⊑ {A ⇒ B} = fun⊑ Refl⊑ Refl⊑
 ```
 
-
 Next we define a precision relation on terms. I'm going to skip the
-normal step of first defining the precision relation for the surface
-language and proving that compiling the surface language to a cast
-calculus preserves precision. That part is relatively easy, so I'll
-jump to the definition of precision for the cast calculus.
+normal steps of first defining the precision relation for the surface
+language and proving that compiling from the surface language to a
+cast calculus preserves precision. That is relatively easy, so I'll
+jump to defining precision on terms of the cast calculus.
 
 ```
 infix 3 _⊩_⊑_⦂_

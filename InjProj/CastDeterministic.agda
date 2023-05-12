@@ -195,6 +195,18 @@ diverge-not-halt divM (inj₂ (V , M→V , v))
     with divM (suc (len M→V))
 ... | N , M→N , eq = step-value-plus-one M→N M→V v (sym eq)    
   
+cant-reduce-value-and-blame : ∀{M}{V}
+   → Value V
+   → M —↠ V
+   → M —↠ blame
+   → ⊥
+cant-reduce-value-and-blame v (M END) (M —→⟨ M→N ⟩ N→b) =
+  ⊥-elim (value-irreducible v M→N)
+cant-reduce-value-and-blame v (.blame —→⟨ M→N ⟩ N→V) (.blame END) =
+  ⊥-elim (blame-irreducible M→N)
+cant-reduce-value-and-blame v (M —→⟨ M→N ⟩ N→V) (.M —→⟨ M→N′ ⟩ N′→b)
+  rewrite deterministic M→N M→N′ = cant-reduce-value-and-blame v N→V N′→b
+
 {-
 determinism : ∀{M N}
   → (r1 : M —→ N)
