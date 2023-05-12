@@ -57,11 +57,14 @@ fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
    compatible-blame ⊢M∶A
 
 gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
-  → [] ⊩ M ⊑ M′ ⦂ A⊑A′
-    ------------------
-  → ⊨ M ⊑ M′ 
+   → [] ⊩ M ⊑ M′ ⦂ A⊑A′
+    -----------------------------------
+   → (ToVal M′ → ToVal M)
+   × (diverge M′ → diverge M)
+   × (ToVal M → ToVal M′ ⊎ M′ —↠ blame)
+   × (diverge M → diverge⊎blame M′)
 gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
-  let (⊨≺M⊑M′ , ⊨≻M⊑M′) = fundamental M M′ M⊑M′ in
-  let ℰ≺MM′ = ⊨≺M⊑M′ id id in
-  let ℰ≻MM′ = ⊨≻M⊑M′ id id in
-  ℰ≺≻⇒GG ℰ≺MM′ ℰ≻MM′
+  let (⊨≺M⊑ᴸᴿM′ , ⊨≻M⊑ᴸᴿM′) = fundamental M M′ M⊑M′ in
+  let ≺M⊑ᴸᴿM′ = ⊨≺M⊑ᴸᴿM′ id id in
+  let ≻M⊑ᴸᴿM′ = ⊨≻M⊑ᴸᴿM′ id id in
+  LR⇒GG (≺M⊑ᴸᴿM′ ,ᵒ ≻M⊑ᴸᴿM′)
