@@ -58,11 +58,12 @@ fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
 
 gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
    → [] ⊩ M ⊑ M′ ⦂ A⊑A′
-    -----------------------------------
+    ---------------------------
    → (M′ ⇓ → M ⇓)
    × (M′ ⇑ → M ⇑)
    × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
    × (M ⇑ → M′ ⇑⊎blame)
+   × (M —↠ blame → M′ —↠ blame)
 gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
   let (⊨≺M⊑ᴸᴿM′ , ⊨≻M⊑ᴸᴿM′) = fundamental M M′ M⊑M′ in
   let ≺M⊑ᴸᴿM′ = ⊨≺M⊑ᴸᴿM′ id id in

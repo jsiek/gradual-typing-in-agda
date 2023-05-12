@@ -15,19 +15,25 @@ captured by the [gradual
 guarantee](https://drops.dagstuhl.de/opus/volltexte/2015/5031/) ,
 which governs how the behavior of a program can change when the
 programmer changes some of the type annotations in the program to be
-more or less precise.  In this blog post I prove in Agda the gradual
-guarantee for the gradually typed lambda calculus using the logical
-relations proof technique. In the past I've proved the gradual
-guarantee using a simulation argument, but I was curious to see
-whether the proof would be easier/harder using logical relations.  The
-approach I use here is a synthesis of techniques from Dreyer, Ahmed,
-and Birkedal (LMCS 2011) regarding step-indexing using a modal logic
-and Max New (Ph.D. thesis 2020) regarding logical relations for
-gradual typing.
+more or less precise. It says that changing a program to be more
+precise, it will behave the same except that it may error more often.
+Change in the other direction, to be less precise, yield exactly the
+same behavior.
 
-To talk about the gradual guarantee, we first to define when one type
-is less precise than another one. The following definition says that
-the unknown type `★` is less precise than any other type.
+In this blog post I prove in Agda the gradual guarantee for the
+gradually typed lambda calculus using the logical relations proof
+technique. In the past I've proved the gradual guarantee using a
+simulation argument, but I was curious to see whether the proof would
+be easier/harder using logical relations.  The approach I use here is
+a synthesis of techniques from Dreyer, Ahmed, and Birkedal (LMCS 2011)
+regarding step-indexing using a modal logic and Max New (Ph.D. thesis
+2020) regarding logical relations for gradual typing.
+
+# Precision and the Gradual Guarantee
+
+To talk about the gradual guarantee, we first define when one type is
+less precise than another one. The following definition says that the
+unknown type `★` is less precise than any other type.
 
 ```
 infixr 6 _⊑_
@@ -144,13 +150,13 @@ encounters an error. So we write `⇓` for halting with a result value,
     _⇑⊎blame : Term → Set
     M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
 
-
-We can now state the gradual guarnatee as follows.
-Suppose program `M` is less or equally precise as program `M′`.
-If `M′` halts with a value or diverges, so does `M`.
-On the other hand, if `M` halts with a value, then
-`M′` halts with a value or errors.
-If `M` diverges, then `M′` diverges or errors.
+We can now state the gradual guarnatee.  Suppose program `M` is less
+or equally precise as program `M′`.  Then `M` and `M′` should behave
+the same except that `M′` result in an error more often.  More
+specifically, if `M′` results in a value or diverges, so does `M`.  On
+the other hand, if `M` results a value, then `M′` results in a value
+or errors. If `M` diverges, then `M′` diverges or errors.
+If `M` errors, then so does `M′`.
 
     gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
        → [] ⊩ M ⊑ M′ ⦂ A⊑A′
@@ -159,3 +165,8 @@ If `M` diverges, then `M′` diverges or errors.
        × (M′ ⇑ → M ⇑)
        × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
        × (M ⇑ → M′ ⇑⊎blame)
+       × (M —↠ blame → M′ —↠ blame)
+
+# Semantic Approximation
+
+

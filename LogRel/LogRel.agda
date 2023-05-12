@@ -49,26 +49,25 @@ LR-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
 LR-ctx : Context
 LR-ctx = LR-type ∷ []
 
-{- todo: rename to use ˢ⊑ᴸᴿₜ -}
-LRˢₜ⟦_⟧ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Now ∅)
-LRˢₜ⟦ A⊑B ⟧ dir M M′ = (inj₂ (A⊑B , dir , M , M′)) ∈ zeroˢ
+_∣_ˢ⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A ⊑ A′)
+   → Setˢ LR-ctx (cons Now ∅)
+dir ∣ M ˢ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (inj₂ ((_ , _ , A⊑A′) , dir , M , M′)) ∈ zeroˢ
 
-{- todo: rename to use ˢ⊑ᴸᴿᵥ -}
-LRˢᵥ⟦_⟧ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Now ∅)
-LRˢᵥ⟦ A⊑B ⟧ dir V V′ = (inj₁ (A⊑B , dir , V , V′)) ∈ zeroˢ
+_∣_ˢ⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A ⊑ A′)
+   → Setˢ LR-ctx (cons Now ∅)
+dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = (inj₁ ((_ , _ , A⊑A′) , dir , V , V′)) ∈ zeroˢ
 
 LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
     with G ≡ᵍ H
-... | yes refl = let g = gnd⇒ty G in
-                 (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ (▷ˢ (LRˢᵥ⟦ (g , g , Refl⊑) ⟧ dir V V′))
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
+                 ×ˢ (▷ˢ (dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ Refl⊑{gnd⇒ty G}))
 ... | no neq = ⊥ ˢ
 LRᵥ (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≺ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
 ... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ ▷ˢ (LRˢᵥ⟦ gnd⇒ty G , A′ , d ⟧ ≺ V V′)
+                 ×ˢ ▷ˢ (≺ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
 ... | no neq = ⊥ ˢ
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≻ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
@@ -79,21 +78,23 @@ LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
 LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
 LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
-    ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (LRˢᵥ⟦ (A , A′ , A⊑A′) ⟧ dir W W′)
-                  →ˢ ▷ˢ (LRˢₜ⟦ (B , B′ , B⊑B′) ⟧ dir (N [ W ]) (N′ [ W′ ])) 
+    ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (dir ∣ W ˢ⊑ᴸᴿᵥ W′ ⦂ A⊑A′)
+                  →ˢ ▷ˢ (dir ∣ (N [ W ]) ˢ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′) 
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
 
 LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
-LRₜ c ≺ M M′ =
-   (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (LRˢₜ⟦ c ⟧ ≺ N M′))
+LRₜ (A , A′ , c) ≺ M M′ =
+   (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (≺ ∣ N ˢ⊑ᴸᴿₜ M′ ⦂ c))
    ⊎ˢ (M′ —↠ blame)ˢ
    ⊎ˢ ((Value M)ˢ ×ˢ ((M′ —↠ blame)ˢ ⊎ˢ
-                    (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ c ≺ M V′))))
+                    (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ
+                       ×ˢ (LRᵥ (_ , _ , c) ≺ M V′))))
 
-LRₜ c ≻ M M′ =
-   (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (LRˢₜ⟦ c ⟧ ≻ M N′))
+LRₜ (A , A′ , c) ≻ M M′ =
+   (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (≻ ∣ M ˢ⊑ᴸᴿₜ N′ ⦂ c))
    ⊎ˢ (Blame M′)ˢ
-   ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M —↠ V)ˢ ×ˢ (Value V)ˢ ×ˢ (LRᵥ c ≻ V M′)))
+   ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M —↠ V)ˢ ×ˢ (Value V)ˢ
+                                ×ˢ (LRᵥ (_ , _ , c) ≻ V M′)))
 
 pre-LRₜ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
 pre-LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ c dir V V′
@@ -230,8 +231,9 @@ LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
    × (M′ ⇑ → M ⇑)
    × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
    × (M ⇑ → M′ ⇑⊎blame)
+   × (M —↠ blame → M′ —↠ blame)
 LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
-  to-value-right , diverge-right , to-value-left , diverge-left
+  to-value-right , diverge-right , to-value-left , diverge-left , blame-blame
   where
   to-value-right : M′ ⇓ → M ⇓
   to-value-right (V′ , M′→V′ , v′)
@@ -268,6 +270,19 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
         ⊥-elim (diverge-not-halt divM (inj₂ (V , M→V , v)))
   ... | inj₂ (inj₁ M′→blame) = blame , (M′→blame , (inj₂ refl))
   ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) = N′ , (M′→N′ , (inj₁ (sym eq))) 
+
+  blame-blame : (M —↠ blame → M′ —↠ blame)
+  blame-blame M→blame
+      with LR⇒sem-approx{k = suc (len M→blame)}{dir =  ≺}
+                        (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc (suc (len M→blame))) tt)
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
+        ⊥-elim (cant-reduce-value-and-blame v M→V M→blame)
+  ... | inj₂ (inj₁ M′→blame) = M′→blame
+  ... | inj₂ (inj₂ (N , M→N , eq)) =
+        ⊥-elim (step-blame-plus-one M→N M→blame eq)
+
+      
+
 
 {----------- LR preserved by anti-reduction (i.e. expansion) ------------------}
 
