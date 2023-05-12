@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.BindLemma where
+module RawLogRel.BindLemma where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -18,7 +18,7 @@ open import InjProj.CastCalculus
 open import InjProj.CastDeterministic
 open import StepIndexedLogic
 open import InjProj.CastSafe
-open import LogRel.LogRel
+open import RawLogRel.LogRel
 
 {- formulation of ℰ-bind with explicit step-indexing, a la Max New -}
 

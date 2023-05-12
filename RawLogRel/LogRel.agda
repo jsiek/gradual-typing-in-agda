@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.LogRel where
+module RawLogRel.LogRel where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
