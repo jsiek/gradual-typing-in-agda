@@ -35,13 +35,18 @@ data _⊑_ : Type → Type → Set where
 
   unk⊑unk : ★ ⊑ ★
   
-  unk⊑ : ∀{G}{B} → gnd⇒ty G ⊑ B → ★ ⊑ B
+  unk⊑ : ∀{G}{B}
+     → gnd⇒ty G ⊑ B
+       -------------
+     → ★ ⊑ B
   
-  base⊑ : ∀{ι} → $ₜ ι ⊑ $ₜ ι
+  base⊑ : ∀{ι}
+        ----------
+      → $ₜ ι ⊑ $ₜ ι
 
   fun⊑ : ∀{A B C D}
-     → A ⊑ C
-     → B ⊑ D
+     → A ⊑ C  →  B ⊑ D
+       ---------------
      → A ⇒ B ⊑ C ⇒ D
 
 Refl⊑ : ∀{A} → A ⊑ A
