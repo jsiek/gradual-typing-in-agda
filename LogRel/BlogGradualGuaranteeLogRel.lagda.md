@@ -130,4 +130,32 @@ data _⊩_⊑_⦂_ where
      → Γ ⊩ M ⊑ blame ⦂ Refl⊑{A}
 ```
 
+To write down the gradual guarantee, we also need some notation for
+expressing whether a program halts with a value, diverges, or
+encounters an error. So we write `⇓` for halting with a result value,
+`⇑` for diverging, and `⇑⊎blame` for diverging or producing an error.
 
+    _⇓ : Term → Set
+    M ⇓ = ∃[ V ] (M —↠ V) × Value V
+
+    _⇑ : Term → Set
+    M ⇑ = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
+
+    _⇑⊎blame : Term → Set
+    M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
+
+
+We can now state the gradual guarnatee as follows.
+Suppose program `M` is less or equally precise as program `M′`.
+If `M′` halts with a value or diverges, so does `M`.
+On the other hand, if `M` halts with a value, then
+`M′` halts with a value or errors.
+If `M` diverges, then `M′` diverges or errors.
+
+    gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
+       → [] ⊩ M ⊑ M′ ⦂ A⊑A′
+        -----------------------------------
+       → (M′ ⇓ → M ⇓)
+       × (M′ ⇑ → M ⇑)
+       × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
+       × (M ⇑ → M′ ⇑⊎blame)

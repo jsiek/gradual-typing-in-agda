@@ -186,7 +186,7 @@ step-blame-plus-one (_ —→⟨ r1 ⟩ M→N) (_ —→⟨ r2 ⟩ M→b) eq
 ... | refl = step-blame-plus-one M→N M→b (suc-injective eq)
 
 diverge-not-halt : ∀{M}
-  → diverge M
+  → M ⇑
   → ¬ halt M
 diverge-not-halt divM (inj₁ M→blame)
     with divM (suc (len M→blame))

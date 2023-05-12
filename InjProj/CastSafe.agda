@@ -210,7 +210,7 @@ not-halt-pres M N nhM M→N hN = ⊥-elim (nhM (halt-exp M N hN M→N))
 not-halt⇒diverge : ∀{A} M
   → [] ⊢ M ⦂ A
   → ¬ halt M
-  → diverge M
+  → M ⇑
 not-halt⇒diverge M ⊢M ¬haltM zero = M , (M END) , refl
 not-halt⇒diverge M ⊢M ¬haltM (suc k) 
     with progress ⊢M

@@ -403,14 +403,14 @@ len-concat : ∀ {L}{M}{N} (s : L —↠ M) (r : M —↠ N)
 len-concat (_ END) r = refl
 len-concat (_ —→⟨ x ⟩ s) r rewrite len-concat s r = refl
 
-diverge : Term → Set
-diverge M = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
+_⇓ : Term → Set
+M ⇓ = ∃[ V ] (M —↠ V) × Value V
 
-diverge⊎blame : Term → Set
-diverge⊎blame M = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
+_⇑ : Term → Set
+M ⇑ = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
 
-ToVal : Term → Set
-ToVal M = ∃[ V ] (M —↠ V) × Value V
+_⇑⊎blame : Term → Set
+M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
 
 halt : Term → Set
-halt M  = (M —↠ blame) ⊎ (ToVal M)
+halt M  = (M —↠ blame) ⊎ (M ⇓)

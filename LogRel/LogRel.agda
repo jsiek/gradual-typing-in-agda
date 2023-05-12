@@ -29,11 +29,11 @@ data Dir : Set where
 
 _⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
 
-≺ ⊨ M ⊑ M′ for k = (ToVal M × ToVal M′)
+≺ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
                     ⊎ (M′ —↠ blame)
                     ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
                     
-≻ ⊨ M ⊑ M′ for k = (ToVal M × ToVal M′)
+≻ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
                     ⊎ (M′ —↠ blame)
                     ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
 
@@ -226,14 +226,14 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≻} M⊑M′sk
 
 LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
    → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′
-   → (ToVal M′ → ToVal M)
-   × (diverge M′ → diverge M)
-   × (ToVal M → ToVal M′ ⊎ M′ —↠ blame)
-   × (diverge M → diverge⊎blame M′)
+   → (M′ ⇓ → M ⇓)
+   × (M′ ⇑ → M ⇑)
+   × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
+   × (M ⇑ → M′ ⇑⊎blame)
 LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
   to-value-right , diverge-right , to-value-left , diverge-left
   where
-  to-value-right : ToVal M′ → ToVal M
+  to-value-right : M′ ⇓ → M ⇓
   to-value-right (V′ , M′→V′ , v′)
       with LR⇒sem-approx {k = suc (len M′→V′)}{dir = ≻}
                     (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc (suc (len M′→V′))) tt)
@@ -243,7 +243,7 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
   ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) =
         ⊥-elim (step-value-plus-one M′→N′ M′→V′ v′ eq)
 
-  diverge-right : diverge M′ → diverge M
+  diverge-right : M′ ⇑ → M ⇑
   diverge-right divM′ k
       with LR⇒sem-approx {k = k}{dir = ≺} (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc k) tt)
   ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
@@ -252,7 +252,7 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
         ⊥-elim (diverge-not-halt divM′ (inj₁ M′→blame))
   ... | inj₂ (inj₂ (N , M→N , eq)) = N , M→N , sym eq
 
-  to-value-left : ToVal M → ToVal M′ ⊎ M′ —↠ blame
+  to-value-left : M ⇓ → M′ ⇓ ⊎ M′ —↠ blame
   to-value-left (V , M→V , v)
       with LR⇒sem-approx{k = suc (len M→V)}{dir =  ≺}
                         (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc (suc (len M→V))) tt)
@@ -261,7 +261,7 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
   ... | inj₂ (inj₂ (N , M→N , eq)) =
         ⊥-elim (step-value-plus-one M→N M→V v eq)
 
-  diverge-left : diverge M → diverge⊎blame M′
+  diverge-left : M ⇑ → M′ ⇑⊎blame
   diverge-left divM k 
       with LR⇒sem-approx {k = k}{dir = ≻} (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc k) tt)
   ... | inj₁ ((V , M→V , v) , _) =
