@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.CompatibilityLemmas where
+module LogRelLogic.CompatibilityLemmas where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -19,8 +19,8 @@ open import InjProj.Reduction
 open import InjProj.Precision
 open import InjProj.CastDeterministic
 open import StepIndexedLogic
-open import LogRel.LogRel
-open import LogRel.BindLemma
+open import LogRelLogic.LogRel
+open import LogRelLogic.BindLemma
 
 {---------------- Compatibility Lemmas ----------------------------------------}
 

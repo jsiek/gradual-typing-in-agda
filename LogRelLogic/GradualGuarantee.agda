@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.GradualGuarantee where
+module LogRelLogic.GradualGuarantee where
 
 {-
 
@@ -29,8 +29,8 @@ open import Var
 open import InjProj.CastCalculus
 open import InjProj.Precision
 open import StepIndexedLogic
-open import LogRel.LogRel
-open import LogRel.CompatibilityLemmas
+open import LogRelLogic.LogRel
+open import LogRelLogic.CompatibilityLemmas
 
 fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
   → Γ ⊩ M ⊑ M′ ⦂ A⊑A′
