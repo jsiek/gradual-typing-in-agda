@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRelLogic.LogRel where
+module LogRel.LogRel where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -62,7 +62,7 @@ pre-𝒱 (.★ , .A′ , unk⊑{H}{A′} d) ≻ (V ⟨ G !⟩) V′
 pre-𝒱 (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
 pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
 pre-𝒱 (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
-pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N) (ƛ N′) =
+pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
     ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (𝒱ˢ⟦ (A , A′ , A⊑A′) ⟧ dir W W′)
                   →ˢ ▷ˢ (ℰˢ⟦ (B , B′ , B⊑B′) ⟧ dir (N [ W ]) (N′ [ W′ ])) 
 pre-𝒱 (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
@@ -187,6 +187,14 @@ _∣_⊨_⊑_⦂_ : List Prec → Dir → Term → Term → Prec → Set
 _⊨_⊑_⦂_ : List Prec → Term → Term → Prec → Set
 Γ ⊨ M ⊑ M′ ⦂ c = (Γ ∣ ≺ ⊨ M ⊑ M′ ⦂ c) × (Γ ∣ ≻ ⊨ M ⊑ M′ ⦂ c)
 
+proj : ∀ {Γ}{c}
+  → (dir : Dir)
+  → (M M′ : Term)
+  → Γ ⊨ M ⊑ M′ ⦂ c
+  → Γ ∣ dir ⊨ M ⊑ M′ ⦂ c
+proj {Γ} {c} ≺ M M′ M⊑M′ = proj₁ M⊑M′
+proj {Γ} {c} ≻ M M′ M⊑M′ = proj₂ M⊑M′
+
 {----------- sanity checking ------------------------------------------------}
 
 ℰ≺-steps : ∀{c}{M}{M′}{k}
@@ -296,53 +304,65 @@ cant-reduce-value-and-blame v (M —→⟨ M→N ⟩ N→V) (.M —→⟨ M→N�
 
 {- formulation with explicit step-indexing a la Max New -}
 
-anti-reduction-≺ : ∀{c}{M}{N}{M′}{i}
+anti-reduction-≺-one : ∀{c}{M}{N}{M′}{i}
   → #(ℰ⟦ c ⟧ ≺ N M′) i
-  → (M→N : M —↠ N)
-  → #(ℰ⟦ c ⟧ ≺ M M′) (len M→N + i)
-anti-reduction-≺ {c} {M} {.M} {M′} {i} ℰ≺NM′si (.M END) = ℰ≺NM′si
-anti-reduction-≺ {c} {M} {N} {M′} {i} ℰ≺NM′si (_—→⟨_⟩_ M {L}{N} M→L L→*N) =
-  let IH : # (ℰ⟦ c ⟧ ≺ L M′) (len L→*N + i)
-      IH = anti-reduction-≺ ℰ≺NM′si (L→*N) in
-  inj₁ (L , M→L , IH)
+  → (M→N : M —→ N)
+    ------------------------
+  → #(ℰ⟦ c ⟧ ≺ M M′) (suc i)
+anti-reduction-≺-one {c} {M} {N} {M′} {i} ℰ≺NM′i M→N = inj₁ (N , M→N , ℰ≺NM′i)
 
-anti-reduction-≻ : ∀{c}{M}{M′}{N′}{i}
+anti-reduction-≻-one : ∀{c}{M}{M′}{N′}{i}
   → #(ℰ⟦ c ⟧ ≻ M N′) i
-  → (M′→N′ : M′ —↠ N′)
-  → #(ℰ⟦ c ⟧ ≻ M M′) (len M′→N′ + i)
-anti-reduction-≻ {c} {M} {M′} {.M′} {i} ℰ≻MN′ (.M′ END) = ℰ≻MN′
-anti-reduction-≻ {c} {M} {M′}{N′} {i} ℰ≻MN′ (_—→⟨_⟩_ M′ {L′}{N′} M′→L′ L′→*N′)=
-  let IH : # (ℰ⟦ c ⟧ ≻ M L′) (len L′→*N′ + i)
-      IH = anti-reduction-≻ ℰ≻MN′ (L′→*N′) in
-  inj₁ (L′ , M′→L′ , IH)
+  → (M′→N′ : M′ —→ N′)
+  → #(ℰ⟦ c ⟧ ≻ M M′) (suc i)
+anti-reduction-≻-one {c} {M} {M′}{N′} {i} ℰ≻MN′ M′→N′ =
+  inj₁ (N′ , M′→N′ , ℰ≻MN′)
 
+anti-reduction-≺-R-one : ∀{c}{M}{M′}{N′}{i}
+  → #(ℰ⟦ c ⟧ ≺ M N′) i
+  → (M′→N′ : M′ —→ N′)
+  → #(ℰ⟦ c ⟧ ≺ M M′) i
+anti-reduction-≺-R-one {c}{M}{M′}{N′}{zero} ℰMN′ M′→N′ = tz (ℰ⟦ c ⟧ ≺ M M′)
+anti-reduction-≺-R-one {c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
+    with ℰMN′
+... | inj₁ (N , M→N , ▷ℰNN′) =
+         let ℰNM′si = anti-reduction-≺-R-one ▷ℰNN′ M′→N′ in
+         inj₁ (N , M→N , ℰNM′si)
+... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (unit M′→N′ ++ N′→blame))
+... | inj₂ (inj₂ (m , inj₁ N′→blame)) = inj₂ (inj₁ (unit M′→N′ ++ N′→blame))
+... | inj₂ (inj₂ (m , inj₂ (V′ , N′→V′ , v′ , 𝒱MV′))) =
+      inj₂ (inj₂ (m , inj₂ (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
+
+{- Used in the Bind Lemma -}
 anti-reduction-≺-R : ∀{c}{M}{M′}{N′}{i}
   → #(ℰ⟦ c ⟧ ≺ M N′) i
   → (M′→N′ : M′ —↠ N′)
   → #(ℰ⟦ c ⟧ ≺ M M′) i
-anti-reduction-≺-R {c}{M}{M′}{N′}{zero} ℰMN′ M′→N′ = tz (ℰ⟦ c ⟧ ≺ M M′)
-anti-reduction-≺-R {c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
-    with ℰMN′
-... | inj₁ (N , M→N , ▷ℰNN′) =
-         let ℰNM′si = anti-reduction-≺-R ▷ℰNN′ M′→N′ in
-         inj₁ (N , M→N , ℰNM′si)
-... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (M′→N′ ++ N′→blame))
-... | inj₂ (inj₂ (m , inj₁ N′→blame)) = inj₂ (inj₁ (M′→N′ ++ N′→blame))
-... | inj₂ (inj₂ (m , inj₂ (V′ , N′→V′ , v′ , 𝒱MV′))) =
-      inj₂ (inj₂ (m , inj₂ (V′ , (M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
+anti-reduction-≺-R {c} {M} {M′} {.M′} {i} ℰMN′ (.M′ END) = ℰMN′
+anti-reduction-≺-R {c} {M} {M′} {N′} {i} ℰMN′ (.M′ —→⟨ M′→L′ ⟩ L′→*N′) =
+  anti-reduction-≺-R-one (anti-reduction-≺-R ℰMN′ L′→*N′) M′→L′
 
+anti-reduction-≻-L-one : ∀{c}{M}{N}{M′}{i}
+  → #(ℰ⟦ c ⟧ ≻ N M′) i
+  → (M→N : M —→ N)
+  → #(ℰ⟦ c ⟧ ≻ M M′) i
+anti-reduction-≻-L-one {c} {M} {M′} {N′} {zero} ℰNM′ M→N = tz (ℰ⟦ c ⟧ ≻ M N′)
+anti-reduction-≻-L-one {c} {M} {N}{M′}  {suc i} ℰNM′ M→N
+    with ℰNM′
+... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
+      inj₁ (N′ , (M′→N′ , (anti-reduction-≻-L-one ▷ℰMN′ M→N)))
+... | inj₂ (inj₁ isBlame) = inj₂ (inj₁ isBlame)
+... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
+      inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
+
+{- Used in the Bind Lemma -}
 anti-reduction-≻-L : ∀{c}{M}{N}{M′}{i}
   → #(ℰ⟦ c ⟧ ≻ N M′) i
   → (M→N : M —↠ N)
   → #(ℰ⟦ c ⟧ ≻ M M′) i
-anti-reduction-≻-L {c} {M} {M′} {N′} {zero} ℰNM′ M→N = tz (ℰ⟦ c ⟧ ≻ M N′)
-anti-reduction-≻-L {c} {M} {N}{M′}  {suc i} ℰNM′ M→N
-    with ℰNM′
-... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
-      inj₁ (N′ , (M′→N′ , (anti-reduction-≻-L ▷ℰMN′ M→N)))
-... | inj₂ (inj₁ isBlame) = inj₂ (inj₁ isBlame)
-... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
-      inj₂ (inj₂ (m′ , V , (M→N ++ N→V) , v , 𝒱VM′))
+anti-reduction-≻-L {c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
+anti-reduction-≻-L {c} {M} {M′} {N′} {i} ℰNM′ (.M —→⟨ M→L ⟩ L→*N) =
+  anti-reduction-≻-L-one (anti-reduction-≻-L ℰNM′ L→*N) M→L
 
 anti-reduction : ∀{c}{M}{N}{M′}{N′}{i}{dir}
   → #(ℰ⟦ c ⟧ dir N N′) i
@@ -350,84 +370,13 @@ anti-reduction : ∀{c}{M}{N}{M′}{N′}{i}{dir}
   → (M′→N′ : M′ —→ N′)
   → #(ℰ⟦ c ⟧ dir M M′) (suc i)
 anti-reduction {c} {M} {N} {M′} {N′} {i} {≺} ℰNN′i M→N M′→N′ =
-  let ℰMN′si = anti-reduction-≺ ℰNN′i (unit M→N) in
-  let ℰM′N′si = anti-reduction-≺-R ℰMN′si (unit M′→N′) in
+  let ℰMN′si = anti-reduction-≺-one ℰNN′i M→N in
+  let ℰM′N′si = anti-reduction-≺-R-one ℰMN′si M′→N′ in
   ℰM′N′si
 anti-reduction {c} {M} {N} {M′} {N′} {i} {≻} ℰNN′i M→N M′→N′ =
-  let ℰM′Nsi = anti-reduction-≻ ℰNN′i (unit M′→N′) in
-  let ℰM′N′si = anti-reduction-≻-L ℰM′Nsi (unit M→N) in
+  let ℰM′Nsi = anti-reduction-≻-one ℰNN′i M′→N′ in
+  let ℰM′N′si = anti-reduction-≻-L-one ℰM′Nsi M→N in
   ℰM′N′si
-
-reduction-≺ : ∀{c}{M}{N}{M′}{i}
-  → #(ℰ⟦ c ⟧ ≺ M M′) (suc i)
-  → (M→N : M —→ N)
-  → #(ℰ⟦ c ⟧ ≺ N M′) i
-reduction-≺ {c} {M} {N} {M′} {zero} ℰMM′si M→N = tz (ℰ⟦ c ⟧ ≺ N M′)
-reduction-≺ {c} {M} {N} {M′} {suc i} ℰMM′ssi M→N
-    with ℰMM′ssi
-... | inj₁ (N₂ , M→N₂ , ▷ℰN₂M′) rewrite deterministic M→N M→N₂ = ▷ℰN₂M′
-... | inj₂ (inj₁ M′→blame) =
-      inj₂ (inj₁ M′→blame)
-... | inj₂ (inj₂ (m , _)) =
-      ⊥-elim (value-irreducible m M→N)
-
-reduction*-≺ : ∀{c}{M}{N}{M′}{i}
-  → (M→N : M —↠ N)
-  → #(ℰ⟦ c ⟧ ≺ M M′) (len M→N + i)
-  → #(ℰ⟦ c ⟧ ≺ N M′) i
-reduction*-≺ {c} {M} {.M} {M′} {i} (.M END) ℰMM′ = ℰMM′
-reduction*-≺ {c} {M} {N} {M′} {i} (.M —→⟨ M→L ⟩ L→N) ℰMM′ =
-  let ℰLM′ = reduction-≺ ℰMM′ M→L in
-  reduction*-≺ L→N ℰLM′ 
-
-reduction-≻ : ∀{c}{M}{N}{M′}{i}
-  → #(ℰ⟦ c ⟧ ≻ M M′) (suc i)
-  → (M→N : M —→ N)
-  → #(ℰ⟦ c ⟧ ≻ N M′) i
-reduction-≻ {c} {M} {N} {M′} {zero} ℰMM′si M→N = tz (ℰ⟦ c ⟧ ≻ N M′)
-reduction-≻ {c} {M} {N} {M′} {suc i} ℰMM′si M→N
-    with ℰMM′si
-... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
-      inj₁ (N′ , M′→N′ , reduction-≻ ▷ℰMN′ M→N)
-... | inj₂ (inj₁ M′→blame) = inj₂ (inj₁ M′→blame)
-... | inj₂ (inj₂ (m′ , V , (.V END) , v , 𝒱VM′)) =
-      ⊥-elim (value-irreducible v M→N)
-... | inj₂ (inj₂ (m′ , V , (.M —→⟨ M→M₁ ⟩ M₁→V) , v , 𝒱VM′))
-    with deterministic M→N M→M₁
-... | refl =
-    let 𝒱VM′si = down (𝒱⟦ c ⟧ ≻ V M′) (suc (suc i)) 𝒱VM′ (suc i) (n≤1+n _) in
-    inj₂ (inj₂ (m′ , V , M₁→V , v , 𝒱VM′si)) 
-
-ℰ-reduction : ∀{c}{M}{N}{M′}{i}{dir}
-  → #(ℰ⟦ c ⟧ dir M M′) (suc i)
-  → (M→N : M —→ N)
-  → #(ℰ⟦ c ⟧ dir N M′) i
-ℰ-reduction {c} {M} {N} {M′} {i} {≺} ℰMM′ M→N = reduction-≺ ℰMM′ M→N
-ℰ-reduction {c} {M} {N} {M′} {i} {≻} ℰMM′ M→N = reduction-≻ ℰMM′ M→N
-
-{- logical formulation -}
-
-expansion-▷-≺ : ∀{𝒫}{c}{M}{N}{M′}
-  → 𝒫 ⊢ᵒ ▷ᵒ (ℰ⟦ c ⟧ ≺ N M′)
-  → M —→ N
-  → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ ≺ M M′
-expansion-▷-≺ {𝒫}{c}{M}{N}{M′} ⊢▷ℰNM′ M→N =
-  substᵒ (≡ᵒ-sym (ℰ-stmt{c}{≺}{M}{M′}))
-  (inj₁ᵒ (⊢ᵒ-∃-intro N (constᵒI M→N ,ᵒ ⊢▷ℰNM′)))
-
-expansion-▷-≻ : ∀{𝒫}{c}{M}{M′}{N′}
-  → 𝒫 ⊢ᵒ ▷ᵒ (ℰ⟦ c ⟧ ≻ M N′)
-  → M′ —→ N′
-  → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ ≻ M M′
-expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
-  substᵒ (≡ᵒ-sym (ℰ-stmt{c}{≻}{M}{M′}))
-  (inj₁ᵒ (⊢ᵒ-∃-intro N′ (constᵒI M′→N′ ,ᵒ ⊢▷ℰMN′)))
-
-ℰ-blame-step : ∀{c}{dir}{M}{k}
-   → #(ℰ⟦ c ⟧ dir M blame) k
-ℰ-blame-step {c} {dir} {M} {zero} = tz (ℰ⟦ c ⟧ dir M blame)
-ℰ-blame-step {c} {≺} {M} {suc k} = inj₂ (inj₁ (blame END))
-ℰ-blame-step {c} {≻} {M} {suc k} = inj₂ (inj₁ isBlame)
 
 {------------- Related values are syntactic values ----------------------------}
 
@@ -463,30 +412,20 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
    → 𝒱⟦ ($ₜ ι , $ₜ ι , base⊑) ⟧ dir ($ c) ($ c′) ≡ᵒ (c ≡ c′) ᵒ
 𝒱-base{ι}{c}{c′} = ≡ᵒ-intro λ k → (λ x → x) , (λ x → x)
 
+𝒱-base-intro-step : ∀{ι}{dir}{c}{k}
+   → # (𝒱⟦ $ₜ ι , $ₜ ι , base⊑ ⟧ dir ($ c) ($ c)) k
+𝒱-base-intro-step {ι} {dir} {c} {zero} = tt
+𝒱-base-intro-step {ι} {dir} {c} {suc k} = refl
+
 𝒱-base-intro : ∀{𝒫}{ι}{c}{dir}
    → 𝒫 ⊢ᵒ 𝒱⟦ ($ₜ ι , $ₜ ι , base⊑) ⟧ dir ($ c) ($ c)
-𝒱-base-intro{ι}{c} = substᵒ (≡ᵒ-sym 𝒱-base) (constᵒI refl)
+𝒱-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k → 𝒱-base-intro-step{ι}{dir}{c}{k}
 
 𝒱-base-elim-step : ∀{ι}{ι′}{c}{V}{V′}{dir}{k}
   → #(𝒱⟦ $ₜ ι , $ₜ ι′ , c ⟧ dir V V′) (suc k)
   → ∃[ c ] ι ≡ ι′ × V ≡ $ c × V′ ≡ $ c
 𝒱-base-elim-step {ι} {.ι} {base⊑} {$ c} {$ c′} {dir} {k} refl =
   c , refl , refl , refl
-
-𝒱-base-elim : ∀{𝒫}{ι}{ι′}{c}{V}{V′}{R}{dir}
-  → 𝒫 ⊢ᵒ 𝒱⟦ $ₜ ι , $ₜ ι′ , c ⟧ dir V V′
-  → (∀ k → ι ≡ ι′ → V ≡ $ k → V′ ≡ $ k → 𝒫 ⊢ᵒ R)
-    -------------------------------------------
-  → 𝒫 ⊢ᵒ R
-𝒱-base-elim{𝒫}{ι}{ι′}{c}{V}{V′}{R} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ → G 𝒱VV′ ⊢𝒱VV′ cont
-  where
-  G : ∀{ι}{ι′}{c}{V}{V′}{n}{dir} →  #(𝒱⟦ $ₜ ι , $ₜ ι′ , c ⟧ dir V V′) (suc n)
-    → 𝒫 ⊢ᵒ 𝒱⟦ $ₜ ι , $ₜ ι′ , c ⟧ dir V V′
-    → (∀ k → ι ≡ ι′ → V ≡ $ k → V′ ≡ $ k → 𝒫 ⊢ᵒ R)
-    → 𝒫 ⊢ᵒ R
-  G {ι} {.ι} {base⊑} {$ k} {$ k′} {n}{dir} refl ⊢𝒱kk cont =
-     cont k refl refl refl
 
 𝒱-fun : ∀{A B A′ B′}{A⊑A′ : A ⊑ A′}{B⊑B′ : B ⊑ B′}{N}{N′}{dir}
    → (𝒱⟦ A ⇒ B , A′ ⇒ B′ , fun⊑ A⊑A′ B⊑B′ ⟧ dir (ƛ N) (ƛ N′))
@@ -513,72 +452,6 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
     let ℰNWN′W′j = 𝒱λNλN′sj W W′ (suc j) ≤-refl 𝒱WW′ in
     ℰNWN′W′j
 
-𝒱-fun-elim : ∀{𝒫}{A}{B}{A′}{B′}{c : A ⊑ A′}{d : B ⊑ B′}{V}{V′}{R}{dir}
-   → 𝒫 ⊢ᵒ 𝒱⟦ A ⇒ B , A′ ⇒ B′ , fun⊑ c d ⟧ dir V V′
-   → (∀ N N′ → V ≡ ƛ N → V′ ≡ ƛ N′ 
-             → (∀{W W′} → 𝒫 ⊢ᵒ (▷ᵒ (𝒱⟦ A , A′ , c ⟧ dir W W′))
-                          →ᵒ (▷ᵒ (ℰ⟦ B , B′ , d ⟧ dir (N [ W ]) (N′ [ W′ ]))))
-             → 𝒫 ⊢ᵒ R)
-     --------------------------------------------------------------------
-   → 𝒫 ⊢ᵒ R
-𝒱-fun-elim {𝒫}{A}{B}{A′}{B′}{c}{d}{V}{V′}{R}{dir} ⊢𝒱VV′ cont =
-  ⊢ᵒ-sucP ⊢𝒱VV′ λ { 𝒱VV′sn → G {V}{V′} 𝒱VV′sn ⊢𝒱VV′ cont }
-  where
-  G : ∀{V}{V′}{n}
-     → # (𝒱⟦  A ⇒ B , A′ ⇒ B′ , fun⊑ c d ⟧ dir V V′) (suc n)
-     → 𝒫 ⊢ᵒ 𝒱⟦ A ⇒ B , A′ ⇒ B′ , fun⊑ c d ⟧ dir V V′
-     → (∀ N N′ → V ≡ ƛ N → V′ ≡ ƛ N′ 
-             → (∀{W W′} → 𝒫 ⊢ᵒ (▷ᵒ (𝒱⟦ A , A′ , c ⟧ dir W W′))
-                           →ᵒ (▷ᵒ (ℰ⟦ B , B′ , d ⟧ dir (N [ W ]) (N′ [ W′ ]))))
-             → 𝒫 ⊢ᵒ R)
-     → 𝒫 ⊢ᵒ R
-  G {ƛ N}{ƛ N′}{n} 𝒱VV′ ⊢𝒱VV′ cont = cont N N′ refl refl λ {W}{W′} →
-     instᵒ (instᵒ (substᵒ 𝒱-fun ⊢𝒱VV′) W) W′ 
-
-𝒱-dyn-any-≻ : ∀{V}{V′}{G}{A′}{d : gnd⇒ty G ⊑ A′}
-   → 𝒱⟦ ★ , A′ , unk⊑{G}{A′} d ⟧ ≻ (V ⟨ G !⟩) V′ 
-     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≻ V V′)
-𝒱-dyn-any-≻ {V}{V′}{G}{A′}{d} = 
-  𝒱⟦ ★ , A′ , unk⊑ d ⟧ ≻ (V ⟨ G !⟩) V′
-     ⩦⟨ ≡ᵒ-refl refl ⟩
-  ℰ⊎𝒱 X
-    ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
-  # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ⩦⟨ Goal ⟩
-  (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≻ V V′)
-  ∎
-  where
-  X = inj₁ ((★ , A′ , unk⊑ d) , ≻ , (V ⟨ G !⟩) , V′)
-  Goal : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-         ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≻ V V′)
-  Goal
-      with G ≡ᵍ G
-  ... | yes refl = cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
-            (≡ᵒ-sym (fixpointᵒ pre-ℰ⊎𝒱
-                        (inj₁ ((gnd⇒ty G , A′ , d) , ≻ , V , V′)))))
-  ... | no neq = ⊥-elim (neq refl)
-
-𝒱-dyn-any-≺ : ∀{V}{V′}{G}{A′}{d : gnd⇒ty G ⊑ A′}
-   → 𝒱⟦ ★ , A′ , unk⊑{G}{A′} d ⟧ ≺ (V ⟨ G !⟩) V′ 
-     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≺ V V′)
-𝒱-dyn-any-≺ {V}{V′}{G}{A′}{d} = 
-  𝒱⟦ ★ , A′ , unk⊑ d ⟧ ≺ (V ⟨ G !⟩) V′
-     ⩦⟨ ≡ᵒ-refl refl ⟩
-  ℰ⊎𝒱 X
-    ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
-  # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ⩦⟨ Goal ⟩
-  (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≺ V V′)
-  ∎
-  where
-  X = inj₁ ((★ , A′ , unk⊑ d) , ≺ , (V ⟨ G !⟩) , V′)
-  Goal : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-         ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ ▷ᵒ (𝒱⟦ (gnd⇒ty G , A′ , d) ⟧ ≺ V V′)
-  Goal
-      with G ≡ᵍ G
-  ... | yes refl = (≡ᵒ-refl refl)
-  ... | no neq = ⊥-elim (neq refl)
-
 𝒱-dyn-any-elim-step-≻ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
    → #(𝒱⟦ ★ , A′ , unk⊑ c ⟧ ≻ V V′) (suc k)
    → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
@@ -600,30 +473,6 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
-
-𝒱-dyn-dyn : ∀{V}{V′}{G}{dir}
-   → 𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
-     ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ
-         ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′))
-𝒱-dyn-dyn {V}{V′}{G}{dir} =
-  let X = inj₁ ((★ , ★ , unk⊑unk) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩)) in 
-  𝒱⟦ ★ , ★ , unk⊑unk ⟧ dir (V ⟨ G !⟩) (V′ ⟨ G !⟩)
-    ⩦⟨ ≡ᵒ-refl refl ⟩
-  ℰ⊎𝒱 X
-    ⩦⟨ fixpointᵒ pre-ℰ⊎𝒱 X  ⟩
-  # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ⩦⟨ EQ ⟩
-   (Value V)ᵒ ×ᵒ (Value V′)ᵒ
-         ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′)) ∎
-  where
-  X = inj₁ ((★ , ★ , unk⊑unk) , dir , (V ⟨ G !⟩) , (V′ ⟨ G !⟩))
-  EQ : # (pre-ℰ⊎𝒱 X) (ℰ⊎𝒱 , ttᵖ)
-    ≡ᵒ (Value V)ᵒ ×ᵒ (Value V′)ᵒ
-         ×ᵒ (▷ᵒ (𝒱⟦ (gnd⇒ty G , gnd⇒ty G , Refl⊑) ⟧ dir V V′))
-  EQ
-      with G ≡ᵍ G
-  ... | yes refl = ≡ᵒ-refl refl
-  ... | no neq = ⊥-elim (neq refl)
 
 𝒱-dyn-R-step-≻ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
    → #(𝒱⟦ ★ , gnd⇒ty G , c ⟧ ≻ V V′) k
@@ -686,7 +535,7 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
       let (v , v′) = 𝒱⇒Value (gnd⇒ty G , A′ , c) V V′ 𝒱VV′k in
-      v , v′ , 𝒱VV′k
+      v , v′ , 𝒱VV′k                  {- No use of down! -}
 
 {--------------- Related values are related expressions -----------------------}
 
@@ -708,22 +557,16 @@ expansion-▷-≻ {𝒫}{c}{M}{M′}{N′} ⊢▷ℰMN′ M′→N′ =
    → 𝒫 ⊢ᵒ 𝒱⟦ c ⟧ dir V V′
      ---------------------
    → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ dir V V′
-𝒱⇒ℰ {c}{𝒫}{V}{V′}{≺} ⊢𝒱VV′ = substᵒ (≡ᵒ-sym ℰ-stmt)
-  (⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ →
-  let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′ in
-  (inj₂ᵒ (inj₂ᵒ (constᵒI v ,ᵒ
-   inj₂ᵒ (⊢ᵒ-∃-intro-new (λ X → (V′ —↠ X)ᵒ ×ᵒ (Value X)ᵒ ×ᵒ (𝒱⟦ c ⟧ ≺ V X))
-            V′ (constᵒI (V′ END) ,ᵒ
-            (constᵒI v′ ,ᵒ ⊢𝒱VV′)))))))
-𝒱⇒ℰ {c}{𝒫}{V}{V′}{≻} ⊢𝒱VV′ = substᵒ (≡ᵒ-sym ℰ-stmt)
-  (⊢ᵒ-sucP ⊢𝒱VV′ λ 𝒱VV′ →
-  let (v , v′) = 𝒱⇒Value c V V′ 𝒱VV′ in
-  (inj₂ᵒ (inj₂ᵒ (constᵒI v′ ,ᵒ
-   (⊢ᵒ-∃-intro-new (λ X → (V —↠ X)ᵒ ×ᵒ (Value X)ᵒ ×ᵒ (𝒱⟦ c ⟧ ≻ X V′))
-            V (constᵒI (V END) ,ᵒ
-            (constᵒI v ,ᵒ ⊢𝒱VV′)))))))
+𝒱⇒ℰ {c}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
+  𝒱⇒ℰ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
 
 {--------------- Blame on the right -------------------------------------------}
+
+ℰ-blame-step : ∀{c}{dir}{M}{k}
+   → #(ℰ⟦ c ⟧ dir M blame) k
+ℰ-blame-step {c} {dir} {M} {zero} = tz (ℰ⟦ c ⟧ dir M blame)
+ℰ-blame-step {c} {≺} {M} {suc k} = inj₂ (inj₁ (blame END))
+ℰ-blame-step {c} {≻} {M} {suc k} = inj₂ (inj₁ isBlame)
 
 ℰ-blame : ∀{𝒫}{c}{M}{dir} → 𝒫 ⊢ᵒ ℰ⟦ c ⟧ dir M blame
 ℰ-blame {𝒫}{c}{M}{dir} = ⊢ᵒ-intro λ n x → ℰ-blame-step{c}{dir}

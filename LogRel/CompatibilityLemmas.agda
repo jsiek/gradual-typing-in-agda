@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRelLogic.CompatibilityLemmas where
+module LogRel.CompatibilityLemmas where
 
 open import Data.List using (List; []; _∷_; length; map)
 open import Data.Nat
@@ -19,28 +19,21 @@ open import InjProj.Reduction
 open import InjProj.Precision
 open import InjProj.CastDeterministic
 open import StepIndexedLogic
-open import LogRelLogic.LogRel
-open import LogRelLogic.BindLemma
+open import LogRel.LogRel
+open import LogRel.BindLemma
 
 {---------------- Compatibility Lemmas ----------------------------------------}
 
-compatible-nat : ∀{Γ}{n : ℕ}
-   → Γ ⊨ $ (Num n) ⊑ $ (Num n) ⦂ ($ₜ ′ℕ , $ₜ ′ℕ , base⊑)
-compatible-nat {Γ}{n} =
-  (λ γ γ′ → 𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-base) (constᵒI refl))) ,
-  (λ γ γ′ → 𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-base) (constᵒI refl)))
-
-compatible-bool : ∀{Γ}{b : 𝔹}
-   → Γ ⊨ $ (Bool b) ⊑ $ (Bool b) ⦂ ($ₜ ′𝔹 , $ₜ ′𝔹 , base⊑)
-compatible-bool {Γ}{b} =
-  (λ γ γ′ → 𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-base) (constᵒI refl))) ,
-  (λ γ γ′ → 𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-base) (constᵒI refl)))
+compatible-literal : ∀{Γ}{c}{ι}
+   → Γ ⊨ $ c ⊑ $ c ⦂ ($ₜ ι , $ₜ ι , base⊑)
+compatible-literal {Γ}{c}{ι} =
+  (λ γ γ′ → 𝒱⇒ℰ 𝒱-base-intro) , (λ γ γ′ → 𝒱⇒ℰ 𝒱-base-intro)
 
 compatible-blame : ∀{Γ}{A}{M}
    → map proj₁ Γ ⊢ M ⦂ A
      -------------------------------
    → Γ ⊨ M ⊑ blame ⦂ (A , A , Refl⊑)
-compatible-blame ⊢M = (λ γ γ′ → ℰ-blame) , (λ γ γ′ → ℰ-blame)
+compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → ℰ-blame) , (λ γ γ′ → ℰ-blame)
 
 lookup-𝓖 : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst)
   → ∀ {A}{A′}{A⊑A′}{y} → Γ ∋ y ⦂ (A , A′ , A⊑A′)
@@ -61,14 +54,6 @@ compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
   GT : Γ ∣ ≻ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
   GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = 𝒱⇒ℰ (lookup-𝓖 Γ γ γ′ ∋x)
 
-proj : ∀ {Γ}{c}
-  → (dir : Dir)
-  → (M M′ : Term)
-  → Γ ⊨ M ⊑ M′ ⦂ c
-  → Γ ∣ dir ⊨ M ⊑ M′ ⦂ c
-proj {Γ} {c} ≺ M M′ M⊑M′ = proj₁ M⊑M′
-proj {Γ} {c} ≻ M M′ M⊑M′ = proj₂ M⊑M′
-
 compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}
      {c : A ⊑ C}{d : B ⊑ D}
    → ((A , C , c) ∷ Γ) ⊨ N ⊑ N′ ⦂ (B , D , d)
@@ -80,12 +65,12 @@ compatible-lambda{Γ}{A}{B}{C}{D}{N}{N′}{c}{d} ⊨N⊑N′ =
  ⊢ℰλNλN′ : ∀{dir}{γ}{γ′} → 𝓖⟦ Γ ⟧ dir γ γ′
             ⊢ᵒ ℰ⟦ A ⇒ B , C ⇒ D , fun⊑ c d ⟧ dir (⟪ γ ⟫ (ƛ N)) (⟪ γ′ ⟫ (ƛ N′))
  ⊢ℰλNλN′ {dir}{γ}{γ′} =
-     𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-fun) (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI ▷𝓔N[W]N′[W′]))
-  where
-  ▷𝓔N[W]N′[W′] : ∀{W W′} → ▷ᵒ 𝒱⟦ A , C , c ⟧ dir W W′ ∷ 𝓖⟦ Γ ⟧ dir γ γ′
-        ⊢ᵒ ▷ᵒ ℰ⟦ B , D , d ⟧ dir ((⟪ ext γ ⟫ N) [ W ]) ((⟪ ext γ′ ⟫ N′) [ W′ ])
-  ▷𝓔N[W]N′[W′] {W}{W′} =
-      appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI ((proj dir N N′ ⊨N⊑N′) (W • γ) (W′ • γ′)))))) Zᵒ
+     {- This case is easier to prove using the step-indexed logic -}
+     𝒱⇒ℰ (substᵒ (≡ᵒ-sym 𝒱-fun)
+          (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ 𝒱⟦ A , C , c ⟧ dir W W′}
+            (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI ((proj dir N N′ ⊨N⊑N′)
+                                            (W • γ) (W′ • γ′))))))
+                  Zᵒ)))
 
 compatible-app : ∀{Γ}{A A′ B B′}{c : A ⊑ A′}{d : B ⊑ B′}{L L′ M M′}
    → Γ ⊨ L ⊑ L′ ⦂ (A ⇒ B , A′ ⇒ B′ , fun⊑ c d)
@@ -186,7 +171,7 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        let ℰV₁V′j = 𝒱⇒ℰ-step{gnd⇒ty H , A′ , c}{V₁}{V′}{≺}{j} 𝒱V₁V′sj in
-       anti-reduction-≺ ℰV₁V′j (unit V₁HH→V₁)
+       anti-reduction-≺-one ℰV₁V′j V₁HH→V₁
    Goal {suc j} {V} {V′}{≻} 𝒱VV′j
        with 𝒱-dyn-any-elim-step-≻{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
@@ -232,8 +217,8 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          with dir
      ... | ≺ = inj₂ (inj₁ (unit (collide v′ neq refl)))
      ... | ≻ = 
-         anti-reduction-≻ (ℰ-blame-step{★ , gnd⇒ty H , unk⊑ d}{≻})
-                          (unit (collide v′ neq refl))
+         anti-reduction-≻-one (ℰ-blame-step{★ , gnd⇒ty H , unk⊑ d}{≻})
+                              (collide v′ neq refl)
      Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
          | yes refl | v , v′ , 𝒱VV′ | yes refl
          | yes refl 
@@ -253,6 +238,6 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          with gnd-prec-unique d Refl⊑
      ... | refl =
          let 𝒱VGV′ = 𝒱-dyn-L-step{G}{gnd⇒ty G}{d} 𝒱VV′ in
-         anti-reduction-≻ (𝒱⇒ℰ-step{V = V ⟨ G !⟩}{V′}{≻} 𝒱VGV′)
-                          (unit (collapse v′ refl))
+         anti-reduction-≻-one (𝒱⇒ℰ-step{V = V ⟨ G !⟩}{V′}{≻} 𝒱VGV′)
+                              (collapse v′ refl)
      
