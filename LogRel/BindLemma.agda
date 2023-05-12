@@ -14,10 +14,10 @@ open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
-open import LogRel.CastCalculus
-open import LogRel.CastDeterministic
+open import InjProj.CastCalculus
+open import InjProj.CastDeterministic
 open import StepIndexedLogic
-open import LogRel.CastSafe
+open import InjProj.CastSafe
 open import LogRel.LogRel
 
 {- formulation of ℰ-bind with explicit step-indexing, a la Max New -}

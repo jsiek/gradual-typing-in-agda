@@ -28,7 +28,7 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 
-module LogRel.CastCalculus where
+module InjProj.CastCalculus where
 
 {- Base types -}
 

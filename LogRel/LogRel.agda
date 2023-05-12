@@ -14,10 +14,10 @@ open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
-open import LogRel.CastCalculus
-open import LogRel.Precision
-open import LogRel.CastDeterministic
-open import LogRel.Reduction
+open import InjProj.CastCalculus
+open import InjProj.Precision
+open import InjProj.CastDeterministic
+open import InjProj.Reduction
 open import StepIndexedLogic
 open import EquivalenceRelation
 

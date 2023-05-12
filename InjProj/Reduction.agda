@@ -29,9 +29,9 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 
-open import LogRel.CastCalculus
+open import InjProj.CastCalculus
 
-module LogRel.Reduction where
+module InjProj.Reduction where
 
 
 blame-not-value : ∀{V} → Value V → V ≡ blame → ⊥

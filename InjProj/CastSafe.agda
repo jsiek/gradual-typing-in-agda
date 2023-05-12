@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module LogRel.CastSafe where
+module InjProj.CastSafe where
 
 open import Agda.Primitive using (lzero)
 open import Data.List using (List; []; _∷_; length)
@@ -25,7 +25,7 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig
 open import Var
 open import Structures using (extensionality)
-open import LogRel.CastCalculus
+open import InjProj.CastCalculus
 
 {-------------      Proof of Progress    -------------}
 
