@@ -2,11 +2,19 @@
 {-# OPTIONS --rewriting #-}
 module LogRel.BlogGradualGuaranteeLogRel where
 
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; map; length)
+open import Data.Nat
+open import Data.Nat.Properties
 open import Data.Product using (_,_;_×_; proj₁; proj₂; Σ-syntax; ∃-syntax)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Relation.Binary.PropositionalEquality as Eq
+  using (_≡_; _≢_; refl; sym; cong; subst; trans)
 
 open import Var
 open import InjProj.CastCalculus
+open import InjProj.CastDeterministic
+--open import InjProj.Reduction
 
 ```
 
@@ -152,7 +160,7 @@ encounters an error. So we write `⇓` for halting with a result value,
 
 We can now state the gradual guarnatee.  Suppose program `M` is less
 or equally precise as program `M′`.  Then `M` and `M′` should behave
-the same except that `M′` result in an error more often.  More
+the same except that `M′` results in an error more often.  More
 specifically, if `M′` results in a value or diverges, so does `M`.  On
 the other hand, if `M` results a value, then `M′` results in a value
 or errors. If `M` diverges, then `M′` diverges or errors.
@@ -169,4 +177,89 @@ If `M` errors, then so does `M′`.
 
 # Semantic Approximation
 
+We separate the gradual guarantee into two properties, one that
+observes the less precise term `M` for `k` steps of reduction and the
+other that observes the more precise term `M′` for `k` steps of
+reduction. After those `k` steps, the term being observed may have
+reduced to a value or an error, or it might still be reducing.  If it
+reduced to a value, then the relation requires the other term to also
+reduce to a value, except of course that `M′` may error.  We define
+these two properties with one relation, written `dir ⊨ M ⊑ M′ for k`,
+that is parameterized over a direction `dir`. The direction `≼`
+observes the less precise term `M` and the `≽` direction observes the
+more precise term `M′`.
 
+```
+data Dir : Set where
+  ≼ : Dir
+  ≽ : Dir
+
+_⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
+
+≼ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
+                    ⊎ (M′ —↠ blame)
+                    ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
+                    
+≽ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
+                    ⊎ (M′ —↠ blame)
+                    ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
+```
+
+
+
+
+```
+sem-approx⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
+   → (∀ k → ≼ ⊨ M ⊑ M′ for k)
+   → (∀ k → ≽ ⊨ M ⊑ M′ for k)
+   → (M′ ⇓ → M ⇓)
+   × (M′ ⇑ → M ⇑)
+   × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
+   × (M ⇑ → M′ ⇑⊎blame)
+   × (M —↠ blame → M′ —↠ blame)
+sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
+  to-value-right , diverge-right , to-value-left , diverge-left , blame-blame
+  where
+  to-value-right : M′ ⇓ → M ⇓
+  to-value-right (V′ , M′→V′ , v′)
+      with ≽⊨M⊑M′ (suc (len M′→V′))
+  ... | inj₁ ((V , M→V , v) , _) = V , M→V , v
+  ... | inj₂ (inj₁ M′→blame) =
+        ⊥-elim (cant-reduce-value-and-blame v′ M′→V′ M′→blame)
+  ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) =
+        ⊥-elim (step-value-plus-one M′→N′ M′→V′ v′ eq)
+        
+  diverge-right : M′ ⇑ → M ⇑
+  diverge-right divM′ k
+      with ≼⊨M⊑M′ k
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
+        ⊥-elim (diverge-not-halt divM′ (inj₂ (V′ , M′→V′ , v′)))
+  ... | inj₂ (inj₁ M′→blame) =
+        ⊥-elim (diverge-not-halt divM′ (inj₁ M′→blame))
+  ... | inj₂ (inj₂ (N , M→N , eq)) = N , M→N , sym eq
+
+  to-value-left : M ⇓ → M′ ⇓ ⊎ M′ —↠ blame
+  to-value-left (V , M→V , v)
+      with ≼⊨M⊑M′ (suc (len M→V))
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) = inj₁ (V′ , M′→V′ , v′)
+  ... | inj₂ (inj₁ M′→blame) = inj₂ M′→blame
+  ... | inj₂ (inj₂ (N , M→N , eq)) =
+        ⊥-elim (step-value-plus-one M→N M→V v eq)
+
+  diverge-left : M ⇑ → M′ ⇑⊎blame
+  diverge-left divM k 
+      with ≽⊨M⊑M′ k
+  ... | inj₁ ((V , M→V , v) , _) =
+        ⊥-elim (diverge-not-halt divM (inj₂ (V , M→V , v)))
+  ... | inj₂ (inj₁ M′→blame) = blame , (M′→blame , (inj₂ refl))
+  ... | inj₂ (inj₂ (N′ , M′→N′ , eq)) = N′ , (M′→N′ , (inj₁ (sym eq))) 
+
+  blame-blame : (M —↠ blame → M′ —↠ blame)
+  blame-blame M→blame
+      with ≼⊨M⊑M′ (suc (len M→blame))
+  ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
+        ⊥-elim (cant-reduce-value-and-blame v M→V M→blame)
+  ... | inj₂ (inj₁ M′→blame) = M′→blame
+  ... | inj₂ (inj₂ (N , M→N , eq)) =
+        ⊥-elim (step-blame-plus-one M→N M→blame eq)
+```

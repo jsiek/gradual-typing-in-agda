@@ -48,10 +48,10 @@ compatibility-var : ∀ {Γ A A′ A⊑A′ x}
   → Γ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
 compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
   where
-  LT : Γ ∣ ≺ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
+  LT : Γ ∣ ≼ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
   LT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-𝓖 Γ γ γ′ ∋x)
 
-  GT : Γ ∣ ≻ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
+  GT : Γ ∣ ≽ ⊨ ` x ⊑ ` x ⦂ (A , A′ , A⊑A′)
   GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-𝓖 Γ γ γ′ ∋x)
 
 compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}
@@ -162,14 +162,14 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
        → #(ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (V ⟨ H ?⟩) V′) j
    Goal {zero} {V} {V′}{dir} 𝒱VV′j =
        tz (ℰ⟦ gnd⇒ty H , A′ , c ⟧ dir (V ⟨ H ?⟩) V′)
-   Goal {suc j} {V} {V′}{≺} 𝒱VV′j
-       with LRᵥ-dyn-any-elim-step-≺{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
+   Goal {suc j} {V} {V′}{≼} 𝒱VV′j
+       with LRᵥ-dyn-any-elim-step-≼{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
-       let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≺}{j} 𝒱V₁V′sj in
-       anti-reduction-≺-one ℰV₁V′j V₁HH→V₁
-   Goal {suc j} {V} {V′}{≻} 𝒱VV′j
-       with LRᵥ-dyn-any-elim-step-≻{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
+       let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≼}{j} 𝒱V₁V′sj in
+       anti-reduction-≼-one ℰV₁V′j V₁HH→V₁
+   Goal {suc j} {V} {V′}{≽} 𝒱VV′j
+       with LRᵥ-dyn-any-elim-step-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
@@ -210,15 +210,15 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          with G ≡ᵍ H
      ... | no neq
          with dir
-     ... | ≺ = inj₂ (inj₁ (unit (collide v′ neq refl)))
-     ... | ≻ = 
-         anti-reduction-≻-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≻})
+     ... | ≼ = inj₂ (inj₁ (unit (collide v′ neq refl)))
+     ... | ≽ = 
+         anti-reduction-≽-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
                               (collide v′ neq refl)
      Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
          | yes refl | v , v′ , 𝒱VV′ | yes refl
          | yes refl 
          with dir
-     ... | ≺
+     ... | ≼
          with G ≡ᵍ G
      ... | no neq = ⊥-elim (neq refl)
      ... | yes refl 
@@ -229,10 +229,10 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
      Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
          | yes refl | v , v′ , 𝒱VV′ | yes refl
          | yes refl 
-         | ≻
+         | ≽
          with gnd-prec-unique d Refl⊑
      ... | refl =
          let 𝒱VGV′ = LRᵥ-dyn-L-step{G}{gnd⇒ty G}{d} 𝒱VV′ in
-         anti-reduction-≻-one (LRᵥ⇒LRₜ-step{V = V ⟨ G !⟩}{V′}{≻} 𝒱VGV′)
+         anti-reduction-≽-one (LRᵥ⇒LRₜ-step{V = V ⟨ G !⟩}{V′}{≽} 𝒱VGV′)
                               (collapse v′ refl)
      
