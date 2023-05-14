@@ -205,24 +205,31 @@ _⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
                     ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
 ```
 
+We write `⊨ M ⊑ M′ for k` for the conjunction of semantic
+approximation in both directions.
 
+```
+⊨_⊑_for_ : Term → Term → ℕ → Set
+⊨ M ⊑ M′ for k = (≼ ⊨ M ⊑ M′ for k) × (≽ ⊨ M ⊑ M′ for k)
+```
 
+The following verbose but easy proof confirms that semantic
+approximation implies the Gradual Guarantee.
 
 ```
 sem-approx⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
-   → (∀ k → ≼ ⊨ M ⊑ M′ for k)
-   → (∀ k → ≽ ⊨ M ⊑ M′ for k)
+   → (∀ k → ⊨ M ⊑ M′ for k)
    → (M′ ⇓ → M ⇓)
    × (M′ ⇑ → M ⇑)
    × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
    × (M ⇑ → M′ ⇑⊎blame)
    × (M —↠ blame → M′ —↠ blame)
-sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
+sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
   to-value-right , diverge-right , to-value-left , diverge-left , blame-blame
   where
   to-value-right : M′ ⇓ → M ⇓
   to-value-right (V′ , M′→V′ , v′)
-      with ≽⊨M⊑M′ (suc (len M′→V′))
+      with proj₂ (⊨M⊑M′ (suc (len M′→V′)))
   ... | inj₁ ((V , M→V , v) , _) = V , M→V , v
   ... | inj₂ (inj₁ M′→blame) =
         ⊥-elim (cant-reduce-value-and-blame v′ M′→V′ M′→blame)
@@ -231,7 +238,7 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
         
   diverge-right : M′ ⇑ → M ⇑
   diverge-right divM′ k
-      with ≼⊨M⊑M′ k
+      with proj₁ (⊨M⊑M′ k)
   ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
         ⊥-elim (diverge-not-halt divM′ (inj₂ (V′ , M′→V′ , v′)))
   ... | inj₂ (inj₁ M′→blame) =
@@ -240,7 +247,7 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
 
   to-value-left : M ⇓ → M′ ⇓ ⊎ M′ —↠ blame
   to-value-left (V , M→V , v)
-      with ≼⊨M⊑M′ (suc (len M→V))
+      with proj₁ (⊨M⊑M′ (suc (len M→V)))
   ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) = inj₁ (V′ , M′→V′ , v′)
   ... | inj₂ (inj₁ M′→blame) = inj₂ M′→blame
   ... | inj₂ (inj₂ (N , M→N , eq)) =
@@ -248,7 +255,7 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
 
   diverge-left : M ⇑ → M′ ⇑⊎blame
   diverge-left divM k 
-      with ≽⊨M⊑M′ k
+      with proj₂ (⊨M⊑M′ k)
   ... | inj₁ ((V , M→V , v) , _) =
         ⊥-elim (diverge-not-halt divM (inj₂ (V , M→V , v)))
   ... | inj₂ (inj₁ M′→blame) = blame , (M′→blame , (inj₂ refl))
@@ -256,10 +263,13 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ≼⊨M⊑M′ ≽⊨M⊑M′ =
 
   blame-blame : (M —↠ blame → M′ —↠ blame)
   blame-blame M→blame
-      with ≼⊨M⊑M′ (suc (len M→blame))
+      with proj₁ (⊨M⊑M′ (suc (len M→blame)))
   ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
         ⊥-elim (cant-reduce-value-and-blame v M→V M→blame)
   ... | inj₂ (inj₁ M′→blame) = M′→blame
   ... | inj₂ (inj₂ (N , M→N , eq)) =
         ⊥-elim (step-blame-plus-one M→N M→blame eq)
 ```
+
+# Definition of the Logical Relation
+
