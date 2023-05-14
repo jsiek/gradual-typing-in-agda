@@ -175,6 +175,18 @@ If `M` errors, then so does `M′`.
        × (M ⇑ → M′ ⇑⊎blame)
        × (M —↠ blame → M′ —↠ blame)
 
+One might wonder if the gradual guarantee could be simply proved by
+induction on the derivation of its premise `[] ⊩ M ⊑ M′ ⦂ A⊑A′`.  Such
+a proof attempt runs into trouble in the case for function
+application, where one needs to have more information about how the
+bodies of related lambda abstractions evaluate when given related
+arguments, but don't have it. The main idea of a logical relation is
+to add that extra information, effectively strengthening the theorem
+statement to get the induction to go through.
+
+However, before diving into the logical relation, we have one more
+items to cover regarding the gradual guarantee.
+
 # Semantic Approximation
 
 We separate the gradual guarantee into two properties, one that
@@ -184,10 +196,10 @@ reduction. After those `k` steps, the term being observed may have
 reduced to a value or an error, or it might still be reducing.  If it
 reduced to a value, then the relation requires the other term to also
 reduce to a value, except of course that `M′` may error.  We define
-these two properties with one relation, written `dir ⊨ M ⊑ M′ for k`,
-that is parameterized over a direction `dir`. The direction `≼`
-observes the less precise term `M` and the `≽` direction observes the
-more precise term `M′`.
+these two properties with one relation, written `dir ⊨ M ⊑ M′ for k`
+and called semantic approximation, that is parameterized over a
+direction `dir`. The direction `≼` observes the less precise term `M`
+and the `≽` direction observes the more precise term `M′`.
 
 ```
 data Dir : Set where
@@ -214,7 +226,7 @@ approximation in both directions.
 ```
 
 The following verbose but easy proof confirms that semantic
-approximation implies the Gradual Guarantee.
+approximation implies the gradual guarantee.
 
 ```
 sem-approx⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
@@ -272,4 +284,50 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 ```
 
 # Definition of the Logical Relation
+
+The logical relation acts as a bridge between term precision and
+semantic approximzation. As alluded to above, it packs away extra
+information when relating two lambda abstractions. However, while this
+idea is straightforward, especially in the context of the simply-typed
+lambda calculus (STLC), the definition of logical relation for the
+cast calculus is rather more involved. We start by reviewing how one
+would define a logical relation for the STLC, then introduce the
+complications needed for the cast calculus.
+
+For the STLC, the logical relation would consist of two relations, one
+for terms and another for values, and it would be indexed by their
+type.
+
+    M ≼ᴸᴿₜ M′ ⦂ A
+    V ≼ᴸᴿᵥ V′ ⦂ A
+
+The relation for values would be defined as an Agda function by
+recursion on the type `A`.  At base type we relate literals if they
+are identical.
+
+    ($ c) ≼ᴸᴿᵥ ($ c′) ⦂ ι   =   c ≡ c′
+
+At function type, two lambda abstractions are related if substituting
+related arguments into their bodies yields related terms.
+
+    (ƛ N) ≼ᴸᴿᵥ (ƛ N′) ⦂ A ⇒ B = 
+        ∀ W W′ → W ≼ᴸᴿᵥ W′ ⦂ A → N [ W ] ≼ᴸᴿₜ N′ [ W′ ] ⦂ B
+    
+The definition of the relation on terms would have the following form.
+
+    M ≼ᴸᴿₜ M′ ⦂ A =  M —↠ V → ∃[ V′ ] M′ —↠ V′ × V ≼ᴸᴿᵥ V′ ⦂ A
+
+The first challenge regarding the Cast Calculus is handling the unknown type
+`★` and its value form, the injection `V ⟨ G !⟩`. One might try to define
+the case for injection as follows
+
+    V ⟨ G !⟩ ≼ᴸᴿᵥ V′ ⟨ H !⟩ ⦂ ★
+        with G ≡ H
+    ... | yes refl = V ≼ᴸᴿᵥ V′ ⦂ G
+    ... | no neq = ⊥
+
+but then realize that Agda rejects the recursion on type `G` as that
+type is not a part of `★`.
+
+
 

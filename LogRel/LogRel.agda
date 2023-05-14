@@ -162,18 +162,8 @@ pre-LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ c dir M M′
 LRₜ⊎LRᵥ : LR-type → Setᵒ
 LRₜ⊎LRᵥ X = μᵒ pre-LRₜ⊎LRᵥ X
 
-{-
-𝒱⟦_⟧ : (c : Prec) → Dir → Term → Term → Setᵒ
-𝒱⟦ c ⟧ dir V V′ = LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′))
--}
-
 _∣_⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
 dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
-
-{-
-ℰ⟦_⟧ : (c : Prec) → Dir → Term → Term → Setᵒ
-ℰ⟦ c ⟧ dir M M′ = LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′))
--}
 
 _∣_⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
 dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
