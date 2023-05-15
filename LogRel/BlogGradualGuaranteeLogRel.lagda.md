@@ -8,8 +8,10 @@ open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Product using (_,_;_×_; proj₁; proj₂; Σ-syntax; ∃-syntax)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Unit.Polymorphic renaming (⊤ to topᵖ; tt to ttᵖ)
 open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
+open import Relation.Nullary using (¬_; Dec; yes; no)
 
 open import Var
 open import InjProj.CastCalculus
@@ -347,3 +349,278 @@ functions, parameterized on the step index `k` and the direction `dir`
     dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ for k
     dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ for k
 
+
+When the step-index is at zero, we relate all values.
+
+    dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ for zero = ⊤
+
+For `suc k`, we proceed by cases on precision `A ⊑ A′`.  In the case
+for `unk⊑unk`, where we need to relate injections to `★` on both
+sides, the recursion uses step index `k` to relate the underlying
+values.
+
+    dir ∣ V ⟨ G !⟩ ⊑ᴸᴿᵥ V′ ⟨ H !⟩ ⦂ unk⊑unk for (suc k)
+        with G ≡ᵍ H
+    ... | yes refl = Value V × Value V′ × (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ Refl⊑ for k)
+    ... | no neq = ⊥
+
+In the case for relating function types, we could try the following
+
+    dir ∣ ƛ N ⊑ᴸᴿᵥ ƛ N′ ⦂ (fun⊑ A⊑A′ B⊑B′) for (suc k) =
+      ∀ W W′ → (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′ for k)
+             → (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′ for k) 
+
+which again is Okay regarding termination because the recursion is at
+the small step-index `k`. Unfortunately, we run into another problem.
+Our proofs will depend on the logical relation being downward closed.
+In general, a step-indexed property `S` is downward closed if,
+whenever it is true at a given step index `n`, it remains true at
+smaller step indices.
+
+    downClosed : (ℕ → Set) → Set
+    downClosed S = ∀ n → S n → ∀ k → k ≤ n → S k
+
+The above definition of the relation for function types is not
+downward closed. The fix is to allow the recursion at any
+number `j` that is less-than-or-equal to `k`.
+
+    dir ∣ ƛ N ⊑ᴸᴿᵥ ƛ N′ ⦂ (fun⊑ A⊑A′ B⊑B′) for (suc k) =
+      ∀ W W′ j → j ≤ k → (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′ for j)
+             → (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′ for j) 
+
+But now Agda rejects this definition because it is not structurally
+recursive, i.e., j is not a subpart of `suc k`. One could instead
+define the relation by strong recursion and then proceed to prove that
+it is downward closed. I've tried that approach and it works. However,
+using strong recursion in Agda is somewhat annoying, as is the proof
+of downward closedness. We instead use the `StepIndexedLogic` library
+to define the logical relation, which enables the definition of
+recursive predicates and proves downward closedness for us.  However,
+there is some cost to using the `StepIndexedLogic` library, as
+there is some overhead to using the library.
+
+```
+open import StepIndexedLogic
+```
+
+Recall that the `StepIndexedLogic` library provides an operator `μᵒ`
+that takes a non-recursive predicate (with an extra parameter) and
+turns it into a recursive predicate where the extra parameter is bound
+to itself. However, the library does not directly support mutually
+recursive predicates, so we must merge the two into a single predicate
+whose input is a disjoint union (aka. sum type), and the dispatch back
+out to separate predicates, which we name `LRᵥ` (for values) and `LRₜ`
+(for terms). The predicates are indexed not only by the two terms and
+the direction (`≼` or `≽`), but also by the precision relation between
+the types of the two terms.
+
+```
+LR-type : Set
+LR-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
+
+LR-ctx : Context
+LR-ctx = LR-type ∷ []
+
+LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
+LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
+```
+
+
+```
+_∣_ˢ⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A ⊑ A′)
+   → Setˢ LR-ctx (cons Now ∅)
+dir ∣ M ˢ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (inj₂ ((_ , _ , A⊑A′) , dir , M , M′)) ∈ zeroˢ
+
+_∣_ˢ⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A ⊑ A′)
+   → Setˢ LR-ctx (cons Now ∅)
+dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = (inj₁ ((_ , _ , A⊑A′) , dir , V , V′)) ∈ zeroˢ
+```
+
+```
+instance
+  TermInhabited : Inhabited Term
+  TermInhabited = record { elt = ` 0 }
+```
+
+The definition of the logical relation for terms is a reorganized
+version of semantic approximation that only talks about one step at a
+time of the term that is being observed. Let us consider the `≼`
+direction, that observes the less-precise term `M`.  The first clause
+says that `M` takes a step to `N` and that `N` is related to `M′` at
+one tick later in time. The third clause says that `M` is already a
+value, and requires `M′` to reduce to a value that is related to
+`M`. Finally, the second clause allows `M′` to produce an error.
+
+```
+LRₜ (A , A′ , c) ≼ M M′ =
+   (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (≼ ∣ N ˢ⊑ᴸᴿₜ M′ ⦂ c))
+   ⊎ˢ (M′ —↠ blame)ˢ
+   ⊎ˢ ((Value M)ˢ ×ˢ (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ
+                       ×ˢ (LRᵥ (_ , _ , c) ≼ M V′)))
+```
+
+The other direction, `≽`, is defined in a symmetric way, observing the
+reduction of the more-precise `M′` instead of `M`.
+
+```
+LRₜ (A , A′ , c) ≽ M M′ =
+   (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (≽ ∣ M ˢ⊑ᴸᴿₜ N′ ⦂ c))
+   ⊎ˢ (Blame M′)ˢ
+   ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M —↠ V)ˢ ×ˢ (Value V)ˢ
+                                ×ˢ (LRᵥ (_ , _ , c) ≽ V M′)))
+```
+
+Next we proceed to the definition of the logical relation for values,
+the predicate `LRᵥ`. In the case of precision for base types `base⊑`,
+we only relate identical constants.
+
+```
+LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
+LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
+```
+
+In the case for related function types, two lambda abstractions are
+related if, for any two arguments that are related later, substituting
+the arguments into the bodies produces terms that are related later.
+
+```
+LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
+    ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (dir ∣ W ˢ⊑ᴸᴿᵥ W′ ⦂ A⊑A′)
+                  →ˢ ▷ˢ (dir ∣ (N [ W ]) ˢ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′) 
+LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
+```
+
+Notice how in the above definition, we no longer need to quantify over
+the extra `j` where `j ≤ k`. The implication operator `→ˢ` of the
+`StepIndexedLogic` instead takes care of that complication; ensuring
+that our logical relation is downward closed.
+
+In the case for relating
+
+```
+LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
+    with G ≡ᵍ H
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
+                 ×ˢ (▷ˢ (dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ Refl⊑{gnd⇒ty G}))
+... | no neq = ⊥ ˢ
+LRᵥ (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
+```
+
+```
+LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≼ (V ⟨ G !⟩) V′
+    with G ≡ᵍ H
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
+                 ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
+... | no neq = ⊥ ˢ
+LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
+    with G ≡ᵍ H
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
+                 ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
+... | no neq = ⊥ ˢ
+LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
+```
+
+
+```
+pre-LRₜ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
+pre-LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ c dir V V′
+pre-LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ c dir M M′
+
+LRₜ⊎LRᵥ : LR-type → Setᵒ
+LRₜ⊎LRᵥ X = μᵒ pre-LRₜ⊎LRᵥ X
+
+_∣_⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
+
+_∣_⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
+
+_⊑ᴸᴿₜ_⦂_ : Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) ×ᵒ (≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′)
+```
+
+```
+LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term → Setᵒ
+LRₜ-def A⊑A′ ≼ M M′ =
+   (∃ᵒ[ N ] (M —→ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
+   ⊎ᵒ (M′ —↠ blame)ᵒ
+   ⊎ᵒ ((Value M)ᵒ ×ᵒ 
+              (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′)))
+LRₜ-def A⊑A′ ≽ M M′ =
+   (∃ᵒ[ N′ ] (M′ —→ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
+   ⊎ᵒ (Blame M′)ᵒ
+   ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M —↠ V)ᵒ ×ᵒ (Value V)ᵒ
+                               ×ᵒ (≽ ∣ V ⊑ᴸᴿᵥ M′ ⦂ A⊑A′)))
+```
+
+```
+LRₜ-stmt : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}
+   → dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ ≡ᵒ LRₜ-def A⊑A′ dir M M′
+LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
+  dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′
+                 ⩦⟨ ≡ᵒ-refl refl ⟩
+  μᵒ pre-LRₜ⊎LRᵥ (X₂ dir)
+                 ⩦⟨ fixpointᵒ pre-LRₜ⊎LRᵥ (X₂ dir) ⟩
+  # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ)
+                 ⩦⟨ EQ{dir} ⟩
+  LRₜ-def A⊑A′ dir M M′
+  ∎
+  where
+  c = (A , A′ , A⊑A′)
+  X₁ : Dir → LR-type
+  X₁ = λ dir → inj₁ (c , dir , M , M′)
+  X₂ = λ dir → inj₂ (c , dir , M , M′)
+  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ) ≡ᵒ LRₜ-def A⊑A′ dir M M′
+  EQ {≼} = cong-⊎ᵒ (≡ᵒ-refl refl)
+           (cong-⊎ᵒ (≡ᵒ-refl refl)
+            (cong-×ᵒ (≡ᵒ-refl refl) 
+             (cong-∃ λ V′ → cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
+              ((≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≼ , M , V′)))))))))
+  EQ {≽} = cong-⊎ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
+            (cong-×ᵒ (≡ᵒ-refl refl) (cong-∃ λ V → cong-×ᵒ (≡ᵒ-refl refl)
+              (cong-×ᵒ (≡ᵒ-refl refl)
+               (≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≽ , V , M′))))))))
+
+LRₜ-suc : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}{k}
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k) ⇔ #(LRₜ-def A⊑A′ dir M M′) (suc k)
+LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
+   ≡ᵒ⇒⇔{k = suc k} (LRₜ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
+```
+
+
+```
+LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k)
+  → dir ⊨ M ⊑ M′ for k
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≼} M⊑M′sk =
+    inj₂ (inj₂ (M , (M END) , refl))
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≼} M⊑M′sk
+    with ⇔-to (LRₜ-suc{dir = ≼}) M⊑M′sk
+... | inj₂ (inj₁ M′→blame) =
+      inj₂ (inj₁ M′→blame)
+... | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱≼V′M))) =
+      inj₁ ((M , (M END) , m) , (V′ , M′→V′ , v′))
+... | inj₁ (N , M→N , ▷N⊑M′)
+    with LR⇒sem-approx{dir = ≼} ▷N⊑M′
+... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
+      inj₁ ((V , (M —→⟨ M→N ⟩ M→V) , v) , (V′ , M′→V′ , v′))
+... | inj₂ (inj₁ M′→blame) =
+      inj₂ (inj₁ M′→blame)
+... | inj₂ (inj₂ (L , N→L , eq)) =
+      inj₂ (inj₂ (L , (M —→⟨ M→N ⟩ N→L) , cong suc eq))
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≽} M⊑M′sk =
+    inj₂ (inj₂ (M′ , (M′ END) , refl))
+LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≽} M⊑M′sk
+    with ⇔-to (LRₜ-suc{dir = ≽}) M⊑M′sk
+... | inj₂ (inj₁ isBlame) =
+      inj₂ (inj₁ (blame END))
+... | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱≽VM′)) =
+      inj₁ ((V , M→V , v) , M′ , (M′ END) , m′)
+... | inj₁ (N′ , M′→N′ , ▷M⊑N′)
+    with LR⇒sem-approx{dir = ≽} ▷M⊑N′
+... | inj₁ ((V , M→V , v) , (V′ , N′→V′ , v′)) =
+      inj₁ ((V , M→V , v) , V′ , (M′ —→⟨ M′→N′ ⟩ N′→V′) , v′)
+... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (M′ —→⟨ M′→N′ ⟩ N′→blame))
+... | inj₂ (inj₂ (L′ , N′→L′ , eq)) =
+      inj₂ (inj₂ (L′ , (M′ —→⟨ M′→N′ ⟩ N′→L′) , cong suc eq))
+```

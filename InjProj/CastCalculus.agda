@@ -115,6 +115,7 @@ pattern _⟨_!⟩ M G = (op-inject G) ⦅ cons (ast M) nil ⦆
 pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
 pattern blame = op-blame ⦅ nil ⦆
 
+{- Phil: consider ditching this and use M ≡ blame -}
 data Blame : Term → Set where
   isBlame : Blame blame
 
@@ -411,6 +412,16 @@ M ⇑ = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] k ≡ len r
 
 _⇑⊎blame : Term → Set
 M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M —↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
+
+{-
+would prefer to say
+(M ⇑) ⊎ (M —↠ blame)
+but I'm having trouble showing
+
+lemma : ∀ M → M ⇑⊎blame → (M ⇑) ⊎ (M —↠ blame)
+lemma M M⇑blame = {!!}
+
+-}
 
 halt : Term → Set
 halt M  = (M —↠ blame) ⊎ (M ⇓)

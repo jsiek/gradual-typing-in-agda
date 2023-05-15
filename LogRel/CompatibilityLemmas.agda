@@ -124,7 +124,7 @@ compatible-inj-L{Γ}{G}{A′}{c}{M}{M′} ⊨M⊑M′ =
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
    LRᵥ⇒LRₜ-step{★}{A′}{unk⊑ c}{V ⟨ G !⟩}{V′}{dir}{j}
-   (LRᵥ-dyn-L-step{G}{A′}{c}{V}{V′}{dir}{j} 𝒱VV′j)
+   (LRᵥ-inject-L-intro{G}{A′}{c}{V}{V′}{dir}{j} 𝒱VV′j)
 
 compatible-inj-R : ∀{Γ}{G}{c : ★ ⊑ gnd⇒ty G }{M M′}
    → Γ ⊨ M ⊑ M′ ⦂ (★ , gnd⇒ty G , c)
@@ -141,7 +141,7 @@ compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
    LRᵥ⇒LRₜ-step{★}{★}{unk⊑unk}{V}{V′ ⟨ G !⟩}{dir}{j}
-   (LRᵥ-dyn-R-step{G}{unk⊑ d}{V}{V′}{j} 𝒱VV′j )
+   (LRᵥ-inject-R-intro{G}{unk⊑ d}{V}{V′}{j} 𝒱VV′j )
 
 compatible-proj-L : ∀{Γ}{H}{A′}{c : gnd⇒ty H ⊑ A′}{M}{M′}
    → Γ ⊨ M ⊑ M′ ⦂ (★ , A′ ,  unk⊑ c)
@@ -162,14 +162,14 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
        → #(dir ∣ (V ⟨ H ?⟩) ⊑ᴸᴿₜ V′ ⦂ c) j
    Goal {zero} {V} {V′}{dir} 𝒱VV′j =
        tz (dir ∣ (V ⟨ H ?⟩) ⊑ᴸᴿₜ V′ ⦂ c)
-   Goal {suc j} {V} {V′}{≼} 𝒱VV′j
-       with LRᵥ-dyn-any-elim-step-≼{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
-   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
+   Goal {suc j} {V} {V′}{≼} 𝒱VV′sj
+       with LRᵥ-dyn-any-elim-≼{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
+   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′j =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
-       let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≼}{j} 𝒱V₁V′sj in
-       anti-reduction-≼-one ℰV₁V′j V₁HH→V₁
-   Goal {suc j} {V} {V′}{≽} 𝒱VV′j
-       with LRᵥ-dyn-any-elim-step-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′j
+       let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≼}{j} 𝒱V₁V′j in
+       anti-reduction-≼-L-one ℰV₁V′j V₁HH→V₁
+   Goal {suc j} {V} {V′}{≽} 𝒱VV′sj
+       with LRᵥ-dyn-any-elim-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
@@ -200,10 +200,10 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
         → # (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d) j
      Goal {zero} {V} {V′}{dir} 𝒱VV′j =
          tz (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d)
-     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
-         with G ≡ᵍ H₂ | 𝒱VV′j
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         with G ≡ᵍ H₂ | 𝒱VV′sj
      ... | no neq | ()
-     ... | yes refl | v , v′ , 𝒱VV′
+     ... | yes refl | v₁ , v′ , 𝒱V₁V′j
          with G ≡ᵍ G
      ... | no neq = ⊥-elim (neq refl)
      ... | yes refl
@@ -212,10 +212,10 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          with dir
      ... | ≼ = inj₂ (inj₁ (unit (collide v′ neq refl)))
      ... | ≽ = 
-         anti-reduction-≽-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
+         anti-reduction-≽-R-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
                               (collide v′ neq refl)
-     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
-         | yes refl | v , v′ , 𝒱VV′ | yes refl
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′ | yes refl
          | yes refl 
          with dir
      ... | ≼
@@ -224,15 +224,15 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
      ... | yes refl 
          with gnd-prec-unique d Refl⊑
      ... | refl =
-           inj₂ (inj₂ ((v 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
-               v , v′ , 𝒱VV′)))
-     Goal {suc j} {V ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′j
-         | yes refl | v , v′ , 𝒱VV′ | yes refl
+           inj₂ (inj₂ ((v₁ 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
+               v₁ , v′ , 𝒱V₁V′)))
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′ | yes refl
          | yes refl 
          | ≽
          with gnd-prec-unique d Refl⊑
      ... | refl =
-         let 𝒱VGV′ = LRᵥ-dyn-L-step{G}{gnd⇒ty G}{d} 𝒱VV′ in
-         anti-reduction-≽-one (LRᵥ⇒LRₜ-step{V = V ⟨ G !⟩}{V′}{≽} 𝒱VGV′)
+         let 𝒱VGV′ = LRᵥ-inject-L-intro{G}{gnd⇒ty G}{d} 𝒱V₁V′ in
+         anti-reduction-≽-R-one (LRᵥ⇒LRₜ-step{V = V₁ ⟨ G !⟩}{V′}{≽} 𝒱VGV′)
                               (collapse v′ refl)
      

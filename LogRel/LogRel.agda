@@ -33,7 +33,7 @@ _⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
 ≼ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
                     ⊎ (M′ —↠ blame)
                     ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
-                    
+
 ≽ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓)
                     ⊎ (M′ —↠ blame)
                     ⊎ (∃[ N′ ] Σ[ r ∈ M′ —↠ N′ ] len r ≡ k)
@@ -116,6 +116,7 @@ _∣_ˢ⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A 
    → Setˢ LR-ctx (cons Now ∅)
 dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = (inj₁ ((_ , _ , A⊑A′) , dir , V , V′)) ∈ zeroˢ
 
+{- Phil: change syntax of LRᵥ to look like ⊑ᴸᴿᵥ -}
 LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
     with G ≡ᵍ H
@@ -123,28 +124,50 @@ LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
                  ×ˢ (▷ˢ (dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ Refl⊑{gnd⇒ty G}))
 ... | no neq = ⊥ ˢ
 LRᵥ (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
+
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≼ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
-... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
+    {-
+     intro: k ⇒ k        (LRᵥ-inject-L-intro) (uses down in ≼ case)
+                         (compatible-inj-L)
+     elim:  suc k ⇒ k    (LRᵥ-dyn-any-elim-≼) (compatible-proj-L, anti-red.)
+                         (LRᵥ-inject-R-intro-≼ k ⇒ k) (compatible-inj-R)
+     -}
 ... | no neq = ⊥ ˢ
+
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
-... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
+    {-
+    intro: k ⇒ k           (LRᵥ-inject-L-intro)
+    elim: suc k ⇒ suc k    (LRᵥ-dyn-any-elim-≽) (compatible-proj-L)
+                           (LRᵥ-inject-R-intro-≽ k => k, uses down)
+                           (compatible-inj-R)
+     -}
 ... | no neq = ⊥ ˢ
 LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
+
 LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
 LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
+
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
     ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (dir ∣ W ˢ⊑ᴸᴿᵥ W′ ⦂ A⊑A′)
                   →ˢ ▷ˢ (dir ∣ (N [ W ]) ˢ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′) 
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
 
+{-
+  Phil: what happens if we do a catch all as follows?
+
+  LRᵥ (A , A′ , A⊑A′) dir V V′ = ⊥ ˢ
+
+-}
+
 LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRₜ (A , A′ , c) ≼ M M′ =
    (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (≼ ∣ N ˢ⊑ᴸᴿₜ M′ ⦂ c))
    ⊎ˢ (M′ —↠ blame)ˢ
+      -- TODO: remove the M′ —↠ blame below. It's not needed.
    ⊎ˢ ((Value M)ˢ ×ˢ ((M′ —↠ blame)ˢ ⊎ˢ
                     (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ
                        ×ˢ (LRᵥ (_ , _ , c) ≼ M V′))))
@@ -297,25 +320,27 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 
 {----------- LR preserved by anti-reduction (i.e. expansion) ------------------}
 
-anti-reduction-≼-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
   → (M→N : M —→ N)
     ------------------------
   → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-anti-reduction-≼-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N = inj₁ (N , M→N , ℰ≼NM′i)
+anti-reduction-≼-L-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N =
+  inj₁ (N , M→N , ℰ≼NM′i)
 
-anti-reduction-≽-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
   → (M′→N′ : M′ —→ N′)
   → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-anti-reduction-≽-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
+anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
   inj₁ (N′ , M′→N′ , ℰ≽MN′)
 
 anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
   → (M′→N′ : M′ —→ N′)
   → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
-anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{zero} ℰMN′ M′→N′ = tz (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c)
+anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{zero} ℰMN′ M′→N′ =
+  tz (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c)
 anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
     with ℰMN′
 ... | inj₁ (N , M→N , ▷ℰNN′) =
@@ -362,11 +387,11 @@ anti-reduction : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{N′}{i}{dir}
   → (M′→N′ : M′ —→ N′)
   → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
 anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≼} ℰNN′i M→N M′→N′ =
-  let ℰMN′si = anti-reduction-≼-one ℰNN′i M→N in
+  let ℰMN′si = anti-reduction-≼-L-one ℰNN′i M→N in
   let ℰM′N′si = anti-reduction-≼-R-one ℰMN′si M′→N′ in
   ℰM′N′si
 anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N′ =
-  let ℰM′Nsi = anti-reduction-≽-one ℰNN′i M′→N′ in
+  let ℰM′Nsi = anti-reduction-≽-R-one ℰNN′i M′→N′ in
   let ℰM′N′si = anti-reduction-≽-L-one ℰM′Nsi M→N in
   ℰM′N′si
 
@@ -410,7 +435,8 @@ LRᵥ-base-intro-step {ι} {dir} {c} {suc k} = refl
 
 LRᵥ-base-intro : ∀{𝒫}{ι}{c}{dir}
    → 𝒫 ⊢ᵒ dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}
-LRᵥ-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k → LRᵥ-base-intro-step{ι}{dir}{c}{k}
+LRᵥ-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ-base-intro-step{ι}{dir}{c}{k}
 
 LRᵥ-base-elim-step : ∀{ι}{ι′}{c : $ₜ ι ⊑ $ₜ ι′}{V}{V′}{dir}{k}
   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
@@ -443,88 +469,88 @@ LRᵥ-fun-elim-step {A}{B}{A′}{B′}{c}{d}{ƛ N}{ƛ N′}{dir}{k}{j} 𝒱VV′
     let ℰNWN′W′j = 𝒱λNλN′sj W W′ (suc j) ≤-refl 𝒱WW′ in
     ℰNWN′W′j
 
-LRᵥ-dyn-any-elim-step-≽ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
+LRᵥ-dyn-any-elim-≽ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
    → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
    → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
              × #(≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
-LRᵥ-dyn-any-elim-step-≽ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
+LRᵥ-dyn-any-elim-≽ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
     with G ≡ᵍ H
 ... | no neq = ⊥-elim 𝒱VGV′
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
 
-LRᵥ-dyn-any-elim-step-≼ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
+LRᵥ-dyn-any-elim-≼ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
    → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
    → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
              × #(≼ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ c) k
-LRᵥ-dyn-any-elim-step-≼ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
+LRᵥ-dyn-any-elim-≼ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
     with G ≡ᵍ H
 ... | no neq = ⊥-elim 𝒱VGV′
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
 
-LRᵥ-dyn-R-step-≽ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
+LRᵥ-inject-R-intro-≽ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
    → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
    → #(≽ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
-LRᵥ-dyn-R-step-≽ {G} {c} {V} {V′} {zero} 𝒱VV′ =
+LRᵥ-inject-R-intro-≽ {G} {c} {V} {V′} {zero} 𝒱VV′ =
      tz (≽ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk)
-LRᵥ-dyn-R-step-≽ {G} {c} {V} {V′} {suc k} 𝒱VV′
+LRᵥ-inject-R-intro-≽ {G} {c} {V} {V′} {suc k} 𝒱VV′sk
     with unk⊑gnd-inv c
 ... | d , refl
-    with LRᵥ-dyn-any-elim-step-≽ {V}{V′}{k}{G}{_}{d} 𝒱VV′
-... | V₁ , refl , v₁ , v′ , 𝒱V₁V′
+    with LRᵥ-dyn-any-elim-≽ {V}{V′}{k}{G}{_}{d} 𝒱VV′sk
+... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sk
     with G ≡ᵍ G
-... | no neq = ⊥-elim 𝒱VV′
+... | no neq = ⊥-elim 𝒱VV′sk
 ... | yes refl
     with gnd-prec-unique d Refl⊑
 ... | refl =
-    let 𝒱V₁V′k = down (≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ d) (suc k) 𝒱V₁V′ k (n≤1+n k) in
+    let 𝒱V₁V′k = down (≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ d) (suc k) 𝒱V₁V′sk k (n≤1+n k) in
     v₁ , v′ , 𝒱V₁V′k
 
-LRᵥ-dyn-R-step-≼ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
+LRᵥ-inject-R-intro-≼ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
    → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
    → #(≼ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
-LRᵥ-dyn-R-step-≼ {G} {c} {V} {V′} {zero} 𝒱VV′ =
+LRᵥ-inject-R-intro-≼ {G} {c} {V} {V′} {zero} 𝒱VV′ =
      tz (≼ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk)
-LRᵥ-dyn-R-step-≼ {G} {c} {V} {V′} {suc k} 𝒱VV′
+LRᵥ-inject-R-intro-≼ {G} {c} {V} {V′} {suc k} 𝒱VV′sk
     with unk⊑gnd-inv c
 ... | d , refl
-    with LRᵥ-dyn-any-elim-step-≼ {V}{V′}{k}{G}{_}{d} 𝒱VV′
-... | V₁ , refl , v₁ , v′ , 𝒱V₁V′
+    with LRᵥ-dyn-any-elim-≼ {V}{V′}{k}{G}{_}{d} 𝒱VV′sk
+... | V₁ , refl , v₁ , v′ , 𝒱V₁V′k
     with G ≡ᵍ G
-... | no neq = ⊥-elim 𝒱VV′
+... | no neq = ⊥-elim 𝒱VV′sk
 ... | yes refl
     with gnd-prec-unique d Refl⊑
-... | refl = v₁ , v′ , 𝒱V₁V′           {- No use of down! -}
+... | refl = v₁ , v′ , 𝒱V₁V′k
 
-LRᵥ-dyn-R-step : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}{dir}
+LRᵥ-inject-R-intro : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}{dir}
    → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
    → #(dir ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
-LRᵥ-dyn-R-step {G} {c} {V} {V′} {k} {≼} 𝒱VV′ =
-    LRᵥ-dyn-R-step-≼{G} {c} {V} {V′} {k} 𝒱VV′ 
-LRᵥ-dyn-R-step {G} {c} {V} {V′} {k} {≽} 𝒱VV′ =
-   LRᵥ-dyn-R-step-≽{G} {c} {V} {V′} {k} 𝒱VV′
+LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≼} 𝒱VV′ =
+   LRᵥ-inject-R-intro-≼{G} {c} {V} {V′} {k} 𝒱VV′ 
+LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≽} 𝒱VV′ =
+   LRᵥ-inject-R-intro-≽{G} {c} {V} {V′} {k} 𝒱VV′
 
-LRᵥ-dyn-L-step : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}{k}
+LRᵥ-inject-L-intro : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}{k}
    → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
    → #(dir ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) k
-LRᵥ-dyn-L-step {G}{A′}{c}{V}{V′}{dir}{zero} 𝒱VV′k =
+LRᵥ-inject-L-intro {G}{A′}{c}{V}{V′}{dir}{zero} 𝒱VV′k =
     tz (dir ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
-LRᵥ-dyn-L-step {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
     with G ≡ᵍ G
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
     let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
     let 𝒱VV′k = down (≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k) 𝒱VV′sk k (n≤1+n k) in
     v , v′ , 𝒱VV′k
-LRᵥ-dyn-L-step {G} {A′} {c} {V} {V′} {≽} {suc k} 𝒱VV′k
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {suc k} 𝒱VV′sk
     with G ≡ᵍ G
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
-      let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′k in
-      v , v′ , 𝒱VV′k                  {- No use of down! -}
+      let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
+      v , v′ , 𝒱VV′sk
 
 {--------------- Related values are related expressions -----------------------}
 
