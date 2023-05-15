@@ -296,7 +296,7 @@ complications needed for the cast calculus.
 
 For the STLC, the logical relation would consist of two relations, one
 for terms and another for values, and it would be indexed by their
-type.
+type `A`.
 
     M ≼ᴸᴿₜ M′ ⦂ A
     V ≼ᴸᴿᵥ V′ ⦂ A
@@ -312,14 +312,18 @@ related arguments into their bodies yields related terms.
 
     (ƛ N) ≼ᴸᴿᵥ (ƛ N′) ⦂ A ⇒ B = 
         ∀ W W′ → W ≼ᴸᴿᵥ W′ ⦂ A → N [ W ] ≼ᴸᴿₜ N′ [ W′ ] ⦂ B
-    
+
+The recurse uses of `≼ᴸᴿᵥ` and `≼ᴸᴿₜ` at type `A` and `B` in the above
+are Okay because those types are part of the function type `A ⇒ B`.
+
 The definition of the relation on terms would have the following form.
 
     M ≼ᴸᴿₜ M′ ⦂ A =  M —↠ V → ∃[ V′ ] M′ —↠ V′ × V ≼ᴸᴿᵥ V′ ⦂ A
 
-The first challenge regarding the Cast Calculus is handling the unknown type
-`★` and its value form, the injection `V ⟨ G !⟩`. One might try to define
-the case for injection as follows
+The first challenge regarding the Cast Calculus is handling the
+unknown type `★` and its value form, the injection `V ⟨ G !⟩` that
+casts value `V` from the ground type `G` to `★`. One might try to
+define the case for injection as follows
 
     V ⟨ G !⟩ ≼ᴸᴿᵥ V′ ⟨ H !⟩ ⦂ ★
         with G ≡ H
@@ -327,7 +331,19 @@ the case for injection as follows
     ... | no neq = ⊥
 
 but then realize that Agda rejects the recursion on type `G` as that
-type is not a part of `★`.
+type is not a subpart of `★`.
 
+At this point one might think to try defining the logical relation
+using a `data` declaration in Agda, but then one gets stuck in the
+case for function type because the recursion `W ≼ᴸᴿᵥ W′ ⦂ A` appears
+to the left of an implication.
 
+This is where step indexing comes into play. We add an extra parameter
+to the relation, a natural number, and decrement that number in the
+recursive calls. Here's a first attempt. We'll define the following two
+functions, parameterized on the step index `k` and the direction `dir`
+(just like in the semantic approximation above.)
+
+    dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ for k
+    dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ for k
 
