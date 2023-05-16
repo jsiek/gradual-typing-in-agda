@@ -451,7 +451,7 @@ that takes a non-recursive predicate (with an extra parameter) and
 turns it into a recursive predicate where the extra parameter is bound
 to itself. However, the library does not directly support mutually
 recursive predicates, so we must merge the two into a single predicate
-whose input is a disjoint union (aka. sum type), and the dispatch back
+whose input is a disjoint union (aka. sum type), and then dispatch back
 out to separate predicates, which we name `LRᵥ` (for values) and `LRₜ`
 (for terms). The predicates are indexed not only by the two terms and
 the direction (`≼` or `≽`), but also by the precision relation between
