@@ -171,6 +171,21 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
    Goal {suc j} {V} {V′}{≽} 𝒱VV′sj
        with LRᵥ-dyn-any-elim-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
+      {-
+         have:
+         ≽ ∣ V₁⟨ H !⟩         ⊑ᵥ  V′     at (suc j)     (1)
+
+         need to show
+         ≽ ∣ V₁⟨ H !⟩⟨ H ?⟩   ⊑ₜ  V′     at (suc j)
+
+         We unfold the definition of ⊑ₜ in the ≽ direction and note that
+         V′ is a value and 
+         V₁⟨ H !⟩⟨ H ?⟩   -->  V₁
+         So it remains to prove that
+         V₁               ⊑ᵥ  V′         at (suc j)
+         which we have by this definition and (1).
+
+      -}
        let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
 

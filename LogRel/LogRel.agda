@@ -153,6 +153,16 @@ LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
     {-
       Why can't we use ▷ here?
 
+      In compatible-proj-L, we have
+         ≽ ∣ V₁⟨ H !⟩         ⊑ᵥ  V′     at (suc j)     (1)
+      and need to show
+         ≽ ∣ V₁⟨ H !⟩⟨ H ?⟩   ⊑ₜ  V′     at (suc j)
+      We unfold the definintion of ⊑ᴸᴿₜ. We have that V′ is a value and
+         V₁⟨ H !⟩⟨ H ?⟩   -->  V₁
+      So it remains to prove that
+         V₁               ⊑ᵥ  V′         at (suc j)
+      which we have (1) and this definition.
+
      -}
 ... | no neq = ⊥ ˢ
 LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
