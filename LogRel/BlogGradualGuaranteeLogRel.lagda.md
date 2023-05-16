@@ -17,7 +17,6 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import InjProj.CastCalculus
 open import InjProj.CastDeterministic
---open import InjProj.Reduction
 
 ```
 
@@ -26,10 +25,10 @@ captured by the [gradual
 guarantee](https://drops.dagstuhl.de/opus/volltexte/2015/5031/) ,
 which governs how the behavior of a program can change when the
 programmer changes some of the type annotations in the program to be
-more or less precise. It says that changing a program to be more
-precise, it will behave the same except that it may error more often.
-Change in the other direction, to be less precise, yield exactly the
-same behavior.
+more or less precise. It says that when changed to be more precise,
+the program will behave the same except that it may error more often.
+A change in the other direction, to be less precise, yields a program
+with exactly the same behavior.
 
 In this blog post I prove in Agda the gradual guarantee for the
 gradually typed lambda calculus using the logical relations proof
@@ -332,7 +331,7 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 # Definition of the Logical Relation
 
 The logical relation acts as a bridge between term precision and
-semantic approximzation. As alluded to above, it packs away extra
+semantic approximation. As alluded to above, it packs away extra
 information when relating two lambda abstractions. However, while this
 idea is straightforward, especially in the context of the simply-typed
 lambda calculus (STLC), the definition of logical relation for the
@@ -1835,3 +1834,4 @@ gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
   let (⊨≼M⊑ᴸᴿM′ , ⊨≽M⊑ᴸᴿM′) = fundamental M M′ M⊑M′ in
   LR⇒GG (⊨≼M⊑ᴸᴿM′ id id ,ᵒ ⊨≽M⊑ᴸᴿM′ id id)
 ```
+
