@@ -539,7 +539,7 @@ that our logical relation is downward closed.
 
 In the case for relating two values of the unknown type `★`,
 two injections are related if they are injections from the same
-ground types and if the underlying values are related later.
+ground type and if the underlying values are related later.
 
 ```
 LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
