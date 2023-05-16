@@ -358,7 +358,7 @@ related arguments into their bodies yields related terms.
     (ƛ N) ≼ᴸᴿᵥ (ƛ N′) ⦂ A ⇒ B = 
         ∀ W W′ → W ≼ᴸᴿᵥ W′ ⦂ A → N [ W ] ≼ᴸᴿₜ N′ [ W′ ] ⦂ B
 
-The recurse uses of `≼ᴸᴿᵥ` and `≼ᴸᴿₜ` at type `A` and `B` in the above
+The recursive uses of `≼ᴸᴿᵥ` and `≼ᴸᴿₜ` at type `A` and `B` in the above
 are Okay because those types are part of the function type `A ⇒ B`.
 
 The definition of the relation on terms would have the following form.
