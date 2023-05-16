@@ -1305,7 +1305,7 @@ The Bind Lemma is proved by induction on the step index `i`. The base
 case is trivially true because the logical relation is always true at
 zero. For the inductive step, we reason separately about the two
 directions `≼` and `≽`, and then reason by cases on the premise that
-`M ⊑ᴸᴿₜ M′`. If `M` or `M′` take a single step to a related term, we
+`M ⊑ᴸᴿₜ M′`. If `M` or `M′` take a single step to related terms, we
 use the induction hypothesis, applying the above lemmas to obtain the
 premise of the induction hypothesis. If `M` or `M′` are values,
 then we use the anti-reduction lemmas. Otherwise, if `M′` is `blame`,
@@ -1349,4 +1349,440 @@ LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≽} ℰMM′si LR�
     | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱VM′)) =
     let xx = LRᵥ→LRₜj (suc i) V M′ ≤-refl M→V v (M′ END) m′ 𝒱VM′ in
     anti-reduction-≽-L xx (ξ′* F M→V)
+```
+
+# Compatibility Lemmas
+
+The end is in sight! We just have to prove nine compatibility lemmas.
+The first few are easy. The ones about projection are the most
+interesting.
+
+A literal expression `$ c` is related to itself, via the
+`LRᵥ-base-intro` and `LRᵥ⇒LRₜ` lemmas.
+
+```
+compatible-literal : ∀{Γ}{c}{ι}
+   → Γ ⊨ $ c ⊑ᴸᴿ $ c ⦂ ($ₜ ι , $ₜ ι , base⊑)
+compatible-literal {Γ}{c}{ι} =
+  (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro) , (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro)
+```
+
+`blame` on the right-hand side is logically related to anything on the
+left (less precise) side.
+
+```
+compatible-blame : ∀{Γ}{A}{M}
+   → map proj₁ Γ ⊢ M ⦂ A
+     -------------------------------
+   → Γ ⊨ M ⊑ᴸᴿ blame ⦂ (A , A , Refl⊑)
+compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → LRₜ-blame) , (λ γ γ′ → LRₜ-blame)
+```
+
+Next we prove the compatibility lemmas for variables. For that we
+need to know that given two related substitutions `γ ⊑ᴸᴿ γ′`,
+applying them to the same variable yields related values: `γ x ⊑ᴸᴿᵥ γ′ x`.
+
+```
+lookup-⊑ᴸᴿ : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst)
+  → ∀ {A}{A′}{A⊑A′}{x} → Γ ∋ x ⦂ (A , A′ , A⊑A′)
+  → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ γ x ⊑ᴸᴿᵥ γ′ x ⦂ A⊑A′
+lookup-⊑ᴸᴿ {dir} (.(A , A′ , A⊑A′) ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {zero} refl = Zᵒ
+lookup-⊑ᴸᴿ {dir} (B ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {suc x} ∋x =
+   Sᵒ (lookup-⊑ᴸᴿ Γ (λ z → γ (suc z)) (λ z → γ′ (suc z)) ∋x)
+```
+
+We then use `LRᵥ⇒LRₜ` to show that `γ x ⊑ᴸᴿₜ γ′ x`. (The `sub-var`
+lemma just says that `⟪ γ ⟫ (` x) ≡ γ x`.)
+
+```
+compatibility-var : ∀ {Γ A A′ A⊑A′ x}
+  → Γ ∋ x ⦂ (A , A′ , A⊑A′)
+    -------------------------------
+  → Γ ⊨ ` x ⊑ᴸᴿ ` x ⦂ (A , A′ , A⊑A′)
+compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
+  where
+  LT : Γ ∣ ≼ ⊨ ` x ⊑ᴸᴿ ` x ⦂ (A , A′ , A⊑A′)
+  LT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
+
+  GT : Γ ∣ ≽ ⊨ ` x ⊑ᴸᴿ ` x ⦂ (A , A′ , A⊑A′)
+  GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
+```
+
+The compatibility lemma for lambda is easy but important.  Roughly
+speaking, tt takes the premise `N ⊑ᴸᴿ N′` and stores it in the logical
+relation for the lambda values, `ƛ N ⊑ᴸᴿₜ ƛ N′`, which is needed to
+prove the compatibility lemma for function application.
+
+```
+compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}
+     {c : A ⊑ C}{d : B ⊑ D}
+   → ((A , C , c) ∷ Γ) ⊨ N ⊑ᴸᴿ N′ ⦂ (B , D , d)
+     ------------------------------------------------
+   → Γ ⊨ (ƛ N) ⊑ᴸᴿ (ƛ N′) ⦂ (A ⇒ B , C ⇒ D , fun⊑ c d)
+compatible-lambda{Γ}{A}{B}{C}{D}{N}{N′}{c}{d} ⊨N⊑N′ =
+  (λ γ γ′ → ⊢ℰλNλN′) , (λ γ γ′ → ⊢ℰλNλN′)
+ where
+ ⊢ℰλNλN′ : ∀{dir}{γ}{γ′} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)
+            ⊢ᵒ (dir ∣ (⟪ γ ⟫ (ƛ N)) ⊑ᴸᴿₜ (⟪ γ′ ⟫ (ƛ N′)) ⦂ fun⊑ c d)
+ ⊢ℰλNλN′ {dir}{γ}{γ′} =
+     LRᵥ⇒LRₜ (substᵒ (≡ᵒ-sym LRᵥ-fun)
+          (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}
+            (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI ((proj dir N N′ ⊨N⊑N′)
+                                            (W • γ) (W′ • γ′))))))
+                  Zᵒ)))
+```
+
+The compatibility lemma for function application shows that
+two applications are logically related
+
+    L · M ⊑ᴸᴿ L′ · M′
+
+if their operator and operand terms are logically related
+
+    L ⊑ᴸᴿ L′
+    M ⊑ᴸᴿ M′
+
+The proof starts with two uses of the Bind Lemma, after which it
+remains to prove
+
+    V · W ⊑ᴸᴿₜ V′ · W′
+
+for some `V`, `W`, `V′`, and `W′` where
+
+    L —↠ V, L′ —↠ V′, V ⊑ᴸᴿᵥ V′
+    M —↠ W, M′ —↠ W′, W ⊑ᴸᴿᵥ W′
+    
+We apply the elimination lemma for function types, `LRᵥ-fun-elim-step`,
+to `V ⊑ᴸᴿᵥ V′`, so `V` and `V′` are related lambda expressions:
+
+    ƛ N ⊑ᴸᴿᵥ ƛ N′
+
+Thanks to the definition of `⊑ᴸᴿᵥ`, we therefore know that
+
+    N [ W ] ⊑ᴸᴿₜ N′ [ W′ ]
+
+Of course, via β reduction
+
+   (ƛ N) · W   —→ N [ W ]
+   (ƛ N′) · W′ —→ N′ [ W′ ]
+   
+so we can apply anti-reduction to conclude that
+
+   (ƛ N) · W ⊑ᴸᴿₜ (ƛ N′) · W′
+
+Now here's the proof in Agda.
+
+```
+compatible-app : ∀{Γ}{A A′ B B′}{c : A ⊑ A′}{d : B ⊑ B′}{L L′ M M′}
+   → Γ ⊨ L ⊑ᴸᴿ L′ ⦂ (A ⇒ B , A′ ⇒ B′ , fun⊑ c d)
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (A , A′ , c)
+     ----------------------------------
+   → Γ ⊨ L · M ⊑ᴸᴿ L′ · M′ ⦂ (B , B′ , d)
+compatible-app {Γ}{A}{A′}{B}{B′}{c}{d}{L}{L′}{M}{M′} ⊨L⊑L′ ⊨M⊑M′ =
+ (λ γ γ′ → ⊢ℰLM⊑LM′) , λ γ γ′ → ⊢ℰLM⊑LM′
+ where
+ ⊢ℰLM⊑LM′ : ∀{dir}{γ}{γ′} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)
+                             ⊢ᵒ dir ∣ ⟪ γ ⟫ (L · M) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (L′ · M′) ⦂ d
+ ⊢ℰLM⊑LM′ {dir}{γ}{γ′} = ⊢ᵒ-intro λ n 𝒫n →
+  LRₜ-bind{c = d}{d = fun⊑ c d}
+               {F = ` (□· (⟪ γ ⟫ M))}{F′ = ` (□· (⟪ γ′ ⟫ M′))}
+  (⊢ᵒ-elim ((proj dir L L′ ⊨L⊑L′) γ γ′) n 𝒫n)
+  λ j V V′ j≤n L→V v L′→V′ v′ 𝒱VV′j →
+  LRₜ-bind{c = d}{d = c}{F = ` (v ·□)}{F′ = ` (v′ ·□)}
+   (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) j
+   (down (Πᵒ (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)) n 𝒫n j j≤n))
+   λ i W W′ i≤j M→W w M′→W′ w′ 𝒱WW′i →
+     Goal{v = v}{v′}{w = w}{w′} i≤j 𝒱VV′j 𝒱WW′i
+   where
+   Goal : ∀{V}{V′}{v : Value V}{v′ : Value V′}
+           {W}{W′}{w : Value W}{w′ : Value W′}{i}{j}
+     → i ≤ j
+     → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ fun⊑ c d) j
+     → # (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) i
+     → # (dir ∣ ((` (v ·□)) ⦉ W ⦊) ⊑ᴸᴿₜ ((` (v′ ·□)) ⦉ W′ ⦊) ⦂ d) i
+   Goal {V} {V′} {v} {v′} {W} {W′} {w}{w′}{zero} {j} i≤j 𝒱VV′j 𝒱WW′i =
+     tz (dir ∣ (value v · W) ⊑ᴸᴿₜ (value v′ · W′) ⦂ d)
+   Goal {V} {V′} {v} {v′} {W} {W′} {w}{w′}{suc i} {suc j}
+       (s≤s i≤j) 𝒱VV′sj 𝒱WW′si
+       with LRᵥ-fun-elim-step{A}{B}{A′}{B′}{c}{d}{V}{V′}{dir}{j}{i} 𝒱VV′sj i≤j
+   ... | N , N′ , refl , refl , body =
+       let 𝒱WW′i = down (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)(suc i)𝒱WW′si i (n≤1+n i) in
+       let ℰNWNW′i = body{W}{W′} 𝒱WW′i in
+       anti-reduction{c = d}{i = i}{dir = dir} ℰNWNW′i (β w) (β w′)
+```
+
+We have four more compatibility lemmas to prove, regarding injections
+and projections on the left and right-hand side.
+
+For an injection on the left, we apply the Bind Lemma, so it remains
+to prove that
+
+    V ⟨ G !⟩ ⊑ᴸᴿ V′
+
+for some values `V` and `V′` where
+
+    M —↠ V, M′ —↠ V′, V ⊑ᴸᴿᵥ V′
+
+We apply `LRᵥ-inject-L-intro` to obtain
+
+    V ⟨ G !⟩ ⊑ᴸᴿᵥ V′
+
+and then conclude via `LRᵥ⇒LRₜ-step`.
+
+```
+compatible-inj-L : ∀{Γ}{G A′}{c : gnd⇒ty G ⊑ A′}{M M′}
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (gnd⇒ty G , A′ , c)
+     ---------------------------------------------
+   → Γ ⊨ M ⟨ G !⟩ ⊑ᴸᴿ M′ ⦂ (★ , A′ , unk⊑{G}{A′} c)
+compatible-inj-L{Γ}{G}{A′}{c}{M}{M′} ⊨M⊑M′ =
+  (λ γ γ′ → ℰMGM′) , (λ γ γ′ → ℰMGM′)
+  where
+  ℰMGM′ : ∀ {γ}{γ′}{dir}
+   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ (dir ∣ (⟪ γ ⟫ M ⟨ G !⟩) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ unk⊑ c)
+  ℰMGM′{γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
+   LRₜ-bind{c = unk⊑ c}{d = c}{F = ` (□⟨ G !⟩)}{F′ = □}
+              {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
+   (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
+   λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
+   LRᵥ⇒LRₜ-step{★}{A′}{unk⊑ c}{V ⟨ G !⟩}{V′}{dir}{j}
+   (LRᵥ-inject-L-intro{G}{A′}{c}{V}{V′}{dir}{j} 𝒱VV′j)
+```
+
+For an injection on the right, the proof is similar but uses the 
+`LRᵥ-inject-R-intro` lemma.
+
+```
+compatible-inj-R : ∀{Γ}{G}{c : ★ ⊑ gnd⇒ty G }{M M′}
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (★ , gnd⇒ty G , c)
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⟨ G !⟩ ⦂ (★ , ★ , unk⊑unk)
+compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
+    with unk⊑gnd-inv c
+... | d , refl = (λ γ γ′ → ℰMM′G) , λ γ γ′ → ℰMM′G
+  where
+  ℰMM′G : ∀{γ}{γ′}{dir}
+    → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′ ⟨ G !⟩) ⦂ unk⊑unk
+  ℰMM′G {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
+   LRₜ-bind{c = unk⊑unk}{d = unk⊑ d}{F = □}{F′ = ` (□⟨ G !⟩)}
+              {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
+   (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
+   λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
+   LRᵥ⇒LRₜ-step{★}{★}{unk⊑unk}{V}{V′ ⟨ G !⟩}{dir}{j}
+   (LRᵥ-inject-R-intro{G}{unk⊑ d}{V}{V′}{j} 𝒱VV′j )
+```
+
+For projection on the left, we again start with an application of the
+Bind Lemma. So we need to show that
+
+    V ⟨ H ?⟩ ⊑ᴸᴿₜ V′
+
+for some values `V` and `V′` where
+
+    M —↠ V, M′ —↠ V′, V ⊑ᴸᴿᵥ V′
+
+The proof is by induction on the step index `j`. The base case is
+trivially true because the logical relation is always true at zero.
+For the inductive step we consider the step index `suc j`, so
+we need to prove
+
+    #(V ⟨ H ?⟩ ⊑ᴸᴿₜ V′) (suc j)
+
+We proceed by cases on the two directions `≼` and `≽`.
+
+For the `≼` case, we use lemma `LRᵥ-dyn-any-elim-≼` with `#(V ⊑ᴸᴿᵥ V′) (suc j)`
+to obtain
+
+    V ≡ V₁ ⟨ H !⟩
+    #(V₁ ⊑ᴸᴿᵥ V′) j
+
+We use `LRᵥ⇒LRₜ-step` to obtain
+
+    #(V₁ ⊑ᴸᴿₜ V′) j
+
+and then because
+
+    V₁ ⟨ H !⟩ ⟨ H ?⟩ —→ V₁
+
+The `anti-reduction-≼-L-one` lemma allows us to conclude that
+
+    #(V₁ ⟨ H !⟩ ⟨ H ?⟩ ⊑ᴸᴿₜ V′) (suc j)
+
+For the `≽` case, we use lemma `LRᵥ-dyn-any-elim-≽` with `#(V ⊑ᴸᴿᵥ V′) (suc j)`
+to obtain
+
+    V ≡ V₁ ⟨ H !⟩
+    #(V₁ ⊑ᴸᴿᵥ V′) (suc j)
+
+(Recall that in the definition of `⊑ᴸᴿᵥ` for `unk⊑` and `≽`, we chose
+to relate the underlying value now, i.e., at `suc j`.)
+By definition, to prove `#(V₁⟨ H !⟩⟨ H ?⟩ ⊑ₜ V′) (suc j)`, it suffices
+to show that the left-hand side reduces to a related value at `suc j`
+(because the right-hand side is a value), which we have already
+proved.
+
+```
+compatible-proj-L : ∀{Γ}{H}{A′}{c : gnd⇒ty H ⊑ A′}{M}{M′}
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (★ , A′ ,  unk⊑ c)
+   → Γ ⊨ M ⟨ H ?⟩ ⊑ᴸᴿ M′ ⦂ (gnd⇒ty H , A′ , c)
+compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
+  (λ γ γ′ → ℰMHM′) , λ γ γ′ → ℰMHM′
+  where
+  ℰMHM′ : ∀{γ}{γ′}{dir} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)
+       ⊢ᵒ dir ∣ (⟪ γ ⟫ M ⟨ H ?⟩) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ c
+  ℰMHM′ {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
+   LRₜ-bind{c = c}{d = unk⊑ c}{F = ` (□⟨ H ?⟩)}{F′ = □}
+              {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
+   (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
+   λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j → Goal{j}{V}{V′}{dir} 𝒱VV′j 
+   where
+   Goal : ∀{j}{V}{V′}{dir}
+       → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) j
+       → #(dir ∣ (V ⟨ H ?⟩) ⊑ᴸᴿₜ V′ ⦂ c) j
+   Goal {zero} {V} {V′}{dir} 𝒱VV′j =
+       tz (dir ∣ (V ⟨ H ?⟩) ⊑ᴸᴿₜ V′ ⦂ c)
+   Goal {suc j} {V} {V′}{≼} 𝒱VV′sj
+       with LRᵥ-dyn-any-elim-≼{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
+   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′j =
+       let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
+       let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≼}{j} 𝒱V₁V′j in
+       anti-reduction-≼-L-one ℰV₁V′j V₁HH→V₁
+   Goal {suc j} {V} {V′}{≽} 𝒱VV′sj
+       with LRᵥ-dyn-any-elim-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
+   ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sj =
+       let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
+       inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
+```
+
+The last compatibility lemma is for projection on the right.
+As usual we start with the Bind Lemma, so our goal is to
+prove that 
+
+    V ⊑ᴸᴿₜ V′ ⟨ H ?⟩
+
+for some values `V` and `V′` where
+
+    M —↠ V, M′ —↠ V′, V ⊑ᴸᴿᵥ V′
+
+The proof is by induction on the step index `j`. The base case is
+trivially true because the logical relation is always true at zero.
+For the inductive step we consider the step index `suc j`, so
+we need to prove
+
+    #(V ⊑ᴸᴿₜ V′ ⟨ H ?⟩) (suc j)
+
+Note that `V` and `V′` are both of type `★`, by 
+definition `V ⊑ᴸᴿᵥ V′` gives us
+
+    V ≡ V₁ ⟨ G !⟩
+    V′ ≡ V₁′ ⟨ G !⟩
+    
+
+
+
+```
+compatible-proj-R : ∀{Γ}{H}{c : ★ ⊑ gnd⇒ty H}{M}{M′}
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (★ , ★ , unk⊑unk)
+   → Γ ⊨ M ⊑ᴸᴿ M′ ⟨ H ?⟩ ⦂ (★ , gnd⇒ty H , c)
+compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
+    with unk⊑gnd-inv c
+... | d , refl = (λ γ γ′ → ℰMM′H) , λ γ γ′ → ℰMM′H
+    where
+    ℰMM′H : ∀{γ}{γ′}{dir} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)
+             ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′ ⟨ H ?⟩) ⦂ unk⊑ d
+    ℰMM′H {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
+     LRₜ-bind{c = c}{d = unk⊑unk}{F = □}{F′ = ` □⟨ H ?⟩}
+                {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
+     (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
+     λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
+     Goal {j}{V}{V′}{dir} 𝒱VV′j 
+     where
+     Goal : ∀{j}{V}{V′}{dir}
+        → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑unk) j
+        → # (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d) j
+     Goal {zero} {V} {V′}{dir} 𝒱VV′j =
+         tz (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d)
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         with G ≡ᵍ H₂ | 𝒱VV′sj
+     ... | no neq | ()
+     ... | yes refl | v₁ , v′ , 𝒱V₁V′₁j
+         with G ≡ᵍ G
+     ... | no neq = ⊥-elim (neq refl)
+     ... | yes refl
+         with G ≡ᵍ H
+         {-------- Case G ≢ H ---------}
+     ... | no neq
+         with dir
+         {-------- Subcase ≼ ---------}
+     ... | ≼ = inj₂ (inj₁ (unit (collide v′ neq refl)))
+         {-------- Subcase ≽ ---------}
+     ... | ≽ = anti-reduction-≽-R-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
+                                      (collide v′ neq refl)
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′₁j | yes refl
+         {-------- Case G ≡ H ---------}
+         | yes refl 
+         with dir
+         {-------- Subcase ≼ ---------}
+     ... | ≼
+         with G ≡ᵍ G
+     ... | no neq = ⊥-elim (neq refl)
+     ... | yes refl 
+         with gnd-prec-unique d Refl⊑
+     ... | refl =
+           let V₁G⊑V′₁sj = v₁ , v′ , 𝒱V₁V′₁j in
+           inj₂ (inj₂ (v₁ 〈 G 〉 ,
+                       (V′₁ , unit (collapse v′ refl) , v′ , V₁G⊑V′₁sj)))
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′₁j | yes refl
+         | yes refl 
+         {-------- Subcase ≽ ---------}
+         | ≽
+         with gnd-prec-unique d Refl⊑
+     ... | refl =
+         let 𝒱VGV′j = LRᵥ-inject-L-intro-≽ {G}{gnd⇒ty G}{d} 𝒱V₁V′₁j in
+         let ℰVGV′j = LRᵥ⇒LRₜ-step{V = V₁ ⟨ G !⟩}{V′₁}{≽} 𝒱VGV′j in
+         anti-reduction-≽-R-one ℰVGV′j (collapse v′ refl)
+```
+
+# Proof of the Fundamental Lemma
+
+```
+fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
+  → Γ ⊩ M ⊑ M′ ⦂ A⊑A′
+    ----------------------------
+  → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (A , A′ , A⊑A′)
+fundamental {Γ} {A} {A′} {A⊑A′} .(` _) .(` _) (⊑-var ∋x) =
+   compatibility-var ∋x
+fundamental {Γ} {_} {_} {base⊑} ($ c) ($ c) ⊑-lit =
+   compatible-literal
+fundamental {Γ} {A} {A′} {A⊑A′} (L · M) (L′ · M′) (⊑-app ⊢L⊑L′ ⊢M⊑M′) =
+    compatible-app{L = L}{L′}{M}{M′} (fundamental L L′ ⊢L⊑L′)
+                                     (fundamental M M′ ⊢M⊑M′)
+fundamental {Γ} {.(_ ⇒ _)} {.(_ ⇒ _)} {.(fun⊑ _ _)} (ƛ N)(ƛ N′) (⊑-lam ⊢N⊑N′) =
+    compatible-lambda{N = N}{N′} (fundamental N N′ ⊢N⊑N′)
+fundamental {Γ} {★} {A′} {unk⊑ c} (M ⟨ G !⟩) M′ (⊑-inj-L ⊢M⊑M′) =
+    compatible-inj-L{G =  G}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
+fundamental {Γ} {★} {★} {.unk⊑unk} M (M′ ⟨ G !⟩) (⊑-inj-R ⊢M⊑M′) =
+    compatible-inj-R{Γ}{G = G}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
+fundamental {Γ} {_} {A′} {A⊑A′} (M ⟨ H ?⟩) M′ (⊑-proj-L ⊢M⊑M′) =
+    compatible-proj-L{Γ}{H}{A′}{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
+fundamental {Γ} {A} {.(gnd⇒ty _)} {A⊑A′} M (M′ ⟨ H′ ?⟩) (⊑-proj-R ⊢M⊑M′) =
+    compatible-proj-R{M = M}{M′} (fundamental M M′ ⊢M⊑M′)
+fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
+   compatible-blame ⊢M∶A
+```
+
+# Proof of the Gradual Guarantee
+
+```
+gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
+   → [] ⊩ M ⊑ M′ ⦂ A⊑A′
+    ---------------------------
+   → (M′ ⇓ → M ⇓)
+   × (M′ ⇑ → M ⇑)
+   × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
+   × (M ⇑ → M′ ⇑⊎blame)
+   × (M —↠ blame → M′ —↠ blame)
+gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
+  let (⊨≼M⊑ᴸᴿM′ , ⊨≽M⊑ᴸᴿM′) = fundamental M M′ M⊑M′ in
+  LR⇒GG (⊨≼M⊑ᴸᴿM′ id id ,ᵒ ⊨≽M⊑ᴸᴿM′ id id)
 ```

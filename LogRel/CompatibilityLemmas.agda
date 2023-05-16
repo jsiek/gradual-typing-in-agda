@@ -35,12 +35,12 @@ compatible-blame : ∀{Γ}{A}{M}
    → Γ ⊨ M ⊑ᴸᴿ blame ⦂ (A , A , Refl⊑)
 compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → LRₜ-blame) , (λ γ γ′ → LRₜ-blame)
 
-lookup-𝓖 : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst)
+lookup-⊑ᴸᴿ : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst)
   → ∀ {A}{A′}{A⊑A′}{y} → Γ ∋ y ⦂ (A , A′ , A⊑A′)
   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (γ y) ⊑ᴸᴿᵥ (γ′ y) ⦂ A⊑A′
-lookup-𝓖 {dir} (.(A , A′ , A⊑A′) ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {zero} refl = Zᵒ
-lookup-𝓖 {dir} (B ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {suc y} ∋y =
-   Sᵒ (lookup-𝓖 Γ (λ x → γ (suc x)) (λ x → γ′ (suc x)) ∋y)
+lookup-⊑ᴸᴿ {dir} (.(A , A′ , A⊑A′) ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {zero} refl = Zᵒ
+lookup-⊑ᴸᴿ {dir} (B ∷ Γ) γ γ′ {A} {A′} {A⊑A′} {suc y} ∋y =
+   Sᵒ (lookup-⊑ᴸᴿ Γ (λ x → γ (suc x)) (λ x → γ′ (suc x)) ∋y)
 
 compatibility-var : ∀ {Γ A A′ A⊑A′ x}
   → Γ ∋ x ⦂ (A , A′ , A⊑A′)
@@ -49,10 +49,10 @@ compatibility-var : ∀ {Γ A A′ A⊑A′ x}
 compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
   where
   LT : Γ ∣ ≼ ⊨ ` x ⊑ᴸᴿ ` x ⦂ (A , A′ , A⊑A′)
-  LT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-𝓖 Γ γ γ′ ∋x)
+  LT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
 
   GT : Γ ∣ ≽ ⊨ ` x ⊑ᴸᴿ ` x ⦂ (A , A′ , A⊑A′)
-  GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-𝓖 Γ γ γ′ ∋x)
+  GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
 
 compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}
      {c : A ⊑ C}{d : B ⊑ D}
@@ -98,7 +98,7 @@ compatible-app {Γ}{A}{A′}{B}{B′}{c}{d}{L}{L′}{M}{M′} ⊨L⊑L′ ⊨M�
      → i ≤ j
      → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ fun⊑ c d) j
      → # (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) i
-     → # (dir ∣ ((` (v ·□)) ⦉ W ⦊) ⊑ᴸᴿₜ ((` (v′ ·□)) ⦉ W′ ⦊) ⦂ d) i
+     → # (dir ∣ V · W ⊑ᴸᴿₜ V′ · W′ ⦂ d) i
    Goal {V} {V′} {v} {v′} {W} {W′} {w}{w′}{zero} {j} i≤j 𝒱VV′j 𝒱WW′i =
      tz (dir ∣ (value v · W) ⊑ᴸᴿₜ (value v′ · W′) ⦂ d)
    Goal {V} {V′} {v} {v′} {W} {W′} {w}{w′}{suc i} {suc j}
@@ -165,8 +165,8 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
    Goal {suc j} {V} {V′}{≼} 𝒱VV′sj
        with LRᵥ-dyn-any-elim-≼{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
    ... | V₁ , refl , v₁ , v′ , 𝒱V₁V′j =
-       let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        let ℰV₁V′j = LRᵥ⇒LRₜ-step{gnd⇒ty H}{A′}{c}{V₁}{V′}{≼}{j} 𝒱V₁V′j in
+       let V₁HH→V₁ = collapse{H}{V = V₁} v₁ refl in
        anti-reduction-≼-L-one ℰV₁V′j V₁HH→V₁
    Goal {suc j} {V} {V′}{≽} 𝒱VV′sj
        with LRᵥ-dyn-any-elim-≽{V}{V′}{j}{H}{A′}{c} 𝒱VV′sj
