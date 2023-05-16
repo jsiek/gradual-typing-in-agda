@@ -439,8 +439,8 @@ using strong recursion in Agda is somewhat annoying, as is the proof
 of downward closedness. We instead use the `StepIndexedLogic` library
 to define the logical relation, which enables the definition of
 recursive predicates and proves downward closedness for us.  However,
-there is some cost to using the `StepIndexedLogic` library, as
-there is some overhead to using the library.
+there is some overhead involved in using the `StepIndexedLogic`
+library.
 
 ```
 open import StepIndexedLogic
