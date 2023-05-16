@@ -186,10 +186,8 @@ LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRₜ (A , A′ , c) ≼ M M′ =
    (∃ˢ[ N ] (M —→ N)ˢ ×ˢ ▷ˢ (≼ ∣ N ˢ⊑ᴸᴿₜ M′ ⦂ c))
    ⊎ˢ (M′ —↠ blame)ˢ
-      -- TODO: remove the M′ —↠ blame below. It's not needed.
-   ⊎ˢ ((Value M)ˢ ×ˢ ((M′ —↠ blame)ˢ ⊎ˢ
-                    (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ
-                       ×ˢ (LRᵥ (_ , _ , c) ≼ M V′))))
+   ⊎ˢ ((Value M)ˢ ×ˢ (∃ˢ[ V′ ] (M′ —↠ V′)ˢ ×ˢ (Value V′)ˢ
+                         ×ˢ (LRᵥ (_ , _ , c) ≼ M V′)))
 
 LRₜ (A , A′ , c) ≽ M M′ =
    (∃ˢ[ N′ ] (M′ —→ N′)ˢ ×ˢ ▷ˢ (≽ ∣ M ˢ⊑ᴸᴿₜ N′ ⦂ c))
@@ -217,8 +215,7 @@ LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term �
 LRₜ-def A⊑A′ ≼ M M′ =
    (∃ᵒ[ N ] (M —→ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
    ⊎ᵒ (M′ —↠ blame)ᵒ
-   ⊎ᵒ ((Value M)ᵒ ×ᵒ ((M′ —↠ blame)ᵒ ⊎ᵒ
-              (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′))))
+   ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′)))
 LRₜ-def A⊑A′ ≽ M M′ =
    (∃ᵒ[ N′ ] (M′ —→ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
    ⊎ᵒ (Blame M′)ᵒ
@@ -245,9 +242,9 @@ LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
                 ≡ᵒ LRₜ-def A⊑A′ dir M M′
   EQ {≼} = cong-⊎ᵒ (≡ᵒ-refl refl)
            (cong-⊎ᵒ (≡ᵒ-refl refl)
-            (cong-×ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
+            (cong-×ᵒ (≡ᵒ-refl refl) 
              (cong-∃ λ V′ → cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
-              ((≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≼ , M , V′))))))))))
+              ((≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≼ , M , V′)))))))))
   EQ {≽} = cong-⊎ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-∃ λ V → cong-×ᵒ (≡ᵒ-refl refl)
               (cong-×ᵒ (≡ᵒ-refl refl)
@@ -291,9 +288,7 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≼} M⊑M′sk
     with ⇔-to (LRₜ-suc{dir = ≼}) M⊑M′sk
 ... | inj₂ (inj₁ M′→blame) =
       inj₂ (inj₁ M′→blame)
-... | inj₂ (inj₂ (m , inj₁ M′→blame)) =
-      inj₂ (inj₁ M′→blame)
-... | inj₂ (inj₂ (m , inj₂ (V′ , M′→V′ , v′ , 𝒱≼V′M))) =
+... | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱≼V′M))) =
       inj₁ ((M , (M END) , m) , (V′ , M′→V′ , v′))
 ... | inj₁ (N , M→N , ▷N⊑M′)
     with LR⇒sem-approx{dir = ≼} ▷N⊑M′
@@ -367,9 +362,8 @@ anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
          let ℰNM′si = anti-reduction-≼-R-one ▷ℰNN′ M′→N′ in
          inj₁ (N , M→N , ℰNM′si)
 ... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (unit M′→N′ ++ N′→blame))
-... | inj₂ (inj₂ (m , inj₁ N′→blame)) = inj₂ (inj₁ (unit M′→N′ ++ N′→blame))
-... | inj₂ (inj₂ (m , inj₂ (V′ , N′→V′ , v′ , 𝒱MV′))) =
-      inj₂ (inj₂ (m , inj₂ (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
+... | inj₂ (inj₂ (m , (V′ , N′→V′ , v′ , 𝒱MV′))) =
+      inj₂ (inj₂ (m , (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 
 anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
@@ -602,7 +596,7 @@ LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
 LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
   ⇔-fro (LRₜ-suc{dir = ≼})
   (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
-  (inj₂ (inj₂ (v , inj₂ (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
+  (inj₂ (inj₂ (v , (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
 LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
   ⇔-fro (LRₜ-suc{dir = ≽})
   (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in

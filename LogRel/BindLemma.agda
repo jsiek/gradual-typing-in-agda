@@ -63,9 +63,8 @@ LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LR�
                 (LRᵥ→LRₜ-down-one-≼{c = c}{d = d}{F}{F′}{i}{M}{N}{M′}
                      M→N LRᵥ→LRₜj) in
       ⇔-fro (LRₜ-suc{dir = ≼}) (inj₁ ((F ⦉ N ⦊) , ξ′ F refl refl M→N , IH))
-... | inj₂ (inj₂ (m , inj₁ M′→blame)) = inj₂ (inj₁ (ξ-blame₃ F′ M′→blame refl))
 LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LRᵥ→LRₜj 
-    | inj₂ (inj₂ (m , inj₂ (V′ , M′→V′ , v′ , 𝒱MV′))) =
+    | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱MV′))) =
       let ℰFMF′V′ = LRᵥ→LRₜj (suc i) M V′ ≤-refl (M END) m M′→V′ v′ 𝒱MV′ in
       anti-reduction-≼-R ℰFMF′V′ (ξ′* F′ M′→V′)
 LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LRᵥ→LRₜj 

@@ -279,8 +279,8 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
                by reasoning equivalent to LRᵥ-inject-L-intro-≼
          -}
            let V₁G⊑V′₁sj = v₁ , v′ , 𝒱V₁V′₁j in
-           inj₂ (inj₂ ((v₁ 〈 G 〉) ,
-                       inj₂ (V′₁ , unit (collapse v′ refl) , v′ , V₁G⊑V′₁sj)))
+           inj₂ (inj₂ (v₁ 〈 G 〉 ,
+                       (V′₁ , unit (collapse v′ refl) , v′ , V₁G⊑V′₁sj)))
      Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
          | yes refl | v₁ , v′ , 𝒱V₁V′₁j | yes refl
          | yes refl 
