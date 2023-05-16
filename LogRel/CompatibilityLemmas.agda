@@ -83,11 +83,11 @@ compatible-app {Γ}{A}{A′}{B}{B′}{c}{d}{L}{L′}{M}{M′} ⊨L⊑L′ ⊨M�
  ⊢ℰLM⊑LM′ : ∀{dir}{γ}{γ′} → 𝓖⟦ Γ ⟧ dir γ γ′
                              ⊢ᵒ dir ∣ ⟪ γ ⟫ (L · M) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (L′ · M′) ⦂ d
  ⊢ℰLM⊑LM′ {dir}{γ}{γ′} = ⊢ᵒ-intro λ n 𝒫n →
-  LRₜ-bind-step{c = d}{d = fun⊑ c d}
+  LRₜ-bind{c = d}{d = fun⊑ c d}
                {F = ` (□· (⟪ γ ⟫ M))}{F′ = ` (□· (⟪ γ′ ⟫ M′))}
   (⊢ᵒ-elim ((proj dir L L′ ⊨L⊑L′) γ γ′) n 𝒫n)
   λ j V V′ j≤n L→V v L′→V′ v′ 𝒱VV′j →
-  LRₜ-bind-step{c = d}{d = c}{F = ` (v ·□)}{F′ = ` (v′ ·□)}
+  LRₜ-bind{c = d}{d = c}{F = ` (v ·□)}{F′ = ` (v′ ·□)}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) j
    (down (Πᵒ (𝓖⟦ Γ ⟧ dir γ γ′)) n 𝒫n j j≤n))
    λ i W W′ i≤j M→W w M′→W′ w′ 𝒱WW′i →
@@ -119,7 +119,7 @@ compatible-inj-L{Γ}{G}{A′}{c}{M}{M′} ⊨M⊑M′ =
   ℰMGM′ : ∀ {γ}{γ′}{dir}
     → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ (dir ∣ (⟪ γ ⟫ M ⟨ G !⟩) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ unk⊑ c)
   ℰMGM′{γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   LRₜ-bind-step{c = unk⊑ c}{d = c}{F = ` (□⟨ G !⟩)}{F′ = □}
+   LRₜ-bind{c = unk⊑ c}{d = c}{F = ` (□⟨ G !⟩)}{F′ = □}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
@@ -136,7 +136,7 @@ compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
   ℰMM′G : ∀{γ}{γ′}{dir}
     → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′ ⟨ G !⟩) ⦂ unk⊑unk
   ℰMM′G {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   LRₜ-bind-step{c = unk⊑unk}{d = unk⊑ d}{F = □}{F′ = ` (□⟨ G !⟩)}
+   LRₜ-bind{c = unk⊑unk}{d = unk⊑ d}{F = □}{F′ = ` (□⟨ G !⟩)}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
@@ -152,7 +152,7 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
   ℰMHM′ : ∀{γ}{γ′}{dir} → 𝓖⟦ Γ ⟧ dir γ γ′
        ⊢ᵒ dir ∣ (⟪ γ ⟫ M ⟨ H ?⟩) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ c
   ℰMHM′ {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-   LRₜ-bind-step{c = c}{d = unk⊑ c}{F = ` (□⟨ H ?⟩)}{F′ = □}
+   LRₜ-bind{c = c}{d = unk⊑ c}{F = ` (□⟨ H ?⟩)}{F′ = □}
               {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
    (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
    λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j → Goal{j}{V}{V′}{dir} 𝒱VV′j 
@@ -184,55 +184,111 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
     ℰMM′H : ∀{γ}{γ′}{dir} → 𝓖⟦ Γ ⟧ dir γ γ′
              ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′ ⟨ H ?⟩) ⦂ unk⊑ d
     ℰMM′H {γ}{γ′}{dir} = ⊢ᵒ-intro λ n 𝒫n →
-     LRₜ-bind-step{c = c}{d = unk⊑unk}{F = □}{F′ = ` □⟨ H ?⟩}
+     LRₜ-bind{c = c}{d = unk⊑unk}{F = □}{F′ = ` □⟨ H ?⟩}
                 {⟪ γ ⟫ M}{⟪ γ′ ⟫ M′}{n}{dir}
      (⊢ᵒ-elim ((proj dir M M′ ⊨M⊑M′) γ γ′) n 𝒫n)
      λ j V V′ j≤n M→V v M′→V′ v′ 𝒱VV′j →
      Goal {j}{V}{V′}{dir} 𝒱VV′j 
      where
-     {-
-        M′⟨ H ?⟩  -->*   V′⟨ G !⟩⟨ H ?⟩  --> V′     if G = H
-        ⊑                                --> blame  if G ≠ H
-        M         -->*   V ⟨ G !⟩
-     -}
      Goal : ∀{j}{V}{V′}{dir}
         → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑unk) j
         → # (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d) j
      Goal {zero} {V} {V′}{dir} 𝒱VV′j =
          tz (dir ∣ V ⊑ᴸᴿₜ (V′ ⟨ H ?⟩) ⦂ unk⊑ d)
-     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         {-
+            M′⟨ H ?⟩  -->*   V′₁⟨ G !⟩⟨ H ?⟩
+            ⊑
+            M         -->*   V₁⟨ G !⟩
+         -}
          with G ≡ᵍ H₂ | 𝒱VV′sj
      ... | no neq | ()
-     ... | yes refl | v₁ , v′ , 𝒱V₁V′j
+     ... | yes refl | v₁ , v′ , 𝒱V₁V′₁j
          with G ≡ᵍ G
      ... | no neq = ⊥-elim (neq refl)
      ... | yes refl
          with G ≡ᵍ H
+         {-------- Case G ≢ H ---------}
+         {-
+            V₁⟨ G !⟩    ⊑     V′₁⟨ G !⟩  at (suc j)
+            V₁          ⊑     V′₁        at j
+
+            nts.
+            V₁⟨ G !⟩    ⊑     V′₁⟨ G !⟩⟨ H ?⟩   at (suc j)
+         -}
      ... | no neq
          with dir
+         {-------- Subcase ≼ ---------}
+         {-
+            have V′₁⟨ G !⟩⟨ H ?⟩  -->*  blame
+         -}
      ... | ≼ = inj₂ (inj₁ (unit (collide v′ neq refl)))
-     ... | ≽ = 
-         anti-reduction-≽-R-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
-                              (collide v′ neq refl)
-     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
-         | yes refl | v₁ , v′ , 𝒱V₁V′ | yes refl
+         {-------- Subcase ≽ ---------}
+         {-
+            V′₁ ⟨ G !⟩⟨ H ?⟩  -->  blame
+
+            via anti-reduction, suffices to show
+            V₁ ⟨ G !⟩   ⊑     blame     at  j
+            which we have by LRₜ-blame-step.
+         -}
+     ... | ≽ = anti-reduction-≽-R-one (LRₜ-blame-step{★}{gnd⇒ty H}{unk⊑ d}{≽})
+                                      (collide v′ neq refl)
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′₁j | yes refl
+         {-------- Case G ≡ H ---------}
+         {-
+            V₁⟨ G !⟩    ⊑     V′₁⟨ G !⟩  at (suc j)
+            V₁          ⊑     V′₁        at j
+
+            nts.
+            V₁⟨ G !⟩    ⊑     V′₁⟨ G !⟩⟨ G ?⟩   at (suc j)
+         -}
          | yes refl 
          with dir
+         {-------- Subcase ≼ ---------}
      ... | ≼
          with G ≡ᵍ G
      ... | no neq = ⊥-elim (neq refl)
      ... | yes refl 
          with gnd-prec-unique d Refl⊑
      ... | refl =
-           inj₂ (inj₂ ((v₁ 〈 G 〉) , inj₂ (V′ , unit (collapse v′ refl) , v′ ,
-               v₁ , v′ , 𝒱V₁V′)))
-     Goal {suc j} {V₁ ⟨ G !⟩} {V′ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
-         | yes refl | v₁ , v′ , 𝒱V₁V′ | yes refl
+         {-
+           recall
+           V₁          ⊑     V′₁        at j
+
+           have:
+           V₁⟨ G !⟩ is a value
+           V′₁ ⟨ G !⟩⟨ G ?⟩  -->*  V′₁
+           V₁ is a value
+           V₁⟨ G !⟩    ⊑ᵥ     V′₁       at (suc j)
+               by reasoning equivalent to LRᵥ-inject-L-intro-≼
+         -}
+           let V₁G⊑V′₁sj = v₁ , v′ , 𝒱V₁V′₁j in
+           inj₂ (inj₂ ((v₁ 〈 G 〉) ,
+                       inj₂ (V′₁ , unit (collapse v′ refl) , v′ , V₁G⊑V′₁sj)))
+     Goal {suc j} {V₁ ⟨ G !⟩} {V′₁ ⟨ H₂ !⟩}{dir} 𝒱VV′sj
+         | yes refl | v₁ , v′ , 𝒱V₁V′₁j | yes refl
          | yes refl 
+         {-------- Subcase ≽ ---------}
          | ≽
          with gnd-prec-unique d Refl⊑
      ... | refl =
-         let 𝒱VGV′ = LRᵥ-inject-L-intro{G}{gnd⇒ty G}{d} 𝒱V₁V′ in
-         anti-reduction-≽-R-one (LRᵥ⇒LRₜ-step{V = V₁ ⟨ G !⟩}{V′}{≽} 𝒱VGV′)
-                              (collapse v′ refl)
-     
+         {-
+            recall
+            V₁          ⊑     V′₁        at j
+             
+            nts.
+            V₁⟨ G !⟩    ⊑ₜ     V′₁⟨ G !⟩⟨ G ?⟩   at (suc j)
+
+            V′₁ ⟨ G !⟩⟨ G ?⟩  -->   V′₁
+            
+            via anti-reduction, suffices to show
+            V₁⟨ G !⟩    ⊑ₜ     V′₁               at j
+            so it suffices to show (via LRᵥ⇒LRₜ-step)
+            V₁⟨ G !⟩    ⊑ᵥ     V′₁               at j
+            which we have by LRᵥ-inject-L-intro-≽
+         -}
+         let 𝒱VGV′j = LRᵥ-inject-L-intro-≽ {G}{gnd⇒ty G}{d} 𝒱V₁V′₁j in
+         let ℰVGV′j = LRᵥ⇒LRₜ-step{V = V₁ ⟨ G !⟩}{V′₁}{≽} 𝒱VGV′j in
+         anti-reduction-≽-R-one ℰVGV′j (collapse v′ refl)
+

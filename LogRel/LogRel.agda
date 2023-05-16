@@ -129,10 +129,21 @@ LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≼ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
 ... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
     {-
-     intro: k ⇒ k        (LRᵥ-inject-L-intro) (uses down in ≼ case)
-                         (compatible-inj-L)
-     elim:  suc k ⇒ k    (LRᵥ-dyn-any-elim-≼) (compatible-proj-L, anti-red.)
-                         (LRᵥ-inject-R-intro-≼ k ⇒ k) (compatible-inj-R)
+      Why do we need ▷ here?
+
+      In compatible-proj-R, we have
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁⟨ G !⟩         at (suc j)       (1)
+      and need to show
+        ≼ ∣ V₁⟨ G !⟩    ⊑ₜ     V′₁⟨ G !⟩⟨ G ?⟩   at (suc j)
+      We have
+        V′₁⟨ G !⟩⟨ G ?⟩ --> V′₁
+      so by the definition of ⊑ᴸᴿₜ it remains to show
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁               at (suc j)
+      From (1) we have
+        ≼ ∣ V₁          ⊑ᵥ     V′₁               at j
+      By this definition, we conclude
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁               at (suc j)
+
      -}
 ... | no neq = ⊥ ˢ
 
@@ -140,10 +151,8 @@ LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
 ... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
     {-
-    intro: k ⇒ k           (LRᵥ-inject-L-intro)
-    elim: suc k ⇒ suc k    (LRᵥ-dyn-any-elim-≽) (compatible-proj-L)
-                           (LRᵥ-inject-R-intro-≽ k => k, uses down)
-                           (compatible-inj-R)
+      Why can't we use ▷ here?
+
      -}
 ... | no neq = ⊥ ˢ
 LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
@@ -222,7 +231,8 @@ LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
   X₁ : Dir → LR-type
   X₁ = λ dir → inj₁ (c , dir , M , M′)
   X₂ = λ dir → inj₂ (c , dir , M , M′)
-  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ) ≡ᵒ LRₜ-def A⊑A′ dir M M′
+  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ)
+                ≡ᵒ LRₜ-def A⊑A′ dir M M′
   EQ {≼} = cong-⊎ᵒ (≡ᵒ-refl refl)
            (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
@@ -533,24 +543,43 @@ LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≼} 𝒱VV′ =
 LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≽} 𝒱VV′ =
    LRᵥ-inject-R-intro-≽{G} {c} {V} {V′} {k} 𝒱VV′
 
+LRᵥ-inject-L-intro-≼ : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{k}
+   → Value V
+   → Value V′
+   → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≼ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
+LRᵥ-inject-L-intro-≼ {G} {A′} {c} {V} {V′} {k} v v′ 𝒱VV′k
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
+... | yes refl =
+    v , v′ , 𝒱VV′k
+
+LRᵥ-inject-L-intro-≽ : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{k}
+   → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≽ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) k
+LRᵥ-inject-L-intro-≽ {G}{A′}{c}{V}{V′}{zero} 𝒱VV′k =
+    tz (≽ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
+LRᵥ-inject-L-intro-≽ {G} {A′} {c} {V} {V′} {suc k} 𝒱VV′sk
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
+... | yes refl =
+      let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
+      v , v′ , 𝒱VV′sk
+
 LRᵥ-inject-L-intro : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}{k}
    → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
    → #(dir ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) k
-LRᵥ-inject-L-intro {G}{A′}{c}{V}{V′}{dir}{zero} 𝒱VV′k =
-    tz (dir ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {zero} 𝒱VV′k =
+    tz (≼ ∣ V ⟨ G !⟩ ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
 LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
     with G ≡ᵍ G
 ... | no neq = ⊥-elim (neq refl)
 ... | yes refl =
     let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
     let 𝒱VV′k = down (≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k) 𝒱VV′sk k (n≤1+n k) in
-    v , v′ , 𝒱VV′k
-LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {suc k} 𝒱VV′sk
-    with G ≡ᵍ G
-... | no neq = ⊥-elim (neq refl)
-... | yes refl =
-      let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
-      v , v′ , 𝒱VV′sk
+    v , v′ , 𝒱VV′k 
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {k} 𝒱VV′k =
+   LRᵥ-inject-L-intro-≽{G} {A′} {c} {V} {V′} 𝒱VV′k 
 
 {--------------- Related values are related expressions -----------------------}
 
