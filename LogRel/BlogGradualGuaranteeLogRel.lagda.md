@@ -8,6 +8,7 @@ open import Data.Nat
 open import Data.Nat.Properties
 open import Data.Product using (_,_;_×_; proj₁; proj₂; Σ-syntax; ∃-syntax)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
+open import Data.Unit using (⊤; tt)
 open import Data.Unit.Polymorphic renaming (⊤ to topᵖ; tt to ttᵖ)
 open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
@@ -82,6 +83,49 @@ Refl⊑ : ∀{A} → A ⊑ A
 Refl⊑ {★} = unk⊑unk
 Refl⊑ {$ₜ ι} = base⊑
 Refl⊑ {A ⇒ B} = fun⊑ Refl⊑ Refl⊑
+```
+
+If `c` is a derivation of `★ ⊑ gnd⇒ty G`, then it must be an instance
+of the `unk⊑` rule.
+
+```
+unk⊑gnd-inv : ∀{G}
+   → (c : ★ ⊑ gnd⇒ty G)
+   → ∃[ d ] c ≡ unk⊑{G}{gnd⇒ty G} d
+unk⊑gnd-inv {$ᵍ ι} (unk⊑ {$ᵍ .ι} base⊑) = base⊑ , refl
+unk⊑gnd-inv {★⇒★} (unk⊑ {★⇒★} (fun⊑ c d)) = fun⊑ c d , refl
+```
+
+If `c` and `d` are both derivations of `★ ⊑ A`, then they are equal.
+
+```
+dyn-prec-unique : ∀{A}
+  → (c : ★ ⊑ A)
+  → (d : ★ ⊑ A)
+  → c ≡ d
+dyn-prec-unique {★} unk⊑unk unk⊑unk = refl
+dyn-prec-unique {★} unk⊑unk (unk⊑ {$ᵍ ι} ())
+dyn-prec-unique {★} unk⊑unk (unk⊑ {★⇒★} ())
+dyn-prec-unique {★} (unk⊑ {$ᵍ ι} ()) d
+dyn-prec-unique {★} (unk⊑ {★⇒★} ()) d
+dyn-prec-unique {$ₜ ι} (unk⊑ {$ᵍ .ι} base⊑) (unk⊑ {$ᵍ .ι} base⊑) = refl
+dyn-prec-unique {A ⇒ A₁} (unk⊑ {★⇒★} (fun⊑ c c₁)) (unk⊑ {★⇒★} (fun⊑ d d₁))
+    with dyn-prec-unique c d | dyn-prec-unique c₁ d₁
+... | refl | refl = refl
+```
+
+If `c` and `d` are both derivations of `gnd⇒ty G ⊑ A`, then
+they are equal.
+
+```
+gnd-prec-unique : ∀{G A}
+   → (c : gnd⇒ty G ⊑ A)
+   → (d : gnd⇒ty G ⊑ A)
+   → c ≡ d
+gnd-prec-unique {$ᵍ ι} {.($ₜ ι)} base⊑ base⊑ = refl
+gnd-prec-unique {★⇒★} {.(_ ⇒ _)} (fun⊑ c c₁) (fun⊑ d d₁)
+    with dyn-prec-unique c d | dyn-prec-unique c₁ d₁
+... | refl | refl = refl
 ```
 
 Next we define a precision relation on terms. I'm going to skip the
@@ -425,7 +469,6 @@ LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 ```
 
-
 ```
 _∣_ˢ⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A ⊑ A′)
    → Setˢ LR-ctx (cons Now ∅)
@@ -470,9 +513,9 @@ LRₜ (A , A′ , c) ≽ M M′ =
                                 ×ˢ (LRᵥ (_ , _ , c) ≽ V M′)))
 ```
 
-Next we proceed to the definition of the logical relation for values,
-the predicate `LRᵥ`. In the case of precision for base types `base⊑`,
-we only relate identical constants.
+Next we proceed to define the logical relation for values, the
+predicate `LRᵥ`. In the case of precision for base types `base⊑`, we
+only relate identical constants.
 
 ```
 LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
@@ -492,10 +535,12 @@ LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B�
 
 Notice how in the above definition, we no longer need to quantify over
 the extra `j` where `j ≤ k`. The implication operator `→ˢ` of the
-`StepIndexedLogic` instead takes care of that complication; ensuring
+`StepIndexedLogic` instead takes care of that complication, ensuring
 that our logical relation is downward closed.
 
-In the case for relating
+In the case for relating two values of the unknown type `★`,
+two injections are related if they are injections from the same
+ground types and if the underlying values are related later.
 
 ```
 LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
@@ -506,20 +551,37 @@ LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
 LRᵥ (.★ , .★ , unk⊑unk) dir V V′ = ⊥ ˢ
 ```
 
+In the case for relating two values where the less precise value is of
+unknown type but the more precise value is not, our definition depends
+on the direction (`≼` or `≽`). For the `≼` direction, the underlying
+values must be related later. Alternatively, we could relate them now,
+by using recusion on the precision derivation `d`, but the proof of
+the compatibility lemma for a projection on the more-precise side
+depends on only requiring the two underlying values to be related later.
+
 ```
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≼ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
-... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ ▷ˢ (≼ ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ d)
 ... | no neq = ⊥ ˢ
+```
+
+For the `≽` direction, the underlying values must be related now.
+Alternatively, we could relate them later, but the proof of the
+compatibility lemma for a projection on the less-precise side depends
+on the underlying values being related now.
+
+```
 LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
     with G ≡ᵍ H
-... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ
-                 ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
+... | yes refl = (Value V)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ (gnd⇒ty G , A′ , d) ≽ V V′)
 ... | no neq = ⊥ ˢ
 LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
 ```
 
+With `LRₜ` and `LRᵥ` in hand, we can define the combined predicate
+`pre-LRₜ⊎LRᵥ` and then use the fixpoint operator `μᵒ` from the
+StepIndexedLogic to define the combined logical relation.
 
 ```
 pre-LRₜ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
@@ -528,16 +590,80 @@ pre-LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ c dir M M′
 
 LRₜ⊎LRᵥ : LR-type → Setᵒ
 LRₜ⊎LRᵥ X = μᵒ pre-LRₜ⊎LRᵥ X
+```
 
+We now give the main definitions for the logical relation, `⊑ᴸᴿᵥ` for
+values and the `⊑ᴸᴿₜ` for terms.
+
+```
 _∣_⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
 dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
 
 _∣_⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
 dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
+```
 
+The following notation is for the conjunction of both directions.
+
+```
 _⊑ᴸᴿₜ_⦂_ : Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
 M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) ×ᵒ (≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′)
 ```
+
+# Relating open terms
+
+The relations that we have defined so far, `⊑ᴸᴿᵥ` and `⊑ᴸᴿₜ`, only
+apply to closed terms, that is, terms with no free variables.  We also
+need to related open terms. The standard way to do that is to apply
+two substitutions to the two terms, replacin each free variable with
+related values.
+
+So we relate a pair of substitutions `γ` and `γ′` with this definition
+of `Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′`, which says that the substitutions must be pointwise
+related using the logical relation for values.
+
+```
+_∣_⊨_⊑ᴸᴿ_ : (Γ : List Prec) → Dir → Subst → Subst → List Setᵒ
+[] ∣ dir ⊨ γ ⊑ᴸᴿ γ′ = []
+((_ , _ , A⊑A′) ∷ Γ) ∣ dir ⊨ γ ⊑ᴸᴿ γ′ = (dir ∣ (γ 0) ⊑ᴸᴿᵥ (γ′ 0) ⦂ A⊑A′)
+                     ∷ (Γ ∣ dir ⊨ (λ x → γ (suc x)) ⊑ᴸᴿ (λ x → γ′ (suc x)))
+```
+
+We then define two open terms `M` and `M′` to be logically related
+if there are a pair of related subtitutions `γ` and `γ′` such that
+applying them to `M` and `M′` produces related terms.
+
+```
+_∣_⊨_⊑ᴸᴿ_⦂_ : List Prec → Dir → Term → Term → Prec → Set
+Γ ∣ dir ⊨ M ⊑ᴸᴿ M′ ⦂ (_ , _ , A⊑A′) = ∀ (γ γ′ : Subst)
+   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
+```
+
+We use the following notation for the conjunction of the two
+directions and define the `proj` function for accessing each
+direction.
+
+```
+_⊨_⊑ᴸᴿ_⦂_ : List Prec → Term → Term → Prec → Set
+Γ ⊨ M ⊑ᴸᴿ M′ ⦂ c = (Γ ∣ ≼ ⊨ M ⊑ᴸᴿ M′ ⦂ c) × (Γ ∣ ≽ ⊨ M ⊑ᴸᴿ M′ ⦂ c)
+
+proj : ∀ {Γ}{c}
+  → (dir : Dir)
+  → (M M′ : Term)
+  → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ c
+  → Γ ∣ dir ⊨ M ⊑ᴸᴿ M′ ⦂ c
+proj {Γ} {c} ≼ M M′ M⊑M′ = proj₁ M⊑M′
+proj {Γ} {c} ≽ M M′ M⊑M′ = proj₂ M⊑M′
+```
+
+# Reasoning about the logical relation
+
+Unfortunately, there is some overhead to using the StepIndexedLogic to
+define the logical relation. One needs to use the `fixpointᵒ` theorem
+to obtain usable definitions.
+
+The following states what we would like the `⊑ᴸᴿₜ` relation to look
+like.
 
 ```
 LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term → Setᵒ
@@ -552,6 +678,9 @@ LRₜ-def A⊑A′ ≽ M M′ =
    ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M —↠ V)ᵒ ×ᵒ (Value V)ᵒ
                                ×ᵒ (≽ ∣ V ⊑ᴸᴿᵥ M′ ⦂ A⊑A′)))
 ```
+
+We prove that the above is equivalent to `⊑ᴸᴿₜ` with the following lemma,
+using the `fixpointᵒ` theorem in several places.
 
 ```
 LRₜ-stmt : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}
@@ -570,7 +699,8 @@ LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
   X₁ : Dir → LR-type
   X₁ = λ dir → inj₁ (c , dir , M , M′)
   X₂ = λ dir → inj₂ (c , dir , M , M′)
-  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ) ≡ᵒ LRₜ-def A⊑A′ dir M M′
+  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ)
+                ≡ᵒ LRₜ-def A⊑A′ dir M M′
   EQ {≼} = cong-⊎ᵒ (≡ᵒ-refl refl)
            (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) 
@@ -580,13 +710,24 @@ LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-∃ λ V → cong-×ᵒ (≡ᵒ-refl refl)
               (cong-×ᵒ (≡ᵒ-refl refl)
                (≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≽ , V , M′))))))))
+```
 
+In situations where we need to reason with an explicit step index `k`,
+we use the following corollary.
+
+```
 LRₜ-suc : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}{k}
   → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k) ⇔ #(LRₜ-def A⊑A′ dir M M′) (suc k)
 LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
    ≡ᵒ⇒⇔{k = suc k} (LRₜ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
 ```
 
+# The logical relation implies semantic approximation
+
+Before getting too much further, its good to check whether the logical
+relation is strong enough, i.e., it should imply semantic
+approximation. Indeed, the following somewhat verbose but easy lemma
+proves that it does so.
 
 ```
 LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
@@ -623,4 +764,589 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≽} M⊑M′sk
 ... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (M′ —→⟨ M′→N′ ⟩ N′→blame))
 ... | inj₂ (inj₂ (L′ , N′→L′ , eq)) =
       inj₂ (inj₂ (L′ , (M′ —→⟨ M′→N′ ⟩ N′→L′) , cong suc eq))
+```
+
+# The logical relation implies the gradual guarantee
+
+Putting together the above lemma with `sem-approx⇒GG`, we know that
+the logical relation implies the gradual guarantee.
+
+```
+LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
+   → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′
+   → (M′ ⇓ → M ⇓)
+   × (M′ ⇑ → M ⇑)
+   × (M ⇓ → M′ ⇓ ⊎ M′ —↠ blame)
+   × (M ⇑ → M′ ⇑⊎blame)
+   × (M —↠ blame → M′ —↠ blame)
+LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
+  sem-approx⇒GG{A⊑A′ = A⊑A′} (λ k → ≼⊨M⊑M′ , ≽⊨M⊑M′)
+  where
+  ≼⊨M⊑M′ : ∀{k} → ≼ ⊨ M ⊑ M′ for k
+  ≼⊨M⊑M′ {k} = LR⇒sem-approx {k = k}{dir = ≼}
+                   (⊢ᵒ-elim (proj₁ᵒ ⊨M⊑M′) (suc k) tt) 
+  ≽⊨M⊑M′ : ∀{k} → ≽ ⊨ M ⊑ M′ for k
+  ≽⊨M⊑M′ {k} = LR⇒sem-approx {k = k}{dir = ≽}
+                   (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc k) tt)
+```
+
+# Looking forward to the fundamental lemma
+
+The `fundamental` lemma is the last, but largest, piece of the puzzle.
+It states that if `M` and `M′` are related by term precision, then
+they are also logically related.
+
+    fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
+      → Γ ⊩ M ⊑ M′ ⦂ A⊑A′
+        ----------------------------
+      → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (A , A′ , A⊑A′)
+
+The proof of the fundamental lemma is by induction on the term
+precision relation, with each case proved as a separate lemma.  By
+tradition, we refer to these lemmas as the compatibility lemmas. The
+proofs of the compatibility lemmas rely on a considerable number of
+technical lemmas regarding the logical relation, which we prove next.
+
+# The logical relation is preserved by anti-reduction (aka. expansion)
+
+If two terms are related, then taking a step backwards with either or
+both of the terms yields related terms. For example, if `≼ ∣ N ⊑ᴸᴿₜ M′`
+and we step `N` backwards to `M`, then we have `≼ ∣ M ⊑ᴸᴿₜ M′`.
+
+```
+anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+  → #(≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
+  → (M→N : M —→ N)
+    ----------------------------
+  → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+anti-reduction-≼-L-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N =
+  inj₁ (N , M→N , ℰ≼NM′i)
+```
+
+Because the `≼` direction observes the reduction steps of the
+less-precise term, and the above lemma is about taking a backward step
+with the less-precise term, the step index increases by one, i.e.,
+not the `i` in the premise and `suc i` in the conclusion above.
+
+If instead the backward step is taken by the more-precise term, then
+the step index does not change, as in the following lemma.
+
+```
+anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M′→N′ : M′ —→ N′)
+  → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{zero} ℰMN′ M′→N′ =
+  tz (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c)
+anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
+    with ℰMN′
+... | inj₁ (N , M→N , ▷ℰNN′) =
+         let ℰNM′si = anti-reduction-≼-R-one ▷ℰNN′ M′→N′ in
+         inj₁ (N , M→N , ℰNM′si)
+... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (unit M′→N′ ++ N′→blame))
+... | inj₂ (inj₂ (m , (V′ , N′→V′ , v′ , 𝒱MV′))) =
+      inj₂ (inj₂ (m , (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
+```
+
+Here are the anti-reduction lemmas for the `≽` direction.
+
+```
+anti-reduction-≽-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+  → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
+  → (M→N : M —→ N)
+  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≽-L-one {c = c}{M} {N}{M′} {zero} ℰNM′ M→N =
+    tz (≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c)
+anti-reduction-≽-L-one {M = M} {N}{M′}  {suc i} ℰNM′ M→N
+    with ℰNM′
+... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
+      inj₁ (N′ , (M′→N′ , (anti-reduction-≽-L-one ▷ℰMN′ M→N)))
+... | inj₂ (inj₁ isBlame) = inj₂ (inj₁ isBlame)
+... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
+      inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
+
+anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M′→N′ : M′ —→ N′)
+  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
+  inj₁ (N′ , M′→N′ , ℰ≽MN′)
+```
+
+Putting together the above lemmas, we show that taking a step
+backwards on both sides yields terms that are related.
+
+```
+anti-reduction : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{N′}{i}{dir}
+  → #(dir ∣ N ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M→N : M —→ N)
+  → (M′→N′ : M′ —→ N′)
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≼} ℰNN′i M→N M′→N′ =
+  let ℰMN′si = anti-reduction-≼-L-one ℰNN′i M→N in
+  let ℰM′N′si = anti-reduction-≼-R-one ℰMN′si M′→N′ in
+  ℰM′N′si
+anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N′ =
+  let ℰM′Nsi = anti-reduction-≽-R-one ℰNN′i M′→N′ in
+  let ℰM′N′si = anti-reduction-≽-L-one ℰM′Nsi M→N in
+  ℰM′N′si
+```
+
+We shall also need to know that taking multiple steps backwards is
+preserved by the logical relation. For the `≼` direction, we need this
+for taking backward steps with the more-precise term.
+
+```
+anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M′→N′ : M′ —↠ N′)
+  → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≼-R {M′ = M′} ℰMN′ (.M′ END) = ℰMN′
+anti-reduction-≼-R {M′ = M′} {N′} {i} ℰMN′ (.M′ —→⟨ M′→L′ ⟩ L′→*N′) =
+  anti-reduction-≼-R-one (anti-reduction-≼-R ℰMN′ L′→*N′) M′→L′
+```
+
+For the `≽` direction, we need this for taking backward steps with the
+less-precise term.
+
+```
+anti-reduction-≽-L : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+  → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
+  → (M→N : M —↠ N)
+  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≽-L {c = c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
+anti-reduction-≽-L {c = c} {M} {M′} {N′} {i} ℰNM′ (.M —→⟨ M→L ⟩ L→*N) =
+  anti-reduction-≽-L-one (anti-reduction-≽-L ℰNM′ L→*N) M→L
+```
+
+# Blame is more precise
+
+The `blame` term immediately errors, so it is logically related to any
+term on the less-precise side.
+
+```
+LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
+   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
+LRₜ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
+LRₜ-blame-step {A}{A′}{A⊑A′}{≼} {M} {suc k} = inj₂ (inj₁ (blame END))
+LRₜ-blame-step {A}{A′}{A⊑A′}{≽} {M} {suc k} = inj₂ (inj₁ isBlame)
+
+LRₜ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
+LRₜ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → LRₜ-blame-step{dir = dir}
+```
+
+Next we turn to proving lemmas regarding the logical relation for
+values.
+
+# Related values are syntatic values
+
+The definitionn of `⊑ᴸᴿᵥ` included several clauses that ensured that
+the related values are indeed syntactic values. Here we make use of
+that to prove that indeed, logically related values are syntactic
+values.
+
+```
+LRᵥ⇒Value : ∀ {k}{dir}{A}{A′} (A⊑A′ : A ⊑ A′) M M′
+   → # (dir ∣ M ⊑ᴸᴿᵥ M′ ⦂ A⊑A′) (suc k)
+     ----------------------------
+   → Value M × Value M′
+LRᵥ⇒Value {k}{dir} unk⊑unk (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
+    with G ≡ᵍ H
+... | no neq = ⊥-elim 𝒱MM′
+... | yes refl
+    with 𝒱MM′
+... | v , v′ , _ = (v 〈 G 〉) , (v′ 〈 G 〉)
+LRᵥ⇒Value {k}{≼} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+    with G ≡ᵍ H
+... | yes refl
+    with 𝒱VGV′
+... | v , v′ , _ = (v 〈 _ 〉) , v′
+LRᵥ⇒Value {k}{≽} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+    with G ≡ᵍ H
+... | yes refl
+    with 𝒱VGV′
+... | v , v′ , _ = (v 〈 _ 〉) , v′
+LRᵥ⇒Value {k}{dir} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
+    | no neq = ⊥-elim 𝒱VGV′
+LRᵥ⇒Value {k}{dir} (base⊑{ι}) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
+LRᵥ⇒Value {k}{dir} (fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
+    (ƛ̬ N) , (ƛ̬ N′)
+```
+
+# Logically related values are logically related terms
+
+If two values are related via `⊑ᴸᴿᵥ`, then they are also related via
+`⊑ᴸᴿₜ` at the same step index.
+
+```
+LRᵥ⇒LRₜ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k
+     ---------------------------
+   → #(dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′) k
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
+   tz (dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′)
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≼})
+  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
+  (inj₂ (inj₂ (v , (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≽})
+  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
+  inj₂ (inj₂ (v′ , V , (V END) , v , 𝒱VV′sk)))
+```
+
+As a corollary, this holds for all step indices, i.e., it holds in the
+logic.
+
+```
+LRᵥ⇒LRₜ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′
+     ---------------------------
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
+LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ⇒LRₜ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
+```
+
+# Equations regarding `⊑ᴸᴿᵥ`
+
+We apply the `fixpointᵒ` theorem to fold or unfold the definition of
+related lambda abstractions.
+
+```
+LRᵥ-fun : ∀{A B A′ B′}{A⊑A′ : A ⊑ A′}{B⊑B′ : B ⊑ B′}{N}{N′}{dir}
+   → (dir ∣ (ƛ N) ⊑ᴸᴿᵥ (ƛ N′) ⦂ fun⊑ A⊑A′ B⊑B′)
+      ≡ᵒ (∀ᵒ[ W ] ∀ᵒ[ W′ ] ((▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′))
+                →ᵒ (▷ᵒ (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′))))
+LRᵥ-fun {A}{B}{A′}{B′}{A⊑A′}{B⊑B′}{N}{N′}{dir} =
+   let X = inj₁ ((A ⇒ B , A′ ⇒ B′ , fun⊑ A⊑A′ B⊑B′) , dir , ƛ N , ƛ N′) in
+   (dir ∣ (ƛ N) ⊑ᴸᴿᵥ (ƛ N′) ⦂ fun⊑ A⊑A′ B⊑B′)  ⩦⟨ ≡ᵒ-refl refl ⟩
+   LRₜ⊎LRᵥ X                                       ⩦⟨ fixpointᵒ pre-LRₜ⊎LRᵥ X ⟩
+   # (pre-LRₜ⊎LRᵥ X) (LRₜ⊎LRᵥ , ttᵖ)                          ⩦⟨ ≡ᵒ-refl refl ⟩
+   (∀ᵒ[ W ] ∀ᵒ[ W′ ] ((▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′))
+                   →ᵒ (▷ᵒ (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′)))) ∎
+```
+
+# Elimination rules for `⊑ᴸᴿᵥ`
+
+If we are given that two values are logically related at two types
+related by a particular precision rule, then we can deduce something
+about the shape of the values.
+
+If the two types are base types, then the values are identical
+literals.
+
+```
+LRᵥ-base-elim-step : ∀{ι}{ι′}{c : $ₜ ι ⊑ $ₜ ι′}{V}{V′}{dir}{k}
+  → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
+  → ∃[ c ] ι ≡ ι′ × V ≡ $ c × V′ ≡ $ c
+LRᵥ-base-elim-step {ι} {.ι} {base⊑} {$ c} {$ c′} {dir} {k} refl =
+  c , refl , refl , refl
+```
+
+If the two types are function types related by `fun⊑`, then the values
+are lambda expressions and their bodies are related as follows.
+
+```
+LRᵥ-fun-elim-step : ∀{A}{B}{A′}{B′}{c : A ⊑ A′}{d : B ⊑ B′}{V}{V′}{dir}{k}{j}
+  → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ fun⊑ c d) (suc k)
+  → j ≤ k
+  → ∃[ N ] ∃[ N′ ] V ≡ ƛ N × V′ ≡ ƛ N′ 
+      × (∀{W W′} → # (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) j
+                 → # (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ d) j)
+LRᵥ-fun-elim-step {A}{B}{A′}{B′}{c}{d}{ƛ N}{ƛ N′}{dir}{k}{j} 𝒱VV′ j≤k =
+  N , N′ , refl , refl , λ {W}{W′} 𝒱WW′ →
+    let 𝒱λNλN′sj = down (dir ∣ (ƛ N) ⊑ᴸᴿᵥ (ƛ N′) ⦂ fun⊑ c d)
+                        (suc k) 𝒱VV′ (suc j) (s≤s j≤k) in
+    let ℰNWN′W′j = 𝒱λNλN′sj W W′ (suc j) ≤-refl 𝒱WW′ in
+    ℰNWN′W′j
+```
+
+For the `≼` direction, if the two types are related by `unk⊑`, so the
+less-precise side has type `★`, then the value on the less-precise
+side is an injection and its underlying value is related later.
+
+```
+LRᵥ-dyn-any-elim-≼ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
+   → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
+   → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
+             × #(≼ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ c) k
+LRᵥ-dyn-any-elim-≼ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
+    with G ≡ᵍ H
+... | no neq = ⊥-elim 𝒱VGV′
+... | yes refl
+    with 𝒱VGV′
+... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
+```
+
+For the `≽` direction, if the two types are related by `unk⊑`, so the
+less-precise side has type `★`, then the value on the less-precise
+side is an injection and its underlying value is related now, i.e., at
+the same step-index.
+
+```
+LRᵥ-dyn-any-elim-≽ : ∀{V}{V′}{k}{H}{A′}{c : gnd⇒ty H ⊑ A′}
+   → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
+   → ∃[ V₁ ] V ≡ V₁ ⟨ H !⟩ × Value V₁ × Value V′
+             × #(≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
+LRᵥ-dyn-any-elim-≽ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
+    with G ≡ᵍ H
+... | no neq = ⊥-elim 𝒱VGV′
+... | yes refl
+    with 𝒱VGV′
+... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
+```
+
+# Introduction rules for `⊑ᴸᴿᵥ`
+
+In the proofs of the compatibility lemmas we will often need to prove
+that values of a particular form are related by `⊑ᴸᴿᵥ`. The following
+lemmas do this. We shall need lemmas to handle injections on both the
+less and more-precise side, and in both directions `≼` and `≽`.
+
+We start with the introduction rule for relating literals at base
+type.
+
+```
+LRᵥ-base-intro-step : ∀{ι}{dir}{c}{k} → # (dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}) k
+LRᵥ-base-intro-step {ι} {dir} {c} {zero} = tt
+LRᵥ-base-intro-step {ι} {dir} {c} {suc k} = refl
+
+LRᵥ-base-intro : ∀{𝒫}{ι}{c}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}
+LRᵥ-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ-base-intro-step{ι}{dir}{c}{k}
+```
+
+In the `≽` direction, an injection on the more-precise side is related
+if its underlying value is related at the same step index.
+
+```
+LRᵥ-inject-R-intro-≽ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
+   → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≽ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
+LRᵥ-inject-R-intro-≽ {G} {c} {V} {V′} {zero} 𝒱VV′ =
+     tz (≽ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk)
+LRᵥ-inject-R-intro-≽ {G} {c} {V} {V′} {suc k} 𝒱VV′sk
+    with unk⊑gnd-inv c
+... | d , refl
+    with LRᵥ-dyn-any-elim-≽ {V}{V′}{k}{G}{_}{d} 𝒱VV′sk
+... | V₁ , refl , v₁ , v′ , 𝒱V₁V′sk
+    with G ≡ᵍ G
+... | no neq = ⊥-elim 𝒱VV′sk
+... | yes refl
+    with gnd-prec-unique d Refl⊑
+... | refl =
+    let 𝒱V₁V′k = down (≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ d) (suc k) 𝒱V₁V′sk k (n≤1+n k) in
+    v₁ , v′ , 𝒱V₁V′k
+```
+
+The same is true for the `≼` direction.
+
+```
+LRᵥ-inject-R-intro-≼ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
+   → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≼ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
+LRᵥ-inject-R-intro-≼ {G} {c} {V} {V′} {zero} 𝒱VV′ =
+     tz (≼ ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk)
+LRᵥ-inject-R-intro-≼ {G} {c} {V} {V′} {suc k} 𝒱VV′sk
+    with unk⊑gnd-inv c
+... | d , refl
+    with LRᵥ-dyn-any-elim-≼ {V}{V′}{k}{G}{_}{d} 𝒱VV′sk
+... | V₁ , refl , v₁ , v′ , 𝒱V₁V′k
+    with G ≡ᵍ G
+... | no neq = ⊥-elim 𝒱VV′sk
+... | yes refl
+    with gnd-prec-unique d Refl⊑
+... | refl = v₁ , v′ , 𝒱V₁V′k
+```
+
+We combine both directions into the following lemma.
+
+```
+LRᵥ-inject-R-intro : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}{dir}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(dir ∣ V ⊑ᴸᴿᵥ (V′ ⟨ G !⟩) ⦂ unk⊑unk) k
+LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≼} 𝒱VV′ =
+   LRᵥ-inject-R-intro-≼{G} {c} {V} {V′} {k} 𝒱VV′ 
+LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≽} 𝒱VV′ =
+   LRᵥ-inject-R-intro-≽{G} {c} {V} {V′} {k} 𝒱VV′
+```
+
+In the `≼` direction, an injection on the less-precise side is related
+if its underlying value is related at one step earlier.
+
+```
+LRᵥ-inject-L-intro-≼ : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{k}
+   → Value V
+   → Value V′
+   → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≼ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
+LRᵥ-inject-L-intro-≼ {G} {A′} {c} {V} {V′} {k} v v′ 𝒱VV′k
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
+... | yes refl =
+    v , v′ , 𝒱VV′k
+```
+
+In the `≽` direction, an injection on the less-precise side is related
+if its underlying value is related now, i.e., at the same step
+index.
+
+```
+LRᵥ-inject-L-intro-≽ : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{k}
+   → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(≽ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) k
+LRᵥ-inject-L-intro-≽ {G}{A′}{c}{V}{V′}{zero} 𝒱VV′k =
+    tz (≽ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
+LRᵥ-inject-L-intro-≽ {G} {A′} {c} {V} {V′} {suc k} 𝒱VV′sk
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
+... | yes refl =
+      let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
+      v , v′ , 𝒱VV′sk
+```
+
+We can combine the two directions into the following lemma, which
+states that an injection on the less-precise side is related if its
+underlying value at the same step index. The proof uses downward
+closedness in the `≼` direction.
+
+```
+LRᵥ-inject-L-intro : ∀{G}{A′}{c : gnd⇒ty G ⊑ A′}{V}{V′}{dir}{k}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
+   → #(dir ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) k
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {zero} 𝒱VV′k =
+    tz (≼ ∣ V ⟨ G !⟩ ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c)
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
+    with G ≡ᵍ G
+... | no neq = ⊥-elim (neq refl)
+... | yes refl =
+    let (v , v′) = LRᵥ⇒Value c V V′ 𝒱VV′sk in
+    let 𝒱VV′k = down (≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k) 𝒱VV′sk k (n≤1+n k) in
+    v , v′ , 𝒱VV′k 
+LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {k} 𝒱VV′k =
+   LRᵥ-inject-L-intro-≽{G} {A′} {c} {V} {V′} 𝒱VV′k 
+```
+
+# The Bind Lemma
+
+The last technical lemma before we get to the compatibility lemmas in
+the gnarly Bind Lemma.
+
+Let `F` and `F′` be possibly empty frames and recall that the `_⦉_⦊`
+notation is for plugging a term into a frame.
+
+Roughly speaking, the Bind Lemma shows that if you are trying to prove
+
+    F ⦉ M ⦊ ⊑ᴸᴿₜ F′ ⦉ M′ ⦊
+
+for arbitrary terms `M` and `M′`, then it suffices to prove that
+
+    F ⦉ V ⦊ ⊑ᴸᴿₜ F′ ⦉ V′ ⦊
+
+for some values `V` and `V′` under the assumptions
+
+    M —↠ V
+    M′ —↠ V′
+    V ⊑ᴸᴿᵥ V′
+
+The Bind Lemma is used in all of the compatibility lemmas concerning
+terms that have may have reducible sub-terms, i.e., application,
+injection, and projection.
+
+Here is the statement of the Bind lemma with all the gory details.
+
+    LRₜ-bind : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
+                     {F}{F′}{M}{M′}{i}{dir}
+       → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ d) i
+       → (∀ j V V′ → j ≤ i → M —↠ V → Value V → M′ —↠ V′ → Value V′
+             → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
+             → #(dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+       → #(dir ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ M′ ⦊) ⦂ c) i
+
+We define the following abbreviation for the `(∀ j V V′ ...)` premise
+of the Bind Lemma.
+
+```
+bind-premise : Dir → PEFrame → PEFrame → Term → Term → ℕ
+   → ∀ {B}{B′}(c : B ⊑ B′) → ∀ {A}{A′} (d : A ⊑ A′) → Set
+bind-premise dir F F′ M M′ i c d =
+    (∀ j V V′ → j ≤ i → M —↠ V → Value V → M′ —↠ V′ → Value V′
+     → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
+     → # (dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+```
+
+The premise is preserved with respect to `M` reducing to `N` and also
+`M′` reducing to `N′`, with the step index decreasing by one, which we
+show in the following two lemmas.
+
+```
+LRᵥ→LRₜ-down-one-≼ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
+                      {F}{F′}{i}{M}{N}{M′}
+   → M —→ N
+   → (bind-premise ≼ F F′ M M′ (suc i) c d)
+   → (bind-premise ≼ F F′ N M′ i c d)
+LRᵥ→LRₜ-down-one-≼ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M→N LRᵥ→LRₜsi
+   j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
+   LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) (M —→⟨ M→N ⟩ M→V) v M′→V′ v′ 𝒱j
+
+LRᵥ→LRₜ-down-one-≽ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
+                       {F}{F′}{i}{M}{M′}{N′}
+   → M′ —→ N′
+   → (bind-premise ≽ F F′ M M′ (suc i) c d)
+   → (bind-premise ≽ F F′ M N′ i c d)
+LRᵥ→LRₜ-down-one-≽ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M′→N′ LRᵥ→LRₜsi
+   j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
+   LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) M→V v (N —→⟨ M′→N′ ⟩ M′→V′) v′ 𝒱j
+```
+
+The Bind Lemma is proved by induction on the step index `i`. The base
+case is trivially true because the logical relation is always true at
+zero. For the inductive step, we reason separately about the two
+directions `≼` and `≽`, and then reason by cases on the premise that
+`M ⊑ᴸᴿₜ M′`. If `M` or `M′` take a single step to a related term, we
+use the induction hypothesis, applying the above lemmas to obtain the
+premise of the induction hypothesis. If `M` or `M′` are values,
+then we use the anti-reduction lemmas. Otherwise, if `M′` is `blame`,
+then `F′ ⦉ blame ⦊` reduces to `blame`.
+
+```
+LRₜ-bind : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
+                 {F}{F′}{M}{M′}{i}{dir}
+   → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ d) i
+   → (∀ j V V′ → j ≤ i → M —↠ V → Value V → M′ —↠ V′ → Value V′
+         → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
+         → #(dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+   → #(dir ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ M′ ⦊) ⦂ c) i
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F} {F′} {M} {M′} {zero} {dir} ℰMM′sz LRᵥ→LRₜj =
+    tz (dir ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ M′ ⦊) ⦂ c)
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LRᵥ→LRₜj
+    with ⇔-to (LRₜ-suc{dir = ≼}) ℰMM′si
+... | inj₁ (N , M→N , ▷ℰNM′) =
+     let IH = LRₜ-bind{c = c}{d = d}{F}{F′}{N}{M′}{i}{≼} ▷ℰNM′
+                (LRᵥ→LRₜ-down-one-≼{c = c}{d = d}{F}{F′}{i}{M}{N}{M′}
+                     M→N LRᵥ→LRₜj) in
+      ⇔-fro (LRₜ-suc{dir = ≼}) (inj₁ ((F ⦉ N ⦊) , ξ′ F refl refl M→N , IH))
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LRᵥ→LRₜj 
+    | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱MV′))) =
+      let ℰFMF′V′ = LRᵥ→LRₜj (suc i) M V′ ≤-refl (M END) m M′→V′ v′ 𝒱MV′ in
+      anti-reduction-≼-R ℰFMF′V′ (ξ′* F′ M′→V′)
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≼} ℰMM′si LRᵥ→LRₜj 
+    | inj₂ (inj₁ M′→blame) = inj₂ (inj₁ (ξ-blame₃ F′ M′→blame refl))
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≽} ℰMM′si LRᵥ→LRₜj 
+    with ⇔-to (LRₜ-suc{dir = ≽}) ℰMM′si
+... | inj₁ (N′ , M′→N′ , ▷ℰMN′) =
+      let ℰFMFN′ : # (≽ ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ N′ ⦊) ⦂ c) i
+          ℰFMFN′ = LRₜ-bind{c = c}{d = d}{F}{F′}{M}{N′}{i}{≽} ▷ℰMN′ 
+                   (LRᵥ→LRₜ-down-one-≽{c = c}{d = d}{F}{F′} M′→N′ LRᵥ→LRₜj) in
+      inj₁ ((F′ ⦉ N′ ⦊) , (ξ′ F′ refl refl M′→N′) , ℰFMFN′)
+... | inj₂ (inj₁ isBlame)
+    with F′
+... | □ = inj₂ (inj₁ isBlame)
+... | ` F″ = inj₁ (blame , ξ-blame F″ , LRₜ-blame-step{dir = ≽})
+LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≽} ℰMM′si LRᵥ→LRₜj 
+    | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱VM′)) =
+    let xx = LRᵥ→LRₜj (suc i) V M′ ≤-refl M→V v (M′ END) m′ 𝒱VM′ in
+    anti-reduction-≽-L xx (ξ′* F M→V)
 ```

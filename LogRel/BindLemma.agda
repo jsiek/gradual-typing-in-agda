@@ -21,15 +21,18 @@ open import StepIndexedLogic
 open import InjProj.CastSafe
 open import LogRel.LogRel
 
+bind-premise : Dir → PEFrame → PEFrame → Term → Term → ℕ
+   → ∀ {B}{B′}(c : B ⊑ B′) → ∀ {A}{A′} (d : A ⊑ A′) → Set
+bind-premise dir F F′ M M′ i c d =
+    (∀ j V V′ → j ≤ i → M —↠ V → Value V → M′ —↠ V′ → Value V′
+     → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
+     → # (dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+
 LRᵥ→LRₜ-down-one-≼ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
                       {F}{F′}{i}{M}{N}{M′}
    → M —→ N
-   → (∀ j V V′ → j ≤ suc i → M —↠ V → Value V → M′ —↠ V′ → Value V′
-       → # (≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
-       → # (≼ ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
-   → (∀ j V V′ → j ≤ i → N —↠ V → Value V → M′ —↠ V′ → Value V′
-       →  # (≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
-       → # (≼ ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+   → (bind-premise ≼ F F′ M M′ (suc i) c d)
+   → (bind-premise ≼ F F′ N M′ i c d)
 LRᵥ→LRₜ-down-one-≼ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M→N LRᵥ→LRₜsi
    j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
    LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) (M —→⟨ M→N ⟩ M→V) v M′→V′ v′ 𝒱j
@@ -37,12 +40,8 @@ LRᵥ→LRₜ-down-one-≼ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M→
 LRᵥ→LRₜ-down-one-≽ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}
                        {F}{F′}{i}{M}{M′}{N′}
    → M′ —→ N′
-   → (∀ j V V′ → j ≤ suc i → M —↠ V → Value V → M′ —↠ V′ → Value V′
-       → # (≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
-       → # (≽ ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
-   → (∀ j V V′ → j ≤ i → M —↠ V → Value V → N′ —↠ V′ → Value V′
-       →  # (≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
-       → # (≽ ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+   → (bind-premise ≽ F F′ M M′ (suc i) c d)
+   → (bind-premise ≽ F F′ M N′ i c d)
 LRᵥ→LRₜ-down-one-≽ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M′→N′ LRᵥ→LRₜsi
    j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
    LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) M→V v (N —→⟨ M′→N′ ⟩ M′→V′) v′ 𝒱j

@@ -132,17 +132,17 @@ LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≼ (V ⟨ G !⟩) V′
       Why do we need ▷ here?
 
       In compatible-proj-R, we have
-        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁⟨ G !⟩         at (suc j)       (1)
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᴸᴿᵥ     V′₁⟨ G !⟩         at (suc j)       (1)
       and need to show
-        ≼ ∣ V₁⟨ G !⟩    ⊑ₜ     V′₁⟨ G !⟩⟨ G ?⟩   at (suc j)
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᴸᴿₜ     V′₁⟨ G !⟩⟨ G ?⟩   at (suc j)
       We have
         V′₁⟨ G !⟩⟨ G ?⟩ --> V′₁
       so by the definition of ⊑ᴸᴿₜ it remains to show
-        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁               at (suc j)
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᴸᴿᵥ     V′₁               at (suc j)
       From (1) we have
-        ≼ ∣ V₁          ⊑ᵥ     V′₁               at j
+        ≼ ∣ V₁          ⊑ᴸᴿᵥ     V′₁               at j
       By this definition, we conclude
-        ≼ ∣ V₁⟨ G !⟩    ⊑ᵥ     V′₁               at (suc j)
+        ≼ ∣ V₁⟨ G !⟩    ⊑ᴸᴿᵥ     V′₁               at (suc j)
 
      -}
 ... | no neq = ⊥ ˢ
@@ -154,13 +154,13 @@ LRᵥ (.★ , .A′ , unk⊑{H}{A′} d) ≽ (V ⟨ G !⟩) V′
       Why can't we use ▷ here?
 
       In compatible-proj-L, we have
-         ≽ ∣ V₁⟨ H !⟩         ⊑ᵥ  V′     at (suc j)     (1)
+         ≽ ∣ V₁⟨ H !⟩         ⊑ᴸᴿᵥ  V′     at (suc j)     (1)
       and need to show
-         ≽ ∣ V₁⟨ H !⟩⟨ H ?⟩   ⊑ₜ  V′     at (suc j)
+         ≽ ∣ V₁⟨ H !⟩⟨ H ?⟩   ⊑ᴸᴿₜ  V′     at (suc j)
       We unfold the definintion of ⊑ᴸᴿₜ. We have that V′ is a value and
          V₁⟨ H !⟩⟨ H ?⟩   -->  V₁
       So it remains to prove that
-         V₁               ⊑ᵥ  V′         at (suc j)
+         V₁               ⊑ᴸᴿᵥ  V′         at (suc j)
       which we have (1) and this definition.
 
      -}
@@ -215,7 +215,8 @@ LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term �
 LRₜ-def A⊑A′ ≼ M M′ =
    (∃ᵒ[ N ] (M —→ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
    ⊎ᵒ (M′ —↠ blame)ᵒ
-   ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′)))
+   ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ —↠ V′)ᵒ ×ᵒ (Value V′)ᵒ
+                               ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′)))
 LRₜ-def A⊑A′ ≽ M M′ =
    (∃ᵒ[ N′ ] (M′ —→ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
    ⊎ᵒ (Blame M′)ᵒ
@@ -257,23 +258,23 @@ LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
 
 {----------- Relate Open Terms ------------------------------------------------}
 
-𝓖⟦_⟧ : (Γ : List Prec) → Dir → Subst → Subst → List Setᵒ
-𝓖⟦ [] ⟧ dir σ σ′ = []
-𝓖⟦ (_ , _ , A⊑A′) ∷ Γ ⟧ dir σ σ′ = (dir ∣ (σ 0) ⊑ᴸᴿᵥ (σ′ 0) ⦂ A⊑A′)
-                     ∷ 𝓖⟦ Γ ⟧ dir (λ x → σ (suc x)) (λ x → σ′ (suc x))
+_∣_⊨_⊑ᴸᴿ_ : (Γ : List Prec) → Dir → Subst → Subst → List Setᵒ
+[] ∣ dir ⊨ γ ⊑ᴸᴿ γ′ = []
+((_ , _ , A⊑A′) ∷ Γ) ∣ dir ⊨ γ ⊑ᴸᴿ γ′ = (dir ∣ (γ 0) ⊑ᴸᴿᵥ (γ′ 0) ⦂ A⊑A′)
+                     ∷ (Γ ∣ dir ⊨ (λ x → γ (suc x)) ⊑ᴸᴿ (λ x → γ′ (suc x)))
 
-_∣_⊨_⊑_⦂_ : List Prec → Dir → Term → Term → Prec → Set
-Γ ∣ dir ⊨ M ⊑ M′ ⦂ (_ , _ , A⊑A′) = ∀ (γ γ′ : Subst)
-   → 𝓖⟦ Γ ⟧ dir γ γ′ ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
+_∣_⊨_⊑ᴸᴿ_⦂_ : List Prec → Dir → Term → Term → Prec → Set
+Γ ∣ dir ⊨ M ⊑ᴸᴿ M′ ⦂ (_ , _ , A⊑A′) = ∀ (γ γ′ : Subst)
+   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
 
-_⊨_⊑_⦂_ : List Prec → Term → Term → Prec → Set
-Γ ⊨ M ⊑ M′ ⦂ c = (Γ ∣ ≼ ⊨ M ⊑ M′ ⦂ c) × (Γ ∣ ≽ ⊨ M ⊑ M′ ⦂ c)
+_⊨_⊑ᴸᴿ_⦂_ : List Prec → Term → Term → Prec → Set
+Γ ⊨ M ⊑ᴸᴿ M′ ⦂ c = (Γ ∣ ≼ ⊨ M ⊑ᴸᴿ M′ ⦂ c) × (Γ ∣ ≽ ⊨ M ⊑ᴸᴿ M′ ⦂ c)
 
 proj : ∀ {Γ}{c}
   → (dir : Dir)
   → (M M′ : Term)
-  → Γ ⊨ M ⊑ M′ ⦂ c
-  → Γ ∣ dir ⊨ M ⊑ M′ ⦂ c
+  → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ c
+  → Γ ∣ dir ⊨ M ⊑ᴸᴿ M′ ⦂ c
 proj {Γ} {c} ≼ M M′ M⊑M′ = proj₁ M⊑M′
 proj {Γ} {c} ≽ M M′ M⊑M′ = proj₂ M⊑M′
 
@@ -343,13 +344,6 @@ anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
 anti-reduction-≼-L-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N =
   inj₁ (N , M→N , ℰ≼NM′i)
 
-anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
-  → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
-  → (M′→N′ : M′ —→ N′)
-  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
-  inj₁ (N′ , M′→N′ , ℰ≽MN′)
-
 anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
   → (M′→N′ : M′ —→ N′)
@@ -365,14 +359,6 @@ anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
 ... | inj₂ (inj₂ (m , (V′ , N′→V′ , v′ , 𝒱MV′))) =
       inj₂ (inj₂ (m , (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 
-anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
-  → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
-  → (M′→N′ : M′ —↠ N′)
-  → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
-anti-reduction-≼-R {M′ = M′} ℰMN′ (.M′ END) = ℰMN′
-anti-reduction-≼-R {M′ = M′} {N′} {i} ℰMN′ (.M′ —→⟨ M′→L′ ⟩ L′→*N′) =
-  anti-reduction-≼-R-one (anti-reduction-≼-R ℰMN′ L′→*N′) M′→L′
-
 anti-reduction-≽-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
   → (M→N : M —→ N)
@@ -387,13 +373,12 @@ anti-reduction-≽-L-one {M = M} {N}{M′}  {suc i} ℰNM′ M→N
 ... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
       inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
 
-anti-reduction-≽-L : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
-  → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
-  → (M→N : M —↠ N)
-  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
-anti-reduction-≽-L {c = c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
-anti-reduction-≽-L {c = c} {M} {M′} {N′} {i} ℰNM′ (.M —→⟨ M→L ⟩ L→*N) =
-  anti-reduction-≽-L-one (anti-reduction-≽-L ℰNM′ L→*N) M→L
+anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M′→N′ : M′ —→ N′)
+  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
+  inj₁ (N′ , M′→N′ , ℰ≽MN′)
 
 anti-reduction : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{N′}{i}{dir}
   → #(dir ∣ N ⊑ᴸᴿₜ N′ ⦂ c) i
@@ -408,6 +393,34 @@ anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N�
   let ℰM′Nsi = anti-reduction-≽-R-one ℰNN′i M′→N′ in
   let ℰM′N′si = anti-reduction-≽-L-one ℰM′Nsi M→N in
   ℰM′N′si
+
+anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i
+  → (M′→N′ : M′ —↠ N′)
+  → #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≼-R {M′ = M′} ℰMN′ (.M′ END) = ℰMN′
+anti-reduction-≼-R {M′ = M′} {N′} {i} ℰMN′ (.M′ —→⟨ M′→L′ ⟩ L′→*N′) =
+  anti-reduction-≼-R-one (anti-reduction-≼-R ℰMN′ L′→*N′) M′→L′
+
+anti-reduction-≽-L : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+  → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i
+  → (M→N : M —↠ N)
+  → #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
+anti-reduction-≽-L {c = c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
+anti-reduction-≽-L {c = c} {M} {M′} {N′} {i} ℰNM′ (.M —→⟨ M→L ⟩ L→*N) =
+  anti-reduction-≽-L-one (anti-reduction-≽-L ℰNM′ L→*N) M→L
+
+{--------------- Blame on the right -------------------------------------------}
+
+LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
+   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
+LRₜ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
+LRₜ-blame-step {A}{A′}{A⊑A′}{≼} {M} {suc k} = inj₂ (inj₁ (blame END))
+LRₜ-blame-step {A}{A′}{A⊑A′}{≽} {M} {suc k} = inj₂ (inj₁ isBlame)
+
+LRₜ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
+LRₜ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → LRₜ-blame-step{dir = dir}
 
 {------------- Related values are syntactic values ----------------------------}
 
@@ -437,26 +450,35 @@ LRᵥ⇒Value {k}{dir} (base⊑{ι}) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
 LRᵥ⇒Value {k}{dir} (fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
     (ƛ̬ N) , (ƛ̬ N′)
 
-{--------- Equations, intro, and elim rules for 𝒱 ----------------------------}
+{--------------- Related values are related expressions -----------------------}
+
+LRᵥ⇒LRₜ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k
+     ---------------------------
+   → #(dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′) k
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
+   tz (dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′)
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≼})
+  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
+  (inj₂ (inj₂ (v , (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
+LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRₜ-suc{dir = ≽})
+  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
+  inj₂ (inj₂ (v′ , V , (V END) , v , 𝒱VV′sk)))
+
+LRᵥ⇒LRₜ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′
+     ---------------------------
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
+LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ⇒LRₜ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
+
+{--------- Equations for 𝒱 ---------------------------------------------------}
 
 LRᵥ-base : ∀{ι}{c}{c′}{dir}
    → dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c′) ⦂ base⊑{ι} ≡ᵒ (c ≡ c′) ᵒ
 LRᵥ-base{ι}{c}{c′} = ≡ᵒ-intro λ k → (λ x → x) , (λ x → x)
-
-LRᵥ-base-intro-step : ∀{ι}{dir}{c}{k} → # (dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}) k
-LRᵥ-base-intro-step {ι} {dir} {c} {zero} = tt
-LRᵥ-base-intro-step {ι} {dir} {c} {suc k} = refl
-
-LRᵥ-base-intro : ∀{𝒫}{ι}{c}{dir}
-   → 𝒫 ⊢ᵒ dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}
-LRᵥ-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k →
-  LRᵥ-base-intro-step{ι}{dir}{c}{k}
-
-LRᵥ-base-elim-step : ∀{ι}{ι′}{c : $ₜ ι ⊑ $ₜ ι′}{V}{V′}{dir}{k}
-  → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
-  → ∃[ c ] ι ≡ ι′ × V ≡ $ c × V′ ≡ $ c
-LRᵥ-base-elim-step {ι} {.ι} {base⊑} {$ c} {$ c′} {dir} {k} refl =
-  c , refl , refl , refl
 
 LRᵥ-fun : ∀{A B A′ B′}{A⊑A′ : A ⊑ A′}{B⊑B′ : B ⊑ B′}{N}{N′}{dir}
    → (dir ∣ (ƛ N) ⊑ᴸᴿᵥ (ƛ N′) ⦂ fun⊑ A⊑A′ B⊑B′)
@@ -469,6 +491,14 @@ LRᵥ-fun {A}{B}{A′}{B′}{A⊑A′}{B⊑B′}{N}{N′}{dir} =
    # (pre-LRₜ⊎LRᵥ X) (LRₜ⊎LRᵥ , ttᵖ)                          ⩦⟨ ≡ᵒ-refl refl ⟩
    (∀ᵒ[ W ] ∀ᵒ[ W′ ] ((▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′))
                    →ᵒ (▷ᵒ (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′)))) ∎
+
+{--------- Elimination rules for 𝒱 -------------------------------------------}
+
+LRᵥ-base-elim-step : ∀{ι}{ι′}{c : $ₜ ι ⊑ $ₜ ι′}{V}{V′}{dir}{k}
+  → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) (suc k)
+  → ∃[ c ] ι ≡ ι′ × V ≡ $ c × V′ ≡ $ c
+LRᵥ-base-elim-step {ι} {.ι} {base⊑} {$ c} {$ c′} {dir} {k} refl =
+  c , refl , refl , refl
 
 LRᵥ-fun-elim-step : ∀{A}{B}{A′}{B′}{c : A ⊑ A′}{d : B ⊑ B′}{V}{V′}{dir}{k}{j}
   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ fun⊑ c d) (suc k)
@@ -504,6 +534,17 @@ LRᵥ-dyn-any-elim-≼ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
 ... | yes refl
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
+
+{--------- Introduction rules for 𝒱 ------------------------------------------}
+
+LRᵥ-base-intro-step : ∀{ι}{dir}{c}{k} → # (dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}) k
+LRᵥ-base-intro-step {ι} {dir} {c} {zero} = tt
+LRᵥ-base-intro-step {ι} {dir} {c} {suc k} = refl
+
+LRᵥ-base-intro : ∀{𝒫}{ι}{c}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}
+LRᵥ-base-intro{𝒫}{ι}{c}{dir} = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ-base-intro-step{ι}{dir}{c}{k}
 
 LRᵥ-inject-R-intro-≽ : ∀{G}{c : ★ ⊑ gnd⇒ty G}{V}{V′}{k}
    → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
@@ -585,38 +626,4 @@ LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
 LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {k} 𝒱VV′k =
    LRᵥ-inject-L-intro-≽{G} {A′} {c} {V} {V′} 𝒱VV′k 
 
-{--------------- Related values are related expressions -----------------------}
 
-LRᵥ⇒LRₜ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
-   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k
-     ---------------------------
-   → #(dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′) k
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
-   tz (dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′)
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
-  ⇔-fro (LRₜ-suc{dir = ≼})
-  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
-  (inj₂ (inj₂ (v , (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
-  ⇔-fro (LRₜ-suc{dir = ≽})
-  (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
-  inj₂ (inj₂ (v′ , V , (V END) , v , 𝒱VV′sk)))
-
-LRᵥ⇒LRₜ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
-   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′
-     ---------------------------
-   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
-LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
-  LRᵥ⇒LRₜ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
-
-{--------------- Blame on the right -------------------------------------------}
-
-LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
-   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
-LRₜ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
-LRₜ-blame-step {A}{A′}{A⊑A′}{≼} {M} {suc k} = inj₂ (inj₁ (blame END))
-LRₜ-blame-step {A}{A′}{A⊑A′}{≽} {M} {suc k} = inj₂ (inj₁ isBlame)
-
-LRₜ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir}
-   → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
-LRₜ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → LRₜ-blame-step{dir = dir}
