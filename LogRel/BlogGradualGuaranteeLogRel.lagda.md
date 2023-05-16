@@ -1669,14 +1669,56 @@ we need to prove
 
     #(V ⊑ᴸᴿₜ V′ ⟨ H ?⟩) (suc j)
 
-Note that `V` and `V′` are both of type `★`, by 
-definition `V ⊑ᴸᴿᵥ V′` gives us
+Note that `V` and `V′` are both of type `★`, so by 
+definition `#(V ⊑ᴸᴿᵥ V′) (suc j)` gives us
 
     V ≡ V₁ ⟨ G !⟩
     V′ ≡ V₁′ ⟨ G !⟩
+    #(V₁ ⊑ᴸᴿᵥ V₁′) j
     
+We proceed by cases on whether or not `G ≡ H`.
 
+Suppose `G ≢ H`. Then we have
 
+    V′₁ ⟨ G !⟩⟨ H ?⟩ —→ blame
+
+We proceed by cases on the direction. For the `≼` direction we can
+immediately conclude by the definition of `⊑ᴸᴿₜ` because the
+right-hand side reduces to `blame`.
+
+    #(V₁ ⟨ G !⟩ ⊑ᴸᴿₜ V′₁ ⟨ G !⟩⟨ H ?⟩) (suc j)
+
+For the `≽` direction, we apply `anti-reduction-≽-R-one`, so it
+suffices to show
+
+    V₁ ⟨ G !⟩ ⊑ᴸᴿₜ blame
+
+which we obtain by `LRₜ-blame-step`.
+
+Next suppose `G ≡ H`. Then we have
+
+    V′₁ ⟨ G !⟩⟨ H ?⟩ —→ V′₁
+
+For the `≼` direction, since we have a value on the left-hand side,
+we need the right-hand side to reduce to a related value. So it
+remains to show that
+
+    #(V₁⟨ G !⟩ ⊑ᴸᴿᵥ V′₁) (suc j)
+
+which we have from `#(V₁ ⊑ᴸᴿᵥ V₁′) j` and the definition of `⊑ᴸᴿᵥ`
+for `unk⊑` and `≼`. (Recall that we choose to use the later operator
+in that case of `⊑ᴸᴿᵥ`.)
+
+For the `≽` direction, we apply `anti-reduction-≽-R-one`, so it
+remains to prove that
+
+    #(V₁⟨ G !⟩ ⊑ᴸᴿₜ V′₁) j
+            
+Next we apply `LRᵥ⇒LRₜ-step`, so our goal reduces to
+
+    #(V₁⟨ G !⟩ ⊑ᴸᴿᵥ V′₁) j
+
+which we prove by `LRᵥ-inject-L-intro-≽` using `#(V₁ ⊑ᴸᴿᵥ V₁′) j`.
 
 ```
 compatible-proj-R : ∀{Γ}{H}{c : ★ ⊑ gnd⇒ty H}{M}{M′}
@@ -1745,6 +1787,10 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
 
 # Proof of the Fundamental Lemma
 
+With the compatibility lemmas finished, the difficulty is behind us.
+We prove the Fundamental Lemma by induction on term precision, using
+the appropriate compatibility lemma for each case.
+
 ```
 fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
   → Γ ⊩ M ⊑ M′ ⦂ A⊑A′
@@ -1772,6 +1818,9 @@ fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
 ```
 
 # Proof of the Gradual Guarantee
+
+The gradual guarantee is proved by putting together the `fundamental`
+lemma with the `LR⇒GG` lemma.
 
 ```
 gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
