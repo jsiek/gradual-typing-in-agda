@@ -39,6 +39,17 @@ a synthesis of techniques from Dreyer, Ahmed, and Birkedal (LMCS 2011)
 regarding step-indexing using a modal logic and Max New (Ph.D. thesis
 2020) regarding logical relations for gradual typing.
 
+This Agda development lives on github in the following repository:
+
+    https://github.com/jsiek/gradual-typing-in-agda
+
+The files corresponding to this blog post are in the `LogRel` directory,
+which also import files from the `InjProj` directory (for the definition
+of the cast calculus). Also, this Agda code make use of the abstract binding
+tree library, which is in the following repository:
+
+    https://github.com/jsiek/abstract-binding-trees
+
 # Precision and the Gradual Guarantee
 
 To talk about the gradual guarantee, we first define when one type is
@@ -1578,10 +1589,9 @@ for some values `V` and `V′` where
 
     M —↠ V, M′ —↠ V′, V ⊑ᴸᴿᵥ V′
 
-The proof is by induction on the step index `j`. The base case is
+The proof is by case on the step index `j`. The case for zero is
 trivially true because the logical relation is always true at zero.
-For the inductive step we consider the step index `suc j`, so
-we need to prove
+For the case `suc j`, we need to prove
 
     #(V ⟨ H ?⟩ ⊑ᴸᴿₜ V′) (suc j)
 
@@ -1661,10 +1671,9 @@ for some values `V` and `V′` where
 
     M —↠ V, M′ —↠ V′, V ⊑ᴸᴿᵥ V′
 
-The proof is by induction on the step index `j`. The base case is
+The proof is by cases on the step index `j`. The case for zero is
 trivially true because the logical relation is always true at zero.
-For the inductive step we consider the step index `suc j`, so
-we need to prove
+In the case for `suc j`, we need to prove
 
     #(V ⊑ᴸᴿₜ V′ ⟨ H ?⟩) (suc j)
 
