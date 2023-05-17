@@ -45,9 +45,11 @@ This Agda development lives on github in the following repository:
 
 The files corresponding to this blog post are in the `LogRel` directory,
 which also import files from the `InjProj` directory (for the definition
-of the cast calculus). Also, this Agda code make use of the abstract binding
-tree library, which is in the following repository:
+of the cast calculus). Also, this Agda code make use of the
+step-indexed logic and abstract binding
+tree libraries, which are in the following repositories:
 
+    https://github.com/jsiek/step-indexed-logic
     https://github.com/jsiek/abstract-binding-trees
 
 # Precision and the Gradual Guarantee
