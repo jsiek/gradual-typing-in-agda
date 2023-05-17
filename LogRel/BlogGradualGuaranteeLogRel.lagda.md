@@ -1721,7 +1721,7 @@ For the `≽` direction, we apply `anti-reduction-≽-R-one`, so it
 remains to prove that
 
     #(V₁⟨ G !⟩ ⊑ᴸᴿₜ V′₁) j
-            
+
 Next we apply `LRᵥ⇒LRₜ-step`, so our goal reduces to
 
     #(V₁⟨ G !⟩ ⊑ᴸᴿᵥ V′₁) j
