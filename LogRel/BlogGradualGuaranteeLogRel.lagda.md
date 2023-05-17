@@ -491,6 +491,10 @@ _∣_ˢ⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A}{A′} (A⊑A′ : A 
 dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = (inj₁ ((_ , _ , A⊑A′) , dir , V , V′)) ∈ zeroˢ
 ```
 
+To use the existential quantifier in the step-indexed logic, we must
+show that the kinds things that we're quantifier over are inhabited,
+in this case `Term`.
+
 ```
 instance
   TermInhabited : Inhabited Term
