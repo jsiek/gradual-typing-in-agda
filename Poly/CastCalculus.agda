@@ -84,6 +84,9 @@ data Op : Set where
   c-all : Op
   c-inst : Op
   c-gen : Op
+  {- ground types -}
+  g-nat : Op
+  g-fun : Op
 
 sig : Op → List Sig
 sig (op-nat n) = []
@@ -104,6 +107,8 @@ sig c-seq = ■ ∷ ■ ∷ []
 sig c-all = (nu ■) ∷ []
 sig c-inst = (nu ■) ∷ []
 sig c-gen = (nu ■) ∷ []
+sig g-nat = []
+sig g-fun = []
 
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 
@@ -112,6 +117,7 @@ pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
 infixl 7  _·_
 pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
 pattern Λ N  = op-tyabs ⦅ cons (bind (ast N)) nil ⦆
+infix 5 _【_】
 pattern _【_】 L α = op-tyapp ⦅ cons (ast L) (cons (ast α) nil) ⦆
 pattern _⟨_⟩ L c = op-tyapp ⦅ cons (ast L) (cons (ast c) nil) ⦆
 pattern blame = op-blame ⦅ nil ⦆
@@ -126,6 +132,8 @@ pattern _⍮_ c d = c-seq ⦅ cons (ast c) (cons (ast d) nil) ⦆
 pattern ∀̰ c = c-all ⦅ cons (bind (ast c)) nil ⦆
 pattern inst c = c-inst ⦅ cons (bind (ast c)) nil ⦆
 pattern gen c = c-gen ⦅ cons (bind (ast c)) nil ⦆
+pattern nat = g-nat ⦅ nil ⦆
+pattern ★→★ = g-fun ⦅ nil ⦆
 
 {----------------------- Values ------------------------}
 
@@ -181,3 +189,27 @@ _⟦_⟧ : Frame → Term → Term
 □【 α 】 ⟦ M ⟧       =  M 【 α 】
 □⟨ c ⟩ ⟦ M ⟧        =  M ⟨ c ⟩
 
+{-------------      Reduction Semantics    -------------}
+
+infix 2 _—→_
+
+data _—→_ : Term → Term → Set where
+
+  ξξ : ∀ {M N : Term} {M′ N′ : Term}
+    → (F : Frame)
+    → M′ ≡ F ⟦ M ⟧
+    → N′ ≡ F ⟦ N ⟧
+    → M —→ N
+      --------
+    → M′ —→ N′
+
+  β-ƛ : ∀ {N W : Term}
+    → Value W
+      --------------------
+    → (ƛ N) · W —→ N [ W ]
+
+  β-Λ : ∀ {N : Term}{α : Var}
+      ---------------------------
+    → (Λ N) 【 ` α 】 —→ N [ ` α ]
+
+pattern ξ F M—→N = ξξ F refl refl M—→N
