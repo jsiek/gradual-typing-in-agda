@@ -26,7 +26,7 @@ open import Relation.Binary.PropositionalEquality as Eq
 open Eq.≡-Reasoning
 open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Sig renaming (ν to nu)
-open import Var
+open import Var using (Var)
 
 module Poly.CastCalculus where
 
@@ -119,14 +119,18 @@ pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
 pattern Λ N  = op-tyabs ⦅ cons (bind (ast N)) nil ⦆
 infix 5 _【_】
 pattern _【_】 L α = op-tyapp ⦅ cons (ast L) (cons (ast α) nil) ⦆
+infix 5 _⟨_⟩
 pattern _⟨_⟩ L c = op-tyapp ⦅ cons (ast L) (cons (ast c) nil) ⦆
 pattern blame = op-blame ⦅ nil ⦆
-pattern ν N  = op-nu ⦅ cons (bind (ast N)) nil ⦆
+infix 3 ν_
+pattern ν_ N  = op-nu ⦅ cons (bind (ast N)) nil ⦆
 pattern idᶜ = c-id ⦅ nil ⦆
 pattern _!! G = c-inject ⦅ cons (ast G) nil ⦆
 pattern _?? G = c-project ⦅ cons (ast G) nil ⦆
-pattern _↓ α = c-seal ⦅ cons (ast α) nil ⦆
-pattern _↑ α = c-unseal ⦅ cons (ast α) nil ⦆
+infix 6 _↡
+pattern _↡ α = c-seal ⦅ cons (ast α) nil ⦆
+infix 6 _↟
+pattern _↟ α = c-unseal ⦅ cons (ast α) nil ⦆
 pattern _↪_ c d = c-fun ⦅ cons (ast c) (cons (ast d) nil) ⦆
 pattern _⍮_ c d = c-seq ⦅ cons (ast c) (cons (ast d) nil) ⦆
 pattern ∀̰ c = c-all ⦅ cons (bind (ast c)) nil ⦆
@@ -134,6 +138,14 @@ pattern inst c = c-inst ⦅ cons (bind (ast c)) nil ⦆
 pattern gen c = c-gen ⦅ cons (bind (ast c)) nil ⦆
 pattern nat = g-nat ⦅ nil ⦆
 pattern ★→★ = g-fun ⦅ nil ⦆
+
+{----------------------- Ground Types ------------------------}
+
+data Ground : Term → Set where
+
+  G-nat : Ground nat
+  G-fun : Ground ★→★
+  G-var : ∀{α : Var} → Ground (` α)
 
 {----------------------- Values ------------------------}
 
@@ -195,14 +207,6 @@ infix 2 _—→_
 
 data _—→_ : Term → Term → Set where
 
-  ξξ : ∀ {M N : Term} {M′ N′ : Term}
-    → (F : Frame)
-    → M′ ≡ F ⟦ M ⟧
-    → N′ ≡ F ⟦ N ⟧
-    → M —→ N
-      --------
-    → M′ —→ N′
-
   β-ƛ : ∀ {N W : Term}
     → Value W
       --------------------
@@ -212,4 +216,238 @@ data _—→_ : Term → Term → Set where
       ---------------------------
     → (Λ N) 【 ` α 】 —→ N [ ` α ]
 
+  -- todo: constraint on c?
+  β-gen : ∀ {V : Term}{c : Term}{α : Var}
+    → Value V
+      ----------------------------------------
+    → V ⟨ gen c ⟩ 【 ` α 】 —→ V ⟨ c [ ` α ] ⟩
+
+  cast-id : ∀ {V : Term}
+    → Value V
+    → V ⟨ idᶜ ⟩ —→ V
+
+  reveal : ∀ {V : Term}{α : Var}
+    → Value V
+    → V ⟨ ` α ↡ ⟩ ⟨ ` α ↟ ⟩ —→ V
+
+  collapse : ∀ {V : Term}{G : Term}
+    → Value V
+    → V ⟨ G !! ⟩ ⟨ G ?? ⟩ —→ V
+
+  conflict : ∀ {V : Term}{G H : Term}
+    → Value V
+    → G ≢ H
+    → V ⟨ G !! ⟩ ⟨ H ?? ⟩ —→ blame
+
+  cast-inst : ∀ {V : Term}{c : Term}
+    → V ⟨ inst c ⟩ —→ ν V 【 ` 0 】 ⟨ c ⟩
+
+  cast-all : ∀ {V : Term}{c : Term}
+    → V ⟨ ∀̰ c ⟩ —→ Λ V ⟨ c ⟩
+
+  cast-seq : ∀ {V : Term}{c d : Term}
+    → V ⟨ c ⍮ d ⟩ —→ V ⟨ c ⟩ ⟨ d ⟩
+
+  cast-fun : ∀ {V : Term}{c d : Term}
+    → V ⟨ c ↪ d ⟩ —→ ƛ (V · ` 0 ⟨ c ⟩) ⟨ d ⟩
+
+infix 2 _∣_—→_∣_
+
+data _∣_—→_∣_ : ℕ → Term → ℕ → Term → Set where
+
+  ξξ : ∀ {Σ}{M N : Term} {Σ′}{M′ N′ : Term}
+    → (F : Frame)
+    → M′ ≡ F ⟦ M ⟧
+    → N′ ≡ F ⟦ N ⟧
+    → Σ ∣ M —→ Σ′ ∣ N
+      -----------------
+    → Σ ∣ M′ —→ Σ′ ∣ N′
+
+  pure : ∀ {Σ}{M N : Term}
+    → M —→ N
+      ---------------
+    → Σ ∣ M —→ Σ ∣ N
+
+  new-ty : ∀{Σ}{N}
+     → Σ ∣ ν N —→ suc Σ ∣ N [ ` Σ ]
+
 pattern ξ F M—→N = ξξ F refl refl M—→N
+
+
+{-------------      Type System    -------------}
+
+data Cat : Set where
+  trm : Type → Cat
+  typ : Cat
+  bnd : Type → Cat
+
+TyEnv : Set
+TyEnv = List Cat
+
+data _∋_⦂_ : TyEnv → Var → Cat → Set where
+  trmZ : ∀{Γ}{A} → (trm A ∷ Γ) ∋ zero ⦂ trm A
+  trmStrm : ∀{Γ}{A}{B}{x}
+     → Γ ∋ x ⦂ trm A
+     → (trm B ∷ Γ) ∋ suc x ⦂ trm A
+  typtrm : ∀{Γ}{A}{x}
+     → Γ ∋ x ⦂ trm A
+     → (typ ∷ Γ) ∋ x ⦂ trm (⟪ renᵗ suc ⟫ᵗ A)
+  bndtrm : ∀{Γ}{A}{B}{x}
+     → Γ ∋ x ⦂ trm A
+     → (bnd B ∷ Γ) ∋ x ⦂ trm (⟪ renᵗ suc ⟫ᵗ A)
+     
+  typZ : ∀{Γ} → (typ ∷ Γ) ∋ zero ⦂ typ
+  typStyp : ∀{Γ}{x}
+     → Γ ∋ x ⦂ typ
+     → (typ ∷ Γ) ∋ suc x ⦂ typ
+  bndStyp : ∀{Γ}{B}{x}
+     → Γ ∋ x ⦂ typ
+     → (bnd B ∷ Γ) ∋ suc x ⦂ typ
+  trmStyp : ∀{Γ}{B}{x}
+     → Γ ∋ x ⦂ typ
+     → (trm B ∷ Γ) ∋ x ⦂ typ
+
+  bndZ : ∀{Γ}{A} → (bnd A ∷ Γ) ∋ zero ⦂ bnd A
+  typSbnd : ∀{Γ}{A}{x}
+     → Γ ∋ x ⦂ bnd A
+     → (typ ∷ Γ) ∋ suc x ⦂ bnd A
+  bndSbnd : ∀{Γ}{A}{B}{x}
+     → Γ ∋ x ⦂ bnd A
+     → (bnd B ∷ Γ) ∋ suc x ⦂ bnd A
+  trmSbnd : ∀{Γ}{A}{B}{x}
+     → Γ ∋ x ⦂ bnd A
+     → (trm B ∷ Γ) ∋ x ⦂ bnd A
+
+{- Well-formed Types -}
+
+infix 1 _⊢_ok
+data _⊢_ok : TyEnv → Type → Set where
+
+  ⊢-Nat : ∀{Γ}
+       ----------
+     → Γ ⊢ Nat ok
+
+  ⊢-★ : ∀{Γ}
+       ----------
+     → Γ ⊢ ★ ok
+
+  ⊢-Var : ∀{Γ}{x}
+     → Γ ∋ x ⦂ typ
+       -----------
+     → Γ ⊢ ^ x ok
+
+  ⊢-⇒ : ∀{Γ}{A}{B}
+     → Γ ⊢ A ok
+     → Γ ⊢ B ok
+       ------------
+     → Γ ⊢ A ⇒ B ok
+
+  ⊢-∀ :  ∀{Γ}{A}
+     → typ ∷ Γ ⊢ A ok
+       --------------
+     → Γ ⊢ ∀̇ A ok
+
+{- Well-typed Coercions -}
+
+gnd⇒ty : ∀{G} → Ground G → Type
+gnd⇒ty {.nat} G-nat = Nat
+gnd⇒ty {.★→★} G-fun = ★ ⇒ ★
+gnd⇒ty {` α} G-var = ^ α
+
+infix 1 _⊢_⦂_↝_
+data _⊢_⦂_↝_ : TyEnv → Term → Type → Type → Set where
+
+  wt-id : ∀{Γ}{A} → Γ ⊢ idᶜ ⦂ A ↝ A
+
+  wt-inj : ∀{Γ}{G}
+    → (g : Ground G)
+    → Γ ⊢ G !! ⦂ gnd⇒ty g ↝ ★
+
+  wt-proj : ∀{Γ}{G}
+    → (g : Ground G)
+    → Γ ⊢ G ?? ⦂ ★ ↝ gnd⇒ty g
+
+  wt-seal : ∀{Γ}{α}{A}
+    → Γ ∋ α ⦂ bnd A
+    → Γ ⊢ ` α ↡ ⦂ A ↝ ^ α
+
+  wt-unseal : ∀{Γ}{α}{A}
+    → Γ ∋ α ⦂ bnd A
+    → Γ ⊢ ` α ↟ ⦂ ^ α ↝ A
+
+  wt-gen : ∀{Γ}{c}{A}{B}
+    → Γ ⊢ c ⦂ A ↝ B
+    → Γ ⊢ gen c ⦂ A ↝ ∀̇ B
+
+  wt-inst : ∀{Γ}{c}{A}{B}
+    → Γ ⊢ c ⦂ A ↝ B
+    → Γ ⊢ inst c ⦂ ∀̇ A ↝ B
+
+{- Well-typed Terms -}
+
+infix 1 _⊢_⦂_
+data _⊢_⦂_ : TyEnv → Term → Type → Set where
+
+  ⊢-nat : ∀{Γ} → ∀ n
+        -----------------
+      → Γ ⊢ $ n ⦂ Nat
+
+  ⊢-var : ∀{Γ}{x}{A}
+      → Γ ∋ x ⦂ trm A
+        ---------------
+      → Γ ⊢ ` x ⦂ A
+
+  ⊢-lam : ∀{Γ}{N}{A}{B}
+     → Γ ⊢ A ok
+     → trm A ∷ Γ ⊢ N ⦂ B
+       -------------------
+     → Γ ⊢ ƛ N ⦂ A ⇒ B
+     
+  ⊢-app : ∀{Γ}{L}{M}{A}{B}
+     → Γ ⊢ L ⦂ A ⇒ B
+     → Γ ⊢ M ⦂ A
+       -----------------
+     → Γ ⊢ L · M ⦂ B
+
+  ⊢-tyabs : ∀{Γ}{V}{A}
+     → Value V
+     → typ ∷ Γ ⊢ V ⦂ A
+       ---------------
+     → Γ ⊢ Λ V ⦂ ∀̇ A
+
+  ⊢-tyapp : ∀{Γ}{L}{A}{B}{α}
+     → Γ ⊢ L ⦂ ∀̇ A
+     → Γ ∋ α ⦂ bnd B
+       ---------------------------
+     → Γ ⊢ L 【 ` α 】 ⦂ A ⦗ ^ α ⦘
+
+  ⊢-ν : ∀{Γ}{N}{A}{B}
+     → bnd B ∷ Γ ⊢ N ⦂ ⟪ renᵗ suc ⟫ᵗ A
+       -------------------------------
+     → Γ ⊢ ν N ⦂ A
+
+  ⊢-cast : ∀{Γ}{M}{c}{A}{B}
+     → Γ ⊢ M ⦂ A
+     → Γ ⊢ c ⦂ A ↝ B
+       ---------------
+     → Γ ⊢ M ⟨ c ⟩ ⦂ B
+
+{- Well-formed Top-Level Type Environment -}
+
+infix 1 _⊢_
+data _⊢_ : ℕ → TyEnv → Set where
+  empty-env : zero ⊢ []
+
+  bnd-env : ∀{Γ}{α : ℕ}{A : Type}
+     → α ⊢ Γ
+     → suc α ⊢ bnd A ∷ Γ
+
+{- Well-typed Configurations -}
+
+infix 1 _⊢ᶜ_⦂_
+data _⊢ᶜ_⦂_ : ℕ → Term → Type → Set where
+   wtconfig : ∀{Σ}{Γ}{M}{A}
+      → Σ ⊢ Γ
+      → Γ ⊢ M ⦂ A
+      → Σ ⊢ᶜ M ⦂ A
+
