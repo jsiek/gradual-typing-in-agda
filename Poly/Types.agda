@@ -247,6 +247,12 @@ mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ y (there y∈sucΨ)
     let z∈Ψ′ = Ψ⊆Ψ′ z (there z∈) in
     ∈-mem-map z∈Ψ′
 
+weaken⊑ : ∀{A}{B}{Ψ}{Ψ′}
+  → Ψ ⊢ A ⊑ B
+  → mem Ψ ⊆ mem Ψ′
+  → Ψ′ ⊢ A ⊑ B
+weaken⊑ {A}{B}{Ψ}{Ψ′} A⊑B Ψ⊆Ψ′ = {!!}
+
 weaken~ : ∀{A}{B}{Ψ}{Ψ′}
   → Ψ ⊢ A ~ B
   → mem Ψ ⊆ mem Ψ′
@@ -273,6 +279,12 @@ weaken~ {A} {.(∀̇ _)} {Ψ} {Ψ′} (any~all A~B) Ψ⊆Ψ′ =
                          ; d (there d∈sucΞ) → there (mem-map-⊆ Ψ⊆Ψ′ d d∈sucΞ)})
                          in
     any~all IH
+
+weaken~₂ : ∀{A}{B}{Ψ}{Ψ′}
+  → Ψ ⊢ A ~ B
+  → (∀ d → d ∈ (mem (FV A) ∪ mem (FV B)) → d ∈ mem Ψ → d ∈ mem Ψ′)
+  → Ψ′ ⊢ A ~ B
+weaken~₂ {A}{B}{Ψ}{Ψ′} A~B = {!!}
 
 mem-map-suc-dec : ∀ ls
    → mem ls ⊆ mem (0 ∷ map suc (dec ls))
@@ -375,7 +387,39 @@ FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d d∈ =
   Goal rewrite FV-ren-map {A}{extrᵗ suc} rewrite dec-map-extr suc (FV A) =
     let sd∈FVA = α∈decS→sα∈S{d}{FV A} d∈ in
     ∈-mem-map (sα∈S→α∈decS sd∈FVA)
-    
+
+ren~-inv : ∀ ρ Ψ A B
+  → (∀ x y → ρ x ≡ ρ y → x ≡ y)
+  → map ρ Ψ ⊢ ⟪ renᵗ ρ ⟫ᵗ A ~ ⟪ renᵗ ρ ⟫ᵗ B
+  → Ψ ⊢ A ~ B
+ren~-inv ρ Ψ A B ρsurj ρA~ρB = {!!}
+
+mem-FV-ren : ∀ d A → ∀{ρ}
+   → d ∈ mem (FV (⟪ renᵗ ρ ⟫ᵗ A))
+   → ∃[ d′ ] d ≡ ρ d′ × d′ ∈ mem (FV A)
+mem-FV-ren d (^ x) {ρ} d∈sA rewrite sub-varᵗ (renᵗ ρ) x | ren-defᵗ ρ x
+    with d∈sA
+... | here refl = x , refl , here refl
+mem-FV-ren d Nat () 
+mem-FV-ren d ★ ()
+mem-FV-ren d (A ⇒ B) {ρ} d∈sAB
+    with ++⁻ {P = _≡_ d} (FV (⟪ renᵗ ρ ⟫ᵗ A)) d∈sAB
+... | inj₁ d∈sA
+    with mem-FV-ren d A {ρ} d∈sA
+... | d′ , eq , d′∈A =    
+      d′ , eq , ++⁺ˡ {P = _≡_ d′} d′∈A
+mem-FV-ren d (A ⇒ B) {ρ} d∈sAB
+    | inj₂ d∈sB
+    with mem-FV-ren d B {ρ} d∈sB
+... | d′ , eq , d′∈B =    
+      d′ , eq , ++⁺ʳ {P = _≡_ d′} _ d′∈B
+mem-FV-ren d (∀̇ A) {ρ} d∈sA =
+   let sd∈extA : suc d ∈ mem (FV (⟪ renᵗ (extrᵗ ρ) ⟫ᵗ A))
+       sd∈extA = α∈decS→sα∈S{S = (FV (⟪ renᵗ (extrᵗ ρ) ⟫ᵗ A))} d∈sA in
+
+   let IH = mem-FV-ren d A {extrᵗ ρ} {!!} in
+   {!!} , {!!} , {!!}
+
 A⊑C×B⊑C⇒A~B : ∀{A}{B}{C}{Ψ}
    → Ψ ⊢ A ⊑ C
    → Ψ ⊢ B ⊑ C
@@ -431,8 +475,16 @@ A⊑C×B⊑C⇒A~B (fun⊑fun A⊑C A⊑C₁) (fun⊑fun B⊑C B⊑C₁) =
 A⊑C×B⊑C⇒A~B {∀̇ A} {.★} {∀̇ C} (all⊑all A⊑C) (unk⊑any () _)
 A⊑C×B⊑C⇒A~B {∀̇ A} {∀̇ B} {∀̇ C} (all⊑all A⊑C) (all⊑all B⊑C) =
     all~all (A⊑C×B⊑C⇒A~B A⊑C B⊑C)
-A⊑C×B⊑C⇒A~B {.(∀̇ _)} {B} {.(∀̇ _)} (all⊑all A⊑C) (any⊑all B⊑C) = {!!}
+A⊑C×B⊑C⇒A~B {∀̇ A} {B} {∀̇ C} (all⊑all A⊑C) (any⊑all B⊑C) =
+    all~any (A⊑C×B⊑C⇒A~B (weaken⊑ A⊑C λ d → there) B⊑C)
 A⊑C×B⊑C⇒A~B {A} {.★} {.(∀̇ _)} (any⊑all A⊑C) (unk⊑any () x₁)
-A⊑C×B⊑C⇒A~B {A} {.(∀̇ _)} {.(∀̇ _)} (any⊑all A⊑C) (all⊑all B⊑C) = {!!}
-A⊑C×B⊑C⇒A~B {A} {B} {.(∀̇ _)} (any⊑all A⊑C) (any⊑all B⊑C) = {!!}
+A⊑C×B⊑C⇒A~B {A} {.(∀̇ _)} {.(∀̇ _)} (any⊑all A⊑C) (all⊑all B⊑C) =
+    any~all (A⊑C×B⊑C⇒A~B A⊑C (weaken⊑ B⊑C λ d → there))
+A⊑C×B⊑C⇒A~B {A} {B} {∀̇ C}{Ψ} (any⊑all A⊑C) (any⊑all B⊑C) =
+  let IH : 0 ∷ map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ~ ⟪ renᵗ suc ⟫ᵗ B
+      IH = A⊑C×B⊑C⇒A~B A⊑C B⊑C in
+  let IH₂ : map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ~ ⟪ renᵗ suc ⟫ᵗ B
+      IH₂ = weaken~₂ IH {!!} in
+  ren~-inv suc Ψ A B (λ { x .x refl → refl}) IH₂
+
    
