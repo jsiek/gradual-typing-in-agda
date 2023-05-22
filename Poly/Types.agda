@@ -153,40 +153,44 @@ FV (∀̇ A) = dec (FV A)
 
 {- Consistency -}
 
+{- Mono means not ∀ -}
 data Mono : Type → Set where
   mono-nat : Mono Nat
   mono-unk : Mono ★
+  mono-var : ∀{α} → Mono (^ α)
   mono-fun : ∀{A B} → Mono (A ⇒ B)
 
-infix 1 _∣_⊢_~_
-data _∣_⊢_~_ : List Var → List Var → Type → Type → Set where
+infix 1 _⊢_~_
+data _⊢_~_ : List Var → Type → Type → Set where
 
-  nat~nat : ∀{Ψ}{Ξ} → Ψ ∣ Ξ ⊢ Nat ~ Nat
+  nat~nat : ∀{Ψ} → Ψ ⊢ Nat ~ Nat
 
-  unk~any : ∀{Ψ}{Ξ}{A}
-     → mem (FV A) ⊆ mem Ξ
-     → Ψ ∣ Ξ ⊢ ★ ~ A
+  var~var : ∀{Ψ}{α} → Ψ ⊢ ^ α ~ ^ α
 
-  any~unk : ∀{Ψ}{Ξ}{A}
+  unk~any : ∀{Ψ}{A}
      → mem (FV A) ⊆ mem Ψ
-     → Ψ ∣ Ξ ⊢ A ~ ★
+     → Ψ ⊢ ★ ~ A
 
-  fun~fun : ∀{Ψ}{Ξ}{A}{B}{A′}{B′}
-     → Ψ ∣ Ξ ⊢ A ~ A′
-     → Ψ ∣ Ξ ⊢ B ~ B′ 
-     → Ψ ∣ Ξ ⊢ A ⇒ B ~ A′ ⇒ B′ 
+  any~unk : ∀{Ψ}{A}
+     → mem (FV A) ⊆ mem Ψ
+     → Ψ ⊢ A ~ ★
 
-  all~all : ∀{Ψ}{Ξ}{A}{A′}
-     → map suc Ψ ∣ map suc Ξ ⊢ A ~ A′
-     → Ψ ∣ Ξ ⊢ ∀̇ A ~ ∀̇ A′
+  fun~fun : ∀{Ψ}{A}{B}{A′}{B′}
+     → Ψ ⊢ A ~ A′
+     → Ψ ⊢ B ~ B′ 
+     → Ψ ⊢ A ⇒ B ~ A′ ⇒ B′ 
 
-  all~any : ∀{Ψ}{Ξ}{A}{A′}
-     → 0 ∷ map suc Ψ ∣ Ξ ⊢ A ~ A′
-     → Ψ ∣ Ξ ⊢ ∀̇ A ~ A′
+  all~all : ∀{Ψ}{A}{A′}
+     → map suc Ψ ⊢ A ~ A′
+     → Ψ ⊢ ∀̇ A ~ ∀̇ A′
 
-  any~all : ∀{Ψ}{Ξ}{A}{A′}
-     → Ψ ∣ 0 ∷ map suc Ξ ⊢ A ~ A′
-     → Ψ ∣ Ξ ⊢ A ~ ∀̇ A′
+  all~any : ∀{Ψ}{A}{A′}
+     → 0 ∷ map suc Ψ ⊢ A ~ ⟪ renᵗ suc ⟫ᵗ A′
+     → Ψ ⊢ ∀̇ A ~ A′
+
+  any~all : ∀{Ψ}{A}{A′}
+     → 0 ∷ map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ~ A′
+     → Ψ ⊢ A ~ ∀̇ A′
 
 {- Precision -}
 
@@ -243,32 +247,30 @@ mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ y (there y∈sucΨ)
     let z∈Ψ′ = Ψ⊆Ψ′ z (there z∈) in
     ∈-mem-map z∈Ψ′
 
-weaken~ : ∀{A}{B}{Ψ}{Ψ′}{Ξ}{Ξ′}
-  → Ψ ∣ Ξ ⊢ A ~ B
+weaken~ : ∀{A}{B}{Ψ}{Ψ′}
+  → Ψ ⊢ A ~ B
   → mem Ψ ⊆ mem Ψ′
-  → mem Ξ ⊆ mem Ξ′
-  → Ψ′ ∣ Ξ′ ⊢ A ~ B
-weaken~ {.Nat} {.Nat} {Ψ} {Ψ′} {Ξ} {Ξ′} nat~nat Ψ⊆Ψ′ Ξ⊆Ξ′ =
+  → Ψ′ ⊢ A ~ B
+weaken~ {.Nat} {.Nat} {Ψ} {Ψ′} nat~nat Ψ⊆Ψ′ =
     nat~nat
-weaken~ {.★} {B} {Ψ} {Ψ′} {Ξ} {Ξ′} (unk~any x) Ψ⊆Ψ′ Ξ⊆Ξ′ =
-    unk~any (λ d z → Ξ⊆Ξ′ d (x d z))
-weaken~ {A} {.★} {Ψ} {Ψ′} {Ξ} {Ξ′} (any~unk x) Ψ⊆Ψ′ Ξ⊆Ξ′ =
+weaken~ var~var Ψ⊆Ψ′ = var~var
+weaken~ {.★} {B} {Ψ} {Ψ′} (unk~any x) Ψ⊆Ψ′ =
+    unk~any (λ d z → Ψ⊆Ψ′ d (x d z))
+weaken~ {A} {.★} {Ψ} {Ψ′} (any~unk x) Ψ⊆Ψ′ =
     any~unk (λ d z → Ψ⊆Ψ′ d (x d z))
-weaken~ {.(_ ⇒ _)} {.(_ ⇒ _)} {Ψ} {Ψ′} {Ξ} {Ξ′} (fun~fun A~B A~B₁) Ψ⊆Ψ′ Ξ⊆Ξ′ =
-    fun~fun (weaken~ A~B Ψ⊆Ψ′ Ξ⊆Ξ′) (weaken~ A~B₁ Ψ⊆Ψ′ Ξ⊆Ξ′)
-weaken~ {∀̇ A} {∀̇ B} {Ψ} {Ψ′} {Ξ} {Ξ′} (all~all A~B) Ψ⊆Ψ′ Ξ⊆Ξ′ =
-    let IH = weaken~{A}{B}{map suc Ψ}{map suc Ψ′}{map suc Ξ}{map suc Ξ′}
-               A~B (mem-map-⊆ Ψ⊆Ψ′) (mem-map-⊆ Ξ⊆Ξ′) in
+weaken~ {.(_ ⇒ _)} {.(_ ⇒ _)} {Ψ} {Ψ′} (fun~fun A~B A~B₁) Ψ⊆Ψ′ =
+    fun~fun (weaken~ A~B Ψ⊆Ψ′) (weaken~ A~B₁ Ψ⊆Ψ′)
+weaken~ {∀̇ A} {∀̇ B} {Ψ} {Ψ′} (all~all A~B) Ψ⊆Ψ′ =
+    let IH = weaken~{A}{B}{map suc Ψ}{map suc Ψ′} A~B (mem-map-⊆ Ψ⊆Ψ′) in
     all~all IH
-weaken~ {.(∀̇ _)} {B} {Ψ} {Ψ′} {Ξ} {Ξ′} (all~any A~B) Ψ⊆Ψ′ Ξ⊆Ξ′ =
+weaken~ {.(∀̇ _)} {B} {Ψ} {Ψ′} (all~any A~B) Ψ⊆Ψ′ =
     let IH = weaken~ A~B (λ { d (here px) → here px
                          ; d (there d∈sucΨ) → there (mem-map-⊆ Ψ⊆Ψ′ d d∈sucΨ)})
-                         Ξ⊆Ξ′ in
+                         in
     all~any IH
-weaken~ {A} {.(∀̇ _)} {Ψ} {Ψ′} {Ξ} {Ξ′} (any~all A~B) Ψ⊆Ψ′ Ξ⊆Ξ′ =
-    let IH = weaken~ A~B Ψ⊆Ψ′
-                         (λ { d (here px) → here px
-                         ; d (there d∈sucΞ) → there (mem-map-⊆ Ξ⊆Ξ′ d d∈sucΞ)})
+weaken~ {A} {.(∀̇ _)} {Ψ} {Ψ′} (any~all A~B) Ψ⊆Ψ′ =
+    let IH = weaken~ A~B (λ { d (here px) → here px
+                         ; d (there d∈sucΞ) → there (mem-map-⊆ Ψ⊆Ψ′ d d∈sucΞ)})
                          in
     any~all IH
 
@@ -377,34 +379,58 @@ FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d d∈ =
 A⊑C×B⊑C⇒A~B : ∀{A}{B}{C}{Ψ}
    → Ψ ⊢ A ⊑ C
    → Ψ ⊢ B ⊑ C
-   → ∃[ Σ ] ∃[ Ξ ] (Σ ∣ Ξ ⊢ A ~ B)
-A⊑C×B⊑C⇒A~B {.Nat} {.Nat} {.Nat} nat⊑nat nat⊑nat = [] , [] , nat~nat
-A⊑C×B⊑C⇒A~B {.Nat} {.★} {.Nat} nat⊑nat (unk⊑any m sub) =
-    [] , [] , any~unk λ d ()
-A⊑C×B⊑C⇒A~B {.★} {.Nat} {.Nat} (unk⊑any m sub) nat⊑nat =
-    [] , [] , unk~any λ d ()
-A⊑C×B⊑C⇒A~B {.★} {.★} {C} (unk⊑any m sub) (unk⊑any m′ x) =
-    [] , [] , unk~any λ d ()
-A⊑C×B⊑C⇒A~B {.★} {.(_ ⇒ _)} {.(_ ⇒ _)} (unk⊑any m sub) (fun⊑fun{A}{B}{C}{D} B⊑D C⊑B′) =
-    [] , FV B ++ FV C , unk~any λ d z → z
-A⊑C×B⊑C⇒A~B {.★} {∀̇ A} {∀̇ B} (unk⊑any m sub) (all⊑all B⊑C) =
-    [] , dec (FV A) , unk~any λ d z → z
-A⊑C×B⊑C⇒A~B {.★} {B} {.(∀̇ _)} (unk⊑any m sub) (any⊑all B⊑C) =
-    [] , FV B , unk~any λ d z → z
-A⊑C×B⊑C⇒A~B {A ⇒ A′} {.★} {C ⇒ C′}  (fun⊑fun A⊑C A⊑C₁) (unk⊑any m x) =
-  FV A ++ FV A′ , [] , any~unk λ d z → z
-A⊑C×B⊑C⇒A~B (fun⊑fun A⊑C A⊑C₁) (fun⊑fun B⊑C B⊑C₁)
-    with A⊑C×B⊑C⇒A~B A⊑C B⊑C
-... | x , y , A~A₁
-    with (A⊑C×B⊑C⇒A~B A⊑C₁ B⊑C₁)
-... | p , q , r =    
-    x ++ p , y ++ q , fun~fun (weaken~ A~A₁ (mem++-left x p) (mem++-left y q))
-                              (weaken~ r (mem++-right x p) (mem++-right y q))
+   → Ψ ⊢ A ~ B
+A⊑C×B⊑C⇒A~B {.Nat} {.Nat} {.Nat} nat⊑nat nat⊑nat = nat~nat
+A⊑C×B⊑C⇒A~B {.Nat} {.★} {.Nat} nat⊑nat (unk⊑any m sub) = any~unk λ d ()
+A⊑C×B⊑C⇒A~B var⊑var var⊑var = var~var
+A⊑C×B⊑C⇒A~B {Ψ = Ψ} var⊑var (unk⊑any m sub) = any~unk sub
+A⊑C×B⊑C⇒A~B {.★} {.Nat} {.Nat} (unk⊑any m sub) nat⊑nat = unk~any λ d ()
+A⊑C×B⊑C⇒A~B {Ψ = Ψ} (unk⊑any m sub) var⊑var = unk~any sub
+A⊑C×B⊑C⇒A~B {.★} {.★} {C} (unk⊑any m sub) (unk⊑any m′ x) = unk~any λ d ()
+A⊑C×B⊑C⇒A~B {.★} {.(_ ⇒ _)} {.(_ ⇒ _)}{Ψ} (unk⊑any m sub) (fun⊑fun{A = A}{B}{C}{D} A⊑C B⊑D) =
+  unk~any Goal
+  where
+  Goal : mem (FV A ++ FV B) ⊆ mem Ψ
+  Goal d d∈
+      with ++⁻ {P = _≡_ d} (FV A) d∈
+  ... | inj₁ d∈A = sub d (++⁺ˡ {P = _≡_ d} (FV⊑ A⊑C d d∈A))
+  ... | inj₂ d∈B = sub d (++⁺ʳ {P = _≡_ d} _ (FV⊑ B⊑D d d∈B) )
+A⊑C×B⊑C⇒A~B {.★} {∀̇ A} {∀̇ B}{Ψ} (unk⊑any m sub) (all⊑all A⊑B) =
+    unk~any Goal
+    where
+    Goal : mem (dec (FV A)) ⊆ mem Ψ
+    Goal d d∈decA =
+       let sd∈A = α∈decS→sα∈S{S = FV A} d∈decA in
+       let sd∈B = FV⊑ A⊑B (suc d) sd∈A in
+       let d∈decB = sα∈S→α∈decS{S = FV B} sd∈B in
+       sub d d∈decB
+A⊑C×B⊑C⇒A~B {.★} {B} {∀̇ C}{Ψ} (unk⊑any m sub) (any⊑all B⊑C) =
+    unk~any Goal
+    where
+    sB⊆C : mem (FV (⟪ renᵗ suc ⟫ᵗ B)) ⊆ mem (FV C)
+    sB⊆C = FV⊑ B⊑C
+
+    mapsB⊆C : mem (map suc (FV B)) ⊆ mem (FV C)
+    mapsB⊆C rewrite sym (FV-ren-map{B}{suc}) = sB⊆C
+
+    Goal : mem (FV B) ⊆ mem Ψ
+    Goal d d∈B =
+        let sd∈sB = ∈-mem-map{f = suc} d∈B in
+        let sd∈C = mapsB⊆C (suc d) sd∈sB in
+        sub d (sα∈S→α∈decS{S = FV C} sd∈C)
+A⊑C×B⊑C⇒A~B {A ⇒ A′} {.★} {C ⇒ C′}{Ψ}  (fun⊑fun A⊑C A⊑C₁) (unk⊑any m sub) =
+    any~unk Goal
+    where
+    Goal : mem (FV A ++ FV A′) ⊆ mem Ψ
+    Goal d d∈
+        with ++⁻ {P = _≡_ d} (FV A) d∈
+    ... | inj₁ d∈A = sub d (++⁺ˡ {P = _≡_ d} (FV⊑ A⊑C d d∈A))
+    ... | inj₂ d∈A′ = sub d (++⁺ʳ {P = _≡_ d} _ (FV⊑ A⊑C₁ d d∈A′) )
+A⊑C×B⊑C⇒A~B (fun⊑fun A⊑C A⊑C₁) (fun⊑fun B⊑C B⊑C₁) =
+    fun~fun (A⊑C×B⊑C⇒A~B A⊑C B⊑C) (A⊑C×B⊑C⇒A~B A⊑C₁ B⊑C₁)
 A⊑C×B⊑C⇒A~B {∀̇ A} {.★} {∀̇ C} (all⊑all A⊑C) (unk⊑any () _)
-A⊑C×B⊑C⇒A~B {∀̇ A} {∀̇ B} {∀̇ C} (all⊑all A⊑C) (all⊑all B⊑C)
-    with A⊑C×B⊑C⇒A~B A⊑C B⊑C
-... | x , y , A~B =    
-    dec x , dec y , all~all {!~B!}
+A⊑C×B⊑C⇒A~B {∀̇ A} {∀̇ B} {∀̇ C} (all⊑all A⊑C) (all⊑all B⊑C) =
+    all~all (A⊑C×B⊑C⇒A~B A⊑C B⊑C)
 A⊑C×B⊑C⇒A~B {.(∀̇ _)} {B} {.(∀̇ _)} (all⊑all A⊑C) (any⊑all B⊑C) = {!!}
 A⊑C×B⊑C⇒A~B {A} {.★} {.(∀̇ _)} (any⊑all A⊑C) (unk⊑any () x₁)
 A⊑C×B⊑C⇒A~B {A} {.(∀̇ _)} {.(∀̇ _)} (any⊑all A⊑C) (all⊑all B⊑C) = {!!}
