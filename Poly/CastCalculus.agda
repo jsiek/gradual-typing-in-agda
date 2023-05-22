@@ -30,37 +30,7 @@ open import Var using (Var)
 
 module Poly.CastCalculus where
 
-{-------------      Types    -------------}
-
-
-data TypeOp : Set where
-  op-fun : TypeOp
-  op-all : TypeOp
-  op-nat : TypeOp
-  op-unk : TypeOp
-
-type-sig : TypeOp → List Sig
-type-sig op-fun = ■ ∷ ■ ∷ []
-type-sig op-all = (nu ■) ∷ []
-type-sig op-nat = []
-type-sig op-unk = []
-
-open import rewriting.AbstractBindingTree TypeOp type-sig
-  using ()
-  renaming (ABT to Type; Rename to Renameᵗ; Subst to Substᵗ;
-            ren to renᵗ; ren-def to ren-defᵗ; extr to extrᵗ; ext to extᵗ;
-            ⟪_⟫ to ⟪_⟫ᵗ; sub-var to sub-varᵗ; seq-def to seq-defᵗ; ↑ to ↑ᵗ;
-            _[_] to _⦗_⦘; _⦅_⦆ to _‹_›; _•_ to _•ᵗ_; id to idᵗ; _⨟_ to _⨟ᵗ_;
-            nil to tnil; cons to tcons; bind to tbind; ast to tast; `_ to ^_)
-  public
-
-pattern Nat = op-nat ‹ tnil ›
-pattern ★ = op-unk ‹ tnil ›
-
-infixl 7  _⇒_
-pattern _⇒_ A B = op-fun ‹ tcons (tast A) (tcons (tast B) tnil) ›
-
-pattern ∀̇ A = op-all ‹ tcons (tbind (tast A)) tnil ›
+open import Poly.Types
 
 {-------------      Terms    -------------}
 
@@ -276,76 +246,6 @@ pattern ξ F M—→N = ξξ F refl refl M—→N
 
 {-------------      Type System    -------------}
 
-data Cat : Set where
-  trm : Type → Cat
-  typ : Cat
-  bnd : Type → Cat
-
-TyEnv : Set
-TyEnv = List Cat
-
-data _∋_⦂_ : TyEnv → Var → Cat → Set where
-  trmZ : ∀{Γ}{A} → (trm A ∷ Γ) ∋ zero ⦂ trm A
-  trmStrm : ∀{Γ}{A}{B}{x}
-     → Γ ∋ x ⦂ trm A
-     → (trm B ∷ Γ) ∋ suc x ⦂ trm A
-  typtrm : ∀{Γ}{A}{x}
-     → Γ ∋ x ⦂ trm A
-     → (typ ∷ Γ) ∋ x ⦂ trm (⟪ renᵗ suc ⟫ᵗ A)
-  bndtrm : ∀{Γ}{A}{B}{x}
-     → Γ ∋ x ⦂ trm A
-     → (bnd B ∷ Γ) ∋ x ⦂ trm (⟪ renᵗ suc ⟫ᵗ A)
-     
-  typZ : ∀{Γ} → (typ ∷ Γ) ∋ zero ⦂ typ
-  typStyp : ∀{Γ}{x}
-     → Γ ∋ x ⦂ typ
-     → (typ ∷ Γ) ∋ suc x ⦂ typ
-  bndStyp : ∀{Γ}{B}{x}
-     → Γ ∋ x ⦂ typ
-     → (bnd B ∷ Γ) ∋ suc x ⦂ typ
-  trmStyp : ∀{Γ}{B}{x}
-     → Γ ∋ x ⦂ typ
-     → (trm B ∷ Γ) ∋ x ⦂ typ
-
-  bndZ : ∀{Γ}{A} → (bnd A ∷ Γ) ∋ zero ⦂ bnd A
-  typSbnd : ∀{Γ}{A}{x}
-     → Γ ∋ x ⦂ bnd A
-     → (typ ∷ Γ) ∋ suc x ⦂ bnd A
-  bndSbnd : ∀{Γ}{A}{B}{x}
-     → Γ ∋ x ⦂ bnd A
-     → (bnd B ∷ Γ) ∋ suc x ⦂ bnd A
-  trmSbnd : ∀{Γ}{A}{B}{x}
-     → Γ ∋ x ⦂ bnd A
-     → (trm B ∷ Γ) ∋ x ⦂ bnd A
-
-{- Well-formed Types -}
-
-infix 1 _⊢_ok
-data _⊢_ok : TyEnv → Type → Set where
-
-  ⊢-Nat : ∀{Γ}
-       ----------
-     → Γ ⊢ Nat ok
-
-  ⊢-★ : ∀{Γ}
-       ----------
-     → Γ ⊢ ★ ok
-
-  ⊢-Var : ∀{Γ}{x}
-     → Γ ∋ x ⦂ typ
-       -----------
-     → Γ ⊢ ^ x ok
-
-  ⊢-⇒ : ∀{Γ}{A}{B}
-     → Γ ⊢ A ok
-     → Γ ⊢ B ok
-       ------------
-     → Γ ⊢ A ⇒ B ok
-
-  ⊢-∀ :  ∀{Γ}{A}
-     → typ ∷ Γ ⊢ A ok
-       --------------
-     → Γ ⊢ ∀̇ A ok
 
 {- Well-typed Coercions -}
 
