@@ -207,7 +207,7 @@ data _⊢_⊑_ : List Var → Type → Type → Set where
   var⊑var : ∀{Ψ}{α} → Ψ ⊢ ^ α ⊑ ^ α
 
   unk⊑any : ∀{Ψ}{A}
-     → Mono A                     {- to prevent overlap with mono⊑all -}
+     → Mono A                     {- to prevent overlap with any⊑all -}
      → FV A ⊆ mem Ψ
      → Ψ ⊢ ★ ⊑ A
 
@@ -479,6 +479,7 @@ extr-surjective ρ ρsur (suc x) (suc y) eq =
   let ρx=ρy = suc-injective eq in
   cong suc (ρsur x y ρx=ρy )
 
+{-
 unk~any-ren-inv : ∀{ρ}{Ψ}{B}
   → (∀ x y → ρ x ≡ ρ y → x ≡ y)
    → map ρ Ψ ⊢ ★ ~ ⟪ renᵗ ρ ⟫ᵗ B
@@ -497,8 +498,9 @@ unk~any-ren-inv {ρ}{Ψ}{∀̇ B} ρsurj ★~ρ∀B
 ... | any~all ★~extρB =
      let IH = unk~any-ren-inv {!!} {!★~extρB!} in
       {!!}
+-}
 
-
+{-
 ren~-inv : ∀ ρ Ψ A B
   → (∀ x y → ρ x ≡ ρ y → x ≡ y)
   → map ρ Ψ ⊢ ⟪ renᵗ ρ ⟫ᵗ A ~ ⟪ renᵗ ρ ⟫ᵗ B
@@ -599,3 +601,4 @@ A⊑C×B⊑C⇒A~B {A} {B} {∀̇ C}{Ψ} (any⊑all A⊑C) (any⊑all B⊑C) =
   Goal .0 (inj₂ z∈sB) (here refl) = ⊥-elim (FV-suc-0 B z∈sB)
   Goal d d∈A∪B (there d∈sucΨ) = d∈sucΨ
    
+-}
