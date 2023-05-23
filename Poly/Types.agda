@@ -6,7 +6,7 @@
 
 open import Agda.Primitive using (lzero)
 open import Data.List using (List; []; _∷_; _++_; length)
-open import Data.List.Properties using (map-++-commute)
+open import Data.List.Properties using (map-++-commute; map-compose)
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Relation.Unary.Any.Properties using (++⁺ˡ; ++⁺ʳ; ++⁻)
 open import Data.Nat
@@ -66,6 +66,8 @@ infixl 7  _⇒_
 pattern _⇒_ A B = op-fun ‹ tcons (tast A) (tcons (tast B) tnil) ›
 
 pattern ∀̇ A = op-all ‹ tcons (tbind (tast A)) tnil ›
+
+{- Variable Lookup -}
 
 data Cat : Set where
   trm : Type → Cat
@@ -236,6 +238,16 @@ data _⊢_⊑_ : List Var → Type → Type → Set where
 ∈-mem-map-inv {z ∷ Ψ} {y} (there fx∈)
     with ∈-mem-map-inv fx∈
 ... | x , refl , x∈ = x , refl , there x∈
+
+∈-mem-map-inv-surj : ∀{Ψ : List Var}{y : Var}{f : ℕ → ℕ}
+   → (∀ x y → f x ≡ f y → x ≡ y)
+   → y ∈ mem (map f Ψ)
+   → ∃[ x ] y ≡ f x × x ∈ mem Ψ
+∈-mem-map-inv-surj {x ∷ Ψ} fsurj (here px) =
+    x , px , here refl
+∈-mem-map-inv-surj {x ∷ Ψ} fsurj (there y∈fΨ)
+    with ∈-mem-map-inv-surj {Ψ} fsurj y∈fΨ
+... | x , eq , x∈Ψ = x , eq , there x∈Ψ
 
 mem-map-⊆ : ∀{Ψ}{Ψ′}
    → mem Ψ ⊆ mem Ψ′
@@ -459,11 +471,73 @@ FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d (inj₁ sd∈A) =
   inj₁ (FV⊑ A⊑B (suc d) (inj₁ ssd∈sA))
 FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d (inj₂ ())
 
+extr-surjective : ∀ ρ
+   → ((x y : Var) → ρ x ≡ ρ y → x ≡ y)
+   → (x y : Var) → extrᵗ ρ x ≡ extrᵗ ρ y → x ≡ y
+extr-surjective ρ ρsur zero zero eq = refl
+extr-surjective ρ ρsur (suc x) (suc y) eq =
+  let ρx=ρy = suc-injective eq in
+  cong suc (ρsur x y ρx=ρy )
+
+unk~any-ren-inv : ∀{ρ}{Ψ}{B}
+  → (∀ x y → ρ x ≡ ρ y → x ≡ y)
+   → map ρ Ψ ⊢ ★ ~ ⟪ renᵗ ρ ⟫ᵗ B
+   → FV (⟪ renᵗ ρ ⟫ᵗ B) ⊆ mem (map ρ Ψ)
+unk~any-ren-inv {ρ}{Ψ}{Nat} ρsurj ★~ρB = λ d ()
+unk~any-ren-inv {ρ}{Ψ}{★} ρsurj ★~ρB = λ d ()
+unk~any-ren-inv {ρ}{Ψ}{^ β} ρsurj ★~ρB rewrite sub-varᵗ (renᵗ ρ) β | ren-defᵗ ρ β
+    with ★~ρB
+... | unk~any ρβ∈ρΨ = ρβ∈ρΨ
+unk~any-ren-inv {ρ}{Ψ}{B₁ ⇒ B₂} ρsurj ★~ρB
+    with ★~ρB
+... | unk~any FVρB⊆ρΨ = FVρB⊆ρΨ
+unk~any-ren-inv {ρ}{Ψ}{∀̇ B} ρsurj ★~ρ∀B
+    with ★~ρ∀B
+... | unk~any FVρB⊆ρΨ = FVρB⊆ρΨ
+... | any~all ★~extρB =
+     let IH = unk~any-ren-inv {!!} {!★~extρB!} in
+      {!!}
+
+
 ren~-inv : ∀ ρ Ψ A B
   → (∀ x y → ρ x ≡ ρ y → x ≡ y)
   → map ρ Ψ ⊢ ⟪ renᵗ ρ ⟫ᵗ A ~ ⟪ renᵗ ρ ⟫ᵗ B
   → Ψ ⊢ A ~ B
-ren~-inv ρ Ψ A B ρsurj ρA~ρB = {!!}
+ren~-inv ρ Ψ Nat Nat ρsurj ρA~ρB = nat~nat
+ren~-inv ρ Ψ Nat ★ ρsurj ρA~ρB = any~unk (λ d ())
+ren~-inv ρ Ψ Nat (^ β) ρsurj ρA~ρB rewrite sub-varᵗ (renᵗ ρ) β | ren-defᵗ ρ β
+    with ρA~ρB
+... | ()
+ren~-inv ρ Ψ Nat (B₁ ⇒ B₂) ρsurj ()
+ren~-inv ρ Ψ Nat (∀̇ B) ρsurj (any~all ρA~ρB) =
+    any~all (ren~-inv (extrᵗ ρ) (zero ∷ map suc Ψ) Nat B (extr-surjective ρ ρsurj) Goal)
+    where
+    EQ : map (extrᵗ ρ) (map suc Ψ) ≡ map suc (map ρ Ψ)
+    EQ = trans (sym (map-compose Ψ)) (trans refl (map-compose Ψ))
+    
+    Goal : 0 ∷ map (extrᵗ ρ) (map suc Ψ) ⊢ Nat ~ ⟪ renᵗ (extrᵗ ρ) ⟫ᵗ B
+    Goal = subst (λ X → 0 ∷ X ⊢ Nat ~ ⟪ renᵗ (extrᵗ ρ) ⟫ᵗ B) (sym EQ) ρA~ρB
+
+{-
+ren~-inv ρ Ψ ★ Nat ρsurj ρA~ρB = unk~any (λ d ())
+ren~-inv ρ Ψ ★ ★ ρsurj ρA~ρB = unk~any λ d ()
+ren~-inv ρ Ψ ★ (^ β) ρsurj ρA~ρB rewrite sub-varᵗ (renᵗ ρ) β | ren-defᵗ ρ β
+    with ρA~ρB
+... | unk~any ρβ∈ρΨ = unk~any Goal
+    where
+    Goal : FV (^ β) ⊆ mem Ψ
+    Goal d refl
+        with ∈-mem-map-inv-surj ρsurj (ρβ∈ρΨ (ρ β) refl)
+    ... | x , eq , x∈Ψ rewrite ρsurj d x eq = x∈Ψ
+ren~-inv ρ Ψ ★ (B₁ ⇒ B₂) ρsurj (unk~any FVρB₁⇒B₂⊆ρΨ) = unk~any {!!}
+ren~-inv ρ Ψ ★ (∀̇ B) ρsurj ρA~ρB = {!!}
+-}
+ren~-inv ρ Ψ ★ B ρsurj ρA~ρB = {!!}
+
+ren~-inv ρ Ψ (^ α) B ρsurj ρA~ρB = {!!}
+ren~-inv ρ Ψ (A₁ ⇒ A₂) B ρsurj ρA~ρB = {!!}
+ren~-inv ρ Ψ (∀̇ A) B ρsurj ρA~ρB = {!!}
+
 
 A⊑C×B⊑C⇒A~B : ∀{A}{B}{C}{Ψ}
    → Ψ ⊢ A ⊑ C
