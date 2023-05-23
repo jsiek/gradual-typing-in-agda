@@ -56,7 +56,7 @@ open import rewriting.AbstractBindingTree TypeOp type-sig
             ⟪_⟫ to ⟪_⟫ᵗ; sub-var to sub-varᵗ; seq-def to seq-defᵗ; ↑ to ↑ᵗ;
             _[_] to _⦗_⦘; _⦅_⦆ to _‹_›; _•_ to _•ᵗ_; id to idᵗ; _⨟_ to _⨟ᵗ_;
             nil to tnil; cons to tcons; bind to tbind; ast to tast; `_ to ^_;
-            FV-ren to FV-renᵗ)
+            FV-ren to FV-renᵗ; FV-ren-fwd to FV-ren-fwdᵗ)
   public
 
 pattern Nat = op-nat ‹ tnil ›
@@ -362,93 +362,42 @@ FV-ren-map {∀̇ A}{ρ} rewrite FV-ren-map {A}{extrᵗ ρ} = dec-map-extr ρ (F
 FV⊑ : ∀{Ψ}{A}{B}
    → Ψ ⊢ A ⊑ B
    → FV A ⊆ FV B
-FV⊑ {ψ}{A}{B} A⊑B = {!!}
-
-{-
-FV⊑ : ∀{Ψ}{A}{B}
-   → Ψ ⊢ A ⊑ B
-   → FV A ⊆ FV B
 FV⊑ {ψ}{Nat}{B} A⊑B = λ d ()
 FV⊑ {ψ}{★}{B} A⊑B = λ d ()
 FV⊑ {ψ} {^ α} {.(^ α)} var⊑var = λ d z → z
-FV⊑ {ψ} {^ α} {∀̇ B} (any⊑all ⊑B) d (here refl) rewrite sub-varᵗ (renᵗ suc) α
+FV⊑ {ψ} {^ α} {∀̇ B} (any⊑all ⊑B) d refl rewrite sub-varᵗ (renᵗ suc) α
     | ren-defᵗ suc α =
-    let sα∈FVB = FV⊑ ⊑B (suc α) (here refl) in
-    sα∈S→α∈decS sα∈FVB
-FV⊑ {ψ}{A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun⊑fun A₁⊑B₁ A₂⊑B₂) = Goal
-  where
-  Goal : mem (FV A₁ ++ FV A₂) ⊆ mem (FV B₁ ++ FV B₂)
-  Goal d d∈ 
-      with ++⁻ {P = _≡_ d} (FV A₁) d∈
-  ... | inj₁ xx = ++⁺ˡ {P = _≡_ d} (FV⊑ A₁⊑B₁ d xx)
-  ... | inj₂ xx = ++⁺ʳ {P = _≡_ d} (FV B₁) (FV⊑ A₂⊑B₂ d xx)
-FV⊑ {ψ}{A₁ ⇒ A₂}{∀̇ B} (any⊑all A⊑B) d d∈ = ?
-{-
-    with FV⊑ A⊑B
-... | IH rewrite FV-ren-map {A₁}{suc} | FV-ren-map {A₂}{suc} 
-    with ++⁻ {P = _≡_ d} (FV A₁) d∈
-... | inj₁ d∈A₁ = let sd∈FB = IH (suc d) (++⁺ˡ {P = _≡_ (suc d)} (∈-mem-map{f = suc} d∈A₁)) in
-                  sα∈S→α∈decS sd∈FB
-... | inj₂ d∈A₂ = let sd∈FB = IH (suc d) (++⁺ʳ {P = _≡_ (suc d)} _ (∈-mem-map{f = suc} d∈A₂)) in
-                  sα∈S→α∈decS sd∈FB
-                  -}
-FV⊑ {ψ}{∀̇ A}{∀̇ B} (all⊑all A⊑B) = ⊆-dec (FV⊑ A⊑B)
-FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d d∈ = ?
-{-
-  sα∈S→α∈decS{d}{FV B} (FV⊑ A⊑B (suc d) Goal)
-  where
-  Goal : suc d ∈ mem (dec (FV (⟪ renᵗ (extrᵗ suc) ⟫ᵗ A)))
-  Goal rewrite FV-ren-map {A}{extrᵗ suc} rewrite dec-map-extr suc (FV A) =
-    let sd∈FVA = α∈decS→sα∈S{d}{FV A} d∈ in
-    ∈-mem-map (sα∈S→α∈decS sd∈FVA)
--}
--}
+    inj₁ (FV⊑ ⊑B (suc α) refl)
+FV⊑ {ψ}{A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun⊑fun A₁⊑B₁ A₂⊑B₂) d (inj₁ d∈A₁) =
+    inj₁ (FV⊑ A₁⊑B₁ d d∈A₁)
+FV⊑ {ψ}{A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun⊑fun A₁⊑B₁ A₂⊑B₂) d (inj₂ (inj₁ d∈A₂)) =
+    inj₂ (inj₁ (FV⊑ A₂⊑B₂ d d∈A₂ ))
+FV⊑ {ψ}{A₁ ⇒ A₂}{B₁ ⇒ B₂} (fun⊑fun A₁⊑B₁ A₂⊑B₂) d (inj₂ (inj₂ ()))
+FV⊑ {ψ}{A₁ ⇒ A₂}{∀̇ B} (any⊑all A⊑B) d (inj₁ d∈A₁) =
+  let IH = FV⊑ A⊑B in
+  let sd∈sA₁ = FV-ren-fwdᵗ suc A₁ d d∈A₁ in
+  let sd∈B = IH (suc d) (inj₁ sd∈sA₁) in
+  inj₁ sd∈B
+FV⊑ {ψ}{A₁ ⇒ A₂}{∀̇ B} (any⊑all A⊑B) d (inj₂ (inj₁ d∈A₂)) =
+  let IH = FV⊑ A⊑B in
+  let sd∈sA₂ = FV-ren-fwdᵗ suc A₂ d d∈A₂ in
+  let sd∈B = IH (suc d) (inj₂ (inj₁ sd∈sA₂)) in
+  inj₁ sd∈B
+FV⊑ {ψ}{A₁ ⇒ A₂}{∀̇ B} (any⊑all A⊑B) d (inj₂ (inj₂ ()))
+FV⊑ {ψ}{∀̇ A}{∀̇ B} (all⊑all A⊑B) d (inj₁ sd∈A) =
+  let sd∈B = FV⊑ A⊑B (suc d) sd∈A in
+  inj₁ sd∈B
+FV⊑ {ψ}{∀̇ A}{∀̇ B} (all⊑all A⊑B) d (inj₂ ())
+FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d (inj₁ sd∈A) =
+  let ssd∈sA = FV-ren-fwdᵗ (extrᵗ suc) A (suc d) sd∈A in
+  inj₁ (FV⊑ A⊑B (suc d) (inj₁ ssd∈sA))
+FV⊑ {ψ}{∀̇ A}{∀̇ B} (any⊑all A⊑B) d (inj₂ ())
 
 ren~-inv : ∀ ρ Ψ A B
   → (∀ x y → ρ x ≡ ρ y → x ≡ y)
   → map ρ Ψ ⊢ ⟪ renᵗ ρ ⟫ᵗ A ~ ⟪ renᵗ ρ ⟫ᵗ B
   → Ψ ⊢ A ~ B
 ren~-inv ρ Ψ A B ρsurj ρA~ρB = {!!}
-
-{- just verifying these imports -}
-FV-renᵗ₂ : ∀ (ρ : Renameᵗ) A y
-  → y ∈ FV (⟪ renᵗ ρ ⟫ᵗ A)
-  → ∃[ x ] ρ x ≡ y × FV A x
-FV-renᵗ₂ = FV-renᵗ
-
-FV-suc-0₂ : ∀ A → FV (⟪ renᵗ suc ⟫ᵗ A) 0 → ⊥
-FV-suc-0₂ = FV-suc-0
-
-{-
--}
-
-{-
-mem-FV-ren : ∀ d A → ∀{ρ}
-   → d ∈ mem (FV (⟪ renᵗ ρ ⟫ᵗ A))
-   → ∃[ d′ ] d ≡ ρ d′ × d′ ∈ mem (FV A)
-mem-FV-ren d (^ x) {ρ} d∈sA rewrite sub-varᵗ (renᵗ ρ) x | ren-defᵗ ρ x
-    with d∈sA
-... | here refl = x , refl , here refl
-mem-FV-ren d Nat () 
-mem-FV-ren d ★ ()
-mem-FV-ren d (A ⇒ B) {ρ} d∈sAB
-    with ++⁻ {P = _≡_ d} (FV (⟪ renᵗ ρ ⟫ᵗ A)) d∈sAB
-... | inj₁ d∈sA
-    with mem-FV-ren d A {ρ} d∈sA
-... | d′ , eq , d′∈A =    
-      d′ , eq , ++⁺ˡ {P = _≡_ d′} d′∈A
-mem-FV-ren d (A ⇒ B) {ρ} d∈sAB
-    | inj₂ d∈sB
-    with mem-FV-ren d B {ρ} d∈sB
-... | d′ , eq , d′∈B =    
-      d′ , eq , ++⁺ʳ {P = _≡_ d′} _ d′∈B
-mem-FV-ren d (∀̇ A) {ρ} d∈sA =
-   let sd∈extA : suc d ∈ mem (FV (⟪ renᵗ (extrᵗ ρ) ⟫ᵗ A))
-       sd∈extA = α∈decS→sα∈S{S = (FV (⟪ renᵗ (extrᵗ ρ) ⟫ᵗ A))} d∈sA in
-
-   let IH = mem-FV-ren d A {extrᵗ ρ} {!!} in
-   {!!} , {!!} , {!!}
--}
 
 A⊑C×B⊑C⇒A~B : ∀{A}{B}{C}{Ψ}
    → Ψ ⊢ A ⊑ C
@@ -461,53 +410,30 @@ A⊑C×B⊑C⇒A~B {Ψ = Ψ} var⊑var (unk⊑any m sub) = any~unk sub
 A⊑C×B⊑C⇒A~B {.★} {.Nat} {.Nat} (unk⊑any m sub) nat⊑nat = unk~any λ d ()
 A⊑C×B⊑C⇒A~B {Ψ = Ψ} (unk⊑any m sub) var⊑var = unk~any sub
 A⊑C×B⊑C⇒A~B {.★} {.★} {C} (unk⊑any m sub) (unk⊑any m′ x) = unk~any λ d ()
-A⊑C×B⊑C⇒A~B {.★} {.(_ ⇒ _)} {.(_ ⇒ _)}{Ψ} (unk⊑any m sub) (fun⊑fun{A = A}{B}{C}{D} A⊑C B⊑D) =
-  unk~any {!!}
-{-
-where
-  Goal : mem (FV A ++ FV B) ⊆ mem Ψ
-  Goal d d∈
-      with ++⁻ {P = _≡_ d} (FV A) d∈
-  ... | inj₁ d∈A = sub d (++⁺ˡ {P = _≡_ d} (FV⊑ A⊑C d d∈A))
-  ... | inj₂ d∈B = sub d (++⁺ʳ {P = _≡_ d} _ (FV⊑ B⊑D d d∈B) )
-  -}
+A⊑C×B⊑C⇒A~B {.★} {Ψ = Ψ} (unk⊑any m sub) (fun⊑fun{A = A}{B}{C}{D} A⊑C B⊑D) =
+  unk~any Goal
+  where
+  Goal : FV (A ⇒ B) ⊆ mem Ψ
+  Goal d (inj₁ d∈A) = sub d (inj₁ (FV⊑ A⊑C d d∈A))
+  Goal d (inj₂ (inj₁ d∈B)) = sub d (inj₂ (inj₁ (FV⊑ B⊑D d d∈B)))
+  Goal d (inj₂ (inj₂ ()))
 A⊑C×B⊑C⇒A~B {.★} {∀̇ A} {∀̇ B}{Ψ} (unk⊑any m sub) (all⊑all A⊑B) =
-    unk~any {!!}
-{-    
+    unk~any Goal
     where
-    Goal : mem (dec (FV A)) ⊆ mem Ψ
-    Goal d d∈decA =
-       let sd∈A = α∈decS→sα∈S{S = FV A} d∈decA in
-       let sd∈B = FV⊑ A⊑B (suc d) sd∈A in
-       let d∈decB = sα∈S→α∈decS{S = FV B} sd∈B in
-       sub d d∈decB
-       -}
+    Goal : FV (∀̇ A) ⊆ mem Ψ
+    Goal d (inj₁ sd∈A) = sub d (inj₁ (FV⊑ A⊑B (suc d) sd∈A))
+    Goal d (inj₂ ())
 A⊑C×B⊑C⇒A~B {.★} {B} {∀̇ C}{Ψ} (unk⊑any m sub) (any⊑all B⊑C) =
-    unk~any {!!}
-{-    
+    unk~any Goal
     where
-    sB⊆C : mem (FV (⟪ renᵗ suc ⟫ᵗ B)) ⊆ mem (FV C)
-    sB⊆C = FV⊑ B⊑C
-
-    mapsB⊆C : mem (map suc (FV B)) ⊆ mem (FV C)
-    mapsB⊆C rewrite sym (FV-ren-map{B}{suc}) = sB⊆C
-
-    Goal : mem (FV B) ⊆ mem Ψ
-    Goal d d∈B =
-        let sd∈sB = ∈-mem-map{f = suc} d∈B in
-        let sd∈C = mapsB⊆C (suc d) sd∈sB in
-        sub d (sα∈S→α∈decS{S = FV C} sd∈C)
-        -}
+    Goal : FV B ⊆ mem Ψ
+    Goal d d∈B = sub d (inj₁ (FV⊑ B⊑C (suc d) (FV-ren-fwdᵗ suc B d d∈B)))
 A⊑C×B⊑C⇒A~B {A ⇒ A′} {.★} {C ⇒ C′}{Ψ}  (fun⊑fun A⊑C A⊑C₁) (unk⊑any m sub) =
-    any~unk {!!}
-{-    
+    any~unk Goal
     where
-    Goal : mem (FV A ++ FV A′) ⊆ mem Ψ
-    Goal d d∈
-        with ++⁻ {P = _≡_ d} (FV A) d∈
-    ... | inj₁ d∈A = sub d (++⁺ˡ {P = _≡_ d} (FV⊑ A⊑C d d∈A))
-    ... | inj₂ d∈A′ = sub d (++⁺ʳ {P = _≡_ d} _ (FV⊑ A⊑C₁ d d∈A′) )
-    -}
+    Goal : FV (A ⇒ A′) ⊆ mem Ψ
+    Goal d (inj₁ d∈A) = sub d (inj₁ (FV⊑ A⊑C d d∈A))
+    Goal d (inj₂ (inj₁ d∈A′)) = sub d (inj₂ (inj₁ (FV⊑ A⊑C₁ d d∈A′))) 
 A⊑C×B⊑C⇒A~B (fun⊑fun A⊑C A⊑C₁) (fun⊑fun B⊑C B⊑C₁) =
     fun~fun (A⊑C×B⊑C⇒A~B A⊑C B⊑C) (A⊑C×B⊑C⇒A~B A⊑C₁ B⊑C₁)
 A⊑C×B⊑C⇒A~B {∀̇ A} {.★} {∀̇ C} (all⊑all A⊑C) (unk⊑any () _)
@@ -522,7 +448,14 @@ A⊑C×B⊑C⇒A~B {A} {B} {∀̇ C}{Ψ} (any⊑all A⊑C) (any⊑all B⊑C) =
   let IH : 0 ∷ map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ~ ⟪ renᵗ suc ⟫ᵗ B
       IH = A⊑C×B⊑C⇒A~B A⊑C B⊑C in
   let IH₂ : map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ~ ⟪ renᵗ suc ⟫ᵗ B
-      IH₂ = weaken~₂ IH {!!} in
+      IH₂ = weaken~₂ IH Goal in
   ren~-inv suc Ψ A B (λ { x .x refl → refl}) IH₂
-
+  where
+  Goal : (d : Var)
+         → d ∈ (FV (⟪ renᵗ suc ⟫ᵗ A) ∪ FV (⟪ renᵗ suc ⟫ᵗ B))
+         → d ∈ mem (0 ∷ map suc Ψ)
+         → d ∈ mem (map suc Ψ)
+  Goal .0 (inj₁ z∈sA) (here refl) = ⊥-elim (FV-suc-0 A z∈sA)
+  Goal .0 (inj₂ z∈sB) (here refl) = ⊥-elim (FV-suc-0 B z∈sB)
+  Goal d d∈A∪B (there d∈sucΨ) = d∈sucΨ
    
