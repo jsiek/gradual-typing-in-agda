@@ -254,7 +254,20 @@ weaken⊑ : ∀{A}{B}{Ψ}{Ψ′}
   → Ψ ⊢ A ⊑ B
   → mem Ψ ⊆ mem Ψ′
   → Ψ′ ⊢ A ⊑ B
-weaken⊑ {A}{B}{Ψ}{Ψ′} A⊑B Ψ⊆Ψ′ = {!!}
+weaken⊑ {.Nat} {.Nat} {Ψ} {Ψ′} nat⊑nat Ψ⊆Ψ′ = nat⊑nat
+weaken⊑ {.(^ _)} {.(^ _)} {Ψ} {Ψ′} var⊑var Ψ⊆Ψ′ = var⊑var
+weaken⊑ {.★} {B} {Ψ} {Ψ′} (unk⊑any mB FVB⊆Ψ) Ψ⊆Ψ′ = unk⊑any mB λ d z → Ψ⊆Ψ′ d (FVB⊆Ψ d z)
+weaken⊑ {A₁ ⇒ A₂} {B₁ ⇒ B₂} {Ψ} {Ψ′} (fun⊑fun A₁⊑B₁ A₂⊑B₂) Ψ⊆Ψ′ =
+    fun⊑fun (weaken⊑ A₁⊑B₁ Ψ⊆Ψ′) (weaken⊑ A₂⊑B₂ Ψ⊆Ψ′)
+weaken⊑ {∀̇ A} {∀̇ B} {Ψ} {Ψ′} (all⊑all A⊑B) Ψ⊆Ψ′ =
+    all⊑all (weaken⊑ A⊑B (mem-map-⊆ Ψ⊆Ψ′))
+weaken⊑ {A} {∀̇ B} {Ψ} {Ψ′} (any⊑all A⊑B) Ψ⊆Ψ′ =
+    let IH = weaken⊑ A⊑B Goal in
+    any⊑all IH
+    where
+    Goal : mem (0 ∷ map suc Ψ) ⊆ mem (0 ∷ map suc Ψ′)
+    Goal d (here refl) = here refl
+    Goal d (there d∈) = there (mem-map-⊆ Ψ⊆Ψ′ d d∈)
 
 weaken~ : ∀{A}{B}{Ψ}{Ψ′}
   → Ψ ⊢ A ~ B
@@ -287,7 +300,71 @@ weaken~₂ : ∀{A}{B}{Ψ}{Ψ′}
   → Ψ ⊢ A ~ B
   → (∀ d → d ∈ ((FV A) ∪ (FV B)) → d ∈ mem Ψ → d ∈ mem Ψ′)
   → Ψ′ ⊢ A ~ B
-weaken~₂ {A}{B}{Ψ}{Ψ′} A~B = {!!}
+weaken~₂ {.Nat} {.Nat} {Ψ} {Ψ′} nat~nat Ψ⊆Ψ′ = nat~nat
+weaken~₂ {.(^ _)} {.(^ _)} {Ψ} {Ψ′} var~var Ψ⊆Ψ′ = var~var
+weaken~₂ {.★} {B} {Ψ} {Ψ′} (unk~any FVB⊆Ψ) Ψ⊆Ψ′ = unk~any λ d z → Ψ⊆Ψ′ d (inj₂ z) (FVB⊆Ψ d z)
+weaken~₂ {A} {.★} {Ψ} {Ψ′} (any~unk FVA⊆Ψ) Ψ⊆Ψ′ = any~unk (λ d z → Ψ⊆Ψ′ d (inj₁ z) (FVA⊆Ψ d z))
+weaken~₂ {A₁ ⇒ A₂} {B₁ ⇒ B₂} {Ψ} {Ψ′} (fun~fun A₁~B₁ A₂~B₂) Ψ⊆Ψ′ =
+    fun~fun (weaken~₂ A₁~B₁ G1) (weaken~₂ A₂~B₂ G2)
+    where
+    G1 : (d : Var) → d ∈ (FV A₁ ∪ FV B₁) → d ∈ mem Ψ → d ∈ mem Ψ′
+    G1 d (inj₁ d∈A₁) d∈Ψ = Ψ⊆Ψ′ d (inj₁ (inj₁ d∈A₁)) d∈Ψ
+    G1 d (inj₂ d∈B₁) d∈Ψ = Ψ⊆Ψ′ d (inj₂ (inj₁ d∈B₁)) d∈Ψ
+
+    G2 : (d : Var) → d ∈ (FV A₂ ∪ FV B₂) → d ∈ mem Ψ → d ∈ mem Ψ′
+    G2 d (inj₁ d∈A₂) d∈Ψ = Ψ⊆Ψ′ d (inj₁ (inj₂ (inj₁ d∈A₂))) d∈Ψ
+    G2 d (inj₂ d∈B₂) d∈Ψ = Ψ⊆Ψ′ d (inj₂ (inj₂ (inj₁ d∈B₂))) d∈Ψ
+weaken~₂ {∀̇ A} {∀̇ B} {Ψ} {Ψ′} (all~all A~B) Ψ⊆Ψ′ =
+    let IH = weaken~₂ A~B (Goal Ψ Ψ⊆Ψ′) in
+    all~all IH
+    where
+    Goal : ∀ Ψ 
+       → ((x : Var) → x ∈ (FV (∀̇ A) ∪ FV (∀̇ B)) → x ∈ mem Ψ → x ∈ mem Ψ′)
+       → (d : Var)
+       → d ∈ (FV A ∪ FV B)
+       → d ∈ mem (map suc Ψ)
+       → d ∈ mem (map suc Ψ′)
+    Goal (x ∷ Ψ) Ψ⊆Ψ′ d (inj₁ d∈A) (here refl) = ∈-mem-map {f = suc} (Ψ⊆Ψ′ x (inj₁ (inj₁ d∈A)) (here refl))
+    Goal (x ∷ Ψ) Ψ⊆Ψ′ d (inj₂ d∈B) (here refl) = ∈-mem-map {f = suc} (Ψ⊆Ψ′ x (inj₂ (inj₁ d∈B)) (here refl))
+    Goal (x ∷ Ψ) Ψ⊆Ψ′ d (inj₁ d∈A) (there d∈sΨ)
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ = ∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₁ (inj₁ d∈A)) (there d′∈Ψ))
+    Goal (x ∷ Ψ) Ψ⊆Ψ′ d (inj₂ d∈B) (there d∈sΨ) 
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ = ∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₂ (inj₁ d∈B)) (there d′∈Ψ))
+weaken~₂ {∀̇ A} {B} {Ψ} {Ψ′} (all~any A~B) Ψ⊆Ψ′ =
+    all~any (weaken~₂ A~B Goal)
+    where
+    Goal : (d : Var)
+       → d ∈ (FV A ∪ FV (⟪ renᵗ suc ⟫ᵗ B))
+       → d ∈ mem (0 ∷ map suc Ψ)
+       → d ∈ mem (0 ∷ map suc Ψ′)
+    Goal d d∈AB (here refl) = here refl
+    Goal d (inj₁ d∈A) (there d∈sΨ) 
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ = there (∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₁ (inj₁ d∈A)) d′∈Ψ))
+    Goal d (inj₂ d∈sB) (there d∈sΨ) 
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ
+        with FV-renᵗ suc B (suc d′) d∈sB
+    ... | _ , refl , d′∈B =
+        there (∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₂ d′∈B) d′∈Ψ))
+weaken~₂ {A} {∀̇ B} {Ψ} {Ψ′} (any~all A~B) Ψ⊆Ψ′ =
+    any~all (weaken~₂ A~B Goal)
+    where
+    Goal : (d : Var)
+       → d ∈ (FV (⟪ renᵗ suc ⟫ᵗ A) ∪ FV B)
+       → d ∈ mem (0 ∷ map suc Ψ)
+       → d ∈ mem (0 ∷ map suc Ψ′)
+    Goal d d∈AB (here refl) = here refl
+    Goal d (inj₁ d∈sA) (there d∈sΨ)
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ
+        with FV-renᵗ suc A (suc d′) d∈sA
+    ... | _ , refl , d′∈A = there (∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₁ d′∈A) d′∈Ψ))
+    Goal d (inj₂ d∈B) (there d∈sΨ)
+        with ∈-mem-map-inv d∈sΨ
+    ... | d′ , refl , d′∈Ψ = there (∈-mem-map {f = suc} (Ψ⊆Ψ′ d′ (inj₂ (inj₁ d∈B)) d′∈Ψ))
 
 mem-map-suc-dec : ∀ ls
    → mem ls ⊆ mem (0 ∷ map suc (dec ls))
@@ -337,17 +414,6 @@ dec-map-extr : ∀ ρ ls → dec (map (extrᵗ ρ) ls) ≡ map ρ (dec ls)
 dec-map-extr ρ [] = refl
 dec-map-extr ρ (zero ∷ ls) = dec-map-extr ρ ls
 dec-map-extr ρ (suc x ∷ ls) = cong₂ _∷_ refl (dec-map-extr ρ ls)
-
-{-
-FV-ren-map : ∀ {A}{ρ} → FV (⟪ renᵗ ρ ⟫ᵗ A) ≡ map ρ (FV A)
-FV-ren-map {^ x}{ρ} rewrite sub-varᵗ (renᵗ ρ) x | ren-defᵗ ρ x = refl
-FV-ren-map {Nat}{ρ} = refl
-FV-ren-map {★}{ρ} = refl
-FV-ren-map {A ⇒ B}{ρ} rewrite FV-ren-map{A}{ρ} | FV-ren-map{B}{ρ}
-    | map-++-commute ρ (FV A) (FV B) =
-    refl
-FV-ren-map {∀̇ A}{ρ} rewrite FV-ren-map {A}{extrᵗ ρ} = dec-map-extr ρ (FV A)
--}
 
 ⊆-dec : ∀{xs}{ys}
    → mem xs ⊆ mem ys
