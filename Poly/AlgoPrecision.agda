@@ -60,6 +60,13 @@ ok? (x , y) ((w , z) ∷ ls)
 ... | yes _ | no _ = false 
 ... | yes _ | yes _ = true 
 
+pair-eq? : (p1 : Var × Var) → (p2 : Var × Var) → Dec (p1 ≡ p2)
+pair-eq? (x1 , y1) (x2 , y2)
+    with x1 ≟ x2 | y1 ≟ y2
+... | no neq | _ = no λ { refl → neq refl}
+... | yes refl | no neq = no λ { refl → neq refl}
+... | yes refl | yes refl = yes refl
+
 merge : List (Var × Var) → List (Var × Var) → Maybe (List (Var × Var))
 merge [] B2 = just B2
 merge ((x , y) ∷ B1) B2
@@ -68,14 +75,10 @@ merge ((x , y) ∷ B1) B2
 ... | true
     with merge B1 B2
 ... | nothing = nothing
-... | just B3 = just ((x , y) ∷ B3)
-
-pair-eq? : (p1 : Var × Var) → (p2 : Var × Var) → Dec (p1 ≡ p2)
-pair-eq? (x1 , y1) (x2 , y2)
-    with x1 ≟ x2 | y1 ≟ y2
-... | no neq | _ = no λ { refl → neq refl}
-... | yes refl | no neq = no λ { refl → neq refl}
-... | yes refl | yes refl = yes refl
+... | just B3
+    with _∈?_ pair-eq? (x , y) B3
+... | yes _ = just B2
+... | no _ = just ((x , y) ∷ B3)
 
 zero-cod? : (ls : List (Var × Var)) → Dec (∃[ x ] (_∈ₗ_ pair-eq? (x , 0)  ls))
 zero-cod? [] = no λ { ()}
@@ -85,51 +88,66 @@ zero-cod? ((x , suc y) ∷ ls)
 ... | yes (x , mem) = yes (x , (there mem))
 ... | no nm = no λ { (z , there snd) → nm (z , snd)}
 
+match-alls : ℕ → ℕ → List Var → List (Var × Var) → Maybe (List Var × List (Var × Var))
+match-alls zero zero gs bs = just (gs , bs)
+match-alls zero (suc R) gs bs
+    {- implicitly instantiate a ∀ on the right -}
+    with zero-cod? bs
+... | yes xz∈bs = nothing
+... | no xz∉bs = match-alls zero R (dec gs) (dec-cod bs)
+match-alls (suc L) zero gs bs = nothing
+match-alls (suc L) (suc R) gs bs
+    {- choose whether to match up or implicitly instantiation ∀ on the right -} 
+    with _∈?_ pair-eq? ((0 , 0)) bs
+... | yes zz∈bs
+    with _∈?_ _≟_ 0 gs
+... | yes z∈gs = nothing    
+... | no z∉gs =
+    {- match up the two ∀'s -}
+    match-alls L R (dec gs) (dec-both bs)
+match-alls (suc L) (suc R) gs bs 
+    | no zz∉B1
+    with zero-cod? bs
+... | yes xz∈bs = nothing
+... | no xz∉bs =
+    {- instantiate ∀ on the right -}
+    match-alls (suc L) R (dec gs) (dec-cod bs)
+
 infix 3 _⊑?_
 _⊑?_ : Type → Type → Maybe (List Var × List (Var × Var))
-Nat ⊑? Nat = just ([] , [])
-Nat ⊑? B = nothing
+
+⊑?-aux : Type → Type → ℕ → ℕ → Maybe (List Var × List (Var × Var))
+⊑?-aux (∀̇ A) B L R = ⊑?-aux A B (suc L) R
+⊑?-aux A (∀̇ B) L R = ⊑?-aux A B L (suc R)
+⊑?-aux A B L R
+    with A ⊑? B
+... | nothing = nothing
+... | just (gs , bs) = match-alls L R gs bs
+  
+(∀̇ A) ⊑? B = ⊑?-aux A B 1 0
 ★ ⊑? B = just (vars B , [])
 (^ X) ⊑? (^ Y) = just ([] , (X , Y) ∷ [])
+(^ X) ⊑? (∀̇ B) = ⊑?-aux (^ X) B 0 1
 (^ X) ⊑? B = nothing
+Nat ⊑? Nat = just ([] , [])
+Nat ⊑? (∀̇ B) = ⊑?-aux Nat B 0 1
+Nat ⊑? B = nothing
 (A₁ ⇒ A₂) ⊑? (B₁ ⇒ B₂)
     with A₁ ⊑? B₁ | A₂ ⊑? B₂
 ... | nothing | _ = nothing
-... | just (G1 , B1) | nothing = nothing
-... | just (G1 , B1) | just (G2 , B2)
-    with merge B1 B2
+... | _ | nothing = nothing
+... | just (gs1 , bs1) | just (gs2 , bs2)
+    with merge bs1 bs2
 ... | nothing = nothing
-... | just B3 = just (G1 ++ G2 , B3)
-(A₁ ⇒ A₂) ⊑? ∀̇ B
-    with (A₁ ⇒ A₂) ⊑? B
-... | nothing = nothing
-... | just (G1 , B1)
-    with zero-cod? B1
-... | yes xz∈B1 = nothing
-... | no xz∉B1 = just (dec G1 , dec-cod B1) 
-
+... | just bs3 = just (gs1 ++ gs2 , bs3)
+(A₁ ⇒ A₂) ⊑? (∀̇ B) = ⊑?-aux (A₁ ⇒ A₂) B 0 1
 (A₁ ⇒ A₂) ⊑? B = nothing
-(∀̇ A) ⊑? (∀̇ B)
-    with (∀̇ A) ⊑? B
-... | nothing = nothing
-... | just (G1 , B1)
-     {- choice: match up the two ∀'s or instantiate ∀̇ B -}
-     {- match up if (0,0) ∈ B1 -}
-    with _∈?_ pair-eq? ((0 , 0)) B1
-... | yes zz∈B1
-    with _∈?_ _≟_ 0 G1
-... | yes z∈G1 = nothing    
-... | no z∉G1 = just (dec G1 , dec-both B1)
-(∀̇ A) ⊑? (∀̇ B) | just (G1 , B1)
-    | no zz∉B1
-    with zero-cod? B1
-... | yes xz∈B1 = nothing
-... | no xz∉B1 = 
-      just (dec G1 , dec-cod B1)
-(∀̇ A) ⊑? B = A ⊑? B
 
 module Example where
 
+  _ : ((^ 0) ⊑? (^ 0)) ≡ just ([] , (0 , 0) ∷ [])
+  _ = refl
+  
   _ : (∀̇ (^ 0) ⊑? ∀̇ (^ 0)) ≡ just ([] , [])
   _ = refl
 
@@ -163,3 +181,70 @@ module Example where
   _ : ((∀̇ ((^ 0) ⇒ ★)) ⊑? (∀̇ ((^ 0) ⇒ (^ 0)))) ≡ nothing
   _ = refl
 
+  _ : ((∀̇ ((^ 0) ⇒ ★)) ⊑? (∀̇ (∀̇ ((^ 0) ⇒ (^ 1))))) ≡ just ([] , [])
+  _ = refl
+
+  _ : ((∀̇ ((^ 0) ⇒ ★)) ⊑? (∀̇ (∀̇ ((^ 1) ⇒ (^ 0))))) ≡ just ([] , [])
+  _ = refl
+
+  _ : ((∀̇ ((^ 0) ⇒ ★)) ⊑? (∀̇ (∀̇ ((^ 0) ⇒ (^ 0))))) ≡ nothing
+  _ = refl
+
+  _ : ((∀̇ (∀̇ ((^ 0) ⇒ ★ ⇒ (^ 1)))) ⊑? (∀̇ (∀̇ ((^ 0) ⇒ (^ 1) ⇒ (^ 1))))) ≡ nothing
+  _ = refl
+  
+  _ : ( (∀̇ (∀̇ ((^ 0) ⇒ ★))) ⊑? (∀̇ (∀̇ ((^ 0) ⇒ (^ 1)))) ) ≡ nothing
+  _ = refl
+
+  _ : ( ★ ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (★ ⇒ ★)
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (★ ⇒ (★ ⇒ ★))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( ((★ ⇒ ★) ⇒ (★ ⇒ ★))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (∀̇ (((^ 0) ⇒ ★) ⇒ ((^ 0) ⇒ ★)))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (∀̇ ((★ ⇒ (^ 0)) ⇒ (★ ⇒ (^ 0))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0)))
+     ⊑? (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))) )
+     ≡ just ([] , (1 , 1) ∷ (0 , 0) ∷ [])
+  _ = refl
+
+  _ : ( (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))
+     ⊑? (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))) ))
+     ≡ just ([] , (0 , 0) ∷ [])
+  _ = refl
+
+  _ : ( (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0)))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ just ([] , [])
+  _ = refl
+
+  _ : ( (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ ★))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ nothing
+  _ = refl
+
+  _ : ( (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ (★ ⇒ (^ 0)))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ nothing
+  _ = refl
+
+  _ : ( (∀̇ (∀̇ (((^ 1) ⇒ ★) ⇒ ((^ 1) ⇒ (^ 0)))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ nothing
+  _ = refl
+
+  _ : ( (∀̇ (∀̇ ((★ ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0)))))
+     ⊑? (∀̇ (∀̇ (((^ 1) ⇒ (^ 0)) ⇒ ((^ 1) ⇒ (^ 0))))) ) ≡ nothing
+  _ = refl
