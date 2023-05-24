@@ -267,6 +267,16 @@ data _⊢_⦂_↝_ : TyEnv → Term → Type → Type → Set where
     → (g : Ground G)
     → Γ ⊢ G ?? ⦂ ★ ↝ gnd⇒ty g
 
+  wt-seq : ∀{Γ}{A}{B}{C}{c}{d}
+    → Γ ⊢ c ⦂ A ↝ B
+    → Γ ⊢ d ⦂ B ↝ C
+    → Γ ⊢ c ⍮ d ⦂ A ↝ C
+
+  wt-fun : ∀{Γ}{A}{B}{A′}{B′}{c}{d}
+    → Γ ⊢ c ⦂ A′ ↝ A
+    → Γ ⊢ d ⦂ B ↝ B′
+    → Γ ⊢ c ↪ d ⦂ (A ⇒ B) ↝ (A′ ⇒ B′)
+
   wt-seal : ∀{Γ}{α}{A}
     → Γ ∋ α ⦂ bnd A
     → Γ ⊢ ` α ↡ ⦂ A ↝ ^ α
@@ -275,6 +285,10 @@ data _⊢_⦂_↝_ : TyEnv → Term → Type → Type → Set where
     → Γ ∋ α ⦂ bnd A
     → Γ ⊢ ` α ↟ ⦂ ^ α ↝ A
 
+  wt-all : ∀{Γ}{c}{A}{B}
+    → Γ ⊢ c ⦂ A ↝ B
+    → Γ ⊢ ∀̰ c ⦂ ∀̇ A ↝ ∀̇ B
+    
   wt-gen : ∀{Γ}{c}{A}{B}
     → Γ ⊢ c ⦂ A ↝ B
     → Γ ⊢ gen c ⦂ A ↝ ∀̇ B

@@ -116,21 +116,22 @@ match-alls (suc L) (suc R) gs bs
 infix 3 _⊑?_
 _⊑?_ : Type → Type → Maybe (List Var × List (Var × Var))
 
-⊑?-aux : Type → Type → ℕ → ℕ → Maybe (List Var × List (Var × Var))
-⊑?-aux (∀̇ A) B L R = ⊑?-aux A B (suc L) R
-⊑?-aux A (∀̇ B) L R = ⊑?-aux A B L (suc R)
-⊑?-aux A B L R
+count-alls : Type → Type → ℕ → ℕ → Maybe (List Var × List (Var × Var))
+count-alls (∀̇ A) B L R = count-alls A B (suc L) R
+count-alls A (∀̇ B) L R = count-alls A B L (suc R)
+count-alls A B L R
     with A ⊑? B
 ... | nothing = nothing
 ... | just (gs , bs) = match-alls L R gs bs
   
-(∀̇ A) ⊑? B = ⊑?-aux A B 1 0
+(∀̇ A) ⊑? B = count-alls A B 1 0
+★ ⊑? (∀̇ B) = count-alls ★ B 0 1
 ★ ⊑? B = just (vars B , [])
 (^ X) ⊑? (^ Y) = just ([] , (X , Y) ∷ [])
-(^ X) ⊑? (∀̇ B) = ⊑?-aux (^ X) B 0 1
+(^ X) ⊑? (∀̇ B) = count-alls (^ X) B 0 1
 (^ X) ⊑? B = nothing
 Nat ⊑? Nat = just ([] , [])
-Nat ⊑? (∀̇ B) = ⊑?-aux Nat B 0 1
+Nat ⊑? (∀̇ B) = count-alls Nat B 0 1
 Nat ⊑? B = nothing
 (A₁ ⇒ A₂) ⊑? (B₁ ⇒ B₂)
     with A₁ ⊑? B₁ | A₂ ⊑? B₂
@@ -140,7 +141,7 @@ Nat ⊑? B = nothing
     with merge bs1 bs2
 ... | nothing = nothing
 ... | just bs3 = just (gs1 ++ gs2 , bs3)
-(A₁ ⇒ A₂) ⊑? (∀̇ B) = ⊑?-aux (A₁ ⇒ A₂) B 0 1
+(A₁ ⇒ A₂) ⊑? (∀̇ B) = count-alls (A₁ ⇒ A₂) B 0 1
 (A₁ ⇒ A₂) ⊑? B = nothing
 
 module Example where

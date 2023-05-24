@@ -41,24 +41,92 @@ open import Poly.Types
 
 data Op : Set where
   op-nat : ℕ → Op
-  op-lam : Op
+  op-lam : Type → Op
   op-app : Op
   op-tyabs : Op
-  op-tyapp : Op
+  op-tyapp : Type → Op
 
 sig : Op → List Sig
 sig (op-nat n) = []
-sig op-lam = (nu ■) ∷ []
+sig (op-lam A) = (nu ■) ∷ []
 sig op-app = ■ ∷ ■ ∷ []
 sig op-tyabs = (nu ■) ∷ []
-sig op-tyapp = ■ ∷ ■ ∷ []
+sig (op-tyapp A) = ■ ∷ []
 
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 
-pattern $ n = (op-nat n) ⦅ nil ⦆
-pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
-infixl 7  _·_
-pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
-pattern Λ N  = op-tyabs ⦅ cons (bind (ast N)) nil ⦆
-infix 5 _【_】
-pattern _【_】 L α = op-tyapp ⦅ cons (ast L) (cons (ast α) nil) ⦆
+pattern $ᵍ n = (op-nat n) ⦅ nil ⦆
+pattern λᵍ A N  = (op-lam A) ⦅ cons (bind (ast N)) nil ⦆
+infixl 7  _˙_
+pattern _˙_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
+pattern Λᵍ N  = op-tyabs ⦅ cons (bind (ast N)) nil ⦆
+infix 5 _◎_
+pattern _◎_ L B = (op-tyapp B) ⦅ cons (ast L) nil ⦆
+
+{----------------------- Values ------------------------}
+
+data Value : Term → Set where
+
+  V-nat : ∀ {n : ℕ}
+      -------------
+    → Value ($ᵍ n)
+    
+  V-λᵍ : ∀ {A : Type}{N : Term}
+      ---------------------------
+    → Value (λᵍ A N)
+
+  V-Λᵍ : ∀ {N : Term}
+      ---------------------------
+    → Value (Λᵍ N)
+    
+{-------------      Type System    -------------}
+
+infix 1 _⊢ᵍ_⦂_
+data _⊢ᵍ_⦂_ : TyEnv → Term → Type → Set where
+
+  ⊢ᵍ-nat : ∀{Γ} → ∀ n
+        -----------------
+      → Γ ⊢ᵍ $ᵍ n ⦂ Nat
+
+  ⊢ᵍ-var : ∀{Γ}{x}{A}
+      → Γ ∋ x ⦂ trm A
+        ---------------
+      → Γ ⊢ᵍ ` x ⦂ A
+
+  ⊢ᵍ-lam : ∀{Γ}{N}{A}{B}
+     → Γ ⊢ A ok
+     → trm A ∷ Γ ⊢ᵍ N ⦂ B
+       -------------------
+     → Γ ⊢ᵍ λᵍ A N ⦂ A ⇒ B
+     
+  ⊢ᵍ-app : ∀{Γ}{L}{M}{A}{B}{A′}
+     → Γ ⊢ᵍ L ⦂ A ⇒ B
+     → Γ ⊢ᵍ M ⦂ A′
+     → [] ⊢ A′ ~ A
+       -----------------
+     → Γ ⊢ᵍ L ˙ M ⦂ B
+
+  ⊢ᵍ-app★ : ∀{Γ}{L}{M}{A}
+     → Γ ⊢ᵍ L ⦂ ★
+     → Γ ⊢ᵍ M ⦂ A
+       --------------
+     → Γ ⊢ᵍ L ˙ M ⦂ ★
+
+  ⊢ᵍ-tyabs : ∀{Γ}{V}{A}
+     → Value V
+     → typ ∷ Γ ⊢ᵍ V ⦂ A
+       ---------------
+     → Γ ⊢ᵍ Λᵍ V ⦂ ∀̇ A
+
+  ⊢ᵍ-tyapp : ∀{Γ}{L}{A}{B}
+     → Γ ⊢ᵍ L ⦂ ∀̇ A
+     → Γ ⊢ B ok
+       -------------------
+     → Γ ⊢ᵍ L ◎ B ⦂ A ⦗ B ⦘
+
+  ⊢ᵍ-tyapp★ : ∀{Γ}{L}{B}
+     → Γ ⊢ᵍ L ⦂ ★
+     → Γ ⊢ B ok
+       -------------
+     → Γ ⊢ᵍ L ◎ B ⦂ ★
+

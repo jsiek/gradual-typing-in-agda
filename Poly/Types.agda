@@ -34,6 +34,44 @@ open import Poly.SetsAsPredicates
 
 module Poly.Types where
 
+∈-mem-map : ∀{A B : Set}{Ψ : List A}{f : A → B}{x : A}
+   → x ∈ mem Ψ
+   → f x ∈ mem (map f Ψ)
+∈-mem-map {A} {B} {x ∷ Ψ} (here refl) = here refl
+∈-mem-map {A} {B} {x ∷ Ψ} (there x∈) = there (∈-mem-map x∈)
+
+∈-mem-map-inv : ∀{Ψ : List Var}{y : Var}
+   → y ∈ mem (map suc Ψ)
+   → ∃[ x ] y ≡ suc x × x ∈ mem Ψ
+∈-mem-map-inv {[]} {y} ()
+∈-mem-map-inv {z ∷ Ψ} {y} (here refl) = z , refl , here refl
+∈-mem-map-inv {z ∷ Ψ} {y} (there fx∈)
+    with ∈-mem-map-inv fx∈
+... | x , refl , x∈ = x , refl , there x∈
+
+∈-mem-map-inv-surj : ∀{Ψ : List Var}{y : Var}{f : ℕ → ℕ}
+   → (∀ x y → f x ≡ f y → x ≡ y)
+   → y ∈ mem (map f Ψ)
+   → ∃[ x ] y ≡ f x × x ∈ mem Ψ
+∈-mem-map-inv-surj {x ∷ Ψ} fsurj (here px) =
+    x , px , here refl
+∈-mem-map-inv-surj {x ∷ Ψ} fsurj (there y∈fΨ)
+    with ∈-mem-map-inv-surj {Ψ} fsurj y∈fΨ
+... | x , eq , x∈Ψ = x , eq , there x∈Ψ
+
+mem-map-⊆ : ∀{Ψ}{Ψ′}
+   → mem Ψ ⊆ mem Ψ′
+   → mem (map suc Ψ) ⊆ mem (map suc Ψ′)
+mem-map-⊆ {[]} {Ψ′} Ψ⊆Ψ′ = λ d ()
+mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ d (here refl) =
+    let x∈Ψ′ = Ψ⊆Ψ′ x (here refl) in
+    ∈-mem-map x∈Ψ′
+mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ y (there y∈sucΨ)
+    with ∈-mem-map-inv y∈sucΨ
+... | z , refl , z∈ =
+    let z∈Ψ′ = Ψ⊆Ψ′ z (there z∈) in
+    ∈-mem-map z∈Ψ′
+
 {-------------      Types    -------------}
 
 
@@ -90,6 +128,7 @@ data _∋_⦂_ : TyEnv → Var → Cat → Set where
      → (bnd B ∷ Γ) ∋ x ⦂ trm (⟪ renᵗ suc ⟫ᵗ A)
      
   typZ : ∀{Γ} → (typ ∷ Γ) ∋ zero ⦂ typ
+  typZbnd : ∀{Γ}{A} → (bnd A ∷ Γ) ∋ zero ⦂ typ
   typStyp : ∀{Γ}{x}
      → Γ ∋ x ⦂ typ
      → (typ ∷ Γ) ∋ suc x ⦂ typ
@@ -140,23 +179,10 @@ data _⊢_ok : TyEnv → Type → Set where
        --------------
      → Γ ⊢ ∀̇ A ok
 
-{- Free Variables -}
-
 dec : List Var → List Var
 dec [] = []
 dec (zero ∷ ls) = dec ls
 dec (suc x ∷ ls) = x ∷ dec ls
-
-{-
-FV : Type → List Var
-FV Nat = []
-FV ★ = []
-FV (^ β) = β ∷ []
-FV (A ⇒ B) = FV A ++ FV B
-FV (∀̇ A) = dec (FV A)
--}
-
-{- Consistency -}
 
 {- Mono means not ∀ -}
 data Mono : Type → Set where
@@ -164,6 +190,174 @@ data Mono : Type → Set where
   mono-unk : Mono ★
   mono-var : ∀{α} → Mono (^ α)
   mono-fun : ∀{A B} → Mono (A ⇒ B)
+
+sucₗ : Type × Type → Type × Type
+sucₗ (A , B) = (⟪ renᵗ suc ⟫ᵗ A , B)
+
+sucᵣ : Type × Type → Type × Type
+sucᵣ (A , B) = (A , ⟪ renᵗ suc ⟫ᵗ B)
+
+sucₚ : Type × Type → Type × Type
+sucₚ (A , B) = (⟪ renᵗ suc ⟫ᵗ A , ⟪ renᵗ suc ⟫ᵗ B)
+
+{- Precision -}
+
+infix 1 _⊢_⊑_
+data _⊢_⊑_ : List (Type × Type) → Type → Type → Set where
+
+  unk⊑unk : ∀{𝒞}
+     → 𝒞 ⊢ ★ ⊑ ★
+
+  nat⊑nat : ∀{𝒞} → 𝒞 ⊢ Nat ⊑ Nat
+
+  var⊑var : ∀{𝒞}{α}{β}
+      → (^ α , ^ β) ∈ mem 𝒞
+      → 𝒞 ⊢ ^ α ⊑ ^ β
+
+  unk⊑var : ∀{𝒞}{Y}
+     → (★ , ^ Y) ∈ mem 𝒞
+     → 𝒞 ⊢ ★ ⊑ ^ Y
+
+  unk⊑nat : ∀{𝒞}
+     → 𝒞 ⊢ ★ ⊑ Nat
+
+  unk⊑fun : ∀{𝒞}{A′}{B′}
+     → 𝒞 ⊢ ★ ⊑ A′
+     → 𝒞 ⊢ ★ ⊑ B′ 
+     → 𝒞 ⊢ ★ ⊑ A′ ⇒ B′ 
+
+  fun⊑fun : ∀{𝒞}{A}{B}{A′}{B′}
+     → 𝒞 ⊢ A ⊑ A′
+     → 𝒞 ⊢ B ⊑ B′ 
+     → 𝒞 ⊢ A ⇒ B ⊑ A′ ⇒ B′ 
+
+  all⊑all : ∀{𝒞}{A}{A′}
+     → (^ 0 , ^ 0) ∷ map sucₚ 𝒞 ⊢ A ⊑ A′
+     → 𝒞 ⊢ ∀̇ A ⊑ ∀̇ A′
+
+  any⊑all : ∀{𝒞}{A}{A′}
+     → (★ , ^ zero) ∷ map sucᵣ 𝒞 ⊢ A ⊑ A′
+     → 𝒞 ⊢ A ⊑ ∀̇ A′
+
+{- Consistency -}
+
+infix 1 _⊢_~_
+data _⊢_~_ : List (Type × Type) → Type → Type → Set where
+
+  unk~unk : ∀{𝒞} → 𝒞 ⊢ ★ ~ ★
+  
+  nat~nat : ∀{𝒞} → 𝒞 ⊢ Nat ~ Nat
+
+  var~var : ∀{𝒞}{α}{β}
+      → (^ α , ^ β) ∈ mem 𝒞
+      → 𝒞 ⊢ ^ α ~ ^ β
+
+  unk~var : ∀{𝒞}{Y}
+     → (★ , ^ Y) ∈ mem 𝒞
+     → 𝒞 ⊢ ★ ~ ^ Y
+
+  var~unk : ∀{𝒞}{X}
+     → (^ X , ★) ∈ mem 𝒞
+     → 𝒞 ⊢ ^ X ~ ★
+
+  unk~nat : ∀{𝒞}
+     → 𝒞 ⊢ ★ ~ Nat
+
+  unk~fun : ∀{𝒞}{A′}{B′}
+     → 𝒞 ⊢ A′ ~ ★
+     → 𝒞 ⊢ ★ ~ B′ 
+     → 𝒞 ⊢ ★ ~ A′ ⇒ B′
+
+  nat~unk : ∀{𝒞}
+     → 𝒞 ⊢ Nat ~ ★
+
+  fun~unk : ∀{𝒞}{A}{B}
+     → 𝒞 ⊢ ★ ~ A
+     → 𝒞 ⊢ B ~ ★
+     → 𝒞 ⊢ A ⇒ B ~ ★
+
+  fun~fun : ∀{𝒞}{A}{B}{A′}{B′}
+     → 𝒞 ⊢ A′ ~ A
+     → 𝒞 ⊢ B ~ B′ 
+     → 𝒞 ⊢ A ⇒ B ~ A′ ⇒ B′ 
+
+  all~all : ∀{𝒞}{A}{A′}
+     → (^ 0 , ^ 0) ∷ map sucₚ 𝒞 ⊢ A ~ A′
+     → 𝒞 ⊢ ∀̇ A ~ ∀̇ A′
+
+  all~any : ∀{𝒞}{A}{A′}
+     → (^ 0 , ★) ∷ map sucₗ 𝒞 ⊢ A ~ A′
+     → 𝒞 ⊢ ∀̇ A ~ A′
+
+  any~all : ∀{𝒞}{A}{A′}
+     → (★ , ^ 0) ∷ map sucᵣ 𝒞 ⊢ A ~ A′
+     → 𝒞 ⊢ A ~ ∀̇ A′
+
+{- Decide type equality -}
+
+_=?ᵗ_ : (A : Type) → (B : Type) → Dec (A ≡ B)
+★ =?ᵗ ★ = yes refl 
+★ =?ᵗ Nat = no λ () 
+★ =?ᵗ (^ Y) = no λ () 
+★ =?ᵗ (B₁ ⇒ B₂) = no λ () 
+★ =?ᵗ (∀̇ B) = no λ () 
+Nat =?ᵗ Nat = yes refl 
+Nat =?ᵗ ★ = no λ () 
+Nat =?ᵗ (^ Y) = no λ () 
+Nat =?ᵗ (B₁ ⇒ B₂) = no λ () 
+Nat =?ᵗ (∀̇ B) = no λ () 
+(^ X) =?ᵗ ★ = no λ () 
+(^ X) =?ᵗ Nat = no λ () 
+(^ X) =?ᵗ (^ Y)
+    with X ≟ Y
+... | yes refl = yes refl
+... | no neq = no λ {refl → neq refl}
+(^ X) =?ᵗ (B₁ ⇒ B₂) = no λ () 
+(^ X) =?ᵗ (∀̇ B) = no λ () 
+(A₁ ⇒ A₂) =?ᵗ Nat = no λ () 
+(A₁ ⇒ A₂) =?ᵗ ★ = no λ () 
+(A₁ ⇒ A₂) =?ᵗ (^ Y) = no λ () 
+(A₁ ⇒ A₂) =?ᵗ (B₁ ⇒ B₂)
+    with A₁ =?ᵗ B₁ | A₂ =?ᵗ B₂
+... | no no1 | _ = no λ {refl → no1 refl}
+... | yes refl | no no2 = no λ {refl → no2 refl}
+... | yes refl | yes refl = yes refl
+(A₁ ⇒ A₂) =?ᵗ (∀̇ B) = no λ () 
+(∀̇ A) =?ᵗ Nat = no λ () 
+(∀̇ A) =?ᵗ ★ = no λ () 
+(∀̇ A) =?ᵗ (^ Y) = no λ () 
+(∀̇ A) =?ᵗ (B₁ ⇒ B₂) = no λ () 
+(∀̇ A) =?ᵗ (∀̇ B)
+    with A =?ᵗ B
+... | yes refl = yes refl
+... | no neq = no λ {refl → neq refl}
+
+{-
+  The lub C will have all the ∀'s from A and B.
+
+  Need to figure out the 𝒢's and Ψ's to use for A ⊑ C and B ⊑ C.
+
+-}
+{-
+~⇒lub⊑ : ∀{𝒢}{ℋ}{Ψ}{A}{B}
+   → 𝒞 ⊢ A ~ B
+   → ∃[ C ] ∃[ Ψₗ ] ∃[ Ψᵣ ] (𝒢 ∣ Ψₗ ⊢ A ⊑ C) × (ℋ ∣ Ψᵣ ⊢ B ⊑ C)
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {.Nat} {.Nat} nat~nat =
+    Nat , [] , [] , nat⊑nat , nat⊑nat
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {^ α} {^ β} (var~var ab∈Ψ) =
+    (^ β) , Ψ , (β , β) ∷ [] , var⊑var ab∈Ψ , var⊑var (here refl)
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {.★} {B} (unk~any m x) =
+  B , {!!} , {!!} , unk⊑any m {!!} , {!!}
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {A} {.★} (any~unk m x) = {!!}
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {.(_ ⇒ _)} {.(_ ⇒ _)} (fun~fun A~B A~B₁) = {!!}
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {.(∀̇ _)} {.(∀̇ _)} (all~all A~B) = {!!}
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {.(∀̇ _)} {B} (all~any A~B) = {!!}
+~⇒lub⊑ {𝒢} {ℋ} {Ψ} {A} {.(∀̇ _)} (any~all A~B) = {!!}
+-}
+
+{-
+{- Consistency -}
+
 
 infix 1 _⊢_~_
 data _⊢_~_ : List Var → Type → Type → Set where
@@ -224,43 +418,6 @@ data _⊢_⊑_ : List Var → Type → Type → Set where
      → 0 ∷ map suc Ψ ⊢ ⟪ renᵗ suc ⟫ᵗ A ⊑ A′
      → Ψ ⊢ A ⊑ ∀̇ A′
 
-∈-mem-map : ∀{A B : Set}{Ψ : List A}{f : A → B}{x : A}
-   → x ∈ mem Ψ
-   → f x ∈ mem (map f Ψ)
-∈-mem-map {A} {B} {x ∷ Ψ} (here refl) = here refl
-∈-mem-map {A} {B} {x ∷ Ψ} (there x∈) = there (∈-mem-map x∈)
-
-∈-mem-map-inv : ∀{Ψ : List Var}{y : Var}
-   → y ∈ mem (map suc Ψ)
-   → ∃[ x ] y ≡ suc x × x ∈ mem Ψ
-∈-mem-map-inv {[]} {y} ()
-∈-mem-map-inv {z ∷ Ψ} {y} (here refl) = z , refl , here refl
-∈-mem-map-inv {z ∷ Ψ} {y} (there fx∈)
-    with ∈-mem-map-inv fx∈
-... | x , refl , x∈ = x , refl , there x∈
-
-∈-mem-map-inv-surj : ∀{Ψ : List Var}{y : Var}{f : ℕ → ℕ}
-   → (∀ x y → f x ≡ f y → x ≡ y)
-   → y ∈ mem (map f Ψ)
-   → ∃[ x ] y ≡ f x × x ∈ mem Ψ
-∈-mem-map-inv-surj {x ∷ Ψ} fsurj (here px) =
-    x , px , here refl
-∈-mem-map-inv-surj {x ∷ Ψ} fsurj (there y∈fΨ)
-    with ∈-mem-map-inv-surj {Ψ} fsurj y∈fΨ
-... | x , eq , x∈Ψ = x , eq , there x∈Ψ
-
-mem-map-⊆ : ∀{Ψ}{Ψ′}
-   → mem Ψ ⊆ mem Ψ′
-   → mem (map suc Ψ) ⊆ mem (map suc Ψ′)
-mem-map-⊆ {[]} {Ψ′} Ψ⊆Ψ′ = λ d ()
-mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ d (here refl) =
-    let x∈Ψ′ = Ψ⊆Ψ′ x (here refl) in
-    ∈-mem-map x∈Ψ′
-mem-map-⊆ {x ∷ Ψ} {Ψ′} Ψ⊆Ψ′ y (there y∈sucΨ)
-    with ∈-mem-map-inv y∈sucΨ
-... | z , refl , z∈ =
-    let z∈Ψ′ = Ψ⊆Ψ′ z (there z∈) in
-    ∈-mem-map z∈Ψ′
 
 weaken⊑ : ∀{A}{B}{Ψ}{Ψ′}
   → Ψ ⊢ A ⊑ B
@@ -478,6 +635,7 @@ extr-surjective ρ ρsur zero zero eq = refl
 extr-surjective ρ ρsur (suc x) (suc y) eq =
   let ρx=ρy = suc-injective eq in
   cong suc (ρsur x y ρx=ρy )
+-}
 
 {-
 unk~any-ren-inv : ∀{ρ}{Ψ}{B}
