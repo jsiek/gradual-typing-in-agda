@@ -15,7 +15,7 @@ module Poly.Compile where
 coerce : ∀{A}{B}{𝒞} Γ → 𝒞 ⊢ A ~ B → Σ[ c ∈ CTerm ] (Γ ⊢ c ⦂ A ↝ B)
 coerce {.★} {.★} {𝒞} Γ unk~unk = idᶜ , wt-id
 coerce {.Nat} {.Nat} {𝒞} Γ nat~nat = idᶜ , wt-id
-coerce {^ X} {^ Y} {𝒞} Γ (var~var XY∈𝒞) = {!!} , ? {- problem! -}
+coerce {^ X} {^ Y} {𝒞} Γ (var~var XY∈𝒞) = {!!} , {!!} {- problem! -}
 coerce {.★} {.(^ _)} {𝒞} Γ (unk~var x) = {!!} , {!!} {- problem! -}
 coerce {.(^ _)} {.★} {𝒞} Γ (var~unk x) = {!!} , {!!} {- problem! -}
 coerce {.★} {.Nat} {𝒞} Γ unk~nat = (nat ??) , wt-proj G-nat
