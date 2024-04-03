@@ -106,7 +106,7 @@ match-alls (suc L) (suc R) gs bs
     {- match up the two ∀'s -}
     match-alls L R (dec gs) (dec-both bs)
 match-alls (suc L) (suc R) gs bs 
-    | no zz∉B1
+    | no zz∉bs
     with zero-cod? bs
 ... | yes xz∈bs = nothing
 ... | no xz∉bs =
