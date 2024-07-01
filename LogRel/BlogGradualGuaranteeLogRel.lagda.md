@@ -1425,7 +1425,7 @@ compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
 ```
 
 The compatibility lemma for lambda is easy but important.  Roughly
-speaking, tt takes the premise `N ⊑ᴸᴿ N′` and stores it in the logical
+speaking, it takes the premise `N ⊑ᴸᴿ N′` and stores it in the logical
 relation for the lambda values, `ƛ N ⊑ᴸᴿₜ ƛ N′`, which is needed to
 prove the compatibility lemma for function application.
 
