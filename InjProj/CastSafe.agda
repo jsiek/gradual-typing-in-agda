@@ -32,7 +32,7 @@ open import InjProj.CastCalculus
 data Progress (M : Term) : Set where
 
   step : ∀ {N}
-    → M —→ N
+    → M ⟶ N
       ----------
     → Progress M
 
@@ -55,21 +55,21 @@ progress (⊢$ k)                           =  done ($̬ k)
 progress (⊢ƛ ⊢N)                          =  done (ƛ̬ _)
 progress (⊢· ⊢L ⊢M)
     with progress ⊢L
-... | step L—→L′                          =  step (ξ (□· _) L—→L′)
+... | step L⟶L′                          =  step (ξ (□· _) L⟶L′)
 ... | error isBlame                       = step (ξ-blame (□· _))
 ... | done (ƛ̬ N)
     with progress ⊢M
-... | step M—→M′                          =  step (ξ ((ƛ̬ _) ·□) M—→M′)
+... | step M⟶M′                          =  step (ξ ((ƛ̬ _) ·□) M⟶M′)
 ... | error isBlame                       = step (ξ-blame ((ƛ̬ _) ·□))
 ... | done w                              = step (β w)
 progress (⊢⟨!⟩ ⊢M)
     with progress ⊢M
-... | step M—→M′                          = step (ξ □⟨ _ !⟩ M—→M′)
+... | step M⟶M′                          = step (ξ □⟨ _ !⟩ M⟶M′)
 ... | error isBlame                       = step (ξ-blame □⟨ _ !⟩)
 ... | done v                              = done (v 〈 _ 〉)
 progress (⊢⟨?⟩ ⊢M H) 
     with progress ⊢M
-... | step M—→M′                          = step (ξ □⟨ _ ?⟩ M—→M′)
+... | step M⟶M′                          = step (ξ □⟨ _ ?⟩ M⟶M′)
 ... | error isBlame                       = step (ξ-blame □⟨ _ ?⟩)
 ... | done v
     with v
@@ -141,7 +141,7 @@ sub-pres-type {Γ} {Δ} {A} {.blame} {σ} ⊢blame ⊢σ = ⊢blame
 
 preservation : ∀{Γ}{M}{N}{A}
   → Γ ⊢ M ⦂ A
-  → M —→ N
+  → M ⟶ N
   → Γ ⊢ N ⦂ A
 preservation ⊢M (ξ (□· M) L→L′)
     with ⊢M
@@ -165,11 +165,11 @@ preservation ⊢M (collide v neq refl) = ⊢blame
 
 multi-preservation : ∀{Γ}{M}{N}{A}
   → Γ ⊢ M ⦂ A
-  → M —↠ N
+  → M ↠ N
   → Γ ⊢ N ⦂ A
 multi-preservation ⊢M (_ END) = ⊢M
-multi-preservation ⊢M (_ —→⟨ M→M′ ⟩ M′—↠N) =
-  multi-preservation (preservation ⊢M M→M′) M′—↠N
+multi-preservation ⊢M (_ ⟶⟨ M→M′ ⟩ M′↠N) =
+  multi-preservation (preservation ⊢M M→M′) M′↠N
   
 {-
    After k steps, a program will have either halted with blame or a value,
@@ -178,9 +178,9 @@ multi-preservation ⊢M (_ —→⟨ M→M′ ⟩ M′—↠N) =
 
 trichotomy : ∀ {A} M k
   → [] ⊢ M ⦂ A
-  → (Σ[ r ∈ M —↠ blame ] len r < k)
-    ⊎ (∃[ V ] Σ[ r ∈ M —↠ V ] (len r < k) × Value V)
-    ⊎ (∃[ N ] Σ[ r ∈ M —↠ N ] len r ≡ k)
+  → (Σ[ r ∈ M ↠ blame ] len r < k)
+    ⊎ (∃[ V ] Σ[ r ∈ M ↠ V ] (len r < k) × Value V)
+    ⊎ (∃[ N ] Σ[ r ∈ M ↠ N ] len r ≡ k)
 trichotomy M zero ⊢M = inj₂ (inj₂ (M , ((M END) , refl)))
 trichotomy M (suc k) ⊢M
     with progress ⊢M
@@ -188,22 +188,22 @@ trichotomy M (suc k) ⊢M
 ... | error isBlame = inj₁ ((blame END) , (s≤s z≤n))
 ... | step{N = N} M→N 
     with trichotomy N k (preservation ⊢M M→N)
-... | inj₁ (N→blame , r<k) = inj₁ ((M —→⟨ M→N ⟩ N→blame) , s≤s r<k)
+... | inj₁ (N→blame , r<k) = inj₁ ((M ⟶⟨ M→N ⟩ N→blame) , s≤s r<k)
 ... | inj₂ (inj₁ (V , N→V , r<k , v)) =
-      inj₂ (inj₁ (V , ((M —→⟨ M→N ⟩ N→V) , (s≤s r<k) , v)))
-... | inj₂ (inj₂ (N , N₁—↠N , refl)) =
-      inj₂ (inj₂ (N , ((M —→⟨ M→N ⟩ N₁—↠N) , refl)))
+      inj₂ (inj₁ (V , ((M ⟶⟨ M→N ⟩ N→V) , (s≤s r<k) , v)))
+... | inj₂ (inj₂ (N , N₁↠N , refl)) =
+      inj₂ (inj₂ (N , ((M ⟶⟨ M→N ⟩ N₁↠N) , refl)))
 
 halt-exp : ∀ M N
   → halt N
-  → M —→ N
+  → M ⟶ N
   → halt M
-halt-exp M N (inj₁ N—↠blame) M—→N = inj₁ (M —→⟨ M—→N ⟩ N—↠blame)
-halt-exp M N (inj₂ (V , N—↠V , v)) M—→N = inj₂ (V , (M —→⟨ M—→N ⟩ N—↠V) , v)
+halt-exp M N (inj₁ N↠blame) M⟶N = inj₁ (M ⟶⟨ M⟶N ⟩ N↠blame)
+halt-exp M N (inj₂ (V , N↠V , v)) M⟶N = inj₂ (V , (M ⟶⟨ M⟶N ⟩ N↠V) , v)
 
 not-halt-pres : ∀ M N
   → ¬ halt M
-  → M —→ N
+  → M ⟶ N
   → ¬ halt N
 not-halt-pres M N nhM M→N hN = ⊥-elim (nhM (halt-exp M N hN M→N))
 
@@ -216,14 +216,14 @@ not-halt⇒diverge M ⊢M ¬haltM (suc k)
     with progress ⊢M
 ... | done v = ⊥-elim (¬haltM (inj₂ (_ , ((M END) , v))))
 ... | error isBlame = ⊥-elim (¬haltM (inj₁ (blame END)))
-... | step{N = N} M—→N
-    with not-halt⇒diverge N (preservation ⊢M M—→N)
-                          (not-halt-pres M N ¬haltM M—→N) k
-... | L , N—↠L , refl = L , ((M —→⟨ M—→N ⟩ N—↠L) , refl)
+... | step{N = N} M⟶N
+    with not-halt⇒diverge N (preservation ⊢M M⟶N)
+                          (not-halt-pres M N ¬haltM M⟶N) k
+... | L , N↠L , refl = L , ((M ⟶⟨ M⟶N ⟩ N↠L) , refl)
 
 ξ-preservation : ∀{Γ}{F}{M}{N}{A}
   → Γ ⊢ F ⦉ M ⦊ ⦂ A
-  → M —→ N
+  → M ⟶ N
   → Γ ⊢ F ⦉ N ⦊ ⦂ A
 ξ-preservation {Γ} {` (□· M₁)} {M} {N} {A} (⊢· ⊢L ⊢M) M→N =
    ⊢· (preservation ⊢L M→N) ⊢M

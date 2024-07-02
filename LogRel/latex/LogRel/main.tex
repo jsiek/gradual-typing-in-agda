@@ -14,22 +14,33 @@
 \usepackage{agda}
 %\usepackage{mathabx}
 \usepackage{amssymb}
+\usepackage{stmaryrd}
 %\usepackage{nath}
 
 %% \usepackage{ucs}
 %% \usepackage[utf8x]{inputenc}
 %% \usepackage{autofe}
 \usepackage{newunicodechar}
-\newunicodechar{λ}{\ensuremath{\lambda}}
 \newunicodechar{∷}{{::}}
 \newunicodechar{⊤}{\ensuremath{\top}}
 \newunicodechar{⊥}{\ensuremath{\bot}}
 \newunicodechar{₁}{\ensuremath{_1}}
 \newunicodechar{₂}{\ensuremath{_2}}
+\newunicodechar{₃}{\ensuremath{_3}}
+
+\newunicodechar{β}{\ensuremath{\beta}}
 \newunicodechar{γ}{\ensuremath{\gamma}}
+\newunicodechar{λ}{\ensuremath{\lambda}}
+\newunicodechar{Λ}{\ensuremath{\Lambda}}
 \newunicodechar{μ}{\ensuremath{\mu}}
+\newunicodechar{ν}{\ensuremath{\nu}}
+\newunicodechar{ρ}{\ensuremath{\rho}}
+\newunicodechar{σ}{\ensuremath{\sigma}}
+\newunicodechar{Π}{\ensuremath{\Pi}}
+\newunicodechar{ξ}{\ensuremath{\xi}}
 \newunicodechar{Γ}{\ensuremath{\Gamma}}
 \newunicodechar{Σ}{\ensuremath{\Sigma}}
+
 \newunicodechar{∀}{\ensuremath{\forall}}
 \newunicodechar{∃}{\ensuremath{\exists}}
 \newunicodechar{⊎}{\ensuremath{\uplus}}
@@ -38,7 +49,16 @@
 \newunicodechar{≢}{\ensuremath{\not\equiv}}
 \newunicodechar{⊑}{\ensuremath{\sqsubseteq}}
 \newunicodechar{★}{\ensuremath{\star}}
+\newunicodechar{∼}{\ensuremath{\sim}}
+\newunicodechar{⌈}{\ensuremath{\lceil}}
+\newunicodechar{⌉}{\ensuremath{\rceil}}
+
 \newunicodechar{⇒}{\ensuremath{\Rightarrow}}
+\newunicodechar{↠}{\ensuremath{\longrightarrow^{*}}}
+\newunicodechar{⇓}{\ensuremath{\Downarrow}}
+\newunicodechar{⇑}{\ensuremath{\Uparrow}}
+\newunicodechar{⟶}{\ensuremath{\longrightarrow}}
+
 \newunicodechar{ι}{\ensuremath{\iota}}
 \newunicodechar{ₜ}{\ensuremath{_t}}
 \newunicodechar{⊢}{\ensuremath{\vdash}}
@@ -48,6 +68,7 @@
 \newunicodechar{∈}{\ensuremath{\in}}
 \newunicodechar{∋}{\ensuremath{\ni}}
 \newunicodechar{′}{\ensuremath{'}}
+\newunicodechar{″}{\ensuremath{''}}
 \newunicodechar{ƛ}{\ensuremath{\lambda}}
 \newunicodechar{≼}{\ensuremath{\preceq}}
 \newunicodechar{≽}{\ensuremath{\succeq}}
@@ -58,18 +79,38 @@
 \newunicodechar{ᴸ}{\ensuremath{^L}}
 \newunicodechar{ᴿ}{\ensuremath{^R}}
 \newunicodechar{▷}{\ensuremath{\triangleright}}
-\newunicodechar{↠}{\ensuremath{\twoheadrightarrow}}
 \newunicodechar{ᵍ}{\ensuremath{^g}}
 \newunicodechar{ᵒ}{\ensuremath{^{\circ}}}
-\newunicodechar{⟪}{\ensuremath{\langle\langle}}
-\newunicodechar{⟫}{\ensuremath{\rangle\rangle}}
+\newunicodechar{⟪}{\ensuremath{\langle\!\langle}}
+\newunicodechar{⟫}{\ensuremath{\rangle\!\rangle}}
+\newunicodechar{⩦}{\ensuremath{\equiv}}
+\newunicodechar{∎}{\ensuremath{\blacksquare}}
+\newunicodechar{□}{\ensuremath{\square}}
+\newunicodechar{■}{\ensuremath{\blacksquare}}
+\newunicodechar{⇔}{\ensuremath{\iff}}
+\newunicodechar{𝒱}{\ensuremath{\mathcal{V}}}
+\newunicodechar{̬}{}
+\newunicodechar{𝒫}{\ensuremath{\mathcal{P}}}
+\newunicodechar{ℰ}{\ensuremath{\mathcal{E}}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+
+\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
+\newunicodechar{𝔹}{\ensuremath{\mathbb{B}}}
+
+\newunicodechar{⦉}{\ensuremath{\llfloor}}
+\newunicodechar{⦊}{\ensuremath{\rrfloor}}
+\newunicodechar{⟦}{\ensuremath{[}}
+\newunicodechar{⟧}{\ensuremath{]}}
+\newunicodechar{⦅}{\ensuremath{\llparenthesis}}
+\newunicodechar{⦆}{\ensuremath{\rrparenthesis}}
+\newunicodechar{∶}{:}
 
 
 %% \DefineVerbatimEnvironment
 %%   {code}{Verbatim}
 %%   {} % Add fancy options here if you like.
 
-\title{Gradual Guarantee via Step-Indexed Logical Relations in Agda}
+\title{Gradual Guarantee via \\ Step-Indexed Logical Relations in Agda}
 \author{Jeremy G. Siek
 \institute{School of Informatics, Computing, and Engineering\\
 Indiana University \\
@@ -87,15 +128,22 @@ Bloomington, IN, USA}
 \maketitle
 
 \begin{abstract}
-abstract goes here
+  
+
+  
 \end{abstract}
 
 
+\section{Introduction}
+
+\input{PeterCastCalculus}
+
+\clearpage
 
 \input{PeterFestschrift}
 
 
 \nocite{*}
 \bibliographystyle{eptcs}
-\bibliography{generic}
+\bibliography{all}
 \end{document}
