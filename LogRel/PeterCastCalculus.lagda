@@ -96,7 +96,16 @@ sig (op-lit c) = []
 sig (op-inject G) = ■ ∷ []
 sig (op-project H) = ■ ∷ []
 sig (op-blame) = []
+\end{code}
 
+We define the terms of the Cast Calculus using the
+Abstract Binding Tree (ABT) library by instantiating it with an
+appropriate set of operators \textsf{Op} together with their arity and
+variable-binding structure as given by the \textsf{sig} function.
+We then define Agda patterns to give succinct syntax to the
+construction of abstract binding trees.
+
+\begin{code}
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 
 pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
@@ -108,6 +117,23 @@ pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
 pattern blame = op-blame ⦅ nil ⦆
 \end{code}
 
+There are three special features in the Cast Calculus:
+\begin{enumerate}
+\item injection $M ⟨ G !⟩$, for casting from a ground type $G$
+  to the unknown type ★,
+\item projection $M ⟨ H ?⟩$, for casting from the unknown type ★
+  to a ground type $H$, and
+\item \textsf{blame} which represents a runtime exception if
+  a projection fails.
+\end{enumerate}
+
+The ABT library represents variables with de Bruijn indices and
+provides a definition of parallel substitution and many theorems about
+substitution. It is helpful to think of a parallel substitution as an
+infinite stream, or equivalently, as a function from natural numbers
+to terms. The • operator is stream cons, that is, it adds a term to
+the front of the stream.
+
 \begin{code}
 sub-zero : ∀ {V σ} → (V • σ) 0 ≡ V
 sub-zero = refl
@@ -115,17 +141,33 @@ sub-suc : ∀ {V x σ} → (V • σ) (suc x) ≡ σ x
 sub-suc {V}{x}{σ} = refl
 \end{code}
 
-\begin{code}
-sub-app : ∀ {L M σ} → ⟪ σ ⟫ (L · M) ≡ ⟪ σ ⟫ L · ⟪ σ ⟫ M
-sub-app = refl
-sub-lam : ∀ {N σ} → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
-sub-lam = refl
-\end{code}
+The ABT library provides the operator $⟪ σ ⟫ M$ for applying a
+substitution to a term. Here are the equations for substitution
+applied to variables, application, and lambda abstraction. The
+\textsf{ext} operator transports a substitution over one variable
+binder.
 
 \begin{code}
-ext-eq : ∀{σ} → ext σ ≡ ` 0 • (σ ⨟ ↑)
-ext-eq = refl
+{-# REWRITE sub-var #-}
+_ : ∀ (σ : Subst) (x : ℕ) → ⟪ σ ⟫ (` x) ≡ σ x
+_ = λ σ x → refl
+_ : ∀ (σ : Subst) (L M : Term) → ⟪ σ ⟫ (L · M) ≡ ⟪ σ ⟫ L · ⟪ σ ⟫ M
+_ = λ σ L M → refl
+_ : ∀ (σ : Subst) (N : Term) → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
+_ = λ σ N → refl
 \end{code}
+
+The bracket notation $M [ N ]$ is defined to replace the 0 variables
+in $M$ with $N$ and decrement the other free variables. For example,
+
+\begin{code}
+_ : ∀ (N : Term) → (` 1 · ` 0) [ N ] ≡ (` 0 · N)
+_ = λ N → refl
+\end{code}
+
+Most importantly, the ABT library provides the following theorem which
+is both difficult to prove and needed later for the Compatibility
+Lemma for lambda abstraction.
 
 \begin{code}
 ext-sub-cons : ∀ {σ N V} → (⟪ ext σ ⟫ N) [ V ] ≡ ⟪ V • σ ⟫ N
@@ -194,7 +236,7 @@ data _∼_ : Type → Type → Set where
      → (A ⇒ B) ∼ (A′ ⇒ B′)
 \end{code}
 
-Figure~\ref{fig:type-system}
+Figure~\ref{fig:type-system} defines the type system of the Cast Calculus.
 
 \begin{figure}[tbp]
 \begin{code}
