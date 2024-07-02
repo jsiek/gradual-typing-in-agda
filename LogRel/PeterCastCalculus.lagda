@@ -39,6 +39,10 @@ infix  8 $ₜ_
 infix  8 $ᵍ_
 \end{code}
 
+The type structure of the Cast Calculus includes base types (integer and Boolean),
+function types, and the unknown type ★. The \emph{ground types} include
+just the base types and function types from ★ to ★.
+
 \begin{minipage}{0.5\textwidth}
 \begin{code}
 data Type : Set where
@@ -102,7 +106,33 @@ pattern $ c = (op-lit c) ⦅ nil ⦆
 pattern _⟨_!⟩ M G = (op-inject G) ⦅ cons (ast M) nil ⦆
 pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
 pattern blame = op-blame ⦅ nil ⦆
+\end{code}
 
+\begin{code}
+sub-zero : ∀ {V σ} → (V • σ) 0 ≡ V
+sub-zero = refl
+sub-suc : ∀ {V x σ} → (V • σ) (suc x) ≡ σ x
+sub-suc {V}{x}{σ} = refl
+\end{code}
+
+\begin{code}
+sub-app : ∀ {L M σ} → ⟪ σ ⟫ (L · M) ≡ ⟪ σ ⟫ L · ⟪ σ ⟫ M
+sub-app = refl
+sub-lam : ∀ {N σ} → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
+sub-lam = refl
+\end{code}
+
+\begin{code}
+ext-eq : ∀{σ} → ext σ ≡ ` 0 • (σ ⨟ ↑)
+ext-eq = refl
+\end{code}
+
+\begin{code}
+ext-sub-cons : ∀ {σ N V} → (⟪ ext σ ⟫ N) [ V ] ≡ ⟪ V • σ ⟫ N
+ext-sub-cons = refl
+\end{code}
+
+\begin{code}[hide]
 {- Phil: consider ditching this and use M ≡ blame -}
 data Blame : Term → Set where
   isBlame : Blame blame
