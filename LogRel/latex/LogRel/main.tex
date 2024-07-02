@@ -15,6 +15,7 @@
 %\usepackage{mathabx}
 \usepackage{amssymb}
 \usepackage{stmaryrd}
+\usepackage[numbers]{natbib}
 %\usepackage{nath}
 
 %% \usepackage{ucs}
@@ -128,13 +129,27 @@ Bloomington, IN, USA}
 \maketitle
 
 \begin{abstract}
-  
-
-  
+  The gradual guarantee is an important litmus test for gradually
+  typed languages, that is, languages that enable a mixture of static
+  and dynamic typing. The gradual guarantee states that changing the
+  precision of a type annotation does not change the behavior of the
+  program, except perhaps to trigger an error if the type annotation
+  is incorrect. Siek et al. (2015) proved that the Gradually Typed
+  Lambda Calulus (GTLC) satisfies the gradual guarantee using a
+  simulation-based proof and mechanized their proof in Isabelle. In
+  the following decade, researchers have proved the gradual guarantee
+  for more sophisticated calculi, using step-indexed logical
+  relations.  However, given the complexity of that style of proof,
+  there has not yet been a mechanized proof of the gradual guarantee
+  using step-indexed logical relations. This paper reports on a
+  mechanized proof of the gradual guarantee for the GTLC carried out
+  in the Agda proof assistant.
 \end{abstract}
 
 
 \section{Introduction}
+
+\cite{Siek:2015ac}
 
 \input{PeterCastCalculus}
 
@@ -143,7 +158,7 @@ Bloomington, IN, USA}
 \input{PeterFestschrift}
 
 
-\nocite{*}
+%\nocite{*}
 \bibliographystyle{eptcs}
 \bibliography{all}
 \end{document}
