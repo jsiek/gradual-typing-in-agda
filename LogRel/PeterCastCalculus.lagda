@@ -20,6 +20,7 @@ open import Sig
 \end{code}
 
 \section{Cast Calculus}
+\label{sec:cast-calculus}
 
 \begin{code}[hide]
 {- Base types -}
@@ -64,10 +65,6 @@ data Ground : Set where
 \end{minipage}
 
 \begin{code}[hide]
-gnd⇒ty : Ground → Type
-gnd⇒ty ($ᵍ ι) = $ₜ ι
-gnd⇒ty ★⇒★ = ★ ⇒ ★
-
 _≡ᵍ_ : ∀ (G : Ground) (H : Ground) → Dec (G ≡ H)
 ($ᵍ ι) ≡ᵍ ($ᵍ ι′)
     with ι ≡$? ι′
@@ -96,16 +93,7 @@ sig (op-lit c) = []
 sig (op-inject G) = ■ ∷ []
 sig (op-project H) = ■ ∷ []
 sig (op-blame) = []
-\end{code}
 
-We define the terms of the Cast Calculus using the
-Abstract Binding Tree (ABT) library by instantiating it with an
-appropriate set of operators \textsf{Op} together with their arity and
-variable-binding structure as given by the \textsf{sig} function.
-We then define Agda patterns to give succinct syntax to the
-construction of abstract binding trees.
-
-\begin{code}
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 
 pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
@@ -115,8 +103,15 @@ pattern $ c = (op-lit c) ⦅ nil ⦆
 pattern _⟨_!⟩ M G = (op-inject G) ⦅ cons (ast M) nil ⦆
 pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
 pattern blame = op-blame ⦅ nil ⦆
+
+{-# REWRITE sub-var #-}
 \end{code}
 
+We define the terms of the Cast Calculus using the Abstract Binding
+Tree (ABT) library by instantiating it with an appropriate set of
+operators together with a description of their arity and
+variable-binding structure. We then define Agda patterns to give
+succinct syntax to the construction of abstract binding trees.
 There are three special features in the Cast Calculus:
 \begin{enumerate}
 \item injection $M ⟨ G !⟩$, for casting from a ground type $G$
@@ -148,7 +143,6 @@ applied to variables, application, and lambda abstraction. The
 binder.
 
 \begin{code}
-{-# REWRITE sub-var #-}
 _ : ∀ (σ : Subst) (x : ℕ) → ⟪ σ ⟫ (` x) ≡ σ x
 _ = λ σ x → refl
 _ : ∀ (σ : Subst) (L M : Term) → ⟪ σ ⟫ (L · M) ≡ ⟪ σ ⟫ L · ⟪ σ ⟫ M
@@ -157,8 +151,9 @@ _ : ∀ (σ : Subst) (N : Term) → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
 _ = λ σ N → refl
 \end{code}
 
-The bracket notation $M [ N ]$ is defined to replace the 0 variables
-in $M$ with $N$ and decrement the other free variables. For example,
+The bracket notation $M [ N ]$ is defined to replace the occurences of
+variable 0 in $M$ with $N$ and decrement the other free variables. For
+example,
 
 \begin{code}
 _ : ∀ (N : Term) → (` 1 · ` 0) [ N ] ≡ (` 0 · N)
@@ -236,7 +231,8 @@ data _∼_ : Type → Type → Set where
      → (A ⇒ B) ∼ (A′ ⇒ B′)
 \end{code}
 
-Figure~\ref{fig:type-system} defines the type system of the Cast Calculus.
+Figure~\ref{fig:type-system} defines the type system of the Cast
+Calculus and Figure~\ref{fig:reduction} defines the reduction rules.
 
 \begin{figure}[tbp]
 \begin{code}
@@ -313,8 +309,6 @@ infix  3 _END
 
 \end{code}
 
-Figure~\ref{fig:reduction}
-
 \begin{figure}[tbp]
 \begin{code}
 infix 2 _⟶_
@@ -323,8 +317,8 @@ data _⟶_ : Term → Term → Set where
   collapse : ∀{G M V} → Value V  →  M ≡ V ⟨ G !⟩  →  M ⟨ G ?⟩ ⟶ V
   collide  : ∀{G H M V} → Value V → G ≢ H → M ≡ V ⟨ G !⟩ → M ⟨ H ?⟩ ⟶ blame
   ξξ : ∀ {M N M′ N′} → (F : Frame)
-    → M′ ≡ F ⟦ M ⟧  →  N′ ≡ F ⟦ N ⟧  →  M ⟶ N  →  M′ ⟶ N′
-  ξξ-blame : ∀ {M′} → (F : Frame) → M′ ≡ F ⟦ blame ⟧  →  M′ ⟶ blame
+    → M′ ≡ F ⟦ M ⟧ → N′ ≡ F ⟦ N ⟧ → M ⟶ N → M′ ⟶ N′
+  ξξ-blame : ∀ {M′} → (F : Frame) → M′ ≡ F ⟦ blame ⟧ → M′ ⟶ blame
 
 data _↠_ : Term → Term → Set where
   _END : (M : Term)  →  M ↠ M
@@ -336,10 +330,8 @@ len (_ ⟶⟨ step ⟩ mstep) = suc (len mstep)
 
 _⇓ : Term → Set
 M ⇓ = ∃[ V ] (M ↠ V) × Value V
-
 _⇑ : Term → Set
 M ⇑ = ∀ k → ∃[ N ] Σ[ r ∈ M ↠ N ] k ≡ len r
-
 _⇑⊎blame : Term → Set
 M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M ↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
 \end{code}

@@ -40,6 +40,7 @@
 \newunicodechar{Π}{\ensuremath{\Pi}}
 \newunicodechar{ξ}{\ensuremath{\xi}}
 \newunicodechar{Γ}{\ensuremath{\Gamma}}
+\newunicodechar{Δ}{\ensuremath{\Delta}}
 \newunicodechar{Σ}{\ensuremath{\Sigma}}
 
 \newunicodechar{∀}{\ensuremath{\forall}}
@@ -82,8 +83,6 @@
 \newunicodechar{▷}{\ensuremath{\triangleright}}
 \newunicodechar{ᵍ}{\ensuremath{^g}}
 \newunicodechar{ᵒ}{\ensuremath{^{\circ}}}
-\newunicodechar{⟪}{\ensuremath{\langle\!\langle}}
-\newunicodechar{⟫}{\ensuremath{\rangle\!\rangle}}
 \newunicodechar{⩦}{\ensuremath{\equiv}}
 \newunicodechar{∎}{\ensuremath{\blacksquare}}
 \newunicodechar{□}{\ensuremath{\square}}
@@ -104,6 +103,10 @@
 \newunicodechar{⟧}{\ensuremath{]}}
 \newunicodechar{⦅}{\ensuremath{\llparenthesis}}
 \newunicodechar{⦆}{\ensuremath{\rrparenthesis}}
+\newunicodechar{⟪}{\ensuremath{\langle\!\langle}}
+\newunicodechar{⟫}{\ensuremath{\rangle\!\rangle}}
+\newunicodechar{⟨}{\ensuremath{\langle}}
+\newunicodechar{⟩}{\ensuremath{\rangle}}
 \newunicodechar{∶}{:}
 \newunicodechar{⨟}{\ensuremath{\fatsemi}}
 \newunicodechar{↑}{\ensuremath{\uparrow}}
@@ -148,16 +151,79 @@ Bloomington, IN, USA}
   in the Agda proof assistant.
 \end{abstract}
 
-
 \section{Introduction}
 
-\cite{Siek:2015ac}
+Gradually typed languages introduce the unknown type ★ as a way for
+programmers to control the amount of type precision, and compile-time
+type checking, in their program \cite{Siek:2006bh,Siek:2007qy}. If all
+type annotations are just ★, then the program behaves like a
+dynamically typed language. At the other end of the spectrum, if no
+type annotation contains ★, then the program behaves like a statically
+typed language.
+
+Siek et al.~\cite{Siek:2015ac} introduce the \emph{gradual guarantee}
+as a litmus test for gradually typed languages.  This property says
+that the behavior of a program should not change (except for errors)
+when the programmer changes type annotations to be more or less
+precise.  Siek et al.~\cite{Siek:2015ac} prove that the Gradually
+Typed Lambda Calculus (GTLC) satisfies the gradual guarantee using a
+simulation-based proof and mechanize the result in the Isabelle proof
+assistant~\cite{Nipkow:2002jl}. Using logical relations, New and
+Ahmed~\cite{New:2018aa} prove the gradual guarantee for the GTLC and
+New et al.~\cite{New:2019ab} prove the gradual guarantee for a
+polymorphic calculus. Several researchers apply logical relations to
+prove other properties of gradually typed languages, such as
+noninterference\cite{Toro:2018aa},
+parametricity~\cite{Ahmed:2011fk,New:2019ab,Labrada:2020tk}, and fully
+abstract embedding~\cite{Jacobs:2021aa}. Of all this later work, only
+the fully abstract embedding was mechanized in a proof assistant (in
+Coq~\cite{The-Coq-Development-Team:2004kf} using the Iris
+framework~\cite{JUNG:2018aa}.)
+
+There are several technical challenges to overcome in developing a
+mechanized proof of the gradual guarantee using step-indexed logical
+relations. As in any programming language mechanization, one must
+choose how to represent variables and perform substitution. Moreover,
+proofs based on logical relations rely on the fact that substitutions
+commute, and the proof of this standard result is quite technical and
+lengthy. Repeating these proofs for each new programming language is
+quite tedious, but this metatheory can be developed in a
+language-independent way using the notion of \emph{abstract binding
+  trees}~\cite{Harper:2012aa}. To this end we developed the Abstract
+Binding Tree library in Agda~\cite{Siek:2021to}, representing
+variables as de Bruijn indices and implementing substitution via
+parallel renaming and
+substitution~\cite{McBride:2005aa,Wadler:2020aa}.
+
+The second technical challenge is that step-indexed logical relations
+``involve tedious, error-prone, and proof-obscuring step-index
+arithmetic''~\cite{Dreyer:2011wl}. Dreyer, Ahmed, and
+Birkedal~\cite{Dreyer:2011wl} propose to abstract over the
+step-indexing using a modal logic named LSLR. Dreyer and Birkedal,
+with many colleagues, implemented this logic as part of the Iris
+framework~\cite{JUNG:2018aa} in the Coq proof assistant. To make a
+similar modal logic available in the Agda proof assistant, we
+developed the Step-Indexed Logic (SIL) library~\cite{Siek:2023aa}.
+The proof of the gradual guarantee in this paper is the first
+application of SIL and we report on the experience.
+
+The semantics of the GTLC is defined by translation to a Cast
+Calculus, so we present the Cast Calculus in
+Section~\ref{sec:cast-calculus}. We define the precision relation on
+types and terms in Section~\ref{sec:precision} and we review
+Step-Indexed Logic in Section~\ref{sec:SIL}.  We define a logical
+relation for precision in Section~\ref{sec:log-rel}. We prove the
+Fundamental Theorem of the logical relation in
+Section~\ref{sec:fundamental}, which is the main technical result of
+this paper. To finish the proof of the gradual guarantee, in
+Section~\ref{sec:gradual-guarantee} we prove that the logical relation
+implies semantic approximation and semantic approximation implies the
+gradual guarantee. Section~\ref{sec:conclusion} concludes this paper.
 
 \input{PeterCastCalculus}
-
-\clearpage
-
 \input{PeterFestschrift}
+\input{PeterFundamental}
+\input{PeterGG}
 
 
 %\nocite{*}
