@@ -27,7 +27,16 @@ open import StepIndexedLogic
 \section{Fundamental Theorem of the Logical Relation}
 \label{sec:fundamental}
 
-\subsection{Compatibility for Literals, Variables, and Blame}
+The fundamental theorem of the logical relation states that if two
+terms are related by precision, then they are in the logical relation.
+The fundamental theorem is proved by induction on the term precision
+relation. Each case of that proof is split out into a separate lemma,
+which by tradition are called Compatibility Lemmas.
+
+
+\subsection{Compatibility for Literals, Blame, and Variables}
+
+The proof of compatibility for literals uses the LRᵥ⇒LRₜ lemma.
 
 \begin{code}[hide]
 LRᵥ-base-intro : ∀{𝒫}{ι}{c}{dir} → 𝒫 ⊢ᵒ dir ∣ ($ c) ⊑ᴸᴿᵥ ($ c) ⦂ base⊑{ι}
@@ -46,6 +55,28 @@ compatible-literal {Γ}{c}{ι} =
   (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro) , (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro)
 \end{code}
 
+The proof of compatibility for blame is direct from the definitions.
+
+\begin{code}[hide]
+LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
+   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
+LRₜ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
+LRₜ-blame-step {A}{A′}{A⊑A′}{≼} {M} {suc k} = inj₂ (inj₁ (blame END))
+LRₜ-blame-step {A}{A′}{A⊑A′}{≽} {M} {suc k} = inj₂ (inj₁ isBlame)
+\end{code}
+\begin{code}[hide]
+LRₜ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir} → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
+LRₜ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → LRₜ-blame-step{dir = dir}
+\end{code}
+\begin{code}
+compatible-blame : ∀{Γ}{A}{M} → map proj₁ Γ ⊢ M ⦂ A → Γ ⊨ M ⊑ᴸᴿ blame ⦂ (A , A , Refl⊑)
+\end{code}
+\begin{code}[hide]
+compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → LRₜ-blame) , (λ γ γ′ → LRₜ-blame)
+\end{code}
+
+The proof of compatibility for variables relies on the following lemma
+regarding related substitutions.
 
 \begin{code}
 lookup-⊑ᴸᴿ : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst) → ∀ {A}{A′}{A⊑A′}{x}
@@ -71,27 +102,22 @@ compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
   GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
 \end{code}
 
-\begin{code}[hide]
-LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
-   → #(dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′) k
-LRₜ-blame-step {A}{A′}{A⊑A′}{dir} {M} {zero} = tz (dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′)
-LRₜ-blame-step {A}{A′}{A⊑A′}{≼} {M} {suc k} = inj₂ (inj₁ (blame END))
-LRₜ-blame-step {A}{A′}{A⊑A′}{≽} {M} {suc k} = inj₂ (inj₁ isBlame)
-\end{code}
-
-\begin{code}[hide]
-LRₜ-blame : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{dir} → 𝒫 ⊢ᵒ dir ∣ M ⊑ᴸᴿₜ blame ⦂ A⊑A′
-LRₜ-blame {𝒫}{A}{A′}{A⊑A′}{M}{dir} = ⊢ᵒ-intro λ n x → LRₜ-blame-step{dir = dir}
-\end{code}
-
-\begin{code}
-compatible-blame : ∀{Γ}{A}{M} → map proj₁ Γ ⊢ M ⦂ A → Γ ⊨ M ⊑ᴸᴿ blame ⦂ (A , A , Refl⊑)
-\end{code}
-\begin{code}[hide]
-compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → LRₜ-blame) , (λ γ γ′ → LRₜ-blame)
-\end{code}
-
 \subsection{Compatibility for Lambda}
+
+The proof of compatibility for lambda abstraction has a premise that
+says the bodies of the two lambdas are in the logical relation, which
+is the induction hypothesis in this case of the fundamental theorem.
+The logical relation for lambda requires us to prove
+\begin{center}
+𝒫 ⊢ᵒ (dir ∣ (⟪ ext γ ⟫ N) [ W ] ⊑ᴸᴿₜ (⟪ ext γ′ ⟫ N′) [ W′ ] ⦂ d)
+\end{center}
+Using the premise we obtain
+\begin{center}
+𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)
+\end{center}
+which is equivalent thanks to the \textsf{ext-sub-cons} theorem
+from the ABT library. As an example of a proof using SIL,
+here is the proof in full of compatibility for lambda.
 
 \begin{code}[hide]
 LRᵥ-fun : ∀{A B A′ B′}{A⊑A′ : A ⊑ A′}{B⊑B′ : B ⊑ B′}{N}{N′}{dir}
@@ -108,7 +134,6 @@ LRᵥ-fun {A}{B}{A′}{B′}{A⊑A′}{B⊑B′}{N}{N′}{dir} =
    (∀ᵒ[ W ] ∀ᵒ[ W′ ] ((▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ A⊑A′))
                    →ᵒ (▷ᵒ (dir ∣ (N [ W ]) ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′)))) ∎
 \end{code}
-
 \begin{code}
 compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}{c : A ⊑ C}{d : B ⊑ D}
    → ((A , C , c) ∷ Γ) ⊨ N ⊑ᴸᴿ N′ ⦂ (B , D , d)
@@ -116,16 +141,14 @@ compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}{c : A ⊑ C}{
 compatible-lambda{Γ}{A}{B}{C}{D}{N}{N′}{c}{d} ⊨N⊑N′ =
   (λ γ γ′ → ⊢ℰλNλN′) , (λ γ γ′ → ⊢ℰλNλN′)
  where
- ⊢ℰλNλN′ : ∀{dir}{γ}{γ′} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ (dir ∣ ⟪ γ ⟫ (ƛ N) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (ƛ N′) ⦂ fun⊑ c d)
- ⊢ℰλNλN′ {dir}{γ}{γ′} =
-     LRᵥ⇒LRₜ (substᵒ (≡ᵒ-sym LRᵥ-fun)
-          (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}
-            let 𝒫 = (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) ∷ (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) in
-            let IH : 𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)
-                IH = (proj dir N N′ ⊨N⊑N′) (W • γ) (W′ • γ′) in
-            let IH′ : 𝒫 ⊢ᵒ (dir ∣ (⟪ ext γ ⟫ N) [ W ] ⊑ᴸᴿₜ (⟪ ext γ′ ⟫ N′) [ W′ ] ⦂ d)
-                IH′ = IH in
-            (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI IH′)))) Zᵒ)))
+ ⊢ℰλNλN′ : ∀{dir}{γ}{γ′}
+     → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ (dir ∣ ⟪ γ ⟫ (ƛ N) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (ƛ N′) ⦂ fun⊑ c d)
+ ⊢ℰλNλN′ {dir}{γ}{γ′} = LRᵥ⇒LRₜ (substᵒ (≡ᵒ-sym LRᵥ-fun)
+   (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}
+     let 𝒫 = (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) ∷ (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) in
+     let IH : 𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)
+         IH = (proj dir N N′ ⊨N⊑N′) (W • γ) (W′ • γ′) in
+     (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI IH)))) Zᵒ)))
 \end{code}
 
 
