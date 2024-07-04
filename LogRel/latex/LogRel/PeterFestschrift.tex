@@ -931,7 +931,9 @@ Think of the ℕ as a count-down clock, with smaller numbers
 representing later points in time. The other two fields of the record
 contain proofs of the LSLR invariants: (1) that the formula is true at
 0, and (2) if the formula is true at some number, then it is true at
-all smaller numbers.
+all smaller numbers (monotonicity). Each of the constructors for SIL
+formulas proves these two properties, thereby saving the client of SIL
+from some tedious proofs.
 
 SIL includes the connectives of first-order logic (conjunction,
 disjunction, existential and universal quantification, etc.).
@@ -1002,13 +1004,7 @@ and McAllester~\cite{Appel:2001aa}.
 \section{A Logical Relation for Precision}
 \label{sec:log-rel}
 
-To define a logical relation for precision, we adapt the logical
-relation of New~\cite{New:2020ab}, which used explicit step indexing,
-into the Step-Indexed Logic. So the logical relation has two directions:
-the ≼ direction has the less-precise term taking the lead whereas the
-≽ direction has the more-precise term in the lead.
-
-\begin{code}%
+\begin{code}[hide]%
 \>[0]\AgdaKeyword{data}\AgdaSpace{}%
 \AgdaDatatype{Dir}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
@@ -1026,9 +1022,16 @@ the ≼ direction has the less-precise term taking the lead whereas the
 \AgdaDatatype{Dir}\<%
 \end{code}
 
+To define a logical relation for precision, we adapt the logical
+relation of New~\cite{New:2020ab}, which used explicit step indexing,
+into the Step-Indexed Logic. So the logical relation has two
+directions (of type \textsf{Dir}): the ≼ direction has the
+less-precise term taking the lead whereas the ≽ direction has the
+more-precise term in the lead.
+%
 In addition, the logical relation consists of mutually-recursive
 relations on both terms and values. SIL does not directly support
-mutual recursion, but that can be expressed by combining the two
+mutual recursion, but it can be expressed by combining the two
 relations into a single relation whose input is a disjoint sum.  The
 formula for expressing membership in these recursive relations is
 verbose, so we define the below shorthands.
@@ -2459,7 +2462,7 @@ The definition of ⊑ᴸᴿᵥ included several clauses that ensured that the
 related values are indeed syntactic values. Here we make use of that
 to prove that indeed, logically related values are syntactic values.
 
-\begin{code}%
+\begin{code}[hide]%
 \>[0]\AgdaFunction{LRᵥ⇒Value}\AgdaSpace{}%
 \AgdaSymbol{:}\AgdaSpace{}%
 \AgdaSymbol{∀}\AgdaSpace{}%
@@ -2490,8 +2493,7 @@ to prove that indeed, logically related values are syntactic values.
 \AgdaOperator{\AgdaFunction{×}}\AgdaSpace{}%
 \AgdaDatatype{Value}\AgdaSpace{}%
 \AgdaBound{M′}\<%
-\end{code}
-\begin{code}[hide]%
+\\
 \>[0]\AgdaFunction{LRᵥ⇒Value}\AgdaSpace{}%
 \AgdaSymbol{\{}\AgdaBound{k}\AgdaSymbol{\}\{}\AgdaBound{dir}\AgdaSymbol{\}}\AgdaSpace{}%
 \AgdaInductiveConstructor{unk⊑unk}\AgdaSpace{}%
@@ -2680,6 +2682,75 @@ to prove that indeed, logically related values are syntactic values.
 \AgdaOperator{\AgdaInductiveConstructor{,}}\AgdaSpace{}%
 \AgdaSymbol{(}\AgdaOperator{\AgdaInductiveConstructor{ƛ̬}}\AgdaSpace{}%
 \AgdaBound{N′}\AgdaSymbol{)}\<%
+\end{code}
+
+\begin{code}%
+\>[0]\AgdaFunction{LRᵥ⇒Valueᵒ}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaSymbol{∀}\AgdaSpace{}%
+\AgdaSymbol{\{}\AgdaBound{dir}\AgdaSymbol{\}\{}\AgdaBound{A}\AgdaSymbol{\}\{}\AgdaBound{A′}\AgdaSymbol{\}\{}\AgdaBound{𝒫}\AgdaSymbol{\}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{A⊑A′}\AgdaSpace{}%
+\AgdaSymbol{:}\AgdaSpace{}%
+\AgdaBound{A}\AgdaSpace{}%
+\AgdaOperator{\AgdaDatatype{⊑}}\AgdaSpace{}%
+\AgdaBound{A′}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaBound{M}\AgdaSpace{}%
+\AgdaBound{M′}\<%
+\\
+\>[0][@{}l@{\AgdaIndent{0}}]%
+\>[3]\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaBound{𝒫}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{⊢ᵒ}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaBound{dir}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{∣}}\AgdaSpace{}%
+\AgdaBound{M}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{⊑ᴸᴿᵥ}}\AgdaSpace{}%
+\AgdaBound{M′}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{⦂}}\AgdaSpace{}%
+\AgdaBound{A⊑A′}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaBound{𝒫}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{⊢ᵒ}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaDatatype{Value}\AgdaSpace{}%
+\AgdaBound{M}\AgdaSymbol{)}\AgdaOperator{\AgdaFunction{ᵒ}}\AgdaSpace{}%
+\AgdaOperator{\AgdaFunction{×ᵒ}}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaDatatype{Value}\AgdaSpace{}%
+\AgdaBound{M′}\AgdaSymbol{)}\AgdaOperator{\AgdaFunction{ᵒ}}\<%
+\end{code}
+\begin{code}[hide]%
+\>[0]\AgdaFunction{LRᵥ⇒Valueᵒ}\AgdaSpace{}%
+\AgdaBound{A⊑A′}\AgdaSpace{}%
+\AgdaBound{M}\AgdaSpace{}%
+\AgdaBound{M′}\AgdaSpace{}%
+\AgdaBound{M⊑M′}\AgdaSpace{}%
+\AgdaSymbol{=}\<%
+\\
+\>[0][@{}l@{\AgdaIndent{0}}]%
+\>[4]\AgdaFunction{⊢ᵒ-intro}\AgdaSpace{}%
+\AgdaSymbol{λ}\AgdaSpace{}%
+\AgdaSymbol{\{}%
+\>[1991I]\AgdaInductiveConstructor{zero}\AgdaSpace{}%
+\AgdaBound{𝒫k}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaInductiveConstructor{tt}\AgdaSpace{}%
+\AgdaOperator{\AgdaInductiveConstructor{,}}\AgdaSpace{}%
+\AgdaInductiveConstructor{tt}\AgdaSpace{}%
+\AgdaSymbol{;}\<%
+\\
+\>[.][@{}l@{}]\<[1991I]%
+\>[17]\AgdaSymbol{(}\AgdaInductiveConstructor{suc}\AgdaSpace{}%
+\AgdaBound{k}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaBound{𝒫k}\AgdaSpace{}%
+\AgdaSymbol{→}\AgdaSpace{}%
+\AgdaFunction{LRᵥ⇒Value}\AgdaSpace{}%
+\AgdaBound{A⊑A′}\AgdaSpace{}%
+\AgdaBound{M}\AgdaSpace{}%
+\AgdaBound{M′}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaFunction{⊢ᵒ-elim}\AgdaSpace{}%
+\AgdaBound{M⊑M′}\AgdaSpace{}%
+\AgdaSymbol{(}\AgdaInductiveConstructor{suc}\AgdaSpace{}%
+\AgdaBound{k}\AgdaSymbol{)}\AgdaSpace{}%
+\AgdaBound{𝒫k}\AgdaSymbol{)\}}\<%
 \end{code}
 
 If two values are related via ⊑ᴸᴿᵥ, then they are also related via

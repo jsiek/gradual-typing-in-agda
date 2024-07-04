@@ -152,7 +152,9 @@ Think of the ℕ as a count-down clock, with smaller numbers
 representing later points in time. The other two fields of the record
 contain proofs of the LSLR invariants: (1) that the formula is true at
 0, and (2) if the formula is true at some number, then it is true at
-all smaller numbers.
+all smaller numbers (monotonicity). Each of the constructors for SIL
+formulas proves these two properties, thereby saving the client of SIL
+from some tedious proofs.
 
 SIL includes the connectives of first-order logic (conjunction,
 disjunction, existential and universal quantification, etc.).
@@ -182,21 +184,22 @@ _ = λ A P a → fixpointᵒ P a
 \section{A Logical Relation for Precision}
 \label{sec:log-rel}
 
-To define a logical relation for precision, we adapt the logical
-relation of New~\cite{New:2020ab}, which used explicit step indexing,
-into the Step-Indexed Logic. So the logical relation has two directions:
-the ≼ direction has the less-precise term taking the lead whereas the
-≽ direction has the more-precise term in the lead.
-
-\begin{code}
+\begin{code}[hide]
 data Dir : Set where
   ≼ : Dir
   ≽ : Dir
 \end{code}
 
+To define a logical relation for precision, we adapt the logical
+relation of New~\cite{New:2020ab}, which used explicit step indexing,
+into the Step-Indexed Logic. So the logical relation has two
+directions (of type \textsf{Dir}): the ≼ direction has the
+less-precise term taking the lead whereas the ≽ direction has the
+more-precise term in the lead.
+%
 In addition, the logical relation consists of mutually-recursive
 relations on both terms and values. SIL does not directly support
-mutual recursion, but that can be expressed by combining the two
+mutual recursion, but it can be expressed by combining the two
 relations into a single relation whose input is a disjoint sum.  The
 formula for expressing membership in these recursive relations is
 verbose, so we define the below shorthands.
@@ -383,11 +386,9 @@ The definition of ⊑ᴸᴿᵥ included several clauses that ensured that the
 related values are indeed syntactic values. Here we make use of that
 to prove that indeed, logically related values are syntactic values.
 
-\begin{code}
+\begin{code}[hide]
 LRᵥ⇒Value : ∀ {k}{dir}{A}{A′} (A⊑A′ : A ⊑ A′) M M′
    → # (dir ∣ M ⊑ᴸᴿᵥ M′ ⦂ A⊑A′) (suc k)  →  Value M × Value M′
-\end{code}
-\begin{code}[hide]
 LRᵥ⇒Value {k}{dir} unk⊑unk (V ⟨ G !⟩) (V′ ⟨ H !⟩) 𝒱MM′
     with G ≡ᵍ H
 ... | no neq = ⊥-elim 𝒱MM′
@@ -409,6 +410,16 @@ LRᵥ⇒Value {k}{dir} (unk⊑{H}{A′} d) (V ⟨ G !⟩) V′ 𝒱VGV′
 LRᵥ⇒Value {k}{dir} (base⊑{ι}) ($ c) ($ c′) refl = ($̬ c) , ($̬ c)
 LRᵥ⇒Value {k}{dir} (fun⊑ A⊑A′ B⊑B′) (ƛ N) (ƛ N′) 𝒱VV′ =
     (ƛ̬ N) , (ƛ̬ N′)
+\end{code}
+
+\begin{code}
+LRᵥ⇒Valueᵒ : ∀ {dir}{A}{A′}{𝒫} (A⊑A′ : A ⊑ A′) M M′
+   → 𝒫 ⊢ᵒ (dir ∣ M ⊑ᴸᴿᵥ M′ ⦂ A⊑A′) → 𝒫 ⊢ᵒ (Value M)ᵒ ×ᵒ (Value M′)ᵒ
+\end{code}
+\begin{code}[hide]
+LRᵥ⇒Valueᵒ A⊑A′ M M′ M⊑M′ =
+    ⊢ᵒ-intro λ { zero 𝒫k → tt , tt ;
+                 (suc k) 𝒫k → LRᵥ⇒Value A⊑A′ M M′ (⊢ᵒ-elim M⊑M′ (suc k) 𝒫k)}
 \end{code}
 
 If two values are related via ⊑ᴸᴿᵥ, then they are also related via

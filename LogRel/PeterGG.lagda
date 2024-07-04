@@ -20,18 +20,16 @@ open import StepIndexedLogic
 \section{Proof of the Gradual Guarantee}
 \label{sec:gradual-guarantee}
 
-\begin{code}
+\begin{code}[hide]
 _⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
 ≼ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓) ⊎ (M′ ↠ blame) ⊎ ∃[ N ] Σ[ r ∈ M ↠ N ] len r ≡ k
 ≽ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓) ⊎ (M′ ↠ blame) ⊎ ∃[ N′ ] Σ[ r ∈ M′ ↠ N′ ] len r ≡ k
 \end{code}
-
-\begin{code}
+\begin{code}[hide]
 ⊨_⊑_for_ : Term → Term → ℕ → Set
 ⊨ M ⊑ M′ for k = (≼ ⊨ M ⊑ M′ for k) × (≽ ⊨ M ⊑ M′ for k)
 \end{code}
-
-\begin{code}
+\begin{code}[hide]
 LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
   → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k)  →  dir ⊨ M ⊑ M′ for k
 \end{code}
@@ -68,9 +66,7 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≽} M⊑M′sk
 ... | inj₂ (inj₂ (L′ , N′→L′ , eq)) =
       inj₂ (inj₂ (L′ , (M′ ⟶⟨ M′→N′ ⟩ N′→L′) , cong suc eq))
 \end{code}
-
-
-\begin{code}
+\begin{code}[hide]
 sem-approx⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
    → (∀ k → ⊨ M ⊑ M′ for k)  →  gradual M M′
 \end{code}
@@ -122,6 +118,11 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
         ⊥-elim (step-blame-plus-one M→N M→blame eq)
 \end{code}
 
+The last lemma needed to complete the proof of the gradual guarantee
+is to connect the logical relation to the behavior that's required
+by the gradual guarantee. (Recall the \textsf{gradual} predicate
+defined in Section~\ref{sec:precision}.)
+
 \begin{code}
 LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}  → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′  →  gradual M M′ 
 \end{code}
@@ -137,6 +138,9 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
                    (⊢ᵒ-elim (proj₂ᵒ ⊨M⊑M′) (suc k) tt)
 \end{code}
 
+\noindent The gradual guarantee then follows by use of the Fundamental
+Lemma to obtain $M$ ⊑ᴸᴿₜ $M′$ and then \textsf{LR⇒GG} to
+conclude that \textsf{gradual M M′}.
 
 \begin{code}
 gradual-guarantee : ∀ {A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)
@@ -146,4 +150,4 @@ gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
   LR⇒GG (⊨≼M⊑ᴸᴿM′ id id ,ᵒ ⊨≽M⊑ᴸᴿM′ id id)
 \end{code}
 
-\section{Conclusion}
+

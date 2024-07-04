@@ -22,8 +22,6 @@ open import LogRel.PeterFestschrift
 open import StepIndexedLogic
 \end{code}
 
-
-
 \section{Fundamental Theorem of the Logical Relation}
 \label{sec:fundamental}
 
@@ -33,8 +31,7 @@ The fundamental theorem is proved by induction on the term precision
 relation. Each case of that proof is split out into a separate lemma,
 which by tradition are called Compatibility Lemmas.
 
-
-\subsection{Compatibility for Literals, Blame, and Variables}
+\paragraph{Compatibility for Literals, Blame, and Variables}
 
 The proof of compatibility for literals uses the LRᵥ⇒LRₜ lemma.
 
@@ -55,7 +52,7 @@ compatible-literal {Γ}{c}{ι} =
   (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro) , (λ γ γ′ → LRᵥ⇒LRₜ LRᵥ-base-intro)
 \end{code}
 
-The proof of compatibility for blame is direct from the definitions.
+\noindent The proof of compatibility for blame is direct from the definitions.
 
 \begin{code}[hide]
 LRₜ-blame-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{k}
@@ -75,8 +72,8 @@ compatible-blame : ∀{Γ}{A}{M} → map proj₁ Γ ⊢ M ⦂ A → Γ ⊨ M ⊑
 compatible-blame{Γ}{A}{M} ⊢M = (λ γ γ′ → LRₜ-blame) , (λ γ γ′ → LRₜ-blame)
 \end{code}
 
-The proof of compatibility for variables relies on the following lemma
-regarding related substitutions.
+\noindent The proof of compatibility for variables relies on the
+following lemma regarding related substitutions.
 
 \begin{code}
 lookup-⊑ᴸᴿ : ∀{dir} (Γ : List Prec) → (γ γ′ : Subst) → ∀ {A}{A′}{A⊑A′}{x}
@@ -102,22 +99,23 @@ compatibility-var {Γ}{A}{A′}{A⊑A′}{x} ∋x = LT , GT
   GT γ γ′ rewrite sub-var γ x | sub-var γ′ x = LRᵥ⇒LRₜ (lookup-⊑ᴸᴿ Γ γ γ′ ∋x)
 \end{code}
 
-\subsection{Compatibility for Lambda}
+\paragraph{Compatibility for Lambda}
 
 The proof of compatibility for lambda abstraction has a premise that
 says the bodies of the two lambdas are in the logical relation, which
 is the induction hypothesis in this case of the fundamental theorem.
 The logical relation for lambda requires us to prove
 \begin{center}
-𝒫 ⊢ᵒ (dir ∣ (⟪ ext γ ⟫ N) [ W ] ⊑ᴸᴿₜ (⟪ ext γ′ ⟫ N′) [ W′ ] ⦂ d)
+\textsf{𝒫 ⊢ᵒ (dir ∣ (⟪ ext γ ⟫ N) [ W ] ⊑ᴸᴿₜ (⟪ ext γ′ ⟫ N′) [ W′ ] ⦂ d)}
 \end{center}
 Using the premise we obtain
 \begin{center}
-𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)
+\textsf{𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)}
 \end{center}
-which is equivalent thanks to the \textsf{ext-sub-cons} theorem
-from the ABT library. As an example of a proof using SIL,
-here is the proof in full of compatibility for lambda.
+which is equivalent to what is required thanks to the
+\textsf{ext-sub-cons} theorem from the ABT library. As an example of a
+proof using SIL, here is the proof in full of compatibility for
+lambda.
 
 \begin{code}[hide]
 LRᵥ-fun : ∀{A B A′ B′}{A⊑A′ : A ⊑ A′}{B⊑B′ : B ⊑ B′}{N}{N′}{dir}
@@ -140,21 +138,49 @@ compatible-lambda : ∀{Γ : List Prec}{A}{B}{C}{D}{N N′ : Term}{c : A ⊑ C}{
    → Γ ⊨ (ƛ N) ⊑ᴸᴿ (ƛ N′) ⦂ (A ⇒ B , C ⇒ D , fun⊑ c d)
 compatible-lambda{Γ}{A}{B}{C}{D}{N}{N′}{c}{d} ⊨N⊑N′ =
   (λ γ γ′ → ⊢ℰλNλN′) , (λ γ γ′ → ⊢ℰλNλN′)
- where
- ⊢ℰλNλN′ : ∀{dir}{γ}{γ′}
-     → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ (dir ∣ ⟪ γ ⟫ (ƛ N) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (ƛ N′) ⦂ fun⊑ c d)
- ⊢ℰλNλN′ {dir}{γ}{γ′} = LRᵥ⇒LRₜ (substᵒ (≡ᵒ-sym LRᵥ-fun)
-   (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}
-     let 𝒫 = (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c) ∷ (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) in
-     let IH : 𝒫 ⊢ᵒ (dir ∣ ⟪ W • γ ⟫ N ⊑ᴸᴿₜ ⟪ W′ • γ′ ⟫ N′ ⦂ d)
-         IH = (proj dir N N′ ⊨N⊑N′) (W • γ) (W′ • γ′) in
-     (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI IH)))) Zᵒ)))
+ where ⊢ℰλNλN′ : ∀{dir}{γ}{γ′} → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′)
+                 ⊢ᵒ (dir ∣ ⟪ γ ⟫ (ƛ N) ⊑ᴸᴿₜ ⟪ γ′ ⟫ (ƛ N′) ⦂ fun⊑ c d)
+       ⊢ℰλNλN′ {dir}{γ}{γ′} = LRᵥ⇒LRₜ (substᵒ (≡ᵒ-sym LRᵥ-fun)
+         (Λᵒ[ W ] Λᵒ[ W′ ] →ᵒI {P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}
+           let IH = (proj dir N N′ ⊨N⊑N′) (W • γ) (W′ • γ′) in
+           (appᵒ (Sᵒ (▷→ (monoᵒ (→ᵒI IH)))) Zᵒ)))
 \end{code}
 
+We note that the use of SIL in the above proof comes with some
+tradeoffs. On the one hand, there is no explicit reasoning about step
+indices. On the other hand, there is some added verbosity compared to
+a proof in raw Agda such as the use of \textsf{appᵒ} for modus-ponens,
+the use of de Bruijn indices \textsf{Zᵒ} to refer to premises,
+and extra annotations such as \textsf{{P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}}
+that are needed when Agda's type inference fails.
 
-\subsection{Bind Lemma}
+However, there is a bigger problem regarding incremental proof
+development in SIL. It is common practice to create a partial proof
+with a hole, written \textsf{?}, and one can ask Agda to print what
+need to be proved in the hole. For example, instead of \textsf{(→ᵒI
+IH)} in the above proof, one might have started with \textsf{(→ᵒI ?)}.
+Unfortunately, Agda's message describing what needs to be proved fills
+an entire computer screen because Agda normalizes the SIL formalus
+into their Agda encodings. We are working on new version of SIL that
+uses the \texttt{abstract} feature of Agda to hide the internals of
+SIL from its clients, but that also has its challenges, such as
+requiring the use of the \texttt{prop} extension so that the fields of
+\textsf{Setᵒ} that contain proofs are ignored when proving equations
+such as \textsf{fixpointᵒ}.
 
-\begin{code}
+
+\paragraph{Anti-reduction and Bind Lemmas}
+
+The remaining compatibility lemmas, for function appliation and for
+injections and projections, require several anti-reduction lemmas
+which state that if two terms are in the logical relation, then
+walking backwards with one or both of them yields terms that are still
+in the logical relation. Here we list just one of them.  We formulated
+these lemmas with explicit step indices and the meaning function
+\textsf{\#} because working with the raw Agda encoding enables the use
+of automatic proof search.
+
+\begin{code}[hide]
 anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ⟶ N′  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -170,8 +196,7 @@ anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
 ... | inj₂ (inj₂ (m , (V′ , N′→V′ , v′ , 𝒱MV′))) =
       inj₂ (inj₂ (m , (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 \end{code}
-
-\begin{code}
+\begin{code}[hide]
 anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ↠ N′  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -180,8 +205,15 @@ anti-reduction-≼-R {M′ = M′} ℰMN′ (.M′ END) = ℰMN′
 anti-reduction-≼-R {M′ = M′} {N′} {i} ℰMN′ (.M′ ⟶⟨ M′→L′ ⟩ L′→*N′) =
   anti-reduction-≼-R-one (anti-reduction-≼-R ℰMN′ L′→*N′) M′→L′
 \end{code}
-
-\begin{code}
+\begin{code}[hide]
+anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
+  → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ⟶ N′  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+\end{code}
+\begin{code}[hide]
+anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
+  inj₁ (N′ , M′→N′ , ℰ≽MN′)
+\end{code}
+\begin{code}[hide]
 anti-reduction-≽-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ⟶ N  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -196,8 +228,7 @@ anti-reduction-≽-L-one {M = M} {N}{M′}  {suc i} ℰNM′ M→N
 ... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
       inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
 \end{code}
-
-\begin{code}
+\begin{code}[hide]
 anti-reduction-≽-L : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ↠ N  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -206,9 +237,41 @@ anti-reduction-≽-L {c = c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
 anti-reduction-≽-L {c = c} {M} {M′} {N′} {i} ℰNM′ (.M ⟶⟨ M→L ⟩ L→*N) =
   anti-reduction-≽-L-one (anti-reduction-≽-L ℰNM′ L→*N) M→L
 \end{code}
-
-
+\begin{code}[hide]
+anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
+  → #(≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ⟶ N  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+\end{code}
+\begin{code}[hide]
+anti-reduction-≼-L-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N = inj₁ (N , M→N , ℰ≼NM′i)
+\end{code}
 \begin{code}
+anti-reduction : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{N′}{i}{dir}
+  → #(dir ∣ N ⊑ᴸᴿₜ N′ ⦂ c) i  →  M ⟶ N  →  M′ ⟶ N′
+  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
+\end{code}
+\begin{code}[hide]
+anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≼} ℰNN′i M→N M′→N′ =
+  let ℰMN′si = anti-reduction-≼-L-one ℰNN′i M→N in
+  let ℰM′N′si = anti-reduction-≼-R-one ℰMN′si M′→N′ in
+  ℰM′N′si
+anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N′ =
+  let ℰM′Nsi = anti-reduction-≽-R-one ℰNN′i M′→N′ in
+  let ℰM′N′si = anti-reduction-≽-L-one ℰM′Nsi M→N in
+  ℰM′N′si
+\end{code}
+
+The remaining compatibility lemmas all involve language features with
+subexpressions, and one need to reason about the reduction of those
+subexpressions down to values. The following \textsf{LRₜ-bind} lemma
+performs that reasoning once an for all. It says that if you are
+trying to prove that $N$ ⊑ᴸᴿₜ $N′$, if $M$ is a direct subexpression
+of $N$ and $M′$ is a direct subexpression of $N′$, so $N = F ⦉ M ⦊$
+and $N′ = F′ ⦉ M′ ⦊$, then one can repace $M$ and $M′$ with any
+related values $V$ ⊑ᴸᴿᵥ $V′$ and it suffices prove $F ⦉ V ⦊$ ⊑ᴸᴿₜ $F′
+⦉ V′ ⦊$.  The proof of the \textsf{LRₜ-bind} lemma relies on two of
+the anti-reduction lemmas.
+
+\begin{code}[hide]
 bind-premise : Dir → PEFrame → PEFrame → Term → Term → ℕ
    → ∀ {B}{B′}(c : B ⊑ B′) → ∀ {A}{A′} (d : A ⊑ A′) → Set
 bind-premise dir F F′ M M′ i c d =
@@ -216,7 +279,7 @@ bind-premise dir F F′ M M′ i c d =
      → # (dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
      → # (dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
 \end{code}
-\begin{code}
+\begin{code}[hide]
 LRᵥ→LRₜ-down-one-≼ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}{F}{F′}{i}{M}{N}{M′}
    → M ⟶ N
    → (bind-premise ≼ F F′ M M′ (suc i) c d)
@@ -227,7 +290,7 @@ LRᵥ→LRₜ-down-one-≼ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M→
    j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
    LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) (M ⟶⟨ M→N ⟩ M→V) v M′→V′ v′ 𝒱j
 \end{code}
-\begin{code}
+\begin{code}[hide]
 LRᵥ→LRₜ-down-one-≽ : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}{F}{F′}{i}{M}{M′}{N′}
    → M′ ⟶ N′
    → (bind-premise ≽ F F′ M M′ (suc i) c d)
@@ -238,16 +301,13 @@ LRᵥ→LRₜ-down-one-≽ {B}{B′}{c}{A}{A′}{d}{F}{F′}{i}{M}{N}{M′} M′
    j V V′ j≤i M→V v M′→V′ v′ 𝒱j =
    LRᵥ→LRₜsi j V V′ (≤-trans j≤i (n≤1+n i)) M→V v (N ⟶⟨ M′→N′ ⟩ M′→V′) v′ 𝒱j
 \end{code}
-
 \begin{code}
 LRₜ-bind : ∀{B}{B′}{c : B ⊑ B′}{A}{A′}{d : A ⊑ A′}{F}{F′}{M}{M′}{i}{dir}
    → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ d) i
    → (∀ j V V′ → j ≤ i → M ↠ V → Value V → M′ ↠ V′ → Value V′
-         → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j
-         → #(dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
+         → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ d) j → #(dir ∣ (F ⦉ V ⦊) ⊑ᴸᴿₜ (F′ ⦉ V′ ⦊) ⦂ c) j)
    → #(dir ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ M′ ⦊) ⦂ c) i
 \end{code}
-
 \begin{code}[hide]
 LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F} {F′} {M} {M′} {zero} {dir} ℰMM′sz LRᵥ→LRₜj =
     tz (dir ∣ (F ⦉ M ⦊) ⊑ᴸᴿₜ (F′ ⦉ M′ ⦊) ⦂ c)
@@ -281,45 +341,17 @@ LRₜ-bind {B}{B′}{c}{A}{A′}{d}{F}{F′}{M}{M′}{suc i}{≽} ℰMM′si LR�
     anti-reduction-≽-L xx (ξ′* F M→V)
 \end{code}
 
+\paragraph{Compatibility for Application}
 
-
-\subsection{Compatibility for Application}
-
-
-
-\begin{code}
-anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
-  → #(≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ⟶ N  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-\end{code}
-\begin{code}[hide]
-anti-reduction-≼-L-one {c = c} {M} {N} {M′} {i} ℰ≼NM′i M→N = inj₁ (N , M→N , ℰ≼NM′i)
-\end{code}
-
-\begin{code}
-anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
-  → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ⟶ N′  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-\end{code}
-\begin{code}[hide]
-anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
-  inj₁ (N′ , M′→N′ , ℰ≽MN′)
-\end{code}
-
-\begin{code}
-anti-reduction : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{N′}{i}{dir}
-  → #(dir ∣ N ⊑ᴸᴿₜ N′ ⦂ c) i  →  M ⟶ N  →  M′ ⟶ N′
-  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
-\end{code}
-\begin{code}[hide]
-anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≼} ℰNN′i M→N M′→N′ =
-  let ℰMN′si = anti-reduction-≼-L-one ℰNN′i M→N in
-  let ℰM′N′si = anti-reduction-≼-R-one ℰMN′si M′→N′ in
-  ℰM′N′si
-anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N′ =
-  let ℰM′Nsi = anti-reduction-≽-R-one ℰNN′i M′→N′ in
-  let ℰM′N′si = anti-reduction-≽-L-one ℰM′Nsi M→N in
-  ℰM′N′si
-\end{code}
-
+Here is where the logical relation demonstrates its worth.
+Using the \textsf{LRₜ-bind} lemma twice, we go from needing
+to prove $L · M$ ⊑ᴸᴿₜ $L′ · M′$ to 
+$V · W$ ⊑ᴸᴿₜ $V′ · W′$. Then because $V$ ⊑ᴸᴿᵥ $V′$ at
+function type, the logical relation tells us that
+$V = λN$, $V′ = λN′$, and \textsf{N[W]} ⊑ᴸᴿₜ \textsf{N′[W′]}
+at one step later in time. So we back up one step of β-reduction
+using \textsf{anti-reduction} to show that 
+\textsf{(λN) · W} ⊑ᴸᴿₜ \textsf{(λN′) · W′}.
 
 \begin{code}[hide]
 LRᵥ-fun-elim-step : ∀{A}{B}{A′}{B′}{c : A ⊑ A′}{d : B ⊑ B′}{V}{V′}{dir}{k}{j}
@@ -335,11 +367,9 @@ LRᵥ-fun-elim-step {A}{B}{A′}{B′}{c}{d}{ƛ N}{ƛ N′}{dir}{k}{j} 𝒱VV′
     let ℰNWN′W′j = 𝒱λNλN′sj W W′ (suc j) ≤-refl 𝒱WW′ in
     ℰNWN′W′j
 \end{code}
-
 \begin{code}
 compatible-app : ∀{Γ}{A A′ B B′}{c : A ⊑ A′}{d : B ⊑ B′}{L L′ M M′}
-   → Γ ⊨ L ⊑ᴸᴿ L′ ⦂ (A ⇒ B , A′ ⇒ B′ , fun⊑ c d)
-   → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (A , A′ , c)
+   → Γ ⊨ L ⊑ᴸᴿ L′ ⦂ (A ⇒ B , A′ ⇒ B′ , fun⊑ c d) → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (A , A′ , c)
    → Γ ⊨ L · M ⊑ᴸᴿ L′ · M′ ⦂ (B , B′ , d)
 \end{code}
 \begin{code}[hide]
@@ -376,9 +406,15 @@ compatible-app {Γ}{A}{A′}{B}{B′}{c}{d}{L}{L′}{M}{M′} ⊨L⊑L′ ⊨M�
        anti-reduction{c = d}{i = i}{dir = dir} ℰNWNW′i (β w) (β w′)
 \end{code}
 
+\paragraph{Compatibility for Injections}
 
-
-\subsection{Compatibility for Injections}
+We have two cases to deal with, the injection can be on the left or
+the right. Starting with a projection on the left, \textsf{LRₜ-bind}
+takes us from need to prove $M ⟨ G !⟩$ ⊑ᴸᴿ $M′$ to needing $V ⟨ G !⟩$
+⊑ᴸᴿ $V′$, assuming $V$ ⊑ᴸᴿ $V′$. We proceed by case analysis on the
+direction (≼ or ≽).  For ≼, we need to prove $▷ᵒ (V$ ⊑ᴸᴿᵥ $V′)$, which
+follows from $V$ ⊑ᴸᴿ $V′$ by monotonicity. For ≽, we just need to
+prove $V$ ⊑ᴸᴿ $V′$, which we have by the assumption.
 
 \begin{code}[hide]
 LRᵥ-inject-L-intro-≽ : ∀{G}{A′}{c : ⌈ G ⌉ ⊑ A′}{V}{V′}{k}
@@ -413,8 +449,6 @@ LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≼} {suc k} 𝒱VV′sk
 LRᵥ-inject-L-intro {G} {A′} {c} {V} {V′} {≽} {k} 𝒱VV′k =
    LRᵥ-inject-L-intro-≽{G} {A′} {c} {V} {V′} 𝒱VV′k 
 \end{code}
-
-
 \begin{code}
 compatible-inj-L : ∀{Γ}{G A′}{c : ⌈ G ⌉ ⊑ A′}{M M′}
    → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (⌈ G ⌉ , A′ , c)
@@ -435,6 +469,14 @@ compatible-inj-L{Γ}{G}{A′}{c}{M}{M′} ⊨M⊑M′ =
    (LRᵥ-inject-L-intro{G}{A′}{c}{V}{V′}{dir}{j} 𝒱VV′j)
 \end{code}
 
+Next consider when the injection is on the right.  The
+\textsf{LRₜ-bind} lemma takes us from needing to prove $M$ ⊑ᴸᴿ $M′ ⟨ G !⟩$
+to needing $V$ ⊑ᴸᴿ $V′ ⟨ G !⟩$ where $V$ ⊑ᴸᴿᵥ $V′$.
+We know that $V$ is of type ★ (rule \textsf{⊑-inj-R})
+so $V = W ⟨ G !⟩$ and $W$ ⊑ᴸᴿᵥ $V′$ (the \textsf{unk⊑} clause of \textsf{LRᵥ}).
+So we conclude that $W ⟨ G !⟩$ ⊑ᴸᴿ $V′ ⟨ G !⟩$
+by the \textsf{unk⊑unk} clause of \textsf{LRᵥ}. 
+
 \begin{code}[hide]
 LRᵥ-dyn-any-elim-≽ : ∀{V}{V′}{k}{H}{A′}{c : ⌈ H ⌉ ⊑ A′}
    → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
@@ -449,7 +491,6 @@ LRᵥ-dyn-any-elim-≽ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
 \end{code}
-
 \begin{code}[hide]
 LRᵥ-inject-R-intro-≽ : ∀{G}{c : ★ ⊑ ⌈ G ⌉}{V}{V′}{k}
    → #(≽ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
@@ -471,7 +512,6 @@ LRᵥ-inject-R-intro-≽ {G} {c} {V} {V′} {suc k} 𝒱VV′sk
     let 𝒱V₁V′k = down (≽ ∣ V₁ ⊑ᴸᴿᵥ V′ ⦂ d) (suc k) 𝒱V₁V′sk k (n≤1+n k) in
     v₁ , v′ , 𝒱V₁V′k
 \end{code}
-
 \begin{code}[hide]
 LRᵥ-dyn-any-elim-≼ : ∀{V}{V′}{k}{H}{A′}{c : ⌈ H ⌉ ⊑ A′}
    → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
@@ -485,7 +525,6 @@ LRᵥ-dyn-any-elim-≼ {V ⟨ G !⟩}{V′}{k}{H}{A′}{c} 𝒱VGV′
     with 𝒱VGV′
 ... | v , v′ , 𝒱VV′ = V , refl , v , v′ , 𝒱VV′
 \end{code}
-
 \begin{code}[hide]
 LRᵥ-inject-R-intro-≼ : ∀{G}{c : ★ ⊑ ⌈ G ⌉}{V}{V′}{k}
    → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
@@ -516,7 +555,6 @@ LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≼} 𝒱VV′ =
 LRᵥ-inject-R-intro {G} {c} {V} {V′} {k} {≽} 𝒱VV′ =
    LRᵥ-inject-R-intro-≽{G} {c} {V} {V′} {k} 𝒱VV′
 \end{code}
-
 \begin{code}
 compatible-inj-R : ∀{Γ}{G}{c : ★ ⊑ ⌈ G ⌉ }{M M′}
    → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (★ , ⌈ G ⌉ , c)
@@ -538,8 +576,19 @@ compatible-inj-R{Γ}{G}{c}{M}{M′} ⊨M⊑M′
    (LRᵥ-inject-R-intro{G}{unk⊑ d}{V}{V′}{j} 𝒱VV′j )
 \end{code}
 
+\paragraph{Compatibility for Projections}
 
-\subsection{Compatibility for Projections}
+We can have a projection on the left (rule \textsf{⊑-proj-L}) or the
+right (rule \textsf{⊑-proj-R}).
+Starting on the left, 
+\textsf{LRₜ-bind} changes the goal to $V ⟨ H ?⟩$ ⊑ᴸᴿₜ $V′$
+assuming that $V$ ⊑ᴸᴿ $V′$.
+We need to ensure that $V ⟨ H ?⟩$ reduces to a value without error.
+Thankfully, \textsf{⊑-proj-L} says the types of $V$ and $V′$ are related
+by \textsf{unk⊑ c} with $c : H ⊑ A′$, and that clause of \textsf{LRᵥ}
+tells us that $V = W ⟨ H !⟩$ and
+$W$ ⊑ᴸᴿᵥ $V′$. So $W ⟨ H !⟩ ⟨ H ?⟩ \longrightarrow W$
+and by anti-reduction we conclude that $W ⟨ H !⟩ ⟨ H ?⟩$ ⊑ᴸᴿₜ $V′$.
 
 \begin{code}
 compatible-proj-L : ∀{Γ}{H}{A′}{c : ⌈ H ⌉ ⊑ A′}{M}{M′}
@@ -576,20 +625,15 @@ compatible-proj-L {Γ}{H}{A′}{c}{M}{M′} ⊨M⊑M′ =
        inj₂ (inj₂ (v′ , V₁ , unit V₁HH→V₁ , v₁ , 𝒱V₁V′sj))
 \end{code}
 
-\begin{code}[hide]
-LRᵥ-inject-L-intro-≼ : ∀{G}{A′}{c : ⌈ G ⌉ ⊑ A′}{V}{V′}{k}
-   → Value V
-   → Value V′
-   → #(≼ ∣ V ⊑ᴸᴿᵥ V′ ⦂ c) k
-   → #(≼ ∣ (V ⟨ G !⟩) ⊑ᴸᴿᵥ V′ ⦂ unk⊑ c) (suc k)
-\end{code}
-\begin{code}[hide]
-LRᵥ-inject-L-intro-≼ {G} {A′} {c} {V} {V′} {k} v v′ 𝒱VV′k
-    with G ≡ᵍ G
-... | no neq = ⊥-elim (neq refl)
-... | yes refl =
-    v , v′ , 𝒱VV′k
-\end{code}
+When the projection is on the right, there is less to worry about.
+\textsf{LRₜ-bind} changes the goal to $V$ ⊑ᴸᴿₜ $V′ ⟨ H ?⟩$
+assuming that $V$ ⊑ᴸᴿᵥ $V′$. We have $V′ = W′ ⟨ G !⟩$
+and $V$ ⊑ᴸᴿᵥ $W′$.
+If $G = H$ then $W′ ⟨ G !⟩⟨H ?⟩ \longrightarrow W′$
+and by anti-reduction, $V$ ⊑ᴸᴿₜ $W′ ⟨ G !⟩ ⟨ H ?⟩$.
+If $G ≠ H$, then $W′ ⟨ G !⟩⟨H ?⟩ \longrightarrow \textsf{blame}$.
+Since $V$ ⊑ᴸᴿₜ \textsf{blame}, we use anti-reduction
+to conclude $V$ ⊑ᴸᴿₜ $W′ ⟨ G !⟩⟨H ?⟩$.
 
 \begin{code}
 compatible-proj-R : ∀{Γ}{H}{c : ★ ⊑ ⌈ H ⌉}{M}{M′}
@@ -658,7 +702,10 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          anti-reduction-≽-R-one ℰVGV′j (collapse v′ refl)
 \end{code}
 
-\subsection{Fundamental Theorem}
+\paragraph{Fundamental Theorem}
+
+The proof is by induction on $M ⊑ M′$, using the appropriate
+Compatibility Lemma in each case.
 
 \begin{code}
 fundamental : ∀ {Γ}{A}{A′}{A⊑A′ : A ⊑ A′} → (M M′ : Term)

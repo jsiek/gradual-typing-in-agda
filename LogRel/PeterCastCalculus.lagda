@@ -230,26 +230,6 @@ data _∼_ : Type → Type → Set where
        -------------------
      → (A ⇒ B) ∼ (A′ ⇒ B′)
 \end{code}
-
-Figure~\ref{fig:type-system} defines the type system of the Cast
-Calculus and Figure~\ref{fig:reduction} defines the reduction rules.
-
-\begin{figure}[tbp]
-\begin{code}
-infix 3 _⊢_⦂_
-data _⊢_⦂_ : List Type → Term → Type → Set where
-  ⊢` : ∀ {Γ x A} → Γ ∋ x ⦂ A → Γ ⊢ ` x ⦂ A
-  ⊢$ : ∀ {Γ} (l : Lit)  → Γ ⊢ $ l ⦂ $ₜ (typeof l)
-  ⊢· : ∀ {Γ L M A B} → Γ ⊢ L ⦂ (A ⇒ B) → Γ ⊢ M ⦂ A → Γ ⊢ L · M ⦂ B
-  ⊢ƛ : ∀ {Γ N A B} → (A ∷ Γ) ⊢ N ⦂ B → Γ ⊢ ƛ N ⦂ (A ⇒ B)
-  ⊢⟨!⟩ : ∀{Γ M G} → Γ ⊢ M ⦂ ⌈ G ⌉ → Γ ⊢ M ⟨ G !⟩ ⦂ ★
-  ⊢⟨?⟩ : ∀{Γ M} → Γ ⊢ M ⦂ ★ → (H : Ground) → Γ ⊢ M ⟨ H ?⟩ ⦂ ⌈ H ⌉
-  ⊢blame : ∀{Γ A} → Γ ⊢ blame ⦂ A
-\end{code}
-\caption{Type System of the Cast Calculus}
-\label{fig:type-system}
-\end{figure}
-
 \begin{code}[hide]
 {----------------------- Frames ------------------------}
 
@@ -306,11 +286,23 @@ infix  2 _↠_
 infixr 2 _⟶⟨_⟩_
 infixr 2 _↠⟨_⟩_
 infix  3 _END
-
 \end{code}
+
+Figure~\ref{fig:cast-calculus} defines the type system and reduction
+for the Cast Calculus.
 
 \begin{figure}[tbp]
 \begin{code}
+infix 3 _⊢_⦂_
+data _⊢_⦂_ : List Type → Term → Type → Set where
+  ⊢` : ∀ {Γ x A} → Γ ∋ x ⦂ A → Γ ⊢ ` x ⦂ A
+  ⊢$ : ∀ {Γ} (l : Lit)  → Γ ⊢ $ l ⦂ $ₜ (typeof l)
+  ⊢· : ∀ {Γ L M A B} → Γ ⊢ L ⦂ (A ⇒ B) → Γ ⊢ M ⦂ A → Γ ⊢ L · M ⦂ B
+  ⊢ƛ : ∀ {Γ N A B} → (A ∷ Γ) ⊢ N ⦂ B → Γ ⊢ ƛ N ⦂ (A ⇒ B)
+  ⊢⟨!⟩ : ∀{Γ M G} → Γ ⊢ M ⦂ ⌈ G ⌉ → Γ ⊢ M ⟨ G !⟩ ⦂ ★
+  ⊢⟨?⟩ : ∀{Γ M} → Γ ⊢ M ⦂ ★ → (H : Ground) → Γ ⊢ M ⟨ H ?⟩ ⦂ ⌈ H ⌉
+  ⊢blame : ∀{Γ A} → Γ ⊢ blame ⦂ A
+  
 infix 2 _⟶_
 data _⟶_ : Term → Term → Set where
   β : ∀ {N W} → Value W  →  (ƛ N) · W ⟶ N [ W ]
@@ -335,8 +327,8 @@ M ⇑ = ∀ k → ∃[ N ] Σ[ r ∈ M ↠ N ] k ≡ len r
 _⇑⊎blame : Term → Set
 M ⇑⊎blame = ∀ k → ∃[ N ] Σ[ r ∈ M ↠ N ] ((k ≡ len r) ⊎ (N ≡ blame))
 \end{code}
-\caption{Reduction for the Cast Calculus}
-\label{fig:reduction}
+\caption{Type System and Reduction for the Cast Calculus}
+\label{fig:cast-calculus}
 \end{figure}
 
 \begin{code}[hide]
