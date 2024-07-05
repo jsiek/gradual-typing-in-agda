@@ -142,7 +142,7 @@ Bloomington, IN, USA}
   precision of a type annotation does not change the behavior of the
   program, except perhaps to trigger an error if the type annotation
   is incorrect. Siek et al. (2015) proved that the Gradually Typed
-  Lambda Calulus (GTLC) satisfies the gradual guarantee using a
+  Lambda Calculus (GTLC) satisfies the gradual guarantee using a
   simulation-based proof and mechanized their proof in Isabelle. In
   the following decade, researchers have proved the gradual guarantee
   for more sophisticated calculi, using step-indexed logical
@@ -227,11 +227,52 @@ gradual guarantee. Section~\ref{sec:conclusion} concludes this paper.
 \input{PeterFundamental}
 \input{PeterGG}
 
-\section{Conclusion}
+\section{Conclusion and Acknowledgments}
 
+This paper presented the first mechanized proof of the gradual
+guarantee using step-indexed logical relations. One naturally wonders
+how using step-indexed logical relations compares to a
+simulation-based proof. One rough comparison is the number of lines of
+code in Agda. Wadler, Thiemann, and I developed a simulation-based
+proof of the gradual guarantee for a similar cast calculus in Agda,
+which came in at 3,200 LOC. The logical-relations proof presented here
+was significantly shorter, at 2,300 LOC, though it makes use of the
+Abstract Binding Tree Library (900 LOC) and the Step-Indexed Logic
+Library (2100 LOC). These LOC numbers confirm my feeling that the
+total effort to create the SIL and ABT libraries and prove the gradual
+guarantee via logical relations was higher than to prove the gradual
+guarantee via simulation. However, if one discounts the SIL and ABT
+libraries because they are reusable and language independent, then the
+remaining effort to prove the gradual guarantee via logical relations
+was lower than via simulation.
+
+As mentioned at various points in this paper, there are some rough
+edges to the SIL and ABT libraries, primarily due to challenges
+regarding ``leaky abstractions''. For SIL, we mentioned how Agda's
+output shows normalized versions of the SIL formulas, which exposes
+the underlying encodings and are too large to be readable. We have
+created a new version of SIL that uses Agda's \texttt{abstract}
+feature and look forward to updating the proof of the gradual
+guarantee to use the new version of SIL. Regarding the ABT library,
+there are also challenges regarding (1) Agda output not always using
+the concise pattern syntax and (2) Agda's automated case splitting
+does not work for ABT-generated languages.
+
+This work was conducted in the context of a long collaboration with
+Peter Thiemann and Philip Wadler, where we have been exploring how to
+mechanize blame calculi in Agda and further study the polymorphic blame
+calculus. My understanding of step-indexed logical relations was
+greatly improved by reading Peter Thiemann's mechanized proof of type
+safety for a typed $\lambda$-calculus with \textsf{fix} using
+step-indexed logical relations. The initiative to build an Agda
+version of the LSLR logic came from Philip Wadler.
 
 
 %\nocite{*}
 \bibliographystyle{eptcs}
 \bibliography{all}
 \end{document}
+
+% LocalWords:  Siek al GTLC Isabelle Agda Ahmed parametricity Coq de
+% LocalWords:  metatheory Bruijn Dreyer Birkedal LSLR SIL Wadler LOC
+% LocalWords:  Thiemann ABT Agda's Thiemann's

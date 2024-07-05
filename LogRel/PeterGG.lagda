@@ -119,9 +119,12 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 \end{code}
 
 The last lemma needed to complete the proof of the gradual guarantee
-is to connect the logical relation to the behavior that's required
-by the gradual guarantee. (Recall the \textsf{gradual} predicate
-defined in Section~\ref{sec:precision}.)
+is to connect the logical relation to the behavior that's required by
+the gradual guarantee. (Recall the \textsf{gradual} predicate defined
+in Section~\ref{sec:precision}.) The proof goes through an
+intermediate step that uses a notion of semantic approximation for a
+fixed number of reduction steps and that relies on a proof of
+determinism for the Cast Calculus.
 
 \begin{code}
 LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}  → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′  →  gradual M M′ 
@@ -151,3 +154,7 @@ gradual-guarantee {A}{A′}{A⊑A′} M M′ M⊑M′ =
 \end{code}
 
 
+% LocalWords:  LogRel PeterGG elim proj inj tt Eq refl sym cong subst
+% LocalWords:  trans PeterCastCalculus PeterFestschrift Dir len LR sk
+% LocalWords:  PeterFundamental StepIndexedLogic sem approx dir suc
+% LocalWords:  eq isBlame VM GG divM

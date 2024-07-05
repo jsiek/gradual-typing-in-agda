@@ -151,7 +151,7 @@ _ : ∀ (σ : Subst) (N : Term) → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
 _ = λ σ N → refl
 \end{code}
 
-The bracket notation $M [ N ]$ is defined to replace the occurences of
+The bracket notation $M [ N ]$ is defined to replace the occurrences of
 variable 0 in $M$ with $N$ and decrement the other free variables. For
 example,
 
@@ -934,3 +934,11 @@ cant-reduce-value-and-blame v (.blame ⟶⟨ M→N ⟩ N→V) (.blame END) =
 cant-reduce-value-and-blame v (M ⟶⟨ M→N ⟩ N→V) (.M ⟶⟨ M→N′ ⟩ N′→b)
   rewrite deterministic M→N M→N′ = cant-reduce-value-and-blame v N→V N′→b
 \end{code}
+
+% LocalWords:  LogRel PeterCastCalculus elim Bool proj inj tt Eq Op
+% LocalWords:  refl sym cong subst trans Nullary Var Sig ction sec
+% LocalWords:  infixr emph minipage textwidth neq Num op lam app de
+% LocalWords:  sig AbstractBindingTree ABT ast infixl var arity suc
+% LocalWords:  Agda textsf Bruijn ext isBlame val typeof len mstep
+% LocalWords:  PEFrame irred concat inv rs eq eqlen Vg irredN IL iM
+% LocalWords:  irredM irN irM invL rl Fb FL rL divM

@@ -92,7 +92,7 @@ gnd-prec-unique {★⇒★} {.(_ ⇒ _)} (fun⊑ c c₁) (fun⊑ d d₁)
 \end{code}
 
 Figure~\ref{fig:term-precision} defines the precision relation on
-terms.  The judgement has the form $Γ ⊩ M ⊑ M′ ⦂ c$ where Γ is a list
+terms.  The judgment has the form $Γ ⊩ M ⊑ M′ ⦂ c$ where Γ is a list
 of precision-related types and $c : A ⊑ A′$ is a precision derivation
 for the types of $M$ and $M′$. There are two rules for injection and
 also for projection, allowing either to appear on the left or right
@@ -136,8 +136,8 @@ though the less-precise term does not.
 
 \begin{code}
 gradual : (M M′ : Term) → Set
-gradual M M′ = (M′ ⇓ → M ⇓) × (M′ ⇑ → M ⇑)
-    × (M ⇓ → M′ ⇓ ⊎ M′ ↠ blame) × (M ⇑ → M′ ⇑⊎blame) × (M ↠ blame → M′ ↠ blame)
+gradual M M′ = (M′ ⇓ → M ⇓) × (M′ ⇑ → M ⇑) × (M ⇓ → M′ ⇓ ⊎ M′ ↠ blame)
+    × (M ⇑ → M′ ⇑⊎blame) × (M ↠ blame → M′ ↠ blame)
 \end{code}
 
 \section{Step-Indexed Logic}
@@ -154,7 +154,7 @@ contain proofs of the LSLR invariants: (1) that the formula is true at
 0, and (2) if the formula is true at some number, then it is true at
 all smaller numbers (monotonicity). Each of the constructors for SIL
 formulas proves these two properties, thereby saving the client of SIL
-from some tedious proofs.
+from these tedious proofs.
 
 SIL includes the connectives of first-order logic (conjunction,
 disjunction, existential and universal quantification, etc.).
@@ -171,7 +171,7 @@ is a function from a list of step-indexed predicates to \textsf{Setᵒ}.
 The majority of the lines of code in the SIL library are dedicated to
 proving the \textsf{fixpointᵒ} theorem, which states that a recursive
 predicate is equivalent to one unrolling of itself. The proof of
-\textsf{fixpointᵒ}is an adaptation of the fixpoint theorem of Appel
+\textsf{fixpointᵒ} is an adaptation of the fixpoint theorem of Appel
 and McAllester~\cite{Appel:2001aa}.
 
 \begin{code}
@@ -306,7 +306,7 @@ to relate open terms. The standard way to do that is to apply two
 substitutions to the two terms, replacing each free variable with
 related values. We relate a pair of substitutions γ and γ′ with the
 following definition, which says that the substitutions must be
-pointwise related using the logical relation for values.
+point-wise related using the logical relation for values.
 
 \begin{code}
 _∣_⊨_⊑ᴸᴿ_ : (Γ : List Prec) → Dir → Subst → Subst → List Setᵒ
@@ -316,7 +316,7 @@ _∣_⊨_⊑ᴸᴿ_ : (Γ : List Prec) → Dir → Subst → Subst → List Set�
 \end{code}
 
 We then define two open terms $M$ and $M′$ to be logically related
-if there are a pair of related subtitutions $γ$ and $γ′$ such that
+if there are a pair of related substitutions $γ$ and $γ′$ such that
 applying them to $M$ and $M′$ produces related terms.
 
 \begin{code}
@@ -448,3 +448,10 @@ LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intr
   LRᵥ⇒LRₜ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
 \end{code}
 
+
+% LocalWords:  LogRel PeterFestschrift elim Bool proj inj tt Eq refl
+% LocalWords:  sym cong subst trans Nullary Var Sig PeterCastCalculus
+% LocalWords:  StepIndexedLogic infixr unk Prec dyn prec gnd var app
+% LocalWords:  typeof lam SIL Agda LSLR de Bruijn fixpoint Appel Dir
+% LocalWords:  McAllester LR ctx dir TermInhabited elt neq pre suc VV
+% LocalWords:  def stmt VGV tz sk

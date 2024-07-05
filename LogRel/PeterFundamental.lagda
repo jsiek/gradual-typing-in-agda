@@ -160,7 +160,7 @@ with a hole, written \textsf{?}, and one can ask Agda to print what
 need to be proved in the hole. For example, instead of \textsf{(→ᵒI
 IH)} in the above proof, one might have started with \textsf{(→ᵒI ?)}.
 Unfortunately, Agda's message describing what needs to be proved fills
-an entire computer screen because Agda normalizes the SIL formalus
+an entire computer screen because Agda normalizes the SIL formulas
 into their Agda encodings. We are working on new version of SIL that
 uses the \texttt{abstract} feature of Agda to hide the internals of
 SIL from its clients, but that also has its challenges, such as
@@ -171,7 +171,7 @@ such as \textsf{fixpointᵒ}.
 
 \paragraph{Anti-reduction and Bind Lemmas}
 
-The remaining compatibility lemmas, for function appliation and for
+The remaining compatibility lemmas, for function application and for
 injections and projections, require several anti-reduction lemmas
 which state that if two terms are in the logical relation, then
 walking backwards with one or both of them yields terms that are still
@@ -266,7 +266,7 @@ subexpressions down to values. The following \textsf{LRₜ-bind} lemma
 performs that reasoning once an for all. It says that if you are
 trying to prove that $N$ ⊑ᴸᴿₜ $N′$, if $M$ is a direct subexpression
 of $N$ and $M′$ is a direct subexpression of $N′$, so $N = F ⦉ M ⦊$
-and $N′ = F′ ⦉ M′ ⦊$, then one can repace $M$ and $M′$ with any
+and $N′ = F′ ⦉ M′ ⦊$, then one can replace $M$ and $M′$ with any
 related values $V$ ⊑ᴸᴿᵥ $V′$ and it suffices prove $F ⦉ V ⦊$ ⊑ᴸᴿₜ $F′
 ⦉ V′ ⦊$.  The proof of the \textsf{LRₜ-bind} lemma relies on two of
 the anti-reduction lemmas.
@@ -635,6 +635,7 @@ If $G ≠ H$, then $W′ ⟨ G !⟩⟨H ?⟩ \longrightarrow \textsf{blame}$.
 Since $V$ ⊑ᴸᴿₜ \textsf{blame}, we use anti-reduction
 to conclude $V$ ⊑ᴸᴿₜ $W′ ⟨ G !⟩⟨H ?⟩$.
 
+\begin{AgdaSuppressSpace}
 \begin{code}
 compatible-proj-R : ∀{Γ}{H}{c : ★ ⊑ ⌈ H ⌉}{M}{M′}
    → Γ ⊨ M ⊑ᴸᴿ M′ ⦂ (★ , ★ , unk⊑unk)
@@ -701,6 +702,7 @@ compatible-proj-R {Γ}{H}{c}{M}{M′} ⊨M⊑M′
          let ℰVGV′j = LRᵥ⇒LRₜ-step{V = V₁ ⟨ G !⟩}{V′₁}{≽} 𝒱VGV′j in
          anti-reduction-≽-R-one ℰVGV′j (collapse v′ refl)
 \end{code}
+\end{AgdaSuppressSpace}
 
 \paragraph{Fundamental Theorem}
 
@@ -732,3 +734,11 @@ fundamental {Γ} {A} {.A} {.Refl⊑} M .blame (⊑-blame ⊢M∶A) =
     compatible-blame ⊢M∶A
 \end{code}
 
+
+% LocalWords:  LogRel PeterFundamental elim Bool proj inj tt Eq refl
+% LocalWords:  sym cong subst trans Nullary Var Sig PeterCastCalculus
+% LocalWords:  PeterFestschrift StepIndexedLogic LR dir suc tz Prec
+% LocalWords:  isBlame var LT GT ext ABT SIL fixpoint pre IH app Agda
+% LocalWords:  ponens de Bruijn Agda's MN NN si MV VM Nsi PEFrame sz
+% LocalWords:  FMF FMFN VV WW sj NWN LM NWNW unk sk neq MGM dyn VGV
+% LocalWords:  gnd inv prec MHM HH Subcase lam
