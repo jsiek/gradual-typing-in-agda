@@ -177,8 +177,8 @@ polymorphic calculus. Several researchers apply logical relations to
 prove other properties of gradually typed languages, such as
 noninterference\cite{Toro:2018aa},
 parametricity~\cite{Ahmed:2011fk,New:2019ab,Labrada:2020tk}, and fully
-abstract embedding~\cite{Jacobs:2021aa}. Of all this later work, only
-the fully abstract embedding was mechanized in a proof assistant (in
+abstract embedding~\cite{Jacobs:2021aa}. Of this later work, only the
+abstract embedding was mechanized (in
 Coq~\cite{The-Coq-Development-Team:2004kf} using the Iris
 framework~\cite{JUNG:2018aa}.)
 
@@ -204,10 +204,10 @@ Birkedal~\cite{Dreyer:2011wl} propose to abstract over the
 step-indexing using a modal logic named LSLR. Dreyer and Birkedal,
 with many colleagues, implemented this logic as part of the Iris
 framework~\cite{JUNG:2018aa} in the Coq proof assistant. To make a
-similar modal logic available in the Agda proof assistant, we
-developed the Step-Indexed Logic (SIL) library~\cite{Siek:2023aa}.
-The proof of the gradual guarantee in this paper is the first
-application of SIL and we report on the experience.
+similar modal logic available in Agda, we developed the Step-Indexed
+Logic (SIL)~\cite{Siek:2023aa}.  The proof of the gradual guarantee in
+this paper is the first application of SIL and we report on the
+experience.
 
 The semantics of the GTLC is defined by translation to a Cast
 Calculus, so we present the Cast Calculus in
@@ -216,11 +216,14 @@ types and terms in Section~\ref{sec:precision} and we review
 Step-Indexed Logic in Section~\ref{sec:SIL}.  We define a logical
 relation for precision in Section~\ref{sec:log-rel}. We prove the
 Fundamental Theorem of the logical relation in
-Section~\ref{sec:fundamental}, which is the main technical result of
-this paper. To finish the proof of the gradual guarantee, in
-Section~\ref{sec:gradual-guarantee} we prove that the logical relation
-implies semantic approximation and semantic approximation implies the
-gradual guarantee. Section~\ref{sec:conclusion} concludes this paper.
+Section~\ref{sec:fundamental}. To finish the proof of the gradual
+guarantee, in Section~\ref{sec:gradual-guarantee} we prove that the
+logical relation implies the gradual
+guarantee. Section~\ref{sec:conclusion} concludes this paper with a
+comparison of using logical-relations versus simulation to prove the
+gradual guarantee and it acknowledges Peter Thiemann and Philip Wadler
+for their contributions to this work.
+
 
 \input{PeterCastCalculus}
 \input{PeterFestschrift}
@@ -228,6 +231,7 @@ gradual guarantee. Section~\ref{sec:conclusion} concludes this paper.
 \input{PeterGG}
 
 \section{Conclusion and Acknowledgments}
+\label{sec:conclusion}
 
 This paper presented the first mechanized proof of the gradual
 guarantee using step-indexed logical relations. One naturally wonders
@@ -258,14 +262,14 @@ there are also challenges regarding (1) Agda output not always using
 the concise pattern syntax and (2) Agda's automated case splitting
 does not work for ABT-generated languages.
 
-This work was conducted in the context of a long collaboration with
-Peter Thiemann and Philip Wadler, where we have been exploring how to
-mechanize blame calculi in Agda and further study the polymorphic blame
+This work was conducted in the context of a collaboration with Peter
+Thiemann and Philip Wadler where we have been exploring how to
+mechanize blame calculi in Agda and study the polymorphic blame
 calculus. My understanding of step-indexed logical relations was
-greatly improved by reading Peter Thiemann's mechanized proof of type
-safety for a typed $\lambda$-calculus with \textsf{fix} using
-step-indexed logical relations. The initiative to build an Agda
-version of the LSLR logic came from Philip Wadler.
+improved by reading Peter Thiemann's proof in Agda of type safety for
+a typed $\lambda$-calculus with \textsf{fix} using step-indexed
+logical relations. The initiative to build an Agda version of the LSLR
+logic came from Philip Wadler.
 
 
 %\nocite{*}
