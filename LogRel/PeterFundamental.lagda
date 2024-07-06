@@ -18,7 +18,8 @@ open import Relation.Nullary using (¬_; Dec; yes; no)
 open import Var
 open import Sig
 open import LogRel.PeterCastCalculus
-open import LogRel.PeterFestschrift
+open import LogRel.PeterPrecision
+open import LogRel.PeterLogRel
 open import StepIndexedLogic
 \end{code}
 

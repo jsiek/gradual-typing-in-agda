@@ -12,7 +12,8 @@ open import Relation.Binary.PropositionalEquality as Eq
   using (_≡_; _≢_; refl; sym; cong; subst; trans)
 
 open import LogRel.PeterCastCalculus
-open import LogRel.PeterFestschrift
+open import LogRel.PeterPrecision
+open import LogRel.PeterLogRel
 open import LogRel.PeterFundamental
 open import StepIndexedLogic
 \end{code}
