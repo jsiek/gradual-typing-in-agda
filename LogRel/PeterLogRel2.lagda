@@ -6,7 +6,7 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Data.List using (List; []; _∷_; map; length)
 open import Data.Nat
 open import Data.Nat.Properties
-open import Data.Bool using (true; false) renaming (Bool to 𝔹)
+open import Data.Bool using (true; false; _≟_) renaming (Bool to 𝔹)
 open import Data.Product using (_,_;_×_; proj₁; proj₂; Σ-syntax; ∃-syntax)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
@@ -102,42 +102,120 @@ dir ∣ V ᵒ⊑ᴸᴿᵥ V′ ⦂ c = (inj₁ ((_ , _ , c) , dir , V , V′)) �
 instance
   TermInhabited : Inhabited Term
   TermInhabited = record { elt = ` 0 }
+
+eqLit : (c : Lit) → (c′ : Lit) → Dec (c ≡ c′)
+eqLit (Num x) (Num y)
+    with Data.Nat._≟_ x y
+... | yes refl = yes refl
+... | no neq  = no λ {refl → neq refl}
+eqLit (Num x) (Bool b) = no (λ ())
+eqLit (Bool b) (Num x) = no (λ ())
+eqLit (Bool b) (Bool b′)
+    with Data.Bool._≟_ b b′
+... | yes refl = yes refl
+... | no neq = no λ {refl → neq refl}
+\end{code}
+
+\begin{code}
+data LRᵥCases : {A A′ : Type} → (c : A ⊑ A′) → Term → Term → Set where
+  LRᵥ-base⊑ : ∀{ι c} → LRᵥCases (base⊑{ι}) ($ c) ($ c)
+  LRᵥ-fun⊑ : ∀{A B A′ B′}{c d}{N N′} → LRᵥCases (fun⊑{A}{B}{A′}{B′} c d) (ƛ N) (ƛ N′)
+  LRᵥ-unk⊑unk : ∀{G V V′} → LRᵥCases unk⊑unk (V ⟨ G !⟩) (V′ ⟨ G !⟩)
+  LRᵥ-unk⊑ : ∀{G A′ V V′}{c : ⌈ G ⌉ ⊑ A′} → LRᵥCases (unk⊑ c) (V ⟨ G !⟩) V′
+
+dec-LRᵥCases : ∀ {A A′ : Type} → (c : A ⊑ A′) → (M M′ : Term) → Dec (LRᵥCases c M M′)
+\end{code}
+\begin{code}[hide]
+dec-LRᵥCases unk⊑unk ($ k) M = no λ { ()}
+dec-LRᵥCases unk⊑unk (` x) M′ = no λ { ()}
+dec-LRᵥCases unk⊑unk (ƛ N) M′ = no λ { ()}
+dec-LRᵥCases unk⊑unk (L · M) M′ = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) ($ k) = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) (` x) = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) (ƛ N) = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) (L′ · M′) = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) (M′ ⟨ H !⟩)
+    with G ≡ᵍ H
+... | yes refl = yes LRᵥ-unk⊑unk
+... | no neq = no λ { LRᵥ-unk⊑unk → neq refl}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) (M′ ⟨ H ?⟩) = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ G !⟩) blame = no λ { ()}
+dec-LRᵥCases unk⊑unk (M ⟨ H ?⟩) M′ = no λ { ()}
+dec-LRᵥCases unk⊑unk blame M′ = no λ { ()}
+
+dec-LRᵥCases (unk⊑ c) ($ k) M′ = no λ { ()}
+dec-LRᵥCases (unk⊑ c) (` x) M′ = no λ { ()}
+dec-LRᵥCases (unk⊑ c) (ƛ N) M′ = no λ { ()}
+dec-LRᵥCases (unk⊑ c) (L · M) M′ = no λ { ()}
+dec-LRᵥCases (unk⊑{H} c) (M ⟨ G !⟩) M′
+    with G ≡ᵍ H
+... | yes refl = yes LRᵥ-unk⊑
+... | no neq = no λ { LRᵥ-unk⊑ → neq refl}
+dec-LRᵥCases (unk⊑ c) (M ⟨ H ?⟩) M′ = no λ { ()}
+dec-LRᵥCases (unk⊑ c) blame M′ = no λ { ()}
+
+dec-LRᵥCases base⊑ ($ k) ($ k′)
+    with eqLit k k′
+... | yes refl  = yes LRᵥ-base⊑
+... | no neq = no λ { LRᵥ-base⊑ → neq refl}
+dec-LRᵥCases base⊑ ($ k) (` x) = no λ { ()}
+dec-LRᵥCases base⊑ ($ k) (ƛ N′) = no λ { ()}
+dec-LRᵥCases base⊑ ($ k) (L′ · M′) = no λ { ()}
+dec-LRᵥCases base⊑ ($ k) (M′ ⟨ G !⟩) = no λ { ()}
+dec-LRᵥCases base⊑ ($ k) (M′ ⟨ H ?⟩) = no λ { ()}
+dec-LRᵥCases base⊑ ($ k) blame = no λ { ()}
+dec-LRᵥCases base⊑ (` x) M′ = no λ { ()}
+dec-LRᵥCases base⊑ (ƛ N) M′ = no λ { ()}
+dec-LRᵥCases base⊑ (L · M) M′ = no λ { ()}
+dec-LRᵥCases base⊑ (M ⟨ G !⟩) M′ = no λ { ()}
+dec-LRᵥCases base⊑ (M ⟨ H ?⟩) M′ = no λ { ()}
+dec-LRᵥCases base⊑ blame M′ = no λ { ()}
+
+dec-LRᵥCases (fun⊑ c d) ($ k) M′ = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (` x) M′ = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) ($ k) = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) (` x) = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) (ƛ N′) = yes LRᵥ-fun⊑
+dec-LRᵥCases (fun⊑ c d) (ƛ N) (L′ · M′) = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) (M′ ⟨ G !⟩) = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) (M′ ⟨ H ?⟩) = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (ƛ N) blame = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (L · M) M′ = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (M ⟨ G !⟩) M′ = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) (M ⟨ H ?⟩) M′ = no λ { ()}
+dec-LRᵥCases (fun⊑ c d) blame M′ = no λ { ()}
 \end{code}
 
 \begin{figure}[tbp]
 \begin{code}
 LRₜ : ∀{A B} → (A ⊑ B) → Dir → Term → Term → Setᵒ Γ₁ (Later ∷ [])
-LRᵥ : ∀{A B} → (A ⊑ B) → Dir → Term → Term → Setᵒ Γ₁ (Later ∷ [])
+pre-LRᵥ : ∀{A B} → (c : A ⊑ B) → Dir → (V : Term) → (V′ : Term) → LRᵥCases c V V′ → Setᵒ Γ₁ (Later ∷ [])
+
+LRᵥ : ∀{A B} → (c : A ⊑ B) → Dir → (V : Term) → (V′ : Term) → Setᵒ Γ₁ (Later ∷ [])
+LRᵥ A⊑B dir V V′
+    with dec-LRᵥCases A⊑B V V′
+... | yes cs = pre-LRᵥ A⊑B dir V V′ cs
+... | no ncs = ⊥ᵒ
 
 LRₜ A⊑A′ ≼ M M′ =
    (∃ᵒ[ N ] (M ⟶ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ᵒ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
    ⊎ᵒ (M′ ↠ blame)ᵒ
-   ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ ↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (LRᵥ A⊑A′ ≼ M V′)))
+   ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ ↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ LRᵥ A⊑A′ ≼ M V′))
 LRₜ A⊑A′ ≽ M M′ =
    (∃ᵒ[ N′ ] (M′ ⟶ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ᵒ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
    ⊎ᵒ (Blame M′)ᵒ
    ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M ↠ V)ᵒ ×ᵒ (Value V)ᵒ ×ᵒ (LRᵥ A⊑A′ ≽ V M′)))
 
-LRᵥ {.($ₜ ι)}{.($ₜ ι)} (base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ᵒ
-LRᵥ {.($ₜ ι)}{.($ₜ ι)} (base⊑{ι}) dir V V′ = ⊥ ᵒ
-LRᵥ {.(A ⇒ B)} {.(A′ ⇒ B′)} (fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
+pre-LRᵥ {.($ₜ ι)}{.($ₜ ι)} (base⊑{ι}) dir ($ c) ($ c′) (LRᵥ-base⊑{ι}{c}) = (c ≡ c′) ᵒ
+pre-LRᵥ {.(A ⇒ B)} {.(A′ ⇒ B′)} (fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) (LRᵥ-fun⊑{c = A⊑A′}{B⊑B′}{N}{N′}) =
     ∀ᵒ[ W ] ∀ᵒ[ W′ ] ▷ᵒ (dir ∣ W ᵒ⊑ᴸᴿᵥ W′ ⦂ A⊑A′)
                   →ᵒ ▷ᵒ (dir ∣ (N [ W ]) ᵒ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′) 
-LRᵥ {.(A ⇒ B)}{.(A′ ⇒ B′)} (fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ᵒ
-LRᵥ {★}{★} unk⊑unk dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
-    with G ≡ᵍ H
-... | yes refl = (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (▷ᵒ (dir ∣ V ᵒ⊑ᴸᴿᵥ V′ ⦂ Refl⊑{⌈ G ⌉}))
-... | no neq = ⊥ ᵒ
-LRᵥ {★}{★} unk⊑unk dir V V′ = ⊥ ᵒ
-LRᵥ {★}{A′} (unk⊑{H} H⊑A′) ≼ (V ⟨ G !⟩) V′
-    with G ≡ᵍ H
-... | yes refl = (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ ▷ᵒ (≼ ∣ V ᵒ⊑ᴸᴿᵥ V′ ⦂ H⊑A′)
-... | no neq = ⊥ ᵒ
-LRᵥ {★}{A′} (unk⊑{H} H⊑A′) ≽ (V ⟨ G !⟩) V′
-    with G ≡ᵍ H
-... | yes refl = (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (LRᵥ H⊑A′ ≽ V V′)
-... | no neq = ⊥ ᵒ
-LRᵥ {★}{A′} (unk⊑{H} H⊑A′) dir V V′ = ⊥ ᵒ
+pre-LRᵥ {★}{★} unk⊑unk dir (V ⟨ G !⟩) (V′ ⟨ G !⟩) (LRᵥ-unk⊑unk{G}{V}{V′}) =
+    (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (▷ᵒ (dir ∣ V ᵒ⊑ᴸᴿᵥ V′ ⦂ Refl⊑{⌈ G ⌉}))
+pre-LRᵥ {★}{A′} (unk⊑{G} G⊑A′) ≼ (V ⟨ G !⟩) V′ (LRᵥ-unk⊑{G}{A′}{V}{V′}{G⊑A′}) =
+    (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ ▷ᵒ (≼ ∣ V ᵒ⊑ᴸᴿᵥ V′ ⦂ G⊑A′)
+pre-LRᵥ {★}{A′} (unk⊑{G} H⊑A′) ≽ (V ⟨ G !⟩) V′ (LRᵥ-unk⊑{G}{A′}{V}{V′}{G⊑A′}) =
+    (Value V)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (LRᵥ H⊑A′ ≽ V V′)
 \end{code}
 \caption{Logical Relation for Precision on Terms $\mathsf{LR}_t$
   and Values $\mathsf{LR}_v$}
@@ -165,7 +243,7 @@ logical relation on terms, ⊑ᴸᴿₜ.
 \begin{code}
 pre-LRₜ⊎LRᵥ : ((Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term))
    → Setᵒ Γ₁ (Later ∷ [])
-pre-LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ (proj₂ (proj₂ c)) dir V V′
+pre-LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ (proj₂ (proj₂ c)) dir V V′ 
 pre-LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ (proj₂ (proj₂ c)) dir M M′
 
 LRₜ⊎LRᵥ : ((Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)) → Setᵒ [] []
@@ -253,9 +331,10 @@ LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
                 (≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≽ , V , M′))))))))
 \end{code}
 
-The definition of ⊑ᴸᴿᵥ included several clauses that ensured that the
-related values are indeed syntactic values. Here we make use of that
-to prove that indeed, logically related values are syntactic values.
+The definition of \textsf{pre-LRᵥ} included several clauses that
+ensured that the related values are indeed syntactic values. Here we
+make use of that to prove that indeed, logically related values are
+syntactic values.
 
 \begin{code}
 LRᵥ⇒Valueᵒ : ∀ {dir}{A}{A′}{𝒫} (A⊑A′ : A ⊑ A′) M M′
@@ -269,72 +348,46 @@ LRᵥ⇒Valueᵒ {dir}{A}{A′}{𝒫} A⊑A′ M M′ M⊑M′ = aux{A = A}{A′
 
   aux : ∀ {𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{dir} → 𝒫 ⊢ᵒ letᵒ (μᵒ pre-LRₜ⊎LRᵥ) (LRᵥ{A}{A′} A⊑A′ dir M M′)
       → 𝒫 ⊢ᵒ (Value M)ᵒ ×ᵒ (Value M′)ᵒ
-  aux {𝒫} {.★} {.★} {unk⊑unk} {$ k} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {` x} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {ƛ N} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {L · M} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {$ k} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {` x} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {ƛ N} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {L′ · M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {W ⟨ H !⟩} {dir} M⊑M′
-      with G ≡ᵍ H
-  ... | yes refl = pureᵒE (proj₁ᵒ M⊑M′) λ v →
-                   pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
-                   pureᵒI (v 〈 G 〉) ,ᵒ pureᵒI (w 〈 G 〉)
-  ... | no neq = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {W ⟨ H ?⟩} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ G !⟩} {blame} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {V ⟨ H ?⟩} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {.★} {unk⊑unk} {blame} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {$ k} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {$ k} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {` x} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {` x} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {ƛ N} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {ƛ N} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {L · M} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {L · M} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑{H} A⊑A′} {V ⟨ G !⟩} {M′} {≼} M⊑M′
-      with G ≡ᵍ H
-  ... | yes refl = pureᵒE (proj₁ᵒ M⊑M′) λ v →
-                   pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
-                   pureᵒI (v 〈 G 〉) ,ᵒ pureᵒI w
-  ... | no neq = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑{H} A⊑A′} {V ⟨ G !⟩} {M′} {≽} M⊑M′
-      with G ≡ᵍ H
-  ... | yes refl = pureᵒE (proj₁ᵒ M⊑M′) λ v →
-                   pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
-                   pureᵒI (v 〈 G 〉) ,ᵒ pureᵒI w
-  ... | no neq = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {V ⟨ H ?⟩} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {V ⟨ H ?⟩} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {blame} {M′} {≼} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.★} {A′} {unk⊑ A⊑A′} {blame} {M′} {≽} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {$ k′} {dir} M⊑M′ = pureᵒI ($̬ k) ,ᵒ pureᵒI ($̬ k′)
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {` x} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {ƛ N} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {L′ · M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {W ⟨ H !⟩} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {M′ ⟨ H ?⟩} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {$ k} {blame} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {` x} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {ƛ N} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {L · M} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {V ⟨ G !⟩} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {M ⟨ H ?⟩} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.($ₜ _)} {.($ₜ _)} {base⊑} {blame} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {$ k} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {` x} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {$ k} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {` x} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {ƛ N′} {dir} M⊑M′ = pureᵒI (ƛ̬ N) ,ᵒ pureᵒI (ƛ̬ N′)
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {L · M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {M′ ⟨ G !⟩} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {M′ ⟨ H ?⟩} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {ƛ N} {blame} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {L · M} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {M ⟨ G !⟩} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {M ⟨ H ?⟩} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
-  aux {𝒫} {.(_ ⇒ _)} {.(_ ⇒ _)} {fun⊑ A⊑A′ A⊑A′₁} {blame} {M′} {dir} M⊑M′ = pureᵒE M⊑M′ λ ()
+  aux{𝒫}{A}{A′}{A⊑A′}{M}{M′}{dir} M⊑M′
+      with dec-LRᵥCases A⊑A′ M M′
+  ... | no ncs = ⊥-elimᵒ M⊑M′ ((Value M ᵒ) ×ᵒ (Value M′ ᵒ))
+  ... | yes LRᵥ-base⊑ = pureᵒI ($̬ _) ,ᵒ pureᵒI ($̬ _)
+  ... | yes LRᵥ-fun⊑ = pureᵒI (ƛ̬ _) ,ᵒ pureᵒI (ƛ̬ _)
+  ... | yes LRᵥ-unk⊑unk = pureᵒE (proj₁ᵒ M⊑M′) λ v →
+                          pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
+                          pureᵒI (v 〈 _ 〉) ,ᵒ pureᵒI (w 〈 _ 〉)
+  ... | yes LRᵥ-unk⊑
+      with dir
+  ... | ≼ = pureᵒE (proj₁ᵒ M⊑M′) λ v →
+            pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
+            pureᵒI (v 〈 _ 〉) ,ᵒ pureᵒI w
+  ... | ≽ = pureᵒE (proj₁ᵒ M⊑M′) λ v →
+            pureᵒE (proj₁ᵒ (proj₂ᵒ M⊑M′)) λ w →
+            pureᵒI (v 〈 _ 〉) ,ᵒ pureᵒI w
 \end{code}
+
+
+If two values are related via ⊑ᴸᴿᵥ, then they are also related via
+⊑ᴸᴿₜ.
+
+\begin{code}
+LRᵥ⇒LRₜ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′  →  𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
+\end{code}
+\begin{code}[hide]
+LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ =
+    foldᵒ pre-LRₜ⊎LRᵥ (inj₂ ((A , A′ , A⊑A′) , dir , V , V′)) (aux ⊢𝒱VV′)
+  where
+  VV : 𝒫 ⊢ᵒ (Value V ᵒ) ×ᵒ (Value V′ ᵒ)
+  VV = LRᵥ⇒Valueᵒ A⊑A′ V V′ ⊢𝒱VV′
+  
+  aux : ∀{dir} → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′
+      → 𝒫 ⊢ᵒ letᵒ (μᵒ pre-LRₜ⊎LRᵥ) (LRₜ A⊑A′ dir V V′)
+  aux {≼} ⊢𝒱VV′ =
+    inj₂ᵒ (inj₂ᵒ ((proj₁ᵒ VV) ,ᵒ ∃ᵒI V′ (pureᵒI (V′ END) ,ᵒ ((proj₂ᵒ VV) ,ᵒ
+    unfoldᵒ pre-LRₜ⊎LRᵥ (inj₁ ((A , A′ , A⊑A′) , ≼ , V , V′)) ⊢𝒱VV′))))
+  aux {≽} ⊢𝒱VV′ =
+    inj₂ᵒ (inj₂ᵒ (proj₂ᵒ VV ,ᵒ ∃ᵒI V (pureᵒI (V END) ,ᵒ (proj₁ᵒ VV ,ᵒ
+    unfoldᵒ pre-LRₜ⊎LRᵥ (inj₁ ((A , A′ , A⊑A′) , ≽ , V , V′)) ⊢𝒱VV′))))
+\end{code}
+
