@@ -138,6 +138,40 @@ the use of de Bruijn indices \textsf{Zᵒ} to refer to premises,
 and extra annotations such as \textsf{{P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}}
 that are needed when Agda's type inference fails.
 
+\paragraph{Anti-reduction and Bind Lemmas}
+
+The remaining compatibility lemmas, for function application and for
+injections and projections, require several anti-reduction lemmas
+which state that if two terms are in the logical relation, then
+walking backwards with one or both of them yields terms that are still
+in the logical relation. Here we list just one of them. 
+
+\begin{code}[hide]
+anti-reduction-≼-R-one : ∀{𝒫}{A}{A′}{A⊑A′ : A ⊑ A′}{M′}{N′}
+  → 𝒫 ⊢ᵒ (∀ᵒ[ M ]  (≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′)  →ᵒ  (M′ ⟶ N′)ᵒ  →ᵒ  (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
+anti-reduction-≼-R-one{𝒫}{A}{A′}{A⊑A′}{M′}{N′} =
+   lobᵒ
+   (Λᵒ[ M ] (→ᵒI (→ᵒI
+   (case3ᵒ (unfoldᵒ pre-LRₜ⊎LRᵥ (inj₂ ((A , A′ , A⊑A′) , ≼ , M , N′)) (Sᵒ Zᵒ))
+   (∃ᵒE Zᵒ λ N → foldᵒ pre-LRₜ⊎LRᵥ (inj₂ ((A , A′ , A⊑A′) , ≼ , M , M′))
+      (inj₁ᵒ (∃ᵒI N (proj₁ᵒ Zᵒ ,ᵒ
+      let IH = (Sᵒ (Sᵒ (Sᵒ (Sᵒ Zᵒ)))) in
+      let ▷N⊑M′ : _ ⊢ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′)
+          ▷N⊑M′ = →ᵒE (▷→ (→ᵒE (▷→ (∀ᵒE (▷∀ IH) N)) (proj₂ᵒ Zᵒ))) (monoᵒ (Sᵒ (Sᵒ Zᵒ))) in
+      ▷N⊑M′))))
+   (pureᵒE (Sᵒ Zᵒ) λ M′→N′ → pureᵒE Zᵒ λ N′→blame →
+     foldᵒ pre-LRₜ⊎LRᵥ (inj₂ ((A , A′ , A⊑A′) , ≼ , M , M′))
+     (inj₂ᵒ (inj₁ᵒ (pureᵒI (M′ ⟶⟨ M′→N′ ⟩ N′→blame)))))
+   (foldᵒ pre-LRₜ⊎LRᵥ (inj₂ ((A , A′ , A⊑A′) , ≼ , M , M′))
+    (pureᵒE (Sᵒ Zᵒ) λ M′→N′ →
+    (inj₂ᵒ (inj₂ᵒ
+    (∃ᵒE (proj₂ᵒ Zᵒ) λ V′ → proj₁ᵒ (Sᵒ Zᵒ) ,ᵒ ∃ᵒI V′
+    (pureᵒE (proj₁ᵒ Zᵒ) λ N′→V′ →
+      (pureᵒI (M′ ⟶⟨ M′→N′ ⟩ N′→V′) ,ᵒ ((proj₁ᵒ (proj₂ᵒ Zᵒ)) ,ᵒ proj₂ᵒ (proj₂ᵒ Zᵒ)))))))))
+    ))))
+\end{code}
+
+
 \paragraph{Compatibility for Application}
 
 Here is where the logical relation demonstrates its worth.
