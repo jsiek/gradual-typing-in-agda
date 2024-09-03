@@ -189,7 +189,7 @@ choose how to represent variables and perform substitution. Moreover,
 proofs based on logical relations rely on the fact that substitutions
 commute, and the proof of this standard result is quite technical and
 lengthy. Repeating these proofs for each new programming language is
-quite tedious, but this metatheory can be developed in a
+tedious, but this metatheory can be developed in a
 language-independent way using the notion of \emph{abstract binding
   trees}~\cite{Harper:2012aa}. To this end we developed the Abstract
 Binding Tree library in Agda~\cite{Siek:2021to}, representing
@@ -207,7 +207,11 @@ framework~\cite{JUNG:2018aa} in the Coq proof assistant. To make a
 similar modal logic available in Agda, we developed the Step-Indexed
 Logic (SIL)~\cite{Siek:2023aa}.  The proof of the gradual guarantee in
 this paper is the first application of SIL and we report on the
-experience.
+experience. This paper is a literate Agda script, though we omit some
+of the proofs. The full Agda development is available from the
+following repository, in the \texttt{LogRel} directory.
+
+\url{https://github.com/jsiek/gradual-typing-in-agda}
 
 The semantics of the GTLC is defined by translation to a Cast
 Calculus, so we present the Cast Calculus in
@@ -241,7 +245,7 @@ simulation-based proof. One rough comparison is the number of lines of
 code in Agda. Wadler, Thiemann, and I developed a simulation-based
 proof of the gradual guarantee for a similar cast calculus in Agda,
 which came in at 3,200 LOC. The logical-relations proof presented here
-was significantly shorter, at 2,300 LOC, though it makes use of the
+was somewhat shorter, at 2,300 LOC, though it makes use of the
 Abstract Binding Tree Library (900 LOC) and the Step-Indexed Logic
 Library (2100 LOC). These LOC numbers confirm my feeling that the
 total effort to create the SIL and ABT libraries and prove the gradual
@@ -253,7 +257,7 @@ was lower than via simulation.
 
 As mentioned at various points in this paper, there are some rough
 edges to the SIL and ABT libraries, primarily due to challenges
-regarding ``leaky abstractions''. For SIL, we mentioned how Agda's
+regarding leaky abstractions. For SIL, we mentioned how Agda's
 output shows normalized versions of the SIL formulas, which exposes
 the underlying encodings and are too large to be readable. We have
 created a new version of SIL that uses Agda's \texttt{abstract}

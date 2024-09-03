@@ -45,16 +45,14 @@ instead of writing $B ≢ ★$ we have written $⌈ G ⌉ ⊑ B$, which turns
 out to be important later when we define the logical relation and use
 recursion on the precision relation.
 %
-The \textsf{Prec} type bundles two types in the precision relation and
-of course, precision is reflexive.
+The \textsf{Prec} type bundles two types in the precision relation.
+Precision is reflexive and transitive, but we will not need transitivity.
 
 \begin{code}
 Prec : Set
 Prec = (∃[ A ] ∃[ B ] A ⊑ B)
 
 Refl⊑ : ∀{A} → A ⊑ A
-\end{code}
-\begin{code}[hide]
 Refl⊑ {★} = unk⊑unk
 Refl⊑ {$ₜ ι} = base⊑
 Refl⊑ {A ⇒ B} = fun⊑ Refl⊑ Refl⊑
@@ -100,6 +98,7 @@ across from an arbitrary term. However, when injection is on the
 right, the term on the left must have type ★ (rule
 \textsf{⊑-inj-R}).  Similarly, when projection is on the right, the
 term on the left must have type ★ (rule \textsf{⊑-proj-R}).
+The term \textsf{blame} is at least as precise as any term.
 
 \begin{figure}[tbp]
 \begin{code}

@@ -73,45 +73,8 @@ _≡ᵍ_ : ∀ (G : Ground) (H : Ground) → Dec (G ≡ H)
 ($ᵍ ι) ≡ᵍ ★⇒★ = no λ ()
 ★⇒★ ≡ᵍ ($ᵍ ι) = no λ ()
 ★⇒★ ≡ᵍ ★⇒★ = yes refl
-
-data Lit : Set where
-  Num : ℕ → Lit
-  Bool : 𝔹 → Lit
-
-data Op : Set where
-  op-lam : Op
-  op-app : Op
-  op-lit : Lit → Op
-  op-inject : Ground → Op
-  op-project : Ground → Op
-  op-blame : Op
-
-sig : Op → List Sig
-sig op-lam = (ν ■) ∷ []
-sig op-app = ■ ∷ ■ ∷ []
-sig (op-lit c) = []
-sig (op-inject G) = ■ ∷ []
-sig (op-project H) = ■ ∷ []
-sig (op-blame) = []
-
-open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
-
-pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
-infixl 7  _·_
-pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
-pattern $ c = (op-lit c) ⦅ nil ⦆
-pattern _⟨_!⟩ M G = (op-inject G) ⦅ cons (ast M) nil ⦆
-pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
-pattern blame = op-blame ⦅ nil ⦆
-
-{-# REWRITE sub-var #-}
 \end{code}
 
-We define the terms of the Cast Calculus using the Abstract Binding
-Tree (ABT) library by instantiating it with an appropriate set of
-operators together with a description of their arity and
-variable-binding structure. We then define Agda patterns to give
-succinct syntax to the construction of abstract binding trees.
 There are three special features in the Cast Calculus:
 \begin{enumerate}
 \item injection $M ⟨ G !⟩$, for casting from a ground type $G$
@@ -121,6 +84,82 @@ There are three special features in the Cast Calculus:
 \item \textsf{blame} which represents a runtime exception if
   a projection fails.
 \end{enumerate}
+This Cast Calclulus differs from many of those in the literature in
+that it does not include casts from one function type to another, a
+choice that reduces the number of reduction rules and simplifies the
+technical development.  However, casts from one function type to
+another can be simulated in this calculus using a combination of
+lambda abstractions, injections, and projections.
+
+We define the terms of the Cast Calculus in Agda using the Abstract
+Binding Tree (ABT) library by instantiating it with an appropriate set
+of operators together with a description of their arity and
+variable-binding structure. To that end, the following \texttt{Op}
+data type includes one constructor for each term constructor that we
+have in mind for the Cast Calculus, except for variables which are
+always present. The \texttt{sig} function, shown below, specifies the
+variable binding structure for each operator. It returns a list of
+natural numbers where ■ represents zero and ν represents
+successor. The list includes one number for each subterm; the number
+specifices how many variables come into scope for that subterm. Lambda
+abstraction (\texttt{op-lam}) has a single subterm and brings one
+variable into scope, whereas application (\texttt{op-app}) has two
+subterms but does not bind any variables.
+
+\begin{minipage}{0.3\textwidth}
+\begin{code}
+data Lit : Set where
+  Num : ℕ → Lit
+  Bool : 𝔹 → Lit
+\end{code}
+\end{minipage}
+\begin{minipage}{0.3\textwidth}
+\begin{code}
+data Op : Set where
+  op-lam : Op
+  op-app : Op
+  op-lit : Lit → Op
+  op-inject : Ground → Op
+  op-project : Ground → Op
+  op-blame : Op
+\end{code}
+\end{minipage}
+\begin{minipage}{0.3\textwidth}
+\begin{code}
+sig : Op → List Sig
+sig op-lam = (ν ■) ∷ []
+sig op-app = ■ ∷ ■ ∷ []
+sig (op-lit c) = []
+sig (op-inject G) = ■ ∷ []
+sig (op-project H) = ■ ∷ []
+sig (op-blame) = []
+\end{code}
+\end{minipage}
+
+We instantiate the ABT library as follows, by applying it to
+\texttt{Op} and \texttt{sig}. We rename the resulting \texttt{ABT}
+type to \texttt{Term}.
+
+\begin{code}
+open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
+\end{code}
+
+We define Agda patterns to give succinct syntax to the construction of
+abstract binding trees.
+
+\begin{code}
+pattern ƛ N = op-lam ⦅ cons (bind (ast N)) nil ⦆
+infixl 7  _·_
+pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
+pattern $ c = (op-lit c) ⦅ nil ⦆
+pattern _⟨_!⟩ M G = (op-inject G) ⦅ cons (ast M) nil ⦆
+pattern _⟨_?⟩ M H = (op-project H) ⦅ cons (ast M) nil ⦆
+pattern blame = op-blame ⦅ nil ⦆
+\end{code}
+
+\begin{code}[hide]
+{-# REWRITE sub-var #-}
+\end{code}
 
 The ABT library represents variables with de Bruijn indices and
 provides a definition of parallel substitution and many theorems about
@@ -289,7 +328,21 @@ infix  3 _END
 \end{code}
 
 Figure~\ref{fig:cast-calculus} defines the type system and reduction
-for the Cast Calculus.
+for the Cast Calculus. The two rules specific to gradual typing are
+\textsf{collapse} and \textsf{collide}. The \textsf{collapse} rule
+states that when an injected value encounters a matching projection,
+the result is the underlying value.  The \textsf{collide} says that if
+the injection and projection do not match, the result is
+\textsf{blame}. The reason we introduce the $M$ variable and the
+equation $M ≡ V ⟨ G !⟩$ in those rules is that we ran into
+difficulties with Agda when doing case analysis on reductions.
+The same is true for the ξξ and \textsf{ξξ-blame} rules.
+Figure~\ref{fig:cast-calculus} defines $M ⇓$ to mean that $M$
+reduces to a value, $M ⇑$ to mean $M$ diverges, and $M ⇑⊎blame$
+to mean that $M$ either diverges or reduces to \textsf{blame}.
+(We ran into difficulties with the alternate formulation
+of $M ⇑ ⊎ (M ↠ \mathsf{blame})$ and could not prove them
+equivalent.)
 
 \begin{figure}[tbp]
 \begin{code}

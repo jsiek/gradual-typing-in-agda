@@ -39,17 +39,27 @@ formulas proves these two properties, thereby saving the client of SIL
 from these tedious proofs.
 
 SIL includes the connectives of first-order logic (conjunction,
-disjunction, existential and universal quantification, etc.).
+disjunction, existential and universal quantification, etc.).  Each
+connective comes in two versions, one with a superscript ``o'' and
+another with superscript ``s''. The ``o'' version has type
+\textsf{Setᵒ} whereas the ``s'' version has type
+$\mathsf{Set}ˢ\,Γ\,Δ$, which we explain next. What makes SIL special
+is that it includes an operator μᵒ for defining recursive
+predicates. In the body of the μᵒ, de Bruijn index 0 refers to itself,
+that is, the entire μᵒ. However, variable 0 may only be used
+``later'', that is, underneath at least one use of the modal operator
+▷ˢ.  The formula in the body of a μᵒ has type $\mathsf{Set}ˢ\,Γ\,Δ$,
+where $Γ$ gives the type for each recursive predicate in scope and $Δ$
+records when each recursive predicate is used (now or
+later). \textsf{Setˢ} is a record whose field \textsf{\#} is a
+function from a list of step-indexed predicates to \textsf{Setᵒ}.  So
+from the client's perspective, use the ``s'' connectives when
+writing formulas under a μᵒ and use the ``o'' connectives
+otherwise. During this work we found that the ``s'' versus ``o''
+distinction created unnecessary complexity for the client and have
+developed a new version of the SIL (file \texttt{StepIndexedLogic2.lagda})
+that has one version of each logical connective.
 
-What makes SIL special is that it includes an operator μᵒ for defining
-recursive predicates. In the body of the μᵒ, de Bruijn index 0 refers
-to itself, that is, the entire μᵒ. However, variable 0 may only be
-used ``later'', that is, underneath at least one use of the modal
-operator ▷ᵒ.  The formula in the body of a μᵒ has type
-$\mathsf{Set}ˢ\,Γ\,Δ$, where $Γ$ gives the type for each recursive
-predicate in scope and $Δ$ records when each recursive predicate is
-used (now or later). \textsf{Setˢ} is a record whose field \textsf{\#}
-is a function from a list of step-indexed predicates to \textsf{Setᵒ}.
 The majority of the lines of code in the SIL library are dedicated to
 proving the \textsf{fixpointᵒ} theorem, which states that a recursive
 predicate is equivalent to one unrolling of itself. The proof of

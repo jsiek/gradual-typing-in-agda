@@ -21,16 +21,26 @@ open import StepIndexedLogic
 \section{Proof of the Gradual Guarantee}
 \label{sec:gradual-guarantee}
 
-\begin{code}[hide]
+The next step in the proof of the gradual guarantee is to connect the
+logical relation to the behavior that's required by the gradual
+guarantee. (Recall the \textsf{gradual} predicate defined in
+Section~\ref{sec:precision}.) The proof goes through an intermediate
+step that uses the following notion of semantic approximation for a
+fixed number of reduction steps.
+
+\begin{code}
 _⊨_⊑_for_ : Dir → Term → Term → ℕ → Set
 ≼ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓) ⊎ (M′ ↠ blame) ⊎ ∃[ N ] Σ[ r ∈ M ↠ N ] len r ≡ k
 ≽ ⊨ M ⊑ M′ for k = (M ⇓ × M′ ⇓) ⊎ (M′ ↠ blame) ⊎ ∃[ N′ ] Σ[ r ∈ M′ ↠ N′ ] len r ≡ k
-\end{code}
-\begin{code}[hide]
+
 ⊨_⊑_for_ : Term → Term → ℕ → Set
 ⊨ M ⊑ M′ for k = (≼ ⊨ M ⊑ M′ for k) × (≽ ⊨ M ⊑ M′ for k)
 \end{code}
-\begin{code}[hide]
+
+\noindent The proof that the logical relation implies semantic
+approximation is a straightforward induction on the step index $k$.
+
+\begin{code}
 LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
   → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k)  →  dir ⊨ M ⊑ M′ for k
 \end{code}
@@ -44,7 +54,7 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≼} M⊑M′sk
 ... | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱≼V′M))) =
       inj₁ ((M , (M END) , m) , (V′ , M′→V′ , v′))
 ... | inj₁ (N , M→N , ▷N⊑M′)
-    with LR⇒sem-approx{dir = ≼} ▷N⊑M′
+    with LR⇒sem-approx{k = k}{dir = ≼} ▷N⊑M′
 ... | inj₁ ((V , M→V , v) , (V′ , M′→V′ , v′)) =
       inj₁ ((V , (M ⟶⟨ M→N ⟩ M→V) , v) , (V′ , M′→V′ , v′))
 ... | inj₂ (inj₁ M′→blame) =
@@ -60,14 +70,18 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≽} M⊑M′sk
 ... | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱≽VM′)) =
       inj₁ ((V , M→V , v) , M′ , (M′ END) , m′)
 ... | inj₁ (N′ , M′→N′ , ▷M⊑N′)
-    with LR⇒sem-approx{dir = ≽} ▷M⊑N′
+    with LR⇒sem-approx{k = k}{dir = ≽} ▷M⊑N′
 ... | inj₁ ((V , M→V , v) , (V′ , N′→V′ , v′)) =
       inj₁ ((V , M→V , v) , V′ , (M′ ⟶⟨ M′→N′ ⟩ N′→V′) , v′)
 ... | inj₂ (inj₁ N′→blame) = inj₂ (inj₁ (M′ ⟶⟨ M′→N′ ⟩ N′→blame))
 ... | inj₂ (inj₂ (L′ , N′→L′ , eq)) =
       inj₂ (inj₂ (L′ , (M′ ⟶⟨ M′→N′ ⟩ N′→L′) , cong suc eq))
 \end{code}
-\begin{code}[hide]
+
+\noindent The proof that semantic approximation implies the gradual
+guarantee relies on a proof of determinism for the Cast Calculus.
+
+\begin{code}
 sem-approx⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}
    → (∀ k → ⊨ M ⊑ M′ for k)  →  gradual M M′
 \end{code}
@@ -119,13 +133,8 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
         ⊥-elim (step-blame-plus-one M→N M→blame eq)
 \end{code}
 
-The last lemma needed to complete the proof of the gradual guarantee
-is to connect the logical relation to the behavior that's required by
-the gradual guarantee. (Recall the \textsf{gradual} predicate defined
-in Section~\ref{sec:precision}.) The proof goes through an
-intermediate step that uses a notion of semantic approximation for a
-fixed number of reduction steps and that relies on a proof of
-determinism for the Cast Calculus.
+\noindent We put these two proofs together to show that the logical
+relation implies the gradual guarantee.
 
 \begin{code}
 LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}  → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′  →  gradual M M′ 

@@ -176,12 +176,11 @@ The remaining compatibility lemmas, for function application and for
 injections and projections, require several anti-reduction lemmas
 which state that if two terms are in the logical relation, then
 walking backwards with one or both of them yields terms that are still
-in the logical relation. Here we list just one of them.  We formulated
-these lemmas with explicit step indices and the meaning function
-\textsf{\#} because working with the raw Agda encoding enables the use
-of automatic proof search.
+in the logical relation. We formulated these lemmas with explicit step
+indices and the meaning function \textsf{\#} because working with the
+raw Agda encoding enables the use of automatic proof search.
 
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ⟶ N′  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -197,7 +196,7 @@ anti-reduction-≼-R-one {c = c}{M}{M′}{N′}{suc i} ℰMN′ M′→N′
 ... | inj₂ (inj₂ (m , (V′ , N′→V′ , v′ , 𝒱MV′))) =
       inj₂ (inj₂ (m , (V′ , (unit M′→N′ ++ N′→V′) , v′ , 𝒱MV′)))
 \end{code}
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≼-R : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≼ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ↠ N′  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -206,7 +205,7 @@ anti-reduction-≼-R {M′ = M′} ℰMN′ (.M′ END) = ℰMN′
 anti-reduction-≼-R {M′ = M′} {N′} {i} ℰMN′ (.M′ ⟶⟨ M′→L′ ⟩ L′→*N′) =
   anti-reduction-≼-R-one (anti-reduction-≼-R ℰMN′ L′→*N′) M′→L′
 \end{code}
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
   → #(≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ c) i  →  M′ ⟶ N′  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
 \end{code}
@@ -214,7 +213,7 @@ anti-reduction-≽-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}
 anti-reduction-≽-R-one {c = c} {M} {M′}{N′} {i} ℰ≽MN′ M′→N′ =
   inj₁ (N′ , M′→N′ , ℰ≽MN′)
 \end{code}
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≽-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ⟶ N  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -229,7 +228,7 @@ anti-reduction-≽-L-one {M = M} {N}{M′}  {suc i} ℰNM′ M→N
 ... | inj₂ (inj₂ (m′ , V , N→V , v , 𝒱VM′)) =
       inj₂ (inj₂ (m′ , V , (unit M→N ++ N→V) , v , 𝒱VM′))
 \end{code}
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≽-L : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≽ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ↠ N  →  #(≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) i
 \end{code}
@@ -238,7 +237,7 @@ anti-reduction-≽-L {c = c} {M} {.M} {N′} {i} ℰNM′ (.M END) = ℰNM′
 anti-reduction-≽-L {c = c} {M} {M′} {N′} {i} ℰNM′ (.M ⟶⟨ M→L ⟩ L→*N) =
   anti-reduction-≽-L-one (anti-reduction-≽-L ℰNM′ L→*N) M→L
 \end{code}
-\begin{code}[hide]
+\begin{code}
 anti-reduction-≼-L-one : ∀{A}{A′}{c : A ⊑ A′}{M}{N}{M′}{i}
   → #(≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ c) i  →  M ⟶ N  →  #(≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ c) (suc i)
 \end{code}
@@ -262,15 +261,15 @@ anti-reduction {c = c} {M} {N} {M′} {N′} {i} {≽} ℰNN′i M→N M′→N�
 \end{code}
 
 The remaining compatibility lemmas all involve language features with
-subexpressions, and one need to reason about the reduction of those
-subexpressions down to values. The following \textsf{LRₜ-bind} lemma
-performs that reasoning once an for all. It says that if you are
+subexpressions, and one needs to reason about the reduction of those
+subexpressions to values. The following \textsf{LRₜ-bind} lemma
+performs that reasoning once and for all. It says that if you are
 trying to prove that $N$ ⊑ᴸᴿₜ $N′$, if $M$ is a direct subexpression
 of $N$ and $M′$ is a direct subexpression of $N′$, so $N = F ⦉ M ⦊$
-and $N′ = F′ ⦉ M′ ⦊$, then one can replace $M$ and $M′$ with any
-related values $V$ ⊑ᴸᴿᵥ $V′$ and it suffices prove $F ⦉ V ⦊$ ⊑ᴸᴿₜ $F′
-⦉ V′ ⦊$.  The proof of the \textsf{LRₜ-bind} lemma relies on two of
-the anti-reduction lemmas.
+and $N′ = F′ ⦉ M′ ⦊$ ($F$ and $F′$ are non-empty frames), then one can
+replace $M$ and $M′$ with any related values $V$ ⊑ᴸᴿᵥ $V′$ and it
+suffices prove $F ⦉ V ⦊$ ⊑ᴸᴿₜ $F′ ⦉ V′ ⦊$.  The proof of the
+\textsf{LRₜ-bind} lemma relies on two of the anti-reduction lemmas.
 
 \begin{code}[hide]
 bind-premise : Dir → PEFrame → PEFrame → Term → Term → ℕ
