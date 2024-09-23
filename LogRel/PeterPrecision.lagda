@@ -25,8 +25,9 @@ open import StepIndexedLogic
 \label{sec:precision}
 
 To talk about the gradual guarantee, we first define when one type is
-less precise than another one. The following definition says that the
-unknown type ★ is less precise than any other type.
+less precise than another one.\footnote{Some of the literature instead defines
+a less imprecise relation, but here we stick to the original direction
+of the relation~\cite{Siek:2006bh}.}
 
 \begin{code}
 infixr 6 _⊑_
@@ -128,10 +129,10 @@ data _⊩_⊑_⦂_ : List Prec → Term → Term → ∀{A B : Type} → A ⊑ B
 With precision defined, we are ready to discuss the gradual guarantee.
 It states that if $M$ is less precise than $M′$, then $M$ and $M′$
 behave in a similar way, as defined below by the predicate
-$\mathsf{gradual}\,M\,M′$. In particular, it says that the
-less-precise term behaves exactly like the more-precise term. On the
-other hand the more-precise term may reduce to \textsf{blame} even
-though the less-precise term does not.
+$\mathsf{gradual}\,M\,M′$. In particular, it says that if the
+more-precise term terminates or diverges, then the less-precise term
+does likewise.  On the other hand the more-precise term may reduce to
+\textsf{blame} even though the less-precise term does not.
 
 \begin{code}
 gradual : (M M′ : Term) → Set

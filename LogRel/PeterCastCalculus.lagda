@@ -88,8 +88,8 @@ This Cast Calclulus differs from many of those in the literature in
 that it does not include casts from one function type to another, a
 choice that reduces the number of reduction rules and simplifies the
 technical development.  However, casts from one function type to
-another can be simulated in this calculus using a combination of
-lambda abstractions, injections, and projections.
+another can be compiled into a combination of lambda abstractions,
+injections, and projections.
 
 We define the terms of the Cast Calculus in Agda using the Abstract
 Binding Tree (ABT) library by instantiating it with an appropriate set
@@ -136,7 +136,7 @@ sig (op-blame) = []
 \end{code}
 \end{minipage}
 
-We instantiate the ABT library as follows, by applying it to
+\noindent We instantiate the ABT library as follows, by applying it to
 \texttt{Op} and \texttt{sig}. We rename the resulting \texttt{ABT}
 type to \texttt{Term}.
 
@@ -144,8 +144,8 @@ type to \texttt{Term}.
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 \end{code}
 
-We define Agda patterns to give succinct syntax to the construction of
-abstract binding trees.
+\noindent We define Agda patterns to give succinct syntax to the
+construction of abstract binding trees.
 
 \begin{code}
 pattern ƛ N = op-lam ⦅ cons (bind (ast N)) nil ⦆
@@ -163,10 +163,13 @@ pattern blame = op-blame ⦅ nil ⦆
 
 The ABT library represents variables with de Bruijn indices and
 provides a definition of parallel substitution and many theorems about
-substitution. It is helpful to think of a parallel substitution as an
-infinite stream, or equivalently, as a function from natural numbers
-to terms. The • operator is stream cons, that is, it adds a term to
-the front of the stream.
+substitution. The de Bruijn indices are represented directly as
+natural numbers in Agda, with the constructors \texttt{0} and
+\texttt{suc} for zero and successor. It is helpful to think of a
+parallel substitution as an infinite stream, or equivalently, as a
+function from natural numbers (de Bruijn indices) to terms. The •
+operator is stream cons, that is, it adds a term to the front of the
+stream.
 
 \begin{code}
 sub-zero : ∀ {V σ} → (V • σ) 0 ≡ V
@@ -175,8 +178,8 @@ sub-suc : ∀ {V x σ} → (V • σ) (suc x) ≡ σ x
 sub-suc {V}{x}{σ} = refl
 \end{code}
 
-The ABT library provides the operator $⟪ σ ⟫ M$ for applying a
-substitution to a term. Here are the equations for substitution
+\noindent The ABT library provides the operator $⟪ σ ⟫ M$ for applying
+a substitution to a term. Here are the equations for substitution
 applied to variables, application, and lambda abstraction. The
 \textsf{ext} operator transports a substitution over one variable
 binder.
@@ -190,18 +193,18 @@ _ : ∀ (σ : Subst) (N : Term) → ⟪ σ ⟫ (ƛ N) ≡ ƛ (⟪ ext σ ⟫ N)
 _ = λ σ N → refl
 \end{code}
 
-The bracket notation $M [ N ]$ is defined to replace the occurrences of
-variable 0 in $M$ with $N$ and decrement the other free variables. For
-example,
+\noindent The bracket notation $M [ N ]$ is defined to replace the
+occurrences of variable 0 in $M$ with $N$ and decrement the other free
+variables. For example,
 
 \begin{code}
 _ : ∀ (N : Term) → (` 1 · ` 0) [ N ] ≡ (` 0 · N)
 _ = λ N → refl
 \end{code}
 
-Most importantly, the ABT library provides the following theorem which
-is both difficult to prove and needed later for the Compatibility
-Lemma for lambda abstraction.
+\noindent Most importantly, the ABT library provides the following
+theorem which is both difficult to prove and needed later for the
+Compatibility Lemma for lambda abstraction.
 
 \begin{code}
 ext-sub-cons : ∀ {σ N V} → (⟪ ext σ ⟫ N) [ V ] ≡ ⟪ V • σ ⟫ N
@@ -341,7 +344,7 @@ Figure~\ref{fig:cast-calculus} defines $M ⇓$ to mean that $M$
 reduces to a value, $M ⇑$ to mean $M$ diverges, and $M ⇑⊎blame$
 to mean that $M$ either diverges or reduces to \textsf{blame}.
 (We ran into difficulties with the alternate formulation
-of $M ⇑ ⊎ (M ↠ \mathsf{blame})$ and could not prove them
+of $(M ⇑) ⊎ (M ↠ \mathsf{blame})$ and could not prove them
 equivalent.)
 
 \begin{figure}[tbp]

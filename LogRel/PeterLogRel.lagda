@@ -49,11 +49,18 @@ predicates. In the body of the μᵒ, de Bruijn index 0 refers to itself,
 that is, the entire μᵒ. However, variable 0 may only be used
 ``later'', that is, underneath at least one use of the modal operator
 ▷ˢ.  The formula in the body of a μᵒ has type $\mathsf{Set}ˢ\,Γ\,Δ$,
-where $Γ$ gives the type for each recursive predicate in scope and $Δ$
-records when each recursive predicate is used (now or
-later). \textsf{Setˢ} is a record whose field \textsf{\#} is a
-function from a list of step-indexed predicates to \textsf{Setᵒ}.  So
-from the client's perspective, use the ``s'' connectives when
+where $Γ$ is a list of types, one for each recursive predicate in scope
+(one can nest μˢ an arbitrary number of times).
+
+The $Δ$ records when each recursive predicate is used (now or
+later). It is represented by a list-like data structured indexed
+by Γ to ensure they have the same length, with $∅$ as the empty list
+and $\textsf{cons}$ to add an element to the front of a list.
+\textsf{Setˢ} is a record whose field \textsf{\#} is a
+function from a tuple of step-indexed predicates to \textsf{Setᵒ}.
+(These tuples are structured like cons-lists with the
+always-true predicate $\mathsf{tt}ᵖ$ playing the role of nil.)
+From the client's perspective, use the ``s'' connectives when
 writing formulas under a μᵒ and use the ``o'' connectives
 otherwise. During this work we found that the ``s'' versus ``o''
 distinction created unnecessary complexity for the client and have
@@ -84,10 +91,11 @@ data Dir : Set where
 
 To define a logical relation for precision, we adapt the logical
 relation of New~\cite{New:2020ab}, which used explicit step indexing,
-into the Step-Indexed Logic. So the logical relation has two
-directions (of type \textsf{Dir}): the ≼ direction has the
-less-precise term taking the lead whereas the ≽ direction has the
-more-precise term in the lead.
+into the Step-Indexed Logic. The logical relation has two
+directions (of type \textsf{Dir}): the ≼ direction requires
+the more-precise term to simulate the less-precise term
+whereas the ≽ direction requires the less-precise term
+to simulate the more-precise.
 %
 In addition, the logical relation consists of mutually-recursive
 relations on both terms and values. SIL does not directly support
@@ -100,7 +108,7 @@ verbose, so we define the below shorthands.
 LR-type : Set
 LR-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
 
-LR-ctx : Context
+LR-ctx : List Set
 LR-ctx = LR-type ∷ []
 
 _∣_ˢ⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A}{A′} (c : A ⊑ A′) → Setˢ LR-ctx (cons Now ∅)
@@ -159,14 +167,33 @@ LRᵥ (★ , .A′ , unk⊑{H}{A′} d) dir V V′ = ⊥ ˢ
 The logical relation is defined in Figure~\ref{fig:log-rel-precision}
 and explained in the following paragraphs.  The definition of the
 logical relation for terms is based on the requirements of the gradual
-guarantee, but it only talks about one step at a time of the leading
-term. In the ≼ direction, the first clause says that the less-precise
-$M$ takes a step to $N$ and that $N$ is related to $M′$ at one tick
-later in time. The second clause allows the more-precise $M′$ to
-reduce to an error. The third clause says that the less-precise $M$ is
-already a value, and requires $M′$ to reduce to a value that is
-related to $M$. The other direction ≽ is defined in a similar way,
-but with the more precise term $M′$ taking one step at a time.
+guarantee, but it only talks about one step at a time of the term
+begin simulated. In the ≼ direction, the first clause says that the
+less-precise $M$ takes a step to $N$ and that $N$ is related to $M′$
+at one tick later in time. The second clause allows the more-precise
+$M′$ to reduce to an error. The third clause says that the
+less-precise $M$ is already a value, and requires $M′$ to reduce to a
+value that is related to $M$. The other direction ≽ is defined in a
+similar way, but with the more precise term $M′$ taking one step at a
+time.
+
+The definition of the logical relation for values is by recursion on
+the precision relation and by cases on the values and their types.
+When both values are of the same base type ($\mathsf{base}⊑$), they
+are related if they are identical constants.  When the values are of
+function type ($\mathsf{fun}⊑$), then they are related if they are
+both lambda abstractions that, when later applied to related
+arguments, behave in a related way. When the values are both of unkown
+type ($\mathsf{unk⊑unk}$), then they are related if they are both
+injections from the same ground type and the underlying values are
+related one step later. If the less-precise value is of unknown type
+but the more-precise value is not ($\mathsf{unk⊑}$), then they are
+related if (1) the less-precise value must be an injection and (2) the
+ground type of the injection is less-precise than the type of the
+more-precise value. Furthermore, for direction ≼, (3a) the underlying
+value of the injection is related one step later to the more-precise
+value. For direction ≽, (3b) the underlying value of the injection is
+related now to the more-precise value.
 
 The following definitions combine the LRᵥ and LRₜ functions into a
 single function, pre-LRₜ⊎LRᵥ, and than applies the μᵒ operator to
