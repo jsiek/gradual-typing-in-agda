@@ -338,8 +338,14 @@ the result is the underlying value.  The \textsf{collide} says that if
 the injection and projection do not match, the result is
 \textsf{blame}. The reason we introduce the $M$ variable and the
 equation $M ≡ V ⟨ G !⟩$ in those rules is that we ran into
-difficulties with Agda when doing case analysis on reductions.
-The same is true for the ξξ and \textsf{ξξ-blame} rules.
+difficulties with Agda when doing case analysis on reductions.  The
+same is true for the ξξ and \textsf{ξξ-blame} rules.  The ξξ and
+\textsf{ξξ-blame} rules handle the usual congruence rules that are
+needed for reduction. The \textsf{Frame} type is a shallow
+non-recursive evaluation context, representing just a single term
+constructor with a hole. The notation $F[M]$ plugs term $M$ into the
+hole inside $F$.
+
 Figure~\ref{fig:cast-calculus} defines $M ⇓$ to mean that $M$
 reduces to a value, $M ⇑$ to mean $M$ diverges, and $M ⇑⊎blame$
 to mean that $M$ either diverges or reduces to \textsf{blame}.
@@ -352,7 +358,7 @@ equivalent.)
 infix 3 _⊢_⦂_
 data _⊢_⦂_ : List Type → Term → Type → Set where
   ⊢` : ∀ {Γ x A} → Γ ∋ x ⦂ A → Γ ⊢ ` x ⦂ A
-  ⊢$ : ∀ {Γ} (l : Lit)  → Γ ⊢ $ l ⦂ $ₜ (typeof l)
+  ⊢$ : ∀ {Γ} (l : Lit) → Γ ⊢ $ l ⦂ $ₜ (typeof l)
   ⊢· : ∀ {Γ L M A B} → Γ ⊢ L ⦂ (A ⇒ B) → Γ ⊢ M ⦂ A → Γ ⊢ L · M ⦂ B
   ⊢ƛ : ∀ {Γ N A B} → (A ∷ Γ) ⊢ N ⦂ B → Γ ⊢ ƛ N ⦂ (A ⇒ B)
   ⊢⟨!⟩ : ∀{Γ M G} → Γ ⊢ M ⦂ ⌈ G ⌉ → Γ ⊢ M ⟨ G !⟩ ⦂ ★
@@ -362,7 +368,7 @@ data _⊢_⦂_ : List Type → Term → Type → Set where
 infix 2 _⟶_
 data _⟶_ : Term → Term → Set where
   β : ∀ {N W} → Value W  →  (ƛ N) · W ⟶ N [ W ]
-  collapse : ∀{G M V} → Value V  →  M ≡ V ⟨ G !⟩  →  M ⟨ G ?⟩ ⟶ V
+  collapse : ∀{G M V} → Value V → M ≡ V ⟨ G !⟩  →  M ⟨ G ?⟩ ⟶ V
   collide  : ∀{G H M V} → Value V → G ≢ H → M ≡ V ⟨ G !⟩ → M ⟨ H ?⟩ ⟶ blame
   ξξ : ∀ {M N M′ N′} → (F : Frame)
     → M′ ≡ F ⟦ M ⟧ → N′ ≡ F ⟦ N ⟧ → M ⟶ N → M′ ⟶ N′

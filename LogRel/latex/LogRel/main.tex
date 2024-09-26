@@ -1,4 +1,4 @@
-\documentclass[submission,copyright,creativecommons]{eptcs}
+\documentclass[copyright,creativecommons]{eptcs}
 \providecommand{\event}{Peter Thiemann's Festschrift 2024} % Name of the event you are submitting to
 
 \usepackage{iftex}
@@ -244,7 +244,9 @@ how using step-indexed logical relations compares to a
 simulation-based proof. One rough comparison is the number of lines of
 code in Agda. Wadler, Thiemann, and I developed a simulation-based
 proof of the gradual guarantee for a similar cast calculus in Agda,
-which came in at 3,200 LOC. The logical-relations proof presented here
+which came in at 3,200 LOC of which 232 lines are proofs about substitution
+(equivalent to what is provided in the ABT library).
+The logical-relations proof presented here
 was somewhat shorter, at 2,300 LOC, though it makes use of the
 Abstract Binding Tree Library (900 LOC) and the Step-Indexed Logic
 Library (2100 LOC). These LOC numbers confirm my feeling that the
@@ -272,9 +274,9 @@ Thiemann and Philip Wadler where we have been exploring how to
 mechanize blame calculi in Agda and study the polymorphic blame
 calculus. My understanding of step-indexed logical relations was
 improved by reading Peter Thiemann's proof in Agda of type safety for
-a typed $\lambda$-calculus with \textsf{fix} using step-indexed
-logical relations. The initiative to build an Agda version of the LSLR
-logic came from Philip Wadler.
+a typed $\lambda$-calculus with \textsf{fix} (for defining recursive
+function) using step-indexed logical relations. The initiative to
+build an Agda version of the LSLR logic came from Philip Wadler.
 
 
 %\nocite{*}

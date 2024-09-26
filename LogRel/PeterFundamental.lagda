@@ -152,7 +152,7 @@ tradeoffs. On the one hand, there is no explicit reasoning about step
 indices. On the other hand, there is some added verbosity compared to
 a proof in raw Agda such as the use of \textsf{appᵒ} for modus-ponens,
 the use of de Bruijn indices \textsf{Zᵒ} to refer to premises,
-and extra annotations such as \textsf{{P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)}}
+and extra annotations such as \textsf{\{P = ▷ᵒ (dir ∣ W ⊑ᴸᴿᵥ W′ ⦂ c)\}}
 that are needed when Agda's type inference fails.
 
 However, there is a bigger problem regarding incremental proof
@@ -164,8 +164,8 @@ Unfortunately, Agda's message describing what needs to be proved fills
 an entire computer screen because Agda normalizes the SIL formulas
 into their Agda encodings. We are working on new version of SIL that
 uses the \texttt{abstract} feature of Agda to hide the internals of
-SIL from its clients, but that also has its challenges, such as
-requiring the use of the \texttt{prop} extension so that the fields of
+SIL from its clients, but that also has its challenges. It seems that
+the \texttt{prop} extension is necessary so that the fields of
 \textsf{Setᵒ} that contain proofs are ignored when proving equations
 such as \textsf{fixpointᵒ}.
 
@@ -178,7 +178,8 @@ which state that if two terms are in the logical relation, then
 walking backwards with one or both of them yields terms that are still
 in the logical relation. We formulated these lemmas with explicit step
 indices and the meaning function \textsf{\#} because working with the
-raw Agda encoding enables the use of automatic proof search.
+raw Agda encoding enables the use of Agda's Auto command for automatic
+proof search.
 
 \begin{code}
 anti-reduction-≼-R-one : ∀{A}{A′}{c : A ⊑ A′}{M}{M′}{N′}{i}

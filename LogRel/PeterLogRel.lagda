@@ -91,18 +91,17 @@ data Dir : Set where
 
 To define a logical relation for precision, we adapt the logical
 relation of New~\cite{New:2020ab}, which used explicit step indexing,
-into the Step-Indexed Logic. The logical relation has two
-directions (of type \textsf{Dir}): the ≼ direction requires
-the more-precise term to simulate the less-precise term
-whereas the ≽ direction requires the less-precise term
-to simulate the more-precise.
-%
-In addition, the logical relation consists of mutually-recursive
-relations on both terms and values. SIL does not directly support
-mutual recursion, but it can be expressed by combining the two
-relations into a single relation whose input is a disjoint sum.  The
-formula for expressing membership in these recursive relations is
-verbose, so we define the below shorthands.
+into the Step-Indexed Logic. The logical relation has two directions
+(of type \textsf{Dir}): the ≼ direction requires the more-precise term
+to simulate the less-precise term whereas the ≽ direction requires the
+less-precise term to simulate the more-precise.  % In addition, the
+logical relation consists of mutually-recursive relations on both
+terms and values. SIL does not directly support mutual recursion, but
+it can be expressed by combining the two relations into a single
+relation whose input is a disjoint sum.  The formula for expressing
+membership in these recursive relations is verbose, so we define the
+below shorthands. Note that these shorthands are only intended for use
+inside the definition of the logical relation.
 
 \begin{code}
 LR-type : Set
@@ -173,9 +172,9 @@ less-precise $M$ takes a step to $N$ and that $N$ is related to $M′$
 at one tick later in time. The second clause allows the more-precise
 $M′$ to reduce to an error. The third clause says that the
 less-precise $M$ is already a value, and requires $M′$ to reduce to a
-value that is related to $M$. The other direction ≽ is defined in a
-similar way, but with the more precise term $M′$ taking one step at a
-time.
+value that is related at the current time to $M$. The other direction
+≽ is defined in a similar way, but with the more precise term $M′$
+taking one step at a time.
 
 The definition of the logical relation for values is by recursion on
 the precision relation and by cases on the values and their types.
@@ -188,12 +187,16 @@ type ($\mathsf{unk⊑unk}$), then they are related if they are both
 injections from the same ground type and the underlying values are
 related one step later. If the less-precise value is of unknown type
 but the more-precise value is not ($\mathsf{unk⊑}$), then they are
-related if (1) the less-precise value must be an injection and (2) the
+related if (1) the less-precise value is an injection and (2) the
 ground type of the injection is less-precise than the type of the
 more-precise value. Furthermore, for direction ≼, (3a) the underlying
 value of the injection is related one step later to the more-precise
 value. For direction ≽, (3b) the underlying value of the injection is
-related now to the more-precise value.
+related now to the more-precise value. Note that the recursive call
+to $\mathsf{LRᵥ}$ is fine from a termination perspective because
+argument $d$ is a subterm of $\mathsf{unk⊑}\,d$. This is why
+the $\mathsf{unk⊑}$ rule needs to be recursive, with the
+premise $⌈ G ⌉ ⊑ B$.
 
 The following definitions combine the LRᵥ and LRₜ functions into a
 single function, pre-LRₜ⊎LRᵥ, and than applies the μᵒ operator to
@@ -244,7 +247,7 @@ _∣_⊨_⊑ᴸᴿ_⦂_ : List Prec → Dir → Term → Term → Prec → Set
    → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
 \end{code}
 
-We use the following notation for the conjunction of the two
+\noindent We use the following notation for the conjunction of the two
 directions and define the \textsf{proj} function for accessing each
 direction.
 
@@ -301,7 +304,7 @@ LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
    ≡ᵒ⇒⇔{k = suc k} (LRₜ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
 \end{code}
 
-The definition of ⊑ᴸᴿᵥ included several clauses that ensured that the
+The definition of ⊑ᴸᴿᵥ includes several clauses that ensured that the
 related values are indeed syntactic values. Here we make use of that
 to prove that indeed, logically related values are syntactic values.
 
