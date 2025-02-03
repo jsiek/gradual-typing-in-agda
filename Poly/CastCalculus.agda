@@ -30,7 +30,7 @@ open import Var using (Var)
 
 module Poly.CastCalculus where
 
-open import Poly.Types
+open import Poly.Types hiding (FV; FV-suc-0) public
 
 {-------------      Terms    -------------}
 
@@ -82,15 +82,15 @@ sig g-fun = []
 
 open import rewriting.AbstractBindingTree Op sig renaming (ABT to Term) public
 
-pattern $ n = (op-nat n) ⦅ nil ⦆
+pattern lit n = (op-nat n) ⦅ nil ⦆
 pattern ƛ N  = op-lam ⦅ cons (bind (ast N)) nil ⦆
 infixl 7  _·_
 pattern _·_ L M = op-app ⦅ cons (ast L) (cons (ast M) nil) ⦆
 pattern Λ N  = op-tyabs ⦅ cons (bind (ast N)) nil ⦆
 infix 5 _【_】
-pattern _【_】 L α = op-tyapp ⦅ cons (ast L) (cons (ast α) nil) ⦆
+pattern _【_】 L α = op-tyapp ⦅ cons (ast L) (cons (ast (` α)) nil) ⦆
 infix 5 _⟨_⟩
-pattern _⟨_⟩ L c = op-tyapp ⦅ cons (ast L) (cons (ast c) nil) ⦆
+pattern _⟨_⟩ L c = op-cast ⦅ cons (ast L) (cons (ast c) nil) ⦆
 pattern blame = op-blame ⦅ nil ⦆
 infix 3 ν_
 pattern ν_ N  = op-nu ⦅ cons (bind (ast N)) nil ⦆
@@ -123,7 +123,7 @@ data Value : Term → Set where
 
   V-nat : ∀ {n : ℕ}
       -------------
-    → Value ($ n)
+    → Value (lit n)
     
   V-ƛ : ∀ {N : Term}
       ---------------------------
@@ -157,7 +157,7 @@ data Frame : Set where
     → Frame
 
   □【_】 :
-     (α : Term)
+     (α : Var)
      → Frame
 
   □⟨_⟩ :
@@ -183,14 +183,14 @@ data _—→_ : Term → Term → Set where
     → (ƛ N) · W —→ N [ W ]
 
   β-Λ : ∀ {N : Term}{α : Var}
-      ---------------------------
-    → (Λ N) 【 ` α 】 —→ N [ ` α ]
+      -------------------------
+    → (Λ N) 【 α 】 —→ N [ α ]ᵣ
 
   -- todo: constraint on c?
   β-gen : ∀ {V : Term}{c : Term}{α : Var}
     → Value V
-      ----------------------------------------
-    → V ⟨ gen c ⟩ 【 ` α 】 —→ V ⟨ c [ ` α ] ⟩
+      -------------------------------------
+    → V ⟨ gen c ⟩ 【 α 】 —→ V ⟨ c [ α ]ᵣ ⟩
 
   cast-id : ∀ {V : Term}
     → Value V
@@ -210,16 +210,17 @@ data _—→_ : Term → Term → Set where
     → V ⟨ G !! ⟩ ⟨ H ?? ⟩ —→ blame
 
   cast-inst : ∀ {V : Term}{c : Term}
-    → V ⟨ inst c ⟩ —→ ν V 【 ` 0 】 ⟨ c ⟩
+    → V ⟨ inst c ⟩ —→ ν (rename suc V) 【 0 】 ⟨ c ⟩
 
   cast-all : ∀ {V : Term}{c : Term}
-    → V ⟨ ∀̰ c ⟩ —→ Λ V ⟨ c ⟩
+    → V ⟨ ∀̰ c ⟩ —→ Λ (rename suc V) 【 0 】 ⟨ c ⟩
 
   cast-seq : ∀ {V : Term}{c d : Term}
     → V ⟨ c ⍮ d ⟩ —→ V ⟨ c ⟩ ⟨ d ⟩
 
   cast-fun : ∀ {V : Term}{c d : Term}
-    → V ⟨ c ↪ d ⟩ —→ ƛ (V · ` 0 ⟨ c ⟩) ⟨ d ⟩
+    → V ⟨ c ↪ d ⟩ —→ ƛ ((rename suc V) · ` 0 ⟨ (rename suc c) ⟩)
+                       ⟨ (rename suc d) ⟩
 
 infix 2 _∣_—→_∣_
 
@@ -239,7 +240,7 @@ data _∣_—→_∣_ : ℕ → Term → ℕ → Term → Set where
     → Σ ∣ M —→ Σ ∣ N
 
   new-ty : ∀{Σ}{N}
-     → Σ ∣ ν N —→ suc Σ ∣ N [ ` Σ ]
+     → Σ ∣ ν N —→ suc Σ ∣ N [ Σ ]ᵣ
 
 pattern ξ F M—→N = ξξ F refl refl M—→N
 
@@ -250,7 +251,7 @@ pattern ξ F M—→N = ξξ F refl refl M—→N
 {- Well-typed Coercions -}
 
 gnd⇒ty : ∀{G} → Ground G → Type
-gnd⇒ty {.nat} G-nat = Nat
+gnd⇒ty {.nat} G-nat = $ ′ℕ
 gnd⇒ty {.★→★} G-fun = ★ ⇒ ★
 gnd⇒ty {` α} G-var = ^ α
 
@@ -286,15 +287,15 @@ data _⊢_⦂_↝_ : TyEnv → Term → Type → Type → Set where
     → Γ ⊢ ` α ↟ ⦂ ^ α ↝ A
 
   wt-all : ∀{Γ}{c}{A}{B}
-    → Γ ⊢ c ⦂ A ↝ B
+    → typ ∷ Γ ⊢ c ⦂ A ↝ B
     → Γ ⊢ ∀̰ c ⦂ ∀̇ A ↝ ∀̇ B
     
   wt-gen : ∀{Γ}{c}{A}{B}
-    → Γ ⊢ c ⦂ A ↝ B
+    → typ ∷ Γ ⊢ c ⦂ (⟪ renᵗ suc ⟫ᵗ A) ↝ B
     → Γ ⊢ gen c ⦂ A ↝ ∀̇ B
 
   wt-inst : ∀{Γ}{c}{A}{B}
-    → Γ ⊢ c ⦂ A ↝ B
+    → typ ∷ Γ ⊢ c ⦂ A ↝ (⟪ renᵗ suc ⟫ᵗ B)
     → Γ ⊢ inst c ⦂ ∀̇ A ↝ B
 
 {- Well-typed Terms -}
@@ -304,7 +305,7 @@ data _⊢_⦂_ : TyEnv → Term → Type → Set where
 
   ⊢-nat : ∀{Γ} → ∀ n
         -----------------
-      → Γ ⊢ $ n ⦂ Nat
+      → Γ ⊢ lit n ⦂ $ ′ℕ
 
   ⊢-var : ∀{Γ}{x}{A}
       → Γ ∋ x ⦂ trm A
@@ -332,19 +333,22 @@ data _⊢_⦂_ : TyEnv → Term → Type → Set where
   ⊢-tyapp : ∀{Γ}{L}{A}{B}{α}
      → Γ ⊢ L ⦂ ∀̇ A
      → Γ ∋ α ⦂ bnd B
-       ---------------------------
-     → Γ ⊢ L 【 ` α 】 ⦂ A ⦗ ^ α ⦘
+       ------------------------
+     → Γ ⊢ L 【 α 】 ⦂ A ⦗ α ⦘ᵣ
 
   ⊢-ν : ∀{Γ}{N}{A}{B}
      → bnd B ∷ Γ ⊢ N ⦂ ⟪ renᵗ suc ⟫ᵗ A
        -------------------------------
-     → Γ ⊢ ν N ⦂ A
+     → Γ ⊢ ν N ⦂ A    {- or should this be ⟪ renᵗ pred ⟫ A ? -}
 
   ⊢-cast : ∀{Γ}{M}{c}{A}{B}
      → Γ ⊢ M ⦂ A
      → Γ ⊢ c ⦂ A ↝ B
        ---------------
      → Γ ⊢ M ⟨ c ⟩ ⦂ B
+
+  ⊢-blame : ∀{Γ}{A}
+     → Γ ⊢ blame ⦂ A
 
 {- Well-formed Top-Level Type Environment -}
 
@@ -364,4 +368,12 @@ data _⊢ᶜ_⦂_ : ℕ → Term → Type → Set where
       → Σ ⊢ Γ
       → Γ ⊢ M ⦂ A
       → Σ ⊢ᶜ M ⦂ A
+
+unique-ground : ∀ {G}
+  → (g1 : Ground G)
+  → (g2 : Ground G)
+  → gnd⇒ty g2 ≡ gnd⇒ty g1
+unique-ground {.nat} G-nat G-nat = refl
+unique-ground {.★→★} G-fun G-fun = refl
+unique-ground {.(` _)} G-var G-var = refl
 

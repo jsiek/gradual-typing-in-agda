@@ -68,7 +68,7 @@ open import rewriting.AbstractBindingTree TypeOp type-sig
   renaming (ABT to Type; Rename to Renameᵗ; rename to renameᵗ; Subst to Substᵗ;
             ren to renᵗ; ren-def to ren-defᵗ; extr to extrᵗ; ext to extᵗ;
             ⟪_⟫ to ⟪_⟫ᵗ; sub-var to sub-varᵗ; seq-def to seq-defᵗ; ↑ to ↑ᵗ;
-            _[_] to _⦗_⦘; _⦅_⦆ to _‹_›; _•_ to _•ᵗ_; id to idᵗ; _⨟_ to _⨟ᵗ_;
+            _[_] to _⦗_⦘; _[_]ᵣ to _⦗_⦘ᵣ; _⦅_⦆ to _‹_›; _•_ to _•ᵗ_; id to idᵗ; _⨟_ to _⨟ᵗ_;
             nil to tnil; cons to tcons; bind to tbind; ast to tast; `_ to ^_;
             FV-ren to FV-renᵗ; FV-ren-fwd to FV-ren-fwdᵗ)
   public
@@ -348,6 +348,7 @@ data _~_ : Type → Type → Set where
      → A ~ A′
      → ∀̇ A ~ ∀̇ A′
 
+{-
 ⊔-upper-bound : ∀{A B C}
    → A ⊔ B ≡ just C
    → A ⊑ C × B ⊑ C
@@ -361,3 +362,4 @@ data _~_ : Type → Type → Set where
 ⊔-upper-bound {A₁ ⇒ A₂}{B}{C} A⊔B=C = {!!}
 ⊔-upper-bound {∀̇ A}{B}{C} A⊔B=C = {!!}
 
+-}

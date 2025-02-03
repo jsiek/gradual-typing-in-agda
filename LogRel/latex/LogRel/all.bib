@@ -1,12 +1,430 @@
 %% This BibTeX bibliography file was created using BibDesk.
 %% https://bibdesk.sourceforge.io/
 
-%% Created for Jeremy Siek at 2024-07-03 11:34:47 -0400 
+%% Created for Jeremy Siek at 2024-10-08 10:27:44 -0400 
 
 
 %% Saved with string encoding Unicode (UTF-8) 
 
 
+
+@article{Eremondi:2022aa,
+	abstract = {Gradual dependent types can help with the incremental adoption of dependently typed code by providing a principled semantics for imprecise types and proofs, where some parts have been omitted. Current theories of gradual dependent types, though, lack a central feature of type theory: propositional equality. Lennon-Bertrand et al. show that, when the reflexive proof refl is the only closed value of an equality type, a gradual extension of the Calculus of Inductive Constructions (CIC) with propositional equality violates static observational equivalences. Extensionally-equal functions should be indistinguishable at run time, but they can be distinguished using a combination of equality and type imprecision. This work presents a gradual dependently typed language that supports propositional equality. We avoid the above issues by devising an equality type of which refl is not the only closed inhabitant. Instead, each equality proof is accompanied by a term that is at least as precise as the equated terms, acting as a witness of their plausible equality. These witnesses track partial type information as a program runs, raising errors when that information shows that two equated terms are undeniably inconsistent. Composition of type information is internalized as a construct of the language, and is deferred for function bodies whose evaluation is blocked by variables. We thus ensure that extensionally-equal functions compose without error, thereby preventing contexts from distinguishing them. We describe the challenges of designing consistency and precision relations for this system, along with solutions to these challenges. Finally, we prove important metatheory: type safety, conservative embedding of CIC, weak canonicity, and the gradual guarantees of Siek et al., which ensure that reducing a program's precision introduces no new static or dynamic errors.},
+	address = {New York, NY, USA},
+	articleno = {96},
+	author = {Eremondi, Joseph and Garcia, Ronald and Tanter, \'{E}ric},
+	date-added = {2024-10-01 08:15:32 -0400},
+	date-modified = {2024-10-01 08:15:35 -0400},
+	doi = {10.1145/3547627},
+	issue_date = {August 2022},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {dependent types, gradual types, propositional equality},
+	month = aug,
+	number = {ICFP},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {Propositional equality for gradual dependently typed programming},
+	url = {https://doi.org/10.1145/3547627},
+	volume = {6},
+	year = {2022},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM1NDc2MjcucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3547627}}
+
+@article{Malewski:2024aa,
+	abstract = {Indexed inductive types are essential in dependently-typed programming languages, enabling precise and expressive specifications of data structures and properties. Recognizing that programming and proving with dependent types could benefit from the smooth integration of static and dynamic checking that gradual typing offers, recent efforts have studied gradual dependent types. Gradualizing indexed inductive types however remains mostly unexplored: the standard encodings of indexed inductive types in intensional type theory, e.g., using type-level fixpoints or subset types, break in the presence of gradual features; and previous work on gradual dependent types focus on very specific instances of indexed inductive types. This paper contributes a general framework, named PUNK, specifically designed for exploring the design space of gradual indexed inductive types. PUNK is a versatile framework, enabling the exploration of the space between eager and lazy cast reduction semantics that arise from the interaction between casts and the inductive eliminator, allowing them to coexist and interoperate in a single system. Our work provides significant insights into the intersection of dependent types and gradual typing, by proposing a criteria for well-behaved gradual indexed inductive types, systematically addressing the outlined challenges of integrating these types. The contributions of this paper are a step forward in the quest for making gradual theorem proving and gradual dependently-typed programming a reality.},
+	address = {New York, NY, USA},
+	articleno = {255},
+	author = {Malewski, Mara and Maillard, Kenji and Tabareau, Nicolas and Tanter, \'{E}ric},
+	date-added = {2024-09-30 12:39:23 -0400},
+	date-modified = {2024-09-30 12:39:25 -0400},
+	doi = {10.1145/3674644},
+	issue_date = {August 2024},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {Gradual typing, dependent types, proof assistants},
+	month = aug,
+	number = {ICFP},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {Gradual Indexed Inductive Types},
+	url = {https://doi.org/10.1145/3674644},
+	volume = {8},
+	year = {2024},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM2NzQ2NDQucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3674644}}
+
+@article{Maillard:2022aa,
+	abstract = {Gradualizing the Calculus of Inductive Constructions (CIC) involves dealing with subtle tensions between normalization, graduality, and conservativity with respect to CIC. Recently, GCIC has been proposed as a parametrized gradual type theory that admits three variants, each sacrificing one of these properties. For devising a gradual proof assistant based on CIC, normalization and conservativity with respect to CIC are key, but the tension with graduality needs to be addressed. Additionally, several challenges remain:  
+(1) The presence of two wildcard terms at any type---the error and unknown terms---enables trivial proofs of any theorem, jeopardizing the use of a gradual type theory in a proof assistant;  
+(2) Supporting general indexed inductive families, most prominently equality, is an open problem;  
+(3) Theoretical accounts of gradual typing and graduality so far do not support handling type mismatches detected during reduction;  
+(4) Precision and graduality are external notions not amenable to reasoning within a gradual type theory.  
+All these issues manifest primally in CastCIC, the cast calculus used to define GCIC. In this work, we present an extension of CastCIC called GRIP. GRIP is a reasonably gradual type theory that addresses the issues above, featuring internal precision and general exception handling. By adopting a novel interpretation of the unknown term that carefully accounts for universe levels, GRIP satisfies graduality for a large and well-defined class of terms, in addition to being normalizing and a conservative extension of CIC. Internal precision supports reasoning about graduality within GRIP itself, for instance to characterize gradual exception-handling terms, and supports gradual subset types. We develop the metatheory of GRIP using a model formalized in Coq, and provide a prototype implementation of GRIP in Agda.},
+	address = {New York, NY, USA},
+	articleno = {124},
+	author = {Maillard, Kenji and Lennon-Bertrand, Meven and Tabareau, Nicolas and Tanter, \'{E}ric},
+	date-added = {2024-09-30 12:06:43 -0400},
+	date-modified = {2024-09-30 12:06:46 -0400},
+	doi = {10.1145/3547655},
+	issue_date = {August 2022},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {Gradual typing, dependent types, proof assistants},
+	month = aug,
+	number = {ICFP},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {A reasonably gradual type theory},
+	url = {https://doi.org/10.1145/3547655},
+	volume = {6},
+	year = {2022},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM1NDc2NTUucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3547655}}
+
+@article{Lennon-Bertrand:2022aa,
+	abstract = {We investigate gradual variations on the Calculus of Inductive Construction (CIC) for swifter prototyping with imprecise types and terms. We observe, with a no-go theorem, a crucial trade-off between graduality and the key properties of normalization and closure of universes under dependent product that CIC enjoys. Beyond this Fire Triangle of Graduality, we explore the gradualization of CIC with three different compromises, each relaxing one edge of the Fire Triangle. We develop a parametrized presentation of Gradual CIC (GCIC) that encompasses all three variations, and develop their metatheory. We first present a bidirectional elaboration of GCIC to a dependently-typed cast calculus, CastCIC, which elucidates the interrelation between typing, conversion, and the gradual guarantees. We use a syntactic model of CastCIC to inform the design of a safe, confluent reduction, and establish, when applicable, normalization. We study the static and dynamic gradual guarantees as well as the stronger notion of graduality with embedding-projection pairs formulated by New and Ahmed, using appropriate semantic model constructions. This work informs and paves the way towards the development of malleable proof assistants and dependently-typed programming languages.},
+	address = {New York, NY, USA},
+	articleno = {7},
+	author = {Lennon-Bertrand, Meven and Maillard, Kenji and Tabareau, Nicolas and Tanter, \'{E}ric},
+	date-added = {2024-09-30 12:05:14 -0400},
+	date-modified = {2024-09-30 12:05:17 -0400},
+	doi = {10.1145/3495528},
+	issn = {0164-0925},
+	issue_date = {June 2022},
+	journal = {ACM Trans. Program. Lang. Syst.},
+	keywords = {dependent types, proof assistants, Gradual typing},
+	month = apr,
+	number = {2},
+	numpages = {82},
+	publisher = {Association for Computing Machinery},
+	title = {Gradualizing the Calculus of Inductive Constructions},
+	url = {https://doi.org/10.1145/3495528},
+	volume = {44},
+	year = {2022},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM0OTU1MjgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3495528}}
+
+@article{Gierczak:2024ab,
+	abstract = {In gradual typing, different languages perform different dynamic type checks for the same program even 
+though the languages have the same static type system. This raises the question of whether, given a gradually 
+typed language, the combination of the translation that injects checks in well-typed terms and the dynamic 
+semantics that determines their behavior sufficiently enforce the static type system of the language. Neither 
+type soundness, nor complete monitoring, nor any other meta-theoretic property of gradually typed languages 
+to date provides a satisfying answer. 
+
+In response, we present vigilance, a semantic analytical instrument that defines when the check-injecting 
+translation and dynamic semantics of a gradually typed language are adequate for its static type system. 
+Technically, vigilance asks if a given translation-and-semantics combination enforces the complete run-time 
+typing history of a value, which consists of all of the types associated with the value. We show that the standard 
+combination for so-called Natural gradual typing is vigilant for the standard simple type system, but the 
+standard combination for Transient gradual typing is not. At the same time, the standard combination for 
+Transient is vigilant for a tag type system but the standard combination for Natural is not. Hence, we clarify 
+the comparative type-level reasoning power between the two most studied approaches to sound gradual typing. 
+Furthermore, as an exercise that demonstrates how vigilance can guide design, we introduce and examine 
+a new theoretical static gradual type system, dubbed truer, that is stronger than tag typing and more faithfully 
+reflects the type-level reasoning power that the dynamic semantics of Transient gradual typing can guarantee.},
+	address = {New York, NY, USA},
+	articleno = {125},
+	author = {Gierczak, Olek and Menon, Lucy and Dimoulas, Christos and Ahmed, Amal},
+	date-added = {2024-08-27 12:01:50 -0400},
+	date-modified = {2024-08-27 12:01:53 -0400},
+	doi = {10.1145/3649842},
+	issue_date = {April 2024},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {gradual typing, logical relations, natural, semantics, transient},
+	month = {apr},
+	number = {OOPSLA1},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {Gradually Typed Languages Should Be Vigilant!},
+	url = {https://doi.org/10.1145/3649842},
+	volume = {8},
+	year = {2024},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM2NDk4NDIucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3649842}}
+
+@article{Wood:aa,
+	author = {Wood, Gavin},
+	date-added = {2024-08-12 09:21:34 -0400},
+	date-modified = {2024-08-12 09:21:41 -0400},
+	edition = {EIP-150 REVISION},
+	title = {Ethereum: A secure decentralised generalised transaction ledger}}
+
+@article{Benton:2011aa,
+	author = {Nick Benton and Chung-Kil Hur and Andrew Kennedy and Conor McBride},
+	date-added = {2024-08-07 11:13:30 -0400},
+	date-modified = {2024-08-07 11:15:09 -0400},
+	journal = {Journal of Automated Reasoning},
+	pages = {141--159},
+	title = {Strongly Typed Term Representations in Coq},
+	volume = {49},
+	year = {2011},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoXxAPdHlwZWRzeW50YXgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACo=}}
+
+@inproceedings{Almahallawi:2020ab,
+	author = {Deyaaeldeen Almahallawi and Jeremy G. Siek},
+	booktitle = {Workshop on Gradual Typing},
+	date-added = {2024-07-26 13:29:15 -0400},
+	date-modified = {2024-07-26 13:29:17 -0400},
+	publisher = {ACM},
+	title = {Space-Efficient Monotonic References},
+	year = 2020}
+
+@inproceedings{Castagna:2019ab,
+	author = {Giuseppe Castagna and Guillaume Duboc and Victor Lanvin and Jeremy G. Siek},
+	booktitle = {Symposium on Implementation and Application of Functional Languages},
+	date-added = {2024-07-26 13:27:42 -0400},
+	date-modified = {2024-07-26 13:27:43 -0400},
+	month = {September},
+	series = {IFL},
+	title = {A space-efficient call-by-value virtual machine for gradual set-theoretic types},
+	year = 2019}
+
+@article{Greenman:2018ac,
+	abstract = {The literature on gradual typing presents three fundamentally different ways of thinking about the integrity of programs that combine statically typed and dynamically typed code. This paper presents a uniform semantic framework that explains all three approaches, illustrates how each approach affects a developer's work, and adds a systematic performance comparison for a single implementation platform.},
+	address = {New York, NY, USA},
+	articleno = {71},
+	author = {Greenman, Ben and Felleisen, Matthias},
+	date-added = {2024-07-26 13:17:31 -0400},
+	date-modified = {2024-07-26 13:17:33 -0400},
+	doi = {10.1145/3236766},
+	issue_date = {September 2018},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {type soundness, performance evaluation, migratory typing, D-deliverable},
+	month = {jul},
+	number = {ICFP},
+	numpages = {32},
+	publisher = {Association for Computing Machinery},
+	title = {A spectrum of type soundness and performance},
+	url = {https://doi.org/10.1145/3236766},
+	volume = {2},
+	year = {2018},
+	bdsk-url-1 = {https://doi.org/10.1145/3236766}}
+
+@article{Lazarek:2023aa,
+	abstract = {Equipping an existing programming language with a gradual type system  
+requires two major steps. The first and most visible one in academia  
+is to add a notation for types and a type checking apparatus. The second, highly  
+practical one is to provide a type veneer for the large number of  
+existing untyped libraries; doing so enables typed components  
+to import pieces of functionality and get their  
+uses type-checked, without any changes to the libraries. When programmers create such typed veneers for  
+libraries, they make mistakes that persist and cause  
+trouble. The question is whether the academically investigated  
+run-time checks for gradual type systems assist programmers with  
+debugging such mistakes. This paper provides a first, surprising  
+answer to this question via a rational-programmer investigation:  
+run-time checks alone are typically less helpful than the safety checks of the underlying language.  
+Combining Natural run-time checks with blame, however, provides  
+significantly superior debugging hints.},
+	address = {New York, NY, USA},
+	articleno = {194},
+	author = {Lazarek, Lukas and Greenman, Ben and Felleisen, Matthias and Dimoulas, Christos},
+	date-added = {2024-07-26 13:16:17 -0400},
+	date-modified = {2024-07-26 13:16:19 -0400},
+	doi = {10.1145/3607836},
+	issue_date = {August 2023},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {blame, gradual typing},
+	month = {aug},
+	number = {ICFP},
+	numpages = {28},
+	publisher = {Association for Computing Machinery},
+	title = {How to Evaluate Blame for Gradual Types, Part 2},
+	url = {https://doi.org/10.1145/3607836},
+	volume = {7},
+	year = {2023},
+	bdsk-url-1 = {https://doi.org/10.1145/3607836}}
+
+@article{Greenman:2023ab,
+	abstract = {Sound migratory typing envisions a safe and smooth refactoring of untyped code bases to typed ones. However, the cost of enforcing safety with run-time checks is often prohibitively high, thus performance regressions are a likely occurrence. Additional types can often recover performance, but choosing the right components to type is difficult because of the exponential size of the migratory typing lattice. In principal though, migration could be guided by off-the-shelf profiling tools. To examine this hypothesis, this paper follows the rational programmer method and reports on the results of an experiment on tens of thousands of performance-debugging scenarios via seventeen strategies for turning profiler output into an actionable next step. The most effective strategy is the use of deep types to eliminate the most costly boundaries between typed and untyped components; this strategy succeeds in more than 50\% of scenarios if two performance degradations are tolerable along the way.},
+	address = {New York, NY, USA},
+	articleno = {241},
+	author = {Greenman, Ben and Felleisen, Matthias and Dimoulas, Christos},
+	date-added = {2024-07-26 13:15:12 -0400},
+	date-modified = {2024-07-26 13:15:14 -0400},
+	doi = {10.1145/3622817},
+	issue_date = {October 2023},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {gradual typing, migratory typing, profiling, rational programmer},
+	month = {oct},
+	number = {OOPSLA2},
+	numpages = {30},
+	publisher = {Association for Computing Machinery},
+	title = {How Profilers Can Help Navigate Type Migration},
+	url = {https://doi.org/10.1145/3622817},
+	volume = {7},
+	year = {2023},
+	bdsk-url-1 = {https://doi.org/10.1145/3622817}}
+
+@article{Greenman:2019aa,
+	abstract = {In the context of gradual typing, type soundness guarantees the safety of typed code. When untyped code fails to respect types, a runtime check finds the discrepancy. As for untyped code, type soundness makes no promises; it does not protect untyped code from mistakes in type specifications and unwarranted blame.  To address the asymmetry, this paper adapts complete monitoring from the contract world to gradual typing. Complete monitoring strengthens plain soundness into a guarantee that catches problems with faulty type specifications. Furthermore, a semantics that satisfies complete monitoring can easily pinpoint the conflict between a type specification and a value. For gradual typing systems that fail complete monitoring, the technical framework provides a source-of-truth to assess the quality of blame.},
+	address = {New York, NY, USA},
+	articleno = {122},
+	author = {Greenman, Ben and Felleisen, Matthias and Dimoulas, Christos},
+	date-added = {2024-07-26 13:13:30 -0400},
+	date-modified = {2024-07-26 13:13:32 -0400},
+	doi = {10.1145/3360548},
+	issue_date = {October 2019},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {complete monitoring, blame soundness, blame completeness},
+	month = {oct},
+	number = {OOPSLA},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {Complete monitors for gradual types},
+	url = {https://doi.org/10.1145/3360548},
+	volume = {3},
+	year = {2019},
+	bdsk-url-1 = {https://doi.org/10.1145/3360548}}
+
+@article{Lazarek:2021aa,
+	abstract = {Programming language theoreticians develop blame assignment systems and prove blame theorems for gradually typed programming languages. Practical implementations of gradual typing almost completely ignore the idea of blame assignment. This contrast raises the question whether blame provides any value to the working programmer and poses the challenge of how to evaluate the effectiveness of blame assignment strategies. This paper contributes (1) the first evaluation method for blame assignment strategies and (2) the results from applying it to three different semantics for gradual typing. These results cast doubt on the theoretical effectiveness of blame in gradual typing. In most scenarios, strategies with imprecise blame assignment are as helpful to a rationally acting programmer as strategies with provably correct blame.},
+	address = {New York, NY, USA},
+	articleno = {68},
+	author = {Lazarek, Lukas and Greenman, Ben and Felleisen, Matthias and Dimoulas, Christos},
+	date-added = {2024-07-26 13:12:36 -0400},
+	date-modified = {2024-07-26 13:12:39 -0400},
+	doi = {10.1145/3473573},
+	issue_date = {August 2021},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {blame, gradual typing},
+	month = {aug},
+	number = {ICFP},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {How to evaluate blame for gradual types},
+	url = {https://doi.org/10.1145/3473573},
+	volume = {5},
+	year = {2021},
+	bdsk-url-1 = {https://doi.org/10.1145/3473573}}
+
+@article{Greenman:2023aa,
+	abstract = {The literature presents many strategies for enforcing the integrity of types when typed code interacts with untyped code. This article presents a uniform evaluation framework that characterizes the differences among some major existing semantics for typed--untyped interaction. Type system designers can use this framework to analyze the guarantees of their own dynamic semantics.},
+	address = {New York, NY, USA},
+	articleno = {4},
+	author = {Greenman, Ben and Dimoulas, Christos and Felleisen, Matthias},
+	date-added = {2024-07-26 13:11:50 -0400},
+	date-modified = {2024-07-26 13:11:53 -0400},
+	doi = {10.1145/3579833},
+	issn = {0164-0925},
+	issue_date = {March 2023},
+	journal = {ACM Trans. Program. Lang. Syst.},
+	keywords = {blame completeness, blame soundness, Complete monitoring},
+	month = {mar},
+	number = {1},
+	numpages = {54},
+	publisher = {Association for Computing Machinery},
+	title = {Typed--Untyped Interactions: A Comparative Analysis},
+	url = {https://doi.org/10.1145/3579833},
+	volume = {45},
+	year = {2023},
+	bdsk-url-1 = {https://doi.org/10.1145/3579833}}
+
+@article{Moy:2021ab,
+	abstract = {Gradually typed programming languages permit the incremental addition of static types to untyped programs. To remain sound, languages insert run-time checks at the boundaries between typed and untyped code. Unfortunately, performance studies have shown that the overhead of these checks can be disastrously high, calling into question the viability of sound gradual typing. In this paper, we show that by building on existing work on soft contract verification, we can reduce or eliminate this overhead.  Our key insight is that while untyped code cannot be trusted by a gradual type system, there is no need to consider only the worst case when optimizing a gradually typed program. Instead, we statically analyze the untyped portions of a gradually typed program to prove that almost all of the dynamic checks implied by gradual type boundaries cannot fail, and can be eliminated at compile time. Our analysis is modular, and can be applied to any portion of a program.  We evaluate this approach on a dozen existing gradually typed programs previously shown to have prohibitive performance overhead---with a median overhead of 2.5\texttimes{} and up to 80.6\texttimes{} in the worst case---and eliminate all overhead in most cases, suffering only 1.5\texttimes{} overhead in the worst case.},
+	address = {New York, NY, USA},
+	articleno = {53},
+	author = {Moy, Cameron and Nguy\~{\^e}n, Ph\'{u}c C. and Tobin-Hochstadt, Sam and Van Horn, David},
+	date-added = {2024-07-26 13:04:46 -0400},
+	date-modified = {2024-07-26 13:04:48 -0400},
+	doi = {10.1145/3434334},
+	issue_date = {January 2021},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {gradual typing, contract verification, Typed Racket},
+	month = {jan},
+	number = {POPL},
+	numpages = {28},
+	publisher = {Association for Computing Machinery},
+	title = {Corpse reviver: sound and efficient gradual typing via contract verification},
+	url = {https://doi.org/10.1145/3434334},
+	volume = {5},
+	year = {2021},
+	bdsk-url-1 = {https://doi.org/10.1145/3434334}}
+
+@inproceedings{Nguyen:2019aa,
+	abstract = {Termination is an important but undecidable program property, which has led to a large body of work on static methods for conservatively predicting or enforcing termination. One such method is the size-change termination approach of Lee, Jones, and Ben-Amram, which operates in two phases: (1) abstract programs into ``size-change graphs,'' and (2) check these graphs for the size-change property: the existence of paths that lead to infinite decreasing sequences. We transpose these two phases with an operational semantics that accounts for the run-time enforcement of the size-change property, postponing (or entirely avoiding) program abstraction. This choice has two key consequences: (1) size-change termination can be checked at run-time and (2) termination can be rephrased as a safety property analyzed using existing methods for systematic abstraction. We formulate run-time size-change checks as contracts in the style of Findler and Felleisen. The result compliments existing contracts that enforce partial correctness specifications to obtain contracts for total correctness. Our approach combines the robustness of the size-change principle for termination with the precise information available at run-time. It has tunable overhead and can check for nontermination without the conservativeness necessary in static checking. To obtain a sound and computable termination analysis, we apply existing abstract interpretation techniques directly to the operational semantics, avoiding the need for custom abstractions for termination. The resulting analyzer is competitive with with existing, purpose-built analyzers.},
+	address = {New York, NY, USA},
+	author = {Nguy\~{\^e}n, Ph\'{u}c C. and Gilray, Thomas and Tobin-Hochstadt, Sam and Van Horn, David},
+	booktitle = {Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation},
+	date-added = {2024-07-26 13:01:58 -0400},
+	date-modified = {2024-07-26 13:01:59 -0400},
+	doi = {10.1145/3314221.3314643},
+	isbn = {9781450367127},
+	keywords = {verification, termination, size-change principle},
+	location = {Phoenix, AZ, USA},
+	numpages = {15},
+	pages = {845--859},
+	publisher = {Association for Computing Machinery},
+	series = {PLDI 2019},
+	title = {Size-change termination as a contract: dynamically and statically enforcing termination for higher-order programs},
+	url = {https://doi.org/10.1145/3314221.3314643},
+	year = {2019},
+	bdsk-url-1 = {https://doi.org/10.1145/3314221.3314643}}
+
+@article{chen2024quest,
+	author = {Chen, Tianyu and Siek, Jeremy G},
+	date-added = {2024-07-23 13:47:39 -0400},
+	date-modified = {2024-07-23 13:50:30 -0400},
+	doi = {https://doi.org/10.1145/3656442},
+	journal = {Proceedings of the ACM on Programming Languages},
+	number = {PLDI},
+	pages = {1609--1632},
+	publisher = {ACM New York, NY, USA},
+	title = {Quest Complete: The Holy Grail of Gradual Security},
+	volume = {8},
+	year = {2024},
+	bdsk-url-1 = {https://doi.org/10.1145/3656442}}
+
+@article{Fiore:2022aa,
+	abstract = {Despite extensive research both on the theoretical and practical fronts, formalising, reasoning about, and implementing languages with variable binding is still a daunting endeavour -- repetitive boilerplate and the overly complicated metatheory of capture-avoiding substitution often get in the way of progressing on to the actually interesting properties of a language. Existing developments offer some relief, however at the expense of inconvenient and error-prone term encodings and lack of formal foundations.  We present a mathematically-inspired language-formalisation framework implemented in Agda. The system translates the description of a syntax signature with variable-binding operators into an intrinsically-encoded, inductive data type equipped with syntactic operations such as weakening and substitution, along with their correctness properties. The generated metatheory further incorporates metavariables and their associated operation of metasubstitution, which enables second-order equational/rewriting reasoning. The underlying mathematical foundation of the framework -- initial algebra semantics -- derives compositional interpretations of languages into their models satisfying the semantic substitution lemma by construction.},
+	address = {New York, NY, USA},
+	articleno = {53},
+	author = {Fiore, Marcelo and Szamozvancev, Dmitrij},
+	date-added = {2024-07-06 10:36:41 -0400},
+	date-modified = {2024-07-06 10:36:45 -0400},
+	doi = {10.1145/3498715},
+	issue_date = {January 2022},
+	journal = {Proc. ACM Program. Lang.},
+	keywords = {language formalisation, category theory, abstract syntax, Agda},
+	month = {jan},
+	number = {POPL},
+	numpages = {29},
+	publisher = {Association for Computing Machinery},
+	title = {Formal metatheory of second-order abstract syntax},
+	url = {https://doi.org/10.1145/3498715},
+	volume = {6},
+	year = {2022},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM0OTg3MTUucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3498715}}
+
+@inproceedings{Fiore:2010ab,
+	abstract = {We extend universal algebra and its equational logic from first to second order as follows.},
+	address = {Berlin, Heidelberg},
+	author = {Fiore, Marcelo and Hur, Chung-Kil},
+	booktitle = {Computer Science Logic},
+	date-added = {2024-07-06 10:29:31 -0400},
+	date-modified = {2024-07-06 10:29:33 -0400},
+	editor = {Dawar, Anuj and Veith, Helmut},
+	isbn = {978-3-642-15205-4},
+	pages = {320--335},
+	publisher = {Springer Berlin Heidelberg},
+	title = {Second-Order Equational Logic (Extended Abstract)},
+	year = {2010},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoW3NvZXFsb2cucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=}}
+
+@inproceedings{Fiore:2010aa,
+	abstract = {Fiore and Hur [10] recently introduced a conservative extension of universal algebra and equational logic from first to second order. Second-order universal algebra and second-order equational logic respectively provide a model theory and a formal deductive system for languages with variable binding and parameterised metavariables. This work completes the foundations of the subject from the viewpoint of categorical algebra. Specifically, the paper introduces the notion of second-order algebraic theory and develops its basic theory. Two categorical equivalences are established: at the syntactic level, that of second-order equational presentations and second-order algebraic theories; at the semantic level, that of second-order algebras and second-order functorial models. Our development includes a mathematical definition of syntactic translation between second-order equational presentations. This gives the first formalisation of notions such as encodings and transforms in the context of languages with variable binding.},
+	address = {Berlin, Heidelberg},
+	author = {Fiore, Marcelo and Mahmoud, Ola},
+	booktitle = {Mathematical Foundations of Computer Science 2010},
+	date-added = {2024-07-06 10:26:04 -0400},
+	date-modified = {2024-07-06 10:26:07 -0400},
+	editor = {Hlin{\v{e}}n{\'y}, Petr and Ku{\v{c}}era, Anton{\'\i}n},
+	isbn = {978-3-642-15155-2},
+	pages = {368--380},
+	publisher = {Springer Berlin Heidelberg},
+	title = {Second-Order Algebraic Theories},
+	year = {2010},
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWHNvYXQucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACE=}}
 
 @webpage{Siek:2023aa,
 	author = {Jeremy G. Siek},
@@ -15,7 +433,8 @@
 	month = {July},
 	title = {Step-Indexed Logic},
 	url = {https://github.com/jsiek/step-indexed-logic},
-	year = {2023}}
+	year = {2023},
+	bdsk-url-1 = {https://github.com/jsiek/step-indexed-logic}}
 
 @article{New:2018aa,
 	abstract = {Gradually typed languages allow statically typed and dynamically typed code to interact while maintaining benefits of both styles. The key to reasoning about these mixed programs is Siek-Vitousek-Cimini-Boyland's (dynamic) gradual guarantee, which says that giving components of a program more precise types only adds runtime type checking, and does not otherwise change behavior. In this paper, we give a semantic reformulation of the gradual guarantee called graduality. We change the name to promote the analogy that graduality is to gradual typing what parametricity is to polymorphism. Each gives a local-to-global, syntactic-to-semantic reasoning principle that is formulated in terms of a kind of observational approximation. Utilizing the analogy, we develop a novel logical relation for proving graduality. We show that embedding-projection pairs (ep pairs) are to graduality what relations are to parametricity. We argue that casts between two types where one is ``more dynamic'' (less precise) than the other necessarily form an ep pair, and we use this to cleanly prove the graduality cases for casts from the ep-pair property. To construct ep pairs, we give an analysis of the type dynamism relation---also known as type precision or na\"{\i}ve subtyping---that interprets the rules for type dynamism as compositional constructions on ep pairs, analogous to the coercion interpretation of subtyping.},
@@ -23,7 +442,7 @@
 	articleno = {73},
 	author = {New, Max S. and Ahmed, Amal},
 	date-added = {2024-07-03 10:22:21 -0400},
-	date-modified = {2024-07-03 10:22:25 -0400},
+	date-modified = {2024-10-08 10:27:37 -0400},
 	doi = {10.1145/3236768},
 	issue_date = {September 2018},
 	journal = {Proc. ACM Program. Lang.},
@@ -33,11 +452,10 @@
 	numpages = {30},
 	publisher = {Association for Computing Machinery},
 	title = {Graduality from embedding-projection pairs},
-	url = {https://doi.org/10.1145/3236768},
 	volume = {2},
 	year = {2018},
-	bdsk-url-1 = {https://doi.org/10.1145/3236768},
-	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzMyMzY3NjgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=}}
+	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzMyMzY3NjgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
+	bdsk-url-1 = {https://doi.org/10.1145/3236768}}
 
 @article{ozakispace,
 	author = {Ozaki, Shota and Sekiyama, Taro and Igarashi, Atsushi},
@@ -62,10 +480,10 @@
 	bdsk-url-1 = {https://doi.org/10.1145/1323293.1294265}}
 
 @inproceedings{chong2007sif,
-	author = {Chong, Stephen and Vikram, Krishnaprasad and Myers, Andrew C and others},
+	author = {Chong, Stephen and Vikram, Krishnaprasad and Myers, Andrew C},
 	booktitle = {USENIX Security Symposium},
 	date-added = {2024-06-11 12:56:51 -0400},
-	date-modified = {2024-06-11 12:58:53 -0400},
+	date-modified = {2024-08-09 09:06:10 -0400},
 	organization = {Boston, MA, USA},
 	pages = {1--16},
 	title = {SIF: Enforcing Confidentiality and Integrity in Web Applications.},
@@ -261,19 +679,6 @@
 	year = {2008},
 	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoXxAUY2xhcmtzb25fY2l2aXRhcy5wZGYICxgAAAAAAAABAQAAAAAAAAADAAAAAAAAAAAAAAAAAAAALw==}}
 
-@webpage{vyper-lang,
-	date-added = {2024-05-31 14:32:44 -0400},
-	date-modified = {2024-05-31 14:33:10 -0400},
-	lastchecked = {2024-5-31},
-	url = {https://docs.vyperlang.org/},
-	bdsk-url-1 = {https://docs.vyperlang.org/}}
-
-@webpage{ethereum-blockchain,
-	date-added = {2024-05-31 14:26:04 -0400},
-	date-modified = {2024-05-31 14:26:28 -0400},
-	url = {https://ethereum.org/},
-	bdsk-url-1 = {https://ethereum.org/}}
-
 @article{dannen2017solidity,
 	author = {Dannen, Chris and Dannen, Chris},
 	date-added = {2024-05-31 14:25:26 -0400},
@@ -283,13 +688,6 @@
 	publisher = {Springer},
 	title = {Solidity programming},
 	year = {2017}}
-
-@webpage{solidity-lang,
-	date-added = {2024-05-31 14:24:10 -0400},
-	date-modified = {2024-05-31 14:28:22 -0400},
-	lastchecked = {2024-5-31},
-	url = {https://soliditylang.org/},
-	bdsk-url-1 = {https://soliditylang.org/}}
 
 @url{parity-bug-deep,
 	author = {Lorenz Breidenbach and Phil Daian and Ari Juels and Emin G{\"u}n Sirer},
@@ -344,19 +742,6 @@
 	title = {Securing smart contracts with information flow},
 	year = {2020},
 	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWWZhYjIwLnBkZggLGAAAAAAAAAEBAAAAAAAAAAMAAAAAAAAAAAAAAAAAAAAi}}
-
-@software{tianyu_chen_2024_10933110,
-	author = {Tianyu Chen},
-	date-added = {2024-04-06 17:36:05 -0400},
-	date-modified = {2024-04-06 17:36:05 -0400},
-	doi = {10.5281/zenodo.10933110},
-	month = apr,
-	publisher = {Zenodo},
-	title = {cty12/pldi2024-ae: PLDI Release 2},
-	url = {https://doi.org/10.5281/zenodo.10933110},
-	version = {release-20240405},
-	year = 2024,
-	bdsk-url-1 = {https://doi.org/10.5281/zenodo.10933110}}
 
 @misc{Kostyukov:2013aa,
 	archiveprefix = {arXiv},
@@ -1923,7 +2308,7 @@ machine.},
 	articleno = {7},
 	author = {Jacobs, Koen and Timany, Amin and Devriese, Dominique},
 	date-added = {2021-01-20 09:57:41 -0500},
-	date-modified = {2021-01-20 09:57:44 -0500},
+	date-modified = {2024-10-08 10:24:48 -0400},
 	doi = {10.1145/3434288},
 	issue_date = {January 2021},
 	journal = {Proc. ACM Program. Lang.},
@@ -1933,7 +2318,6 @@ machine.},
 	numpages = {30},
 	publisher = {Association for Computing Machinery},
 	title = {Fully Abstract from Static to Gradual},
-	url = {https://doi.org/10.1145/3434288},
 	volume = {5},
 	year = {2021},
 	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzM0MzQyODgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
@@ -3135,7 +3519,7 @@ machine.},
 	articleno = {Article 46},
 	author = {New, Max S. and Jamner, Dustin and Ahmed, Amal},
 	date-added = {2020-01-22 13:48:01 -0600},
-	date-modified = {2020-01-22 13:48:03 -0600},
+	date-modified = {2024-10-08 10:25:10 -0400},
 	doi = {10.1145/3371114},
 	issue_date = {January 2020},
 	journal = {Proc. ACM Program. Lang.},
@@ -3145,7 +3529,6 @@ machine.},
 	numpages = {32},
 	publisher = {Association for Computing Machinery},
 	title = {Graduality and Parametricity: Together Again for the First Time},
-	url = {https://doi.org/10.1145/3371114},
 	volume = {4},
 	year = {2019},
 	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoWzcxMTE0MzMucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAACQ=},
@@ -3681,7 +4064,7 @@ machine.},
 	articleno = {16},
 	author = {Toro, Mat\'{\i}as and Garcia, Ronald and Tanter, \'{E}ric},
 	date-added = {2019-01-15 05:18:44 +0000},
-	date-modified = {2019-01-15 05:18:45 +0000},
+	date-modified = {2024-10-08 10:25:33 -0400},
 	doi = {10.1145/3229061},
 	issn = {0164-0925},
 	issue_date = {December 2018},
@@ -3693,7 +4076,6 @@ machine.},
 	pages = {16:1--16:55},
 	publisher = {ACM},
 	title = {Type-Driven Gradual Security with References},
-	url = {http://doi.acm.org/10.1145/3229061},
 	volume = {40},
 	year = {2018},
 	bdsk-file-1 = {YnBsaXN0MDDRAQJccmVsYXRpdmVQYXRoXxAVdG9yb0FsLXRvcGxhczIwMTgucGRmCAsYAAAAAAAAAQEAAAAAAAAAAwAAAAAAAAAAAAAAAAAAADA=},
@@ -38050,7 +38432,8 @@ section 3.3.2 defines an intersection type system
 @book{Siek:2002ly,
 	author = {Jeremy G. Siek and Lee-Quan Lee and Andrew Lumsdaine},
 	date-added = {2006-09-26 11:16:03 -0600},
-	date-modified = {2010-12-17 10:23:10 -0700},
+	date-modified = {2024-08-01 10:11:42 -0400},
+	isbn = {0201729148},
 	publisher = {Addison-Wesley},
 	title = {The Boost Graph Library: User Guide and Reference Manual},
 	year = 2002,

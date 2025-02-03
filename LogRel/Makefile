@@ -7,3 +7,4 @@ main.pdf:
 	agda --latex PeterGG.lagda
 	cd latex/LogRel; /Library/TeX/texbin/pdflatex main; /Library/TeX/texbin/bibtex main
 	cd latex/LogRel; /Library/TeX/texbin/pdflatex main; /Library/TeX/texbin/bibtex main
+	cd latex/LogRel; /Library/TeX/texbin/pdflatex main; /Library/TeX/texbin/bibtex main

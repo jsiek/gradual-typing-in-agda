@@ -84,12 +84,13 @@ There are three special features in the Cast Calculus:
 \item \textsf{blame} which represents a runtime exception if
   a projection fails.
 \end{enumerate}
-This Cast Calclulus differs from many of those in the literature in
-that it does not include casts from one function type to another, a
-choice that reduces the number of reduction rules and simplifies the
-technical development.  However, casts from one function type to
-another can be compiled into a combination of lambda abstractions,
-injections, and projections.
+This Cast Calclulus differs from many of those in the
+literature~\cite{Siek:2006bh,Siek:2021vf,Siek:2015ac} in that it does
+not include casts from one function type to another, a choice that
+reduces the number of reduction rules and simplifies the technical
+development.  However, casts from one function type to another can be
+compiled into a combination of lambda abstractions, injections, and
+projections.
 
 We define the terms of the Cast Calculus in Agda using the Abstract
 Binding Tree (ABT) library by instantiating it with an appropriate set
