@@ -224,7 +224,7 @@ data _—→_ : Term → Term → Set where
     → V ⟨ c ⍮ d ⟩ —→ V ⟨ c ⟩ ⟨ d ⟩
 
   cast-fun : ∀ {V M : Term}{c d : Term}
-    → M ≡ ƛ (((rename suc V) · ` 0 ⟨ (rename suc c) ⟩) ⟨ (rename suc d) ⟩)
+    → M ≡ ƛ (((rename suc V) · (` 0 ⟨ (rename suc c) ⟩)) ⟨ (rename suc d) ⟩)
     → V ⟨ c ↪ d ⟩ —→ M
 
 infix 2 _∣_—→_∣_
