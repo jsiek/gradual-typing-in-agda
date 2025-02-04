@@ -177,20 +177,23 @@ infix 2 _—→_
 
 data _—→_ : Term → Term → Set where
 
-  β-ƛ : ∀ {N W : Term}
+  β-ƛ : ∀ {N W M : Term}
     → Value W
+    → M ≡ N [ W ]
       --------------------
-    → (ƛ N) · W —→ N [ W ]
+    → (ƛ N) · W —→ M
 
-  β-Λ : ∀ {N : Term}{α : Var}
+  β-Λ : ∀ {N M : Term}{α : Var}
+    → M ≡ N [ α ]ᵣ
       -------------------------
-    → (Λ N) 【 α 】 —→ N [ α ]ᵣ
+    → (Λ N) 【 α 】 —→ M
 
   -- todo: constraint on c?
-  β-gen : ∀ {V : Term}{c : Term}{α : Var}
+  β-gen : ∀ {V M : Term}{c : Term}{α : Var}
     → Value V
+    → M ≡ V ⟨ c [ α ]ᵣ ⟩
       -------------------------------------
-    → V ⟨ gen c ⟩ 【 α 】 —→ V ⟨ c [ α ]ᵣ ⟩
+    → V ⟨ gen c ⟩ 【 α 】 —→ M
 
   cast-id : ∀ {V : Term}
     → Value V
@@ -209,18 +212,20 @@ data _—→_ : Term → Term → Set where
     → G ≢ H
     → V ⟨ G !! ⟩ ⟨ H ?? ⟩ —→ blame
 
-  cast-inst : ∀ {V : Term}{c : Term}
-    → V ⟨ inst c ⟩ —→ ν (rename suc V) 【 0 】 ⟨ c ⟩
+  cast-inst : ∀ {V M : Term}{c : Term}
+    → M ≡ (ν (rename suc V) 【 0 】 ⟨ c ⟩)
+    → V ⟨ inst c ⟩ —→ M
 
-  cast-all : ∀ {V : Term}{c : Term}
-    → V ⟨ ∀̰ c ⟩ —→ Λ (rename suc V) 【 0 】 ⟨ c ⟩
+  cast-all : ∀ {V M : Term}{c : Term}
+    → M ≡ Λ (rename suc V) 【 0 】 ⟨ c ⟩
+    → V ⟨ ∀̰ c ⟩ —→ M
 
   cast-seq : ∀ {V : Term}{c d : Term}
     → V ⟨ c ⍮ d ⟩ —→ V ⟨ c ⟩ ⟨ d ⟩
 
-  cast-fun : ∀ {V : Term}{c d : Term}
-    → V ⟨ c ↪ d ⟩ —→ ƛ ((rename suc V) · ` 0 ⟨ (rename suc c) ⟩)
-                       ⟨ (rename suc d) ⟩
+  cast-fun : ∀ {V M : Term}{c d : Term}
+    → M ≡ ƛ (((rename suc V) · ` 0 ⟨ (rename suc c) ⟩) ⟨ (rename suc d) ⟩)
+    → V ⟨ c ↪ d ⟩ —→ M
 
 infix 2 _∣_—→_∣_
 
