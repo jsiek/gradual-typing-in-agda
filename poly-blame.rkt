@@ -58,9 +58,9 @@
 		     "\\end{array}"
 		     )]
      [`(lambda [,x : ,A] ,e1) 
-      (string-append "\\left( \\lambda " (sym->string x) ":" (print-type A) ".\\, "
+      (string-append "\\left(\\begin{array}{l} \\lambda " (sym->string x) ":" (print-type A) "\\\\"
 		     (print-term e1)
-		     "\\right)")]
+		     "\\end{array}\\right)")]
      [`(blame ,p)
       (string-append "\\mathsf{blame}\\," (blame->string p))]
      [`(prim ,op ,es ...)
@@ -73,15 +73,21 @@
 		     "\\right)")]
      [`(inst ,M ,A)
       (string-append (print-term M) "[" (print-type A) "]")]
+     [`(inst ,M ,A ,label)
+      (string-append (print-term M) "[" (print-type A) "]^{" (sym->string label) "}")]
      [`(cast ,e1 ,c)
-      (string-append (print-term e1) "\\langle" (print-coercion c) "\\rangle")]
+      (string-append "\\begin{array}{l}" (print-term e1) "\\\\"
+                     "\\langle" (print-coercion c) "\\rangle"
+                     "\\end{array}")]
      [`(nu ,alpha ,B ,e1)
-      (string-append "\\left(\\nu " (sym->string alpha) "{=}" 
-		     (print-type B)
-		     ".\\," (print-term e1)
-		     "\\right)")]
+      (string-append "\\begin{array}{l} \\nu " (sym->string alpha) "{=}" (print-type B)
+		     "\\\\"
+                     (print-term e1)
+		     "\\end{array}")]
      [`(,e1 ,e2)
       (string-append (print-term e1) "\\cdot " (print-term e2))]
+     [`(,e1 ,e2 ,label)
+      (string-append (print-term e1) "\\cdot^{" (sym->string label) "} " (print-term e2))]
      [else
       (error 'print-term "unmatched ~s" e)]
      ))
@@ -173,6 +179,7 @@
   result)
 
 (define (make-coercion A B label inst-vars gen-vars)
+  (printf "make-coercion? ~a => ~a\n" A B)
   (define result
   (match* (A B)
      [('int 'int) `(id int)]
@@ -196,11 +203,13 @@
       `(-> ,(make-coercion C A label inst-vars gen-vars)
            ,(make-coercion B D label inst-vars gen-vars))]
      [('* `(-> ,C ,D))
-      `(-> ,(make-coercion C '* label inst-vars gen-vars)
-           ,(make-coercion '* D label inst-vars gen-vars))]
+      `(seq (proj (-> * *) ,label)
+            (-> ,(make-coercion C '* label inst-vars gen-vars)
+                ,(make-coercion '* D label inst-vars gen-vars)))]
      [(`(-> ,A ,B) '*)
-      `(-> ,(make-coercion '* A label inst-vars gen-vars)
-           ,(make-coercion B '* label inst-vars gen-vars))]
+      `(seq (-> ,(make-coercion '* A label inst-vars gen-vars)
+                ,(make-coercion B '* label inst-vars gen-vars))
+            (inj (-> * *)))]
      [(`(all ,X ,A) `(all ,Y, B))
       `(all ,X ,(make-coercion A (type-subst B Y X) label inst-vars gen-vars))]
      [(`(all ,X ,A) B)
@@ -210,6 +219,7 @@
      [(A B)
       (error 'make-coercion "error ~a ~a\nin: ~a\nand: ~a" A B (set->list inst-vars)
              (set->list gen-vars))]))
+  (printf "make-coercion: ~a => ~a\n\t= ~a\n" A B result)
   result)
 
 (define (type-app L A X B label)
@@ -219,6 +229,12 @@
                                                         label
                                                         (set alpha)
                                                         (set)))))
+
+(define (make-cast e A B label)
+  (cond [(type-equal? A B)
+         e]
+        [else
+         `(cast ,e ,(make-coercion A B label (set) (set)))]))
 
 (define (cast-insert-term e type-env)
   (match e
@@ -245,9 +261,12 @@
      [`(prim ,op ,es ...)
       (define-values (new-es ts)
         (for/lists (l1 l2) ([e es]) (cast-insert-term e type-env)))
+      (define newer-es
+        (for/list ([e new-es] [t ts])
+                  (make-cast e t 'int op)))
       (type-check-op op ts)
       (values
-       `(prim ,op ,new-es ...)
+       `(prim ,op ,@newer-es)
        (return-type op))]
      [`(inst ,e1 ,A ,label)
       (define-values (e1^ B1) (cast-insert-term e1 type-env))
@@ -257,7 +276,10 @@
            (type-app e1^ A X B label)
            (type-subst B X A))]
          [else
-          (error 'cast-insert-term "inst expected an all, not ~a" B1)])]
+          (define X (gensym 'X))
+          (define e1^^ (make-cast e1^ B1 `(all ,X *) label))
+          (values (type-app e1^^ A X '* label)
+                  '*)])]
      [`(,e1 ,e2 ,label)
       (define-values (e1^ F) (cast-insert-term e1 type-env))
       (define-values (e2^ A) (cast-insert-term e2 type-env))
@@ -267,14 +289,15 @@
               (error 'cast-insert-term "in call, param type ~a but arg type ~a" Ap A)
               (void))
           (values
-           `(,e1^ (cast ,e2^ ,(make-coercion A Ap label (set) (set))))
+           `(,e1^ ,(make-cast e2^ A Ap label))
            Bp)]
          [`*
           (values
-           `(,e1^ (cast ,e2^ ,(make-coercion A '* label (set) (set))))
+           `(,(make-cast e1^ '* '(-> * *) label)
+             ,(make-cast e2^ A '* label))
            '*)]
          [else
-          (error 'cast-insert-term "expected a function, not ~a" F)])]
+          (error 'cast-insert-term "expected a function, not ~a in ~a" F e)])]
      [else
       (error 'cast-insert-term "unmatched ~s" e)]
      ))
@@ -335,7 +358,7 @@
   (values src tgt))
 
 (define (type-check-op op Ts)
-  (andmap (map (lambda (T) (equal? T 'int)))))
+  (andmap (lambda (T) (equal? T 'int)) Ts))
 
 (define (return-type op)
   'int)
@@ -377,7 +400,7 @@
       (define A (type-check e1 type-env))
       (define-values (A^ B) (type-check-coercion c type-env))
       (if (not (type-equal? A A^))
-          (error 'type-check "cast: source type ~a not equal body type ~a" A^ A)
+          (error 'type-check "cast: source type ~a not equal body type ~a for cast ~a" A^ A c)
           (void))
       B]
      [`(,e1 ,e2)
@@ -390,7 +413,7 @@
               (void))
           Bp]
          [else
-          (error 'type-check "expected a function, not ~a" F)])]
+          (error 'type-check "expected a function, not ~a\nin ~a" F e)])]
      [else
       (error 'type-check "unmatched ~s" e)]
      ))
@@ -485,15 +508,21 @@
      [else #f]
      ))
 
+(define trace-reduce #f)
+
 (define (reduce e type-env)
-  (match e
+  (define-values (e^ type-env^)
+    (match e
      ;; new type generation
-     [`(nu ,alpha ,A ,e1)
-      (define alpha^ (gensym alpha))
-      (values (type-term-subst e1 alpha alpha^)
-            (extend type-env alpha^ A))]
-     [else
-      (values (pure-reduce e) type-env)]))
+       [`(nu ,alpha ,A ,e1)
+        (define alpha^ (gensym alpha))
+        (cond [trace-reduce (printf "reduce nu type gen\n")])
+        (values (type-term-subst e1 alpha alpha^)
+                (extend type-env alpha^ A))]
+       [else
+        (values (pure-reduce e) type-env)]))
+  (cond [trace-reduce (printf "reduce:\n\t~a\n--->\n\t~a\n" e e^)])
+  (values e^ type-env^))
   
 (define (add x y) (+ x y))
 (define (sub x y) (- x y))
@@ -536,60 +565,73 @@
 
 (define (pure-reduce e)
   (match e
-     ;; System F Reduction Rules
-     [`(prim ,op ,vs ...) #:when (andmap value? vs)
-      (apply (cdr (assq op operators)) vs)]
-     [`(let (,x ,v) ,e1) #:when (value? v)
-      (subst e1 x v)]
-     [`((lambda [,x : ,T] ,e) ,w) #:when (value? w)
-      (subst e x w)]
-     [`(inst (All ,X ,e1) ,alpha)
-      (type-term-subst e1 X alpha)]
+    ;; System F Reduction Rules
+    [`(prim ,op ,vs ...) #:when (andmap value? vs)
+     (cond [trace-reduce (printf "reduce prim\n")])
+     (apply (cdr (assq op operators)) vs)]
+    [`(let (,x ,v) ,e1) #:when (value? v)
+     (cond [trace-reduce (printf "reduce let\n")])
+     (subst e1 x v)]
+    [`((lambda [,x : ,T] ,e) ,w) #:when (value? w)
+     (cond [trace-reduce (printf "reduce beta\n")])
+     (subst e x w)]
+    [`(inst (All ,X ,e1) ,alpha)
+     (cond [trace-reduce (printf "reduce inst\n")])
+     (type-term-subst e1 X alpha)]
 
-     ;; Cast Reduction Rules
-     
-     [`(cast ,v (seq ,c ,d))  #:when (value? v)
-      `(cast (cast ,v ,c) ,d)]
-     
-     ;; identity
-     [`(cast ,v (id ,atm)) #:when (value? v)
-      v]
-     
-     ;; wrap function
-     [`((cast ,v (-> ,c ,d)) ,w) #:when (and (value? v) (value? w))
-      `(cast (,v (cast ,w ,c)) ,d)]
+    ;; Cast Reduction Rules
+    
+    [`(cast ,v (seq ,c ,d))  #:when (value? v)
+     (cond [trace-reduce (printf "reduce cast seq\n")])
+     `(cast (cast ,v ,c) ,d)]
+    
+    ;; identity
+    [`(cast ,v (id ,atm)) #:when (value? v)
+     (cond [trace-reduce (printf "reduce cast id\n")])
+     v]
+    
+    ;; wrap function
+    [`((cast ,v (-> ,c ,d)) ,w) #:when (and (value? v) (value? w))
+     (cond [trace-reduce (printf "reduce cast wrap\n")])
+     `(cast (,v (cast ,w ,c)) ,d)]
 
-     ;; all coercion and type application
-     [`(inst (cast ,v (all ,X ,c)) ,beta)
-      `(cast (inst ,v ,beta)
-             ,(coercion-subst c X beta))]
-     
-     ;; generalize and type application
-     [`(inst (cast ,v (gen ,alpha ,c)) ,beta)
-      `(cast ,v ,(coercion-subst c alpha beta))]
-     
-     ;; instantiate coercion
-     [`(cast ,v (inst ,X ,c))
-      (define X^ (gensym X))
-      `(nu ,X^ * (cast (inst ,v ,X^) ,(coercion-subst c X X^)))]
-     
-     ;; inj/proj
-     [`(cast (cast ,v (inj ,G)) (proj ,H ,label))
-      #:when (equal? G H)
-      v]
-     ;; conflict
-     [`(cast (cast ,v (inj ,G)) (proj ,H ,label))
-      #:when (not (equal? G H))
-      `(blame ,label)]
-     ;; seal/unseal
-     [`(cast (cast ,v (seal ,alpha)) (unseal ,beta))
-      #:when (equal? alpha beta)
-      v]
+    ;; all coercion and type application
+    [`(inst (cast ,v (all ,X ,c)) ,beta)
+     (cond [trace-reduce (printf "reduce cast all app\n")])
+     `(cast (inst ,v ,beta)
+            ,(coercion-subst c X beta))]
+    
+    ;; generalize and type application
+    [`(inst (cast ,v (gen ,alpha ,c)) ,beta)
+      (cond [trace-reduce (printf "reduce cast gen app\n")])
+     `(cast ,v ,(coercion-subst c alpha beta))]
+    
+    ;; instantiate coercion
+    [`(cast ,v (inst ,X ,c))
+     (define X^ (gensym X))
+      (cond [trace-reduce (printf "reduce cast inst\n")])
+     `(nu ,X^ * (cast (inst ,v ,X^) ,(coercion-subst c X X^)))]
+    
+    ;; inj/proj
+    [`(cast (cast ,v (inj ,G)) (proj ,H ,label))
+     #:when (equal? G H)
+      (cond [trace-reduce (printf "reduce cast collapse\n")])
+     v]
+    ;; conflict
+    [`(cast (cast ,v (inj ,G)) (proj ,H ,label))
+     #:when (not (equal? G H))
+      (cond [trace-reduce (printf "reduce cast conflict\n")])
+     `(blame ,label)]
+    ;; seal/unseal
+    [`(cast (cast ,v (seal ,alpha)) (unseal ,beta))
+     #:when (equal? alpha beta)
+      (cond [trace-reduce (printf "reduce seal/unseal\n")])
+     v]
 
-     [else
-      (error 'reduce "not reducible ~a" e)
-      `777]
-     ))
+    [else
+     (error 'reduce "not reducible ~a" e)
+     `777]
+    ))
 
 (define plug
   (lambda (ctx e)
@@ -700,12 +742,17 @@
       (write-string "\\allowdisplaybreaks\n" out-file)
       (write-string "\\begin{document}\n" out-file)
       (write-string "\\tiny\\begin{align*}\n" out-file)
+      (write-string (string-append "&" (print-term surface-prog) "\\\\ \n") out-file)
+      (write-string (string-append "&" "\\Downarrow" "\\\\ \n") out-file)
       (write-string (string-append "&" (print-term prog) "\\\\ \n") out-file)
       (define ret (multi-step prog out-file (empty-alist)))
       (write-string "\\end{align*}\n" out-file)
       (write-string "\\end{document}\n" out-file)
       ret
       )))
+
+;; Is this too lenient? -Jeremy
+(assert "consistent0" (equal? #t (consistent? (set) 'int '(all X *)) ))
 
 (define Id '(All X (lambda [x : X] x)))
 
@@ -770,8 +817,62 @@
 
 (assert "test p6" (equal? 42 (run p6 "./p6.tex")))
 
+(define p7 '((lambda [x : int] (prim + x x)) 21 L1))
+(assert "test p7" (equal? 42 (run p7 "./p7.tex")))
+
+(define p7dyn '((lambda [x : *] (prim + x x)) 21 L1))
+(assert "test p7dyn" (equal? 42 (run p7dyn "./p7dyn.tex")))
+
+(define p8 (cast
+            '((lambda [f : (-> int int)]
+                (f 21 L1))
+              (lambda [x : int] (prim + x x))
+              L2)
+            'int 'L3))
+(assert "test p8" (equal? 42 (run p8 "./p8.tex")))
+
+(define p8dyn (cast '((lambda [f : (-> * *)]
+                        (f 21 L1))
+                      (lambda [x : int] (prim + x x))
+                      L2)
+                    'int 'L2))
+(assert "test p8dyn" (equal? 42 (run p8dyn "./p8dyn.tex")))
+
+(define p9
+  `((lambda [f : (all X (-> X X))]
+      ((inst f int L1) 42 L2))
+    (All Y (lambda [x : Y] x))
+    L5))
+(assert "test p9" (equal? 42 (run p9 "./p9.tex")))
+
+(define p9dyn
+  `((lambda [f : (all X (-> X X))]
+      ((inst f int L1) 42 L2))
+    (lambda [x : *] x)
+    L5))
+(assert "test p9dyn" (equal? 42 (run p9dyn "./p9dyn.tex")))
+
+(define p10
+  (cast
+   `((lambda [K : (all X (all Y (-> X (-> Y X))))]
+       (((inst (inst K int L1) int L2) 42 L3) 0 L4))
+     ,K L5)
+  'int 'L6))
+(assert "test p10" (equal? 42 (run p10 "./p10.tex")))
+
+(define p10dyn
+  (cast
+   `((lambda [K : (-> * (-> * *))]
+       (((inst (inst K int L1) int L2) 42 L3) 0 L4))
+     ,K L5)
+  'int 'L6))
+(assert "test p10dyn" (equal? 42 (run p10dyn "./p10dyn.tex")))
+
+
+(define debug-prec #t)
+
 (define (term-precision e1 e2 type-env1 type-env2 tv-rel)
-  (printf "term-precision?\n\t~a\n\t~a\n" e1 e2)
+  (cond [debug-prec (printf "term-precision?\n\t~a\n<=\n\t~a\n" e1 e2)])
   (define-values (A1 A2)
   (match* (e1 e2)
      [((? sym?) (? sym?))
@@ -809,6 +910,8 @@
           (void)
           (error 'term-prec "lambda return less precise"))
       (values `(-> ,A1 ,B1) `(-> ,A2 ,B2))]
+
+     ;; All on both sides
      [(`(All ,X1 ,e1) `(All ,X2 ,e2))
       (dict-set! tv-rel X1 X2)
       (define-values (A1 A2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
@@ -816,16 +919,20 @@
           (void)
           (error 'term-prec "big lambda less precise"))
       (values `(all ,X1 ,A1) `(all ,X2 ,A2))]
+          
      [(`(prim ,op1 ,es1 ...) `(prim ,op2 ,es2 ...))
       (define-values (ts1 ts2) (for/lists (t1 t2) ([e1 es1] [e2 es2])
                                           (term-precision e1 e2 type-env1 type-env2
                                                           tv-rel)))
       (for/list ([t1 ts1] [t2 ts2])
-                (assert "prim arg less precise" (less-precise? (set) t1 t2 tv-rel)))
+                (if (less-precise? (set) t1 t2 tv-rel)
+                    (void)
+                    (error 'term-prec "prim arg less precise")))
       (if (less-precise? (set) (return-type op1) (return-type op2) tv-rel)
           (void)
           (error 'term-prec "prim return less precise"))
       (values (return-type op1) (return-type op2))]
+     
      [(`(inst ,e1 ,A1) `(inst ,e2 ,A2))
       (if (less-precise? (set) A1 A2 tv-rel)
           (void)
@@ -833,10 +940,19 @@
       (define-values (B1 B2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
       (match* (B1 B2)
          [(`(all ,X1 ,B1^) `(all ,X2 ,B2^))
-                     (display "term-prec inst 3")(newline)
           (values (type-subst B1^ X1 A1) (type-subst B2^ X2 A2))]
          [(B1 B2)
           (error 'term-precision "inst expected an all, not ~a and ~a" B1 B2)])]
+
+     ;; inst on the right
+     [(e1 `(inst ,e2 ,A2))
+      (define-values (B1 B2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
+      (match B2
+         [`(all ,X2 ,B2^)
+          (values B1 (type-subst B2^ X2 A2))]
+         [else
+          (error 'term-precision "inst expected an all, not ~a" B2)])]
+     
      [(`(nu ,X1 ,A1 ,e1) `(nu ,X2 ,A2 ,e2))
       (if (less-precise? (set) A1 A2 tv-rel)
           (void)
@@ -847,6 +963,16 @@
                                              (extend type-env2 X2 A2)
                                              tv-rel))
       (values B1 B2)]
+
+     ;; nu on the right
+     [(e1 `(nu ,X2 ,A2 ,e2))
+      (define-values (B1 B2) (term-precision e1 e2
+                                             type-env1
+                                             (extend type-env2 X2 A2)
+                                             tv-rel))
+      (values B1 B2)]
+     
+     ;; cast on both sides
      [(`(cast ,e1 ,c1) `(cast ,e2 ,c2))
       (define-values (A1 A2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
       (define-values (A1^ B1) (type-check-coercion c1 type-env1))
@@ -858,6 +984,33 @@
           (void)
           (error 'term-prec "cast target less precise"))
       (values B1 B2)]
+
+     ;; Gen on the left, All on the right
+     [(`(cast ,e1 (gen ,X1 ,c)) `(All ,X2 ,e2))
+      (define-values (A1 A2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
+      (if (less-precise? (set) A1 A2 tv-rel)
+          (void)
+          (error 'term-prec "big lambda right, less precise"))
+      (values `(all ,X1 ,A1) `(all ,X2 ,A2))]
+     
+     ;; cast on the left
+     [(`(cast ,e1 ,c1) e2)
+      (define-values (A1 A2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
+      (define-values (A1^ B1) (type-check-coercion c1 type-env1))
+      (if (less-precise? (set) B1 A2 tv-rel)
+          (void)
+          (error 'term-prec "cast left target less precise: ~a <= ~a" B1 A2))
+      (values B1 A2)]
+
+     ;; cast on the right
+     [(e1 `(cast ,e2 ,c2))
+      (define-values (A1 A2) (term-precision e1 e2 type-env1 type-env2 tv-rel))
+      (define-values (A2^ B2) (type-check-coercion c2 type-env2))
+      (if (less-precise? (set) A1 B2 tv-rel)
+          (void)
+          (error 'term-prec "cast right target less precise"))
+      (values A1 B2)]
+     
      [(`(,rator1 ,rand1) `(,rator2 ,rand2))
       (define-values (F1 F2) (term-precision rator1 rator2 type-env1 type-env2 tv-rel))
       (define-values (A1 A2) (term-precision rand1 rand2 type-env1 type-env2 tv-rel))
@@ -869,49 +1022,80 @@
      [(e1 e2)
       (error 'term-precision "unmatched ~s <= ~s" e1 e2)]
      ))
-  (printf "term-precision\n\t~a\n<=\n\t~a\n\t= ~a , ~a\n" e1 e2 A1 A2)
+  (cond [debug-prec
+         (printf "term-precision\n\t~a\n<=\n\t~a\n\t= ~a , ~a\n" e1 e2 A1 A2)])
   (values A1 A2))
 
 (define (less-precise-term? cc1 cc2 type-env1 type-env2 tv-rel)
   (with-handlers
    ([exn:fail? (lambda (exn)
-                 (printf "term-precision\n\t~a\n<=\n\t~a\n\t= ~a\n" cc1 cc2 #f)
-                 (printf "error: ~a\n" exn)
+                 (cond [debug-prec
+                        (printf "term-precision\n\t~a\n<=\n\t~a\n\t= ~a\n" cc1 cc2 #f)
+                        (printf "error: ~a\n" exn)])
                  #f)])
    (define-values (A1 A2)
      (term-precision cc1 cc2 type-env1 type-env2 tv-rel))
    #t))
 
-(define (catchup cc2 type-env2 cc1 type-env1 tv-rel)
-  (cond [(less-precise-term? cc1 cc2 type-env1 type-env2 tv-rel)
-         (printf "in sync: ~a <= ~a\n" cc1 cc2)
-         (values cc2 type-env2)]
-        [(value? cc2)
-         (error 'catchup "failed to catch up with: ~a" cc1)]
-        [(blame? cc2)
-         (error 'catchup "failed to catch up with: ~a" cc1)]
-        [else
-         (define-values (cc2^ type-env2^) (step cc2 type-env2))
-         (printf "step2: ~a\n-----> ~a\nin: ~a\n" cc2 cc2^ type-env2^)
-         (catchup cc2^ type-env2^ cc1 type-env1 tv-rel)]))
+(define debug-sim #t)
 
-(define (sim cc1 cc2 type-env1 type-env2 tv-rel)
-  (printf "*** sim: ~a <= ~a\n" cc1 cc2)
-  (cond [(value? cc1)
-         (define-values (cc2^ type-env2^) (catchup cc2 type-env2 cc1 type-env1 tv-rel))
-         (value? cc2^)]
+(define (catchup cc1 type-env1 cc2 type-env2 tv-rel)
+  (cond [(less-precise-term? cc1 cc2 type-env1 type-env2 tv-rel)
+         (cond [debug-sim (printf "in sync: ~a <= ~a\n" cc1 cc2)])
+         (values cc1 type-env1)]
+        [(value? cc1)
+         (error 'catchup "failed to catch up with: ~a" cc2)]
         [(blame? cc1)
-         (define-values (cc2^ type-env2^) (catchup cc2 type-env2 cc1 type-env1 tv-rel))
-         (blame? cc2^)]
+         (error 'catchup "failed to catch up with: ~a" cc2)]
         [else
          (define-values (cc1^ type-env1^) (step cc1 type-env1))
-         (printf "step1: ~a\n-----> ~a\nin: ~a\n" cc1 cc1^ type-env1^)
-         (define-values (cc2^ type-env2^) (catchup cc2 type-env2 cc1^ type-env1^ tv-rel))
+         (cond [debug-sim (printf "step1: ~a\n-----> ~a\nin: ~a\n" cc1 cc1^ type-env1^)])
+         (catchup cc1^ type-env1^ cc2 type-env2 tv-rel)]))
+
+(define (finish cc1 type-env1 cc2 type-env2 tv-rel)
+  (cond [(or (value? cc1) (blame? cc1))
+         (values cc1 type-env1)]
+        [else
+         (define-values (cc1^ type-env1^) (step cc1 type-env1))
+         (cond [debug-sim (printf "step1: ~a\n-----> ~a\nin: ~a\n" cc1 cc1^ type-env1^)])
+         (finish cc1^ type-env1^ cc2 type-env2 tv-rel)]))
+  
+(define (sim cc1 cc2 type-env1 type-env2 tv-rel)
+  (cond [debug-sim (printf "*** sim:\n\t~a\n<=\n\t~a\n" cc1 cc2)])
+  (cond [(value? cc2)
+         (define-values (cc1^ type-env1^) (finish cc1 type-env1 cc2 type-env2 tv-rel))
+         (value? cc1^)]
+        [(blame? cc2)
+         (define-values (cc1^ type-env1^) (finish cc1 type-env1 cc2 type-env2 tv-rel))
+         (blame? cc1^)]
+        [else
+         (define-values (cc2^ type-env2^) (step cc2 type-env2))
+         (cond [debug-sim (printf "step2: ~a\n-----> ~a\nin: ~a\n" cc2 cc2^ type-env2^)])
+         (define-values (cc1^ type-env1^) (catchup cc1 type-env1 cc2^ type-env2^ tv-rel))
          (sim cc1^ cc2^ type-env1^ type-env2^ tv-rel)]))
 
 (define (run-sim grad1 grad2)
   (define-values (cc1 type1) (cast-insert-term grad1 '()))
   (define-values (cc2 type2) (cast-insert-term grad2 '()))
-  (sim cc1 cc2 '() '() (make-hash)))
+  (cond [debug-sim (printf "\n\n")])
+  (define tv-rel (make-hash))
+  (cond [(less-precise-term? cc1 cc2 '() '() tv-rel)
+         (sim cc1 cc2 '() '() tv-rel)]
+        [else
+         (error 'run-sim "not less precise:\n\t~a\n<=\n\t~a\n" cc1 cc2)
+         ]))
 
-(assert "sim1" (run-sim p0 p0))
+(cond [false
+       (assert "sim0" (run-sim p0 p0))
+       (assert "sim1" (run-sim p1 p1))
+       (assert "sim2" (run-sim p2 p2))
+       (assert "sim4" (run-sim p4 p4))
+       (assert "sim6" (run-sim p6 p6))
+       (assert "sim7" (run-sim p7dyn p7))
+       (assert "sim8" (run-sim p8dyn p8))
+       (assert "sim9" (run-sim p9dyn p9))
+       (set! trace-reduce #t)
+       (assert "sim10" (run-sim p10dyn p10))
+       ])
+
+
