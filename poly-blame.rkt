@@ -108,6 +108,13 @@
 	     `(all ,Y ,(type-subst C X A))])]
      ))
 
+(define (dirt? A)
+  (match A
+     [`int #t]
+     [`bool #t]
+     [`(-> * *) #t]
+     [else #f]))
+
 (define (ground? A)
   (match A
      [`int #t]
@@ -122,9 +129,8 @@
      [('int 'int) #t]
      [('bool 'bool) #t]
      [('* '*) #t]
-     [('* (? ground?)) #t]
-     [('* (? sym?))
-      (set-member? dyn-vars B)]
+     [('* (? sym?)) #:when (set-member? dyn-vars B)
+      #t]
      [((? sym?) (? sym?)) #:when (eq? A B)
       #t]
      [((? sym?) (? sym?)) #:when (dict-has-key? tv-rel A)
@@ -132,6 +138,7 @@
      [((? sym?) (? sym?))
       (dict-set! tv-rel A B)
       #t]
+     [('* (? dirt?)) #t]
      [('* `(-> ,C ,D))
       (and (less-precise? dyn-vars '* C tv-rel)
            (less-precise? dyn-vars '* D tv-rel))]
@@ -152,12 +159,12 @@
      [('int 'int) #t]
      [('bool 'bool) #t]
      [('* '*) #t]
-     [('* (? ground?)) #t]
-     [((? ground?) '*) #t]
-     [((? sym?) '*)
-      (set-member? dyn-vars A)]
-     [('* (? sym?))
-      (set-member? dyn-vars B)]
+     [((? sym?) '*) #:when (set-member? dyn-vars A)
+      #t]
+     [('* (? sym?)) #:when (set-member? dyn-vars B)
+      #t]
+     [('* (? dirt?)) #t]
+     [((? dirt?) '*) #t]
      [((? sym?) (? sym?))
       (eq? A B)]
      [('* `(-> ,C ,D))
@@ -179,7 +186,7 @@
   result)
 
 (define (make-coercion A B label inst-vars gen-vars)
-  (printf "make-coercion? ~a => ~a\n" A B)
+  ;(printf "make-coercion? ~a => ~a\n" A B)
   (define result
   (match* (A B)
      [('int 'int) `(id int)]
@@ -219,7 +226,7 @@
      [(A B)
       (error 'make-coercion "error ~a ~a\nin: ~a\nand: ~a" A B (set->list inst-vars)
              (set->list gen-vars))]))
-  (printf "make-coercion: ~a => ~a\n\t= ~a\n" A B result)
+  ;(printf "make-coercion: ~a => ~a\n\t= ~a\n" A B result)
   result)
 
 (define (type-app L A X B label)
@@ -277,9 +284,9 @@
            (type-subst B X A))]
          [else
           (define X (gensym 'X))
-          (define e1^^ (make-cast e1^ B1 `(all ,X *) label))
-          (values (type-app e1^^ A X '* label)
-                  '*)])]
+          (define e1^^ (make-cast e1^ B1 `(all ,X ,B1) label))
+          (values (type-app e1^^ A X B1 label)
+                  B1)])]
      [`(,e1 ,e2 ,label)
       (define-values (e1^ F) (cast-insert-term e1 type-env))
       (define-values (e2^ A) (cast-insert-term e2 type-env))
@@ -869,7 +876,7 @@
 (assert "test p10dyn" (equal? 42 (run p10dyn "./p10dyn.tex")))
 
 
-(define debug-prec #t)
+(define debug-prec #f)
 
 (define (term-precision e1 e2 type-env1 type-env2 tv-rel)
   (cond [debug-prec (printf "term-precision?\n\t~a\n<=\n\t~a\n" e1 e2)])
@@ -1094,8 +1101,8 @@
        (assert "sim7" (run-sim p7dyn p7))
        (assert "sim8" (run-sim p8dyn p8))
        (assert "sim9" (run-sim p9dyn p9))
-       (set! trace-reduce #t)
-       (assert "sim10" (run-sim p10dyn p10))
+       ;(set! trace-reduce #t)
+       ;(assert "sim10" (run-sim p10dyn p10))
        ])
 
 
