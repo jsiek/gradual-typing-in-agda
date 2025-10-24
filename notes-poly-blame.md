@@ -180,7 +180,7 @@ TODO
     ----------
 
     (λx.N) V              —→  N[V/x]
-    (ΛX.M)[Y]             —→  M[Y/X]
+    (ΛX.V)[Y]             —→  V[Y/X]
     V⟨∀X.c⟩[Y]            —→  V[Y]⟨c[Y/X]⟩
     V⟨𝒢 X.d⟩[Y]           —→ V⟨c[Y/X]⟩
     V⟨ℐ X.c⟩               —→  νX=★. V[X]⟨c⟩
