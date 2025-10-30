@@ -1,8 +1,9 @@
 module PolyBlame.PolyBlame where
 
 import Relation.Binary.PropositionalEquality as Eq
-open Eq using (_≡_; _≢_; refl; cong)
+open Eq using (_≡_; _≢_; refl; cong; sym)
 open import Data.Nat using (ℕ; zero; suc; _<_; _≤?_; z≤n; s≤s)
+open import Data.Nat.Properties using (suc-injective)
 open import Data.List hiding ([_])
 open import Data.Empty using (⊥)
 open import Data.Unit using (⊤)
@@ -258,6 +259,8 @@ data _—→_ : Expr → Expr → Set where
       ----------------------------
     → V ⟨ c ⨟ d ⟩ —→ V ⟨ c ⟩ ⟨ d ⟩
 
+{- TODO: add non-pure reduction that handles nu binders -}
+
 ⌈_⌉ : Grnd → Type
 ⌈ ★⇒★ ⌉ = ★ ⇒ ★
 ⌈ `ℕ ⌉ = `ℕ
@@ -266,6 +269,10 @@ data _—→_ : Expr → Expr → Set where
 data Cat : Set where
   typ : Cat
   bind : Type → Cat
+
+ren-cat : Rename → Cat → Cat
+ren-cat ρ typ = typ
+ren-cat ρ (bind A) = bind (ren-ty ρ A)
 
 Context : Set
 Context = List Cat × List Type
@@ -283,24 +290,32 @@ infix 4 _∋_⦂_
 _∋_⦂_ : List Type → Var → Type → Set 
 Γ ∋ x ⦂ A = (nth Γ x ≡ just A)
 
-_∋_ : List Cat → Var → Set 
-Δ ∋ x = x < length Δ
+data _∋_:=_ : List Cat → Var → Cat → Set where
+  catZ : ∀ {Δ C} → (C ∷ Δ) ∋ 0 := C
+  castS : ∀ {Δ C C′ C↑ X}
+    → Δ ∋ X := C
+    → C↑ ≡ ren-cat suc C
+    → (C′ ∷ Δ) ∋ suc X := C↑
 
-data _∋_:=_ : List Cat → Var → Type → Set where
-  bindZ : ∀ {Δ A} → (bind A ∷ Δ) ∋ 0 := A
-  bindS : ∀ {Δ A B X}
-    → Δ ∋ X := A
-    → (bind B ∷ Δ) ∋ suc X := ren-ty suc A
-  typS : ∀ {Δ A X}
-    → Δ ∋ X := A
-    → (typ ∷ Δ) ∋ suc X := ren-ty suc A
+{-- Well-Formed Types --}
+
+infix 4 _⊢_
+
+data _⊢_ : List Cat → Type → Set where
+  ⊢-ℕ : ∀{Δ} → Δ ⊢ `ℕ
+  ⊢-★ : ∀{Δ} → Δ ⊢ ★
+  ⊢-X :  ∀{Δ X C} → Δ ∋ X := C → Δ ⊢ ` X
+  ⊢-⇒ : ∀{Δ A B} → Δ ⊢ A → Δ ⊢ B → Δ ⊢ (A ⇒ B)
+  ⊢-∀ : ∀{Δ A} → typ ∷ Δ ⊢ A → Δ ⊢ `∀ A
 
 {-- Well-Typed Coercions --}
 
 infix 4 _⊢_⦂_⇨_
 
 data _⊢_⦂_⇨_ : List Cat → Crcn → Type → Type → Set where
-  ⊢-id : ∀{Δ A} → Δ ⊢ id ⦂ A ⇨ A
+  ⊢-id : ∀{Δ A}
+    → Δ ⊢ A
+    → Δ ⊢ id ⦂ A ⇨ A
   ⊢-! : ∀{Δ G} → Δ ⊢ G ! ⦂ ⌈ G ⌉ ⇨ ★
   ⊢-? : ∀{Δ G} → Δ ⊢ G `? ⦂ ★ ⇨ ⌈ G ⌉
   ⊢-↦ : ∀{Δ c d A B C D}
@@ -314,21 +329,28 @@ data _⊢_⦂_⇨_ : List Cat → Crcn → Type → Type → Set where
       -----------------
     → Δ ⊢ c ⨟ d ⦂ A ⇨ C
   ⊢-↓ : ∀{Δ X A}
-    → Δ ∋ X := A
+    → Δ ∋ X := bind A
       -------------------
     → Δ ⊢ X ↓ ⦂ A ⇨ (` X)
   ⊢-↑ : ∀{Δ X A}
-    → Δ ∋ X := A
+    → Δ ∋ X := bind A
       -------------------
     → Δ ⊢ X ↑ ⦂ (` X) ⇨ A
   ⊢-𝒢 : ∀{Δ c A B}
-    → (typ ∷ Δ) ⊢ c ⦂ A ⇨ B
-      ----------------------
+    → (typ ∷ Δ) ⊢ c ⦂ ren-ty suc A ⇨ B
+      --------------------------------
     → Δ ⊢ (𝒢 c) ⦂ A ⇨ (`∀ B)
   ⊢-ℐ : ∀{Δ c A B}
-    → (bind ★ ∷ Δ) ⊢ c ⦂ A ⇨ B
-      -------------------------
+    → (bind ★ ∷ Δ) ⊢ c ⦂ A ⇨ ren-ty suc B
+      ------------------------------------
     → Δ ⊢ (ℐ c) ⦂ (`∀ A) ⇨ B
+  ⊢-∀ : ∀{Δ c A B}
+    → (typ ∷ Δ) ⊢ c ⦂ A ⇨ B
+      -----------------------------
+    → Δ ⊢ (`∀ c) ⦂ (`∀ A) ⇨ (`∀ B)
+
+
+{----- Type System --------}
 
 infix 4 _⊢_⦂_
 
@@ -348,7 +370,7 @@ data _⊢_⦂_ : Context → Expr → Type → Set where
   ⊢-Λ : ∀{Δ Γ V A}
     → (typ ∷ Δ , map (ren-ty suc) Γ) ⊢ V ⦂ A
     → Value V
-      ---------------
+      --------------------
     → (Δ , Γ) ⊢ Λ V ⦂ `∀ A
   
   ⊢-◯ : ∀{Γ M X A}
@@ -383,17 +405,9 @@ rename-val (V-↦ v) = V-↦ (rename-val v)
 rename-val (V-𝒢 v) = V-𝒢 (rename-val v)
 rename-val (V-∀ v) = V-∀ (rename-val v)
 
-
+-- Well-typed Term Variable Renaming
 _⦂_⇒_ : Rename → List Type  → List Type → Set
 ρ ⦂ Γ₁ ⇒ Γ₂ = ∀ x A → Γ₁ ∋ x ⦂ A → Γ₂ ∋ ρ x ⦂ A
-
--- wt-rename : ∀{ρ Γ Δ} → ρ ⦂ Γ ⇒ Δ → ∀ x A → Γ ∋ x ⦂ trm A → Δ ∋ ρ x ⦂ trm A
--- wt-rename {ρ} {trm B ∷ Γ} (ρ0⦂ , ρ⦂) zero A trmZtrm = ρ0⦂
--- wt-rename {ρ} {trm B ∷ Γ} (ρ0⦂ , ρ⦂) (suc x) A (trmStrm ∋x) =
---   let xx = ρ⦂ ? ? in
---   {!!}
--- wt-rename {ρ} {typ ∷ Γ} ρ⦂ x A ∋x = {!!}
--- wt-rename {ρ} {bind B ∷ Γ} ρ⦂ x A ∋x = {!!}
 
 extr-pres : ∀ {ρ Γ₁ Γ₂ A}
   → ρ ⦂ Γ₁ ⇒ Γ₂
@@ -414,43 +428,92 @@ just-injective : ∀{A : Set}{x y : A}
   → x ≡ y
 just-injective refl = refl
 
+id-type : (A : Type) → Type
+id-type A = A
+
+var-injective : ∀{x y : ℕ}
+  → ` x ≡ id-type (` y)
+  → x ≡ y
+var-injective refl = refl
+
+fun-injective : ∀{A₁ A₂ B₁ B₂}
+  → A₁ ⇒ A₂ ≡ B₁ ⇒ B₂
+  → A₁ ≡ B₁ × A₂ ≡ B₂
+fun-injective refl = refl , refl
+
+all-injective : ∀{A B}
+  → `∀ A ≡ id-type (`∀ B)
+  → A ≡ B
+all-injective refl = refl
+
+nth-map-just2 : ∀ {A : Set}{xs : List A}{i : ℕ}{y : A}{f : A → A}
+  → nth (map f xs) i ≡ just y
+  → Σ[ x ∈ A ] nth xs i ≡ just x × f x ≡ y
+nth-map-just2 {xs = []} {zero} ()
+nth-map-just2 {xs = []} {suc i} ()
+nth-map-just2 {xs = x ∷ xs} {zero} refl = x , refl , refl
+nth-map-just2 {xs = x ∷ xs} {suc i} eq = nth-map-just2{xs = xs} eq
+  
 nth-map-just : ∀ {A : Set}{xs : List A}{i : ℕ}{x : A}{f : A → A}
   → nth (map f xs) i ≡ just (f x)
-  → (∀ {a b} → f a ≡ f b → a ≡ b)
+  → (∀ a b → f a ≡ f b → a ≡ b)
   → nth xs i ≡ just x
 nth-map-just {xs = []} {zero} () f-inj
 nth-map-just {xs = []} {suc i} () f-inj
 nth-map-just {A}{xs = x ∷ xs} {zero}{y}{f} nth-map f-inj =
   let fxy : f x ≡ f y
       fxy = just-injective nth-map in
-  cong just (f-inj fxy)
+  cong just (f-inj _ _ fxy)
 nth-map-just {xs = x ∷ xs} {suc i} nth-map f-inj =
   nth-map-just{xs = xs}{i} nth-map f-inj
 
-ren-ty-suc-inj : ∀ {A B} → ren-ty suc A ≡ ren-ty suc B → A ≡ A
-ren-ty-suc-inj {`ℕ} {`ℕ} refl = refl
-ren-ty-suc-inj {★} {★} refl = refl
-ren-ty-suc-inj {` x} {` y} refl = refl
-ren-ty-suc-inj {A₁ ⇒ A₂} {B₁ ⇒ B₂} eq = {!!}
-ren-ty-suc-inj {`∀ A} {B} eq = {!!}
+⟰ᵣ-injective : ∀ ρ
+  → (∀ x y → ρ x ≡ ρ y → x ≡ y)
+  → (∀ x y → ⟰ᵣ ρ x ≡ ⟰ᵣ ρ y → x ≡ y)
+⟰ᵣ-injective ρ ρ-inj x y eq =
+  let ρx=ρy = suc-injective eq in
+  ρ-inj x y ρx=ρy
+
+extr-injective : ∀ ρ
+  → (∀ x y → ρ x ≡ ρ y → x ≡ y)
+  → (∀ x y → extr ρ x ≡ extr ρ y → x ≡ y)
+extr-injective ρ ρ-inj zero zero eq = refl
+extr-injective ρ ρ-inj (suc x) (suc y) eq =
+  cong suc (⟰ᵣ-injective ρ ρ-inj x y eq)
+
+ren-ty-inj : ∀ ρ {A B}
+  → (∀ x y → ρ x ≡ ρ y → x ≡ y)
+  → ren-ty ρ A ≡ ren-ty ρ B
+  → A ≡ B
+ren-ty-inj ρ {`ℕ} {`ℕ} inj refl = refl
+ren-ty-inj ρ {★} {★} inj refl = refl
+ren-ty-inj ρ {` x} {` y} inj eq = cong `_ (inj x y (var-injective eq))
+ren-ty-inj ρ {A₁ ⇒ A₂} {B₁ ⇒ B₂} inj eq
+  with fun-injective eq
+... | eq1 , eq2
+  with ren-ty-inj ρ inj eq1 | ren-ty-inj ρ inj eq2
+... | refl | refl = refl
+ren-ty-inj ρ {`∀ A} {`∀ B} inj eq =
+  let extr-inj = extr-injective ρ inj in
+  let AB = all-injective eq in
+  let IH = ren-ty-inj (extr ρ) {A}{B} extr-inj AB in
+  cong `∀_ IH
+
+ren-ty-suc-inj : ∀ {A B}
+  → ren-ty suc A ≡ ren-ty suc B
+  → A ≡ B
+ren-ty-suc-inj {A}{B} eq =
+  ren-ty-inj suc {A}{B} (λ x y eq → suc-injective eq) eq
 
 rename-typ-pres : ∀ {ρ Γ₁ Γ₂}
   → ρ ⦂ Γ₁ ⇒ Γ₂
   → ρ ⦂ map (ren-ty suc) Γ₁ ⇒ map (ren-ty suc) Γ₂
-rename-typ-pres {ρ} {Γ₁} {Γ₂} ρ⦂ x A ∋x =
-  {!!}
-
-
-  -- let ∋ρx : nth Γ₂ (ρ x) ≡ just B
-  --     ∋ρx = ρ⦂ zero B refl in
-  -- nth-map-just{xs = Γ₂} ∋ρx
-
-
--- rename-bind-pres : ∀ {ρ Γ Δ A}
---   → ρ ⦂ Γ ⇒ Δ
---   → ρ ⦂ (bind A ∷ Γ) ⇒ (bind A ∷ Δ)
--- rename-bind-pres ρ⦂ x A (bindtrm ∋x) = bindtrm (ρ⦂ x _ ∋x)
-
+rename-typ-pres {ρ} {Γ₁} {Γ₂} ρ⦂ x A ∋x
+    with nth-map-just2{xs = Γ₁} ∋x
+... | A , nth-x , refl =
+    let nth-ρx = ρ⦂ x A nth-x in
+    let nth-ren-ρx = nth-just-map{xs = Γ₂} {f = ren-ty suc} nth-ρx in
+    nth-ren-ρx
 
 rename-pres : ∀ Γ₁ Γ₂ Δ ρ M A
   → ρ ⦂ Γ₁ ⇒ Γ₂
@@ -465,15 +528,133 @@ rename-pres Γ₁ Γ₂ Δ ρ (L · M) B ρ⦂ (⊢-·{A = A}{B} L⦂AB M⦂B) =
       (rename-pres Γ₁ Γ₂ Δ ρ M A ρ⦂ M⦂B)
 rename-pres Γ₁ Γ₂ Δ ρ (Λ N) A ρ⦂ (⊢-Λ{A = B} N⦂A v) = 
  let IH = rename-pres (map (ren-ty suc) Γ₁) (map (ren-ty suc) Γ₂) (typ ∷ Δ) ρ N B
-           {!!} N⦂A
+           (rename-typ-pres{ρ = ρ}{Γ₁}{Γ₂} ρ⦂) N⦂A
  in ⊢-Λ IH (rename-val v)
-rename-pres Γ₁ Γ₂ Δ ρ (M ◯ X) A ρ⦂ M⦂A = {!!}
-rename-pres Γ₁ Γ₂ Δ ρ (ν B · N) A ρ⦂ (⊢-ν N⦂A) = {!!}
-  -- let IH = rename-pres (bind B ∷ Γ) (bind B ∷ Δ) ρ N (ren-ty suc A)
-  --             (rename-bind-pres ρ⦂) N⦂A
-  -- in ⊢-ν IH
-rename-pres Γ₁ Γ₂ Δ ρ (M ⟨ c ⟩) B ρ⦂ (⊢-⟨⟩{A = A} M⦂A c⦂) = {!!}
---  ⊢-⟨⟩ (rename-pres Γ Δ ρ M A ρ⦂ M⦂A) {!!}
+rename-pres Γ₁ Γ₂ Δ ρ (M ◯ X) A ρ⦂ (⊢-◯ M⦂A) = ⊢-◯ (rename-pres Γ₁ Γ₂ Δ ρ M (`∀ _) ρ⦂ M⦂A)
+rename-pres Γ₁ Γ₂ Δ ρ (ν B · N) A ρ⦂ (⊢-ν N⦂A) =
+  let IH = rename-pres (map (ren-ty suc) Γ₁) (map (ren-ty suc) Γ₂) (bind B ∷ Δ) ρ N (ren-ty suc A)
+            (rename-typ-pres{ρ = ρ}{Γ₁}{Γ₂} ρ⦂) N⦂A in
+  ⊢-ν IH
+rename-pres Γ₁ Γ₂ Δ ρ (M ⟨ c ⟩) B ρ⦂ (⊢-⟨⟩{A = A} M⦂A c⦂) =
+  ⊢-⟨⟩ (rename-pres Γ₁ Γ₂ Δ ρ M A ρ⦂ M⦂A) c⦂
+
+-- Well-typed Term Variable Substitution
+_⊢_⦂_⤇_ : List Cat → Subst → List Type  → List Type → Set
+Δ ⊢ σ ⦂ Γ₁ ⤇ Γ₂ = ∀ x A → Γ₁ ∋ x ⦂ A → (Δ , Γ₂) ⊢ σ x ⦂ A
+
+exts-pres : ∀ {σ Δ Γ₁ Γ₂ A}
+  → Δ ⊢ σ ⦂ Γ₁ ⤇ Γ₂
+  → Δ ⊢ exts σ ⦂ (A ∷ Γ₁) ⤇ (A ∷ Γ₂)
+exts-pres σ⦂ zero A ∋x = ⊢-var ∋x
+exts-pres {σ}{Δ}{Γ₁}{Γ₂}{A} σ⦂ (suc x) B ∋x =
+  let σx⦂A = σ⦂ x B ∋x in
+  rename-pres Γ₂ (A ∷ Γ₂) Δ suc (σ x) B (λ x₁ A₁ z → z) σx⦂A
+
+-- Well-typed Type Variable Renaming
+{-
+data ⊢_⦂_⇒_ : Rename → List Cat → List Cat → Set where
+  ⊢idr : ∀ {Δ₂} → ⊢ idr ⦂ [] ⇒ Δ₂
+  ⊢extr : ∀ {ρ Δ₁ Δ₂ C}
+    → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂
+    → ⊢ extr ρ ⦂ (C ∷ Δ₁) ⇒ (C ∷ Δ₂)
+  ⊢cons : ∀{ρ Δ₁ Δ₂ Y}
+    → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂
+    → Δ₂ ⊢ ` Y
+    → ⊢ Y •ᵣ ρ ⦂ (typ ∷ Δ₁) ⇒ Δ₂
+-}
+⊢_⦂_⇒_ : Rename → List Cat → List Cat → Set
+⊢ ρ ⦂ Δ₁ ⇒ Δ₂ = ∀ x C → Δ₁ ∋ x := C → Δ₂ ∋ ρ x := ren-cat ρ C
+
+postulate extr-suc-commute : ∀{ρ B} → (ren-ty (extr ρ) (ren-ty suc B)) ≡ (ren-ty suc (ren-ty ρ B))
+
+postulate extr-typ-pres : ∀ {ρ Δ₁ Δ₂} → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂ → ⊢ extr ρ ⦂ (typ ∷ Δ₁) ⇒ (typ ∷ Δ₂)
+-- extr-typ-pres ρ⦂ = ?
+-- extr-typ-pres ρ⦂ zero C catZ = catZ
+-- extr-typ-pres ρ⦂ (suc X) typ (castS {C = typ} ∋X eq) =
+--   castS (ρ⦂ X typ ∋X) eq
+-- extr-typ-pres {ρ} ρ⦂ (suc X) (bind A) (castS {C = bind B} ∋X refl) =
+--   castS (ρ⦂ X (bind B) ∋X) (cong bind (extr-suc-commute{ρ}{B}))
+
+postulate extr-cat-pres : ∀ {ρ Δ₁ Δ₂ C} → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂ → ⊢ extr ρ ⦂ (C ∷ Δ₁) ⇒ (C ∷ Δ₂)
+-- extr-cat-pres ρ⦂ zero typ catZ = catZ
+-- extr-cat-pres ρ⦂ zero (bind A) catZ =
+  
+--   {!!}
+-- extr-cat-pres ρ⦂ (suc x) C′ ∋x = {!!}
+
+ren-ty-pres  : ∀{ρ Δ₁ Δ₂ A}
+  → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂
+  → Δ₁ ⊢ A
+  → Δ₂ ⊢ ren-ty ρ A
+ren-ty-pres {ρ} {Δ₁} {Δ₂} {A} ρ⦂ ⊢-ℕ = ⊢-ℕ
+ren-ty-pres {ρ} {Δ₁} {Δ₂} {A} ρ⦂ ⊢-★ = ⊢-★
+ren-ty-pres {ρ} {Δ₁} {Δ₂} {A} ρ⦂ (⊢-X{X = X}{C} ∋X) = ⊢-X (ρ⦂ X C ∋X)
+ren-ty-pres {ρ} {Δ₁} {Δ₂} {A} ρ⦂ (⊢-⇒ ⊢A ⊢B) = ⊢-⇒ (ren-ty-pres ρ⦂ ⊢A) (ren-ty-pres ρ⦂ ⊢B)
+ren-ty-pres {ρ} {Δ₁} {Δ₂} {A} ρ⦂ (⊢-∀ ⊢A) = ⊢-∀ (ren-ty-pres (extr-typ-pres ρ⦂) ⊢A)
+
+rename-crcn-pres : ∀{ρ Δ₁ Δ₂ c A B}
+  → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂
+  → Δ₁ ⊢ c ⦂ A ⇨ B
+  → Δ₂ ⊢ rename-crcn ρ c ⦂ (ren-ty ρ A) ⇨ (ren-ty ρ B)
+rename-crcn-pres ρ⦂ (⊢-id wf) = ⊢-id (ren-ty-pres ρ⦂ wf)
+rename-crcn-pres ρ⦂ (⊢-! {G = ★⇒★}) = ⊢-!
+rename-crcn-pres ρ⦂ (⊢-! {G = `ℕ}) = ⊢-!
+rename-crcn-pres ρ⦂ (⊢-! {G = ` X}) = ⊢-!
+rename-crcn-pres ρ⦂ (⊢-? {G = ★⇒★}) = ⊢-?
+rename-crcn-pres ρ⦂ (⊢-? {G = `ℕ}) = ⊢-?
+rename-crcn-pres ρ⦂ (⊢-? {G = ` x}) = ⊢-?
+rename-crcn-pres ρ⦂ (⊢-↦ c⦂ d⦂) = ⊢-↦ (rename-crcn-pres ρ⦂ c⦂) (rename-crcn-pres ρ⦂ d⦂)
+rename-crcn-pres ρ⦂ (⊢-⨟ c⦂ d⦂) = ⊢-⨟ (rename-crcn-pres ρ⦂ c⦂) (rename-crcn-pres ρ⦂ d⦂)
+rename-crcn-pres ρ⦂ (⊢-↓{X = X}{A} ∋X) =
+  let ∋ρX = ρ⦂ X (bind A) ∋X in
+  ⊢-↓ ∋ρX
+rename-crcn-pres ρ⦂ (⊢-↑{X = X}{A} ∋X) =
+  let ∋ρX = ρ⦂ X (bind A) ∋X in
+  ⊢-↑ ∋ρX
+rename-crcn-pres {ρ}{Δ₁}{Δ₂} ρ⦂ (⊢-𝒢{A = A} c⦂)
+    with rename-crcn-pres {extr ρ}{typ ∷ Δ₁}{typ ∷ Δ₂} (extr-typ-pres ρ⦂) c⦂
+... | IH rewrite extr-suc-commute{ρ}{A} =
+     ⊢-𝒢 IH
+rename-crcn-pres {ρ}{Δ₁}{Δ₂} ρ⦂ (⊢-ℐ{A = A} c⦂)
+    with rename-crcn-pres {extr ρ}{bind ★ ∷ Δ₁}{bind ★ ∷ Δ₂} {!!} c⦂
+... | IH =
+    ⊢-ℐ {!!}
+rename-crcn-pres ρ⦂ (⊢-∀ c⦂) = ⊢-∀ {!!}
+
+rename-ty-pres : ∀{ρ Δ₁ Δ₂ Γ M A}
+  → ⊢ ρ ⦂ Δ₁ ⇒ Δ₂
+  → (Δ₁ , Γ) ⊢ M ⦂ A
+  → (Δ₂ , map (ren-ty ρ) Γ) ⊢ rename-ty ρ M ⦂ ren-ty ρ A
+rename-ty-pres ρ⦂ (⊢-⟨⟩{A = A}{B} M⦂A c⦂) = ⊢-⟨⟩ (rename-ty-pres ρ⦂ M⦂A) {!!}
+rename-ty-pres ρ⦂ (⊢-var x) = {!!}
+rename-ty-pres ρ⦂ (⊢-Λ M⦂A x) = {!!}
+rename-ty-pres ρ⦂ (⊢-◯ M⦂A) = {!!}
+rename-ty-pres ρ⦂ (⊢-ν M⦂A) = {!!}
+rename-ty-pres ρ⦂ (⊢-ƛ M⦂A) = {!!}
+rename-ty-pres ρ⦂ (⊢-· M⦂A M⦂A₁) = {!!}
+
+
+⟰ᵗ-pres : ∀ {σ Δ Γ₁ Γ₂}
+  → Δ ⊢ σ ⦂ Γ₁ ⤇ Γ₂
+  → (typ ∷ Δ) ⊢ ⟰ᵗ σ ⦂ map (ren-ty suc) Γ₁ ⤇ map (ren-ty suc) Γ₂
+  -- ⟰ᵗ σ x = rename-ty suc (σ x)
+⟰ᵗ-pres {σ}{Δ}{Γ₁}{Γ₂} σ⦂ x A ∋x = {!!}
+
+sub-pres : ∀ Γ₁ Γ₂ Δ σ M A
+  → Δ ⊢ σ ⦂ Γ₁ ⤇ Γ₂
+  → (Δ , Γ₁) ⊢ M ⦂ A
+  → (Δ , Γ₂) ⊢ sub σ M ⦂ A
+sub-pres Γ₁ Γ₂ Δ σ (` x) A σ⦂ (⊢-var ∋x) = σ⦂ x A ∋x
+sub-pres Γ₁ Γ₂ Δ σ (ƛ N) (A ⇒ B) σ⦂ (⊢-ƛ{A = A} N⦂B) =
+    ⊢-ƛ (sub-pres (A ∷ Γ₁) (A ∷ Γ₂) Δ (exts σ) N B (exts-pres σ⦂) N⦂B)
+sub-pres Γ₁ Γ₂ Δ σ (L · M) B σ⦂ (⊢-·{A = A} L⦂A→B M⦂A) =
+    ⊢-· (sub-pres Γ₁ Γ₂ Δ σ L (A ⇒ B) σ⦂ L⦂A→B) (sub-pres Γ₁ Γ₂ Δ σ M A σ⦂ M⦂A)
+sub-pres Γ₁ Γ₂ Δ σ (Λ V) (`∀ A) σ⦂ (⊢-Λ V⦂A v) =
+  let IH = sub-pres {!!} {!!} (typ ∷ Δ) {!!} V A {!!} V⦂A in
+  ⊢-Λ IH {!!}
+sub-pres Γ₁ Γ₂ Δ σ (M ◯ X) A σ⦂ (⊢-◯ M⦂A) = {!!}
+sub-pres Γ₁ Γ₂ Δ σ (ν X · N) A σ⦂ M⦂A = {!!}
+sub-pres Γ₁ Γ₂ Δ σ (M ⟨ c ⟩) A σ⦂ M⦂A = {!!}
 
 
 preservation : ∀ Γ M N A
