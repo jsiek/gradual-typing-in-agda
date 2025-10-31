@@ -180,6 +180,9 @@ ren-grnd ρ (` X) = ` (ρ X)
 ren-pair : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵣ Δ₂ → TyVar Δ₁ × Type Δ₁ → TyVar Δ₂ × Type Δ₂
 ren-pair ρ (X , A) = ρ X , ren-type ρ A
 
+⤊ : ∀{Δ} → BindCtx Δ → BindCtx (Δ ,typ)
+⤊ = map (ren-pair Styp)
+
 data Crcn : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set where
  id : ∀{Δ}{Σ}{A : Type Δ} → Crcn Δ Σ A A
  _↦_ : ∀{Δ}{Σ}{A B C D : Type Δ}
@@ -191,13 +194,13 @@ data Crcn : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set where
    → Crcn Δ Σ B C
    → Crcn Δ Σ A C
  `∀_ : ∀{Δ}{Σ}{A B : Type (Δ ,typ)}
-   → Crcn (Δ ,typ) (map (ren-pair Styp) Σ) A B
+   → Crcn (Δ ,typ) (⤊ Σ) A B
    → Crcn Δ Σ (`∀ A) (`∀ B)
  𝒢 : ∀{Δ}{Σ}{A : Type Δ} {B : Type (Δ ,typ)}
-   → Crcn (Δ ,typ) (map (ren-pair Styp) Σ) (ren-type Styp A) B
+   → Crcn (Δ ,typ) (⤊ Σ) (ren-type Styp A) B
    → Crcn Δ Σ A (`∀ B)
  ℐ : ∀{Δ}{Σ}{A : Type (Δ ,typ)} {B : Type Δ}
-   → Crcn (Δ ,typ) ((Ztyp , ★) ∷ (map (ren-pair Styp) Σ)) A (ren-type Styp B)
+   → Crcn (Δ ,typ) ((Ztyp , ★) ∷ ⤊ Σ) A (ren-type Styp B)
    → Crcn Δ Σ (`∀ A) B
  _↓ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A

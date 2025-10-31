@@ -70,7 +70,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set 
      → Δ ∣ Σ ∣ Γ ⊢ B
      
   Λ_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}
-     → (Δ ,typ) ∣ map (ren-pair Styp) Σ ∣ ⟰ Γ ⊢ A
+     → (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A
      → Δ ∣ Σ ∣ Γ ⊢ (`∀ A)
      
   _◯_ : ∀{Δ Σ Γ A}
@@ -89,7 +89,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set 
   
   ν_·_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{B : Type Δ}
     → (A : Type Δ)
-    → (Δ ,typ) ∣ (Ztyp , ren-type Styp A) ∷ (map (ren-pair Styp) Σ) ∣ ⟰ Γ ⊢ ren-type Styp B
+    → (Δ ,typ) ∣ (Ztyp , ren-type Styp A) ∷ ⤊ Σ ∣ ⟰ Γ ⊢ ren-type Styp B
     → Δ ∣ Σ ∣ Γ ⊢ B
 
 ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
