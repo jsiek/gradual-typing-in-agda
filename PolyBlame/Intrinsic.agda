@@ -10,6 +10,7 @@ open import Data.Empty using (⊥)
 open import Data.Unit using (⊤)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
+open import Function using (_∘_)
 
 open import PolyBlame.Rename
 
@@ -39,13 +40,12 @@ data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
      → Γ ∋ A
      → Γ ▷ B ∋ A
 
-⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
-⟰ ∅ = ∅
-⟰ (Γ ▷ A) = (⟰ Γ) ▷ ren-type Styp A
-
 ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
 ren-ctx ρ ∅ = ∅
 ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ ren-type ρ A
+
+⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
+⟰ Γ = ren-ctx Styp Γ
 
 data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set where
   `_ : ∀{Δ Σ Γ A}
@@ -73,7 +73,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set 
      → (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A
      → Δ ∣ Σ ∣ Γ ⊢ (`∀ A)
      
-  _◯_ : ∀{Δ Σ Γ A}
+  _◯_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}
      → Δ ∣ Σ ∣ Γ ⊢ (`∀ A)
      → (X : TyVar Δ)
        -----------------------------
@@ -125,3 +125,64 @@ rename-ty ρ (ν A · N) =
   let N′ = rename-ty (extᵗ ρ) N in
   ν (ren-type ρ A) · N′
 
+ren-pair-∘ : ∀{Δ₁ Δ₂ Δ₃}{x : TyVar Δ₁ × Type Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+  → ((ren-pair ρ₂) ∘ (ren-pair ρ₁)) x ≡ (ren-pair (ρ₁ ⨟ᵗ ρ₂)) x
+ren-pair-∘ {Δ₁}{Δ₂}{Δ₃}{x} ρ₁ ρ₂ = refl
+
+map-ren-pair-id : ∀{Δ} (Σ : BindCtx Δ)
+  → map (ren-pair idᵗ) Σ ≡ Σ
+map-ren-pair-id [] = refl
+map-ren-pair-id ((X , A) ∷ Σ) = cong₂ _∷_ refl (map-ren-pair-id Σ)
+{-# REWRITE map-ren-pair-id #-}
+
+ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+  → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
+ren-ctx-∘ {Γ = ∅} ρ₁ ρ₂ = refl
+ren-ctx-∘ {Γ = Γ ▷ A} ρ₁ ρ₂ = cong₂ _▷_ (ren-ctx-∘ {Γ = Γ} ρ₁ ρ₂) refl
+{-# REWRITE ren-ctx-∘ #-}
+
+ren-ctx-id : ∀{Δ} (Γ : Ctx Δ)
+  → ren-ctx idᵗ Γ ≡ Γ
+ren-ctx-id ∅ = refl
+ren-ctx-id (Γ ▷ A) = cong₂ _▷_ (ren-ctx-id Γ) refl
+{-# REWRITE ren-ctx-id #-}
+
+{- Reduction -}
+
+sandbox-β-Λ : ∀ {Δ Σ Γ A} {V : (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A} {Y : TyVar Δ} → Set
+sandbox-β-Λ {Δ}{Σ}{Γ}{A} {V} {Y} =
+  let [Y] : (Δ ,typ) ⇒ᵣ Δ
+      [Y] = (Y •ᵗ idᵗ) in
+  let lhs : Δ ∣ Σ ∣ Γ ⊢ ren-type [Y] A
+      lhs = (Λ V) ◯ Y in
+  let xx = rename-ty [Y] V in
+  let rhs : Δ ∣ map  (ren-pair (Styp ⨟ᵗ [Y]))  Σ
+              ∣ ren-ctx [Y] (⟰ Γ) ⊢ ren-type [Y] A
+      rhs = xx in
+  let F : Δ ∣ Σ ∣ Γ ⊢ ren-type [Y] A
+      F = rhs in
+  ⊤
+
+infix 2 _—→_
+data _—→_ : ∀ {Δ Σ Γ A} → (Δ ∣ Σ ∣ Γ ⊢ A) → (Δ ∣ Σ ∣ Γ ⊢ A) → Set where
+
+  -- (ΛX.V)[Y]             —→  V[Y/X]
+  β-Λ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}
+          {V : (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A}
+          {Y : TyVar Δ}
+    →  (Λ V) ◯ Y —→ (let rhs = rename-ty (Y •ᵗ idᵗ) V in rhs)
+       -- strange that the `let` is needed.
+
+  -- V⟨∀X.c⟩[Y]            —→  V[Y]⟨c[Y/X]⟩
+  β-⟨∀⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B : Type (Δ ,typ)}
+            {V : Δ ∣ Σ ∣ Γ ⊢ (`∀ A)}
+            {c : Δ ,typ ∣ ⤊ Σ ⊢ A ⇒ B}
+            {Y : TyVar Δ}
+    → V ⟨ `∀ c ⟩ ◯ Y —→ (V ◯ Y) ⟨ rename-crcn (Y •ᵗ idᵗ) c ⟩
+
+  -- V⟨𝒢 X.c⟩[Y]           —→ V⟨c[Y/X]⟩
+  β-⟨𝒢⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}{B : Type (Δ ,typ)}
+            {V : Δ ∣ Σ ∣ Γ ⊢ A}
+            {c : Δ ,typ ∣ ⤊ Σ ⊢ (ren-type Styp A) ⇒ B}
+            {Y : TyVar Δ}
+    → V ⟨ 𝒢 c ⟩ ◯ Y —→ V ⟨ rename-crcn (Y •ᵗ idᵗ) c ⟩

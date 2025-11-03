@@ -72,7 +72,12 @@ abstract
   seq-def : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx} (σ : Δ₁ ⇒ᵣ Δ₂) (τ : Δ₂ ⇒ᵣ Δ₃) x → (σ ⨟ᵗ τ) x ≡ τ (σ x)
   seq-def σ τ x = refl
   {-# REWRITE seq-def #-}
-  
+
+suc-seq-cons : ∀{Δ₁ Δ₂ : TyCtx} (ρ : Δ₁ ⇒ᵣ Δ₂)(Y : TyVar Δ₂)
+  → Styp ⨟ᵗ (Y •ᵗ ρ) ≡ ρ
+suc-seq-cons ρ Y = refl  
+-- {-# REWRITE suc-seq-cons #-}
+
 cons-seq-dist : ∀{Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : Δ₂ ⇒ᵣ Δ₃}
    → (Y •ᵗ ρ₁) ⨟ᵗ ρ₂ ≡ (ρ₂ Y •ᵗ (ρ₁ ⨟ᵗ ρ₂))
 cons-seq-dist {Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁}{ρ₂} = extensionality G
