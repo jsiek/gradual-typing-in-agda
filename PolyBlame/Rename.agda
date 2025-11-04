@@ -78,6 +78,13 @@ suc-seq-cons : ∀{Δ₁ Δ₂ : TyCtx} (ρ : Δ₁ ⇒ᵣ Δ₂)(Y : TyVar Δ�
 suc-seq-cons ρ Y = refl  
 -- {-# REWRITE suc-seq-cons #-}
 
+cons-zero-suc-id : ∀{Δ : TyCtx} → Ztyp{Δ} •ᵗ Styp ≡ idᵗ
+cons-zero-suc-id{Δ} = extensionality G
+  where G : (x : TyVar (Δ ,typ)) → (Ztyp •ᵗ Styp) x ≡ idᵗ x
+        G Ztyp = refl
+        G (Styp x) = refl
+{-# REWRITE cons-zero-suc-id #-}
+
 cons-seq-dist : ∀{Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : Δ₂ ⇒ᵣ Δ₃}
    → (Y •ᵗ ρ₁) ⨟ᵗ ρ₂ ≡ (ρ₂ Y •ᵗ (ρ₁ ⨟ᵗ ρ₂))
 cons-seq-dist {Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁}{ρ₂} = extensionality G
@@ -104,9 +111,11 @@ ext-compose-dist {Δ₁}{Δ₂}{Δ₃} ρ₁ ρ₂ = extensionality G
 
 seq-id : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → (idᵗ ⨟ᵗ ρ) ≡ ρ
 seq-id {Δ₁}{Δ₂}{ρ} = refl
+{-# REWRITE seq-id #-}
 
 id-seq : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → (ρ ⨟ᵗ idᵗ) ≡ ρ
 id-seq {Δ₁}{Δ₂}{ρ} = refl
+{-# REWRITE id-seq #-}
 
 data Type where
   `ℕ  : ∀{Δ} → Type Δ
@@ -265,3 +274,38 @@ rename-crcn ρ (∋α ↑) = (ren-bind ∋α) ↑
 rename-crcn ρ (G !) = ren-grnd ρ G !
 rename-crcn ρ (H `?) = ren-grnd ρ H `?
 
+{- Renaming Bind Variables -}
+
+infixr 7 _⇒ᵇ_
+_⇒ᵇ_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set
+Σ₁ ⇒ᵇ Σ₂ = ∀{X A} → Σ₁ ∋ X := A → Σ₂ ∋ X := A
+
+extᵇ : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}
+  → Σ₁ ⇒ᵇ Σ₂
+  → ⤊ Σ₁ ⇒ᵇ ⤊ Σ₂
+extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ here =
+    ren-bind{ρ = Styp} (ρ here)
+extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ (there ∋X) =
+    extᵇ (λ {X = X₂} {A = A₁} z → ρ (there z)) ∋X
+
+extᶜ : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{X A}
+  → Σ₁ ⇒ᵇ Σ₂
+  → ((X , A) ∷ Σ₁) ⇒ᵇ ((X , A) ∷ Σ₂)
+extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ here = here
+extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ (there ∋X) = there (ρ ∋X)
+
+rename-crcn-bind : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{A B}
+  → (ρ : Σ₁ ⇒ᵇ Σ₂)
+  → Δ ∣ Σ₁ ⊢ A ⇒ B
+  → Δ ∣ Σ₂ ⊢ A ⇒ B
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ id = id
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ↦ d) = rename-crcn-bind ρ c ↦ rename-crcn-bind ρ d
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ⨟ d) = rename-crcn-bind ρ c ⨟ rename-crcn-bind ρ d
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (`∀ c) = `∀ (rename-crcn-bind (extᵇ ρ) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (𝒢 c) = 𝒢 (rename-crcn-bind (extᵇ ρ) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (ℐ c) =
+    ℐ (rename-crcn-bind (extᶜ (extᵇ ρ)) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↓) = {!!}
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↑) = {!!}
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (G !) = {!!}
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (H `?) = {!!}

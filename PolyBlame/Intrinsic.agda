@@ -149,18 +149,23 @@ ren-ctx-id (Γ ▷ A) = cong₂ _▷_ (ren-ctx-id Γ) refl
 
 {- Reduction -}
 
-sandbox-β-Λ : ∀ {Δ Σ Γ A} {V : (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A} {Y : TyVar Δ} → Set
-sandbox-β-Λ {Δ}{Σ}{Γ}{A} {V} {Y} =
-  let [Y] : (Δ ,typ) ⇒ᵣ Δ
-      [Y] = (Y •ᵗ idᵗ) in
-  let lhs : Δ ∣ Σ ∣ Γ ⊢ ren-type [Y] A
-      lhs = (Λ V) ◯ Y in
-  let xx = rename-ty [Y] V in
-  let rhs : Δ ∣ map  (ren-pair (Styp ⨟ᵗ [Y]))  Σ
-              ∣ ren-ctx [Y] (⟰ Γ) ⊢ ren-type [Y] A
-      rhs = xx in
-  let F : Δ ∣ Σ ∣ Γ ⊢ ren-type [Y] A
-      F = rhs in
+ext-suc-cons : ∀{Δ₁}{A : Type Δ₁} → extᵗ{Δ₁ = Δ₁} Styp ⨟ᵗ (Ztyp •ᵗ idᵗ) ≡ idᵗ
+ext-suc-cons = refl
+
+sandbox : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}{B : Type Δ}
+            {V : Δ ∣ Σ ∣ Γ ⊢ (`∀ A)}
+            {c : (Δ ,typ) ∣ ((Ztyp , ★) ∷ ⤊ Σ) ⊢ A ⇒ (ren-type Styp B)} → Set
+sandbox {Δ}{Σ}{Γ}{A}{B}{V}{c} =
+  let lhs : Δ ∣ Σ ∣ Γ ⊢ B
+      lhs = V ⟨ ℐ{B = B} c ⟩ in
+  let V′  : (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ (`∀ ren-type (extᵗ Styp) A)
+      V′ = rename-ty Styp V in
+  -- TODO: need a weakening lemma for Σ! (for terms and coercions)
+  let V″ : (Δ ,typ) ∣ (Ztyp , ★) ∷ ⤊ Σ ∣ ⟰ Γ ⊢ (`∀ ren-type (extᵗ Styp) A)
+      V″ = {!!} in
+
+  let rhs : Δ ∣ Σ ∣ Γ ⊢ B
+      rhs = (ν ★ · ((V″ ◯ Ztyp) ⟨ c ⟩)) in
   ⊤
 
 infix 2 _—→_
@@ -186,3 +191,10 @@ data _—→_ : ∀ {Δ Σ Γ A} → (Δ ∣ Σ ∣ Γ ⊢ A) → (Δ ∣ Σ ∣
             {c : Δ ,typ ∣ ⤊ Σ ⊢ (ren-type Styp A) ⇒ B}
             {Y : TyVar Δ}
     → V ⟨ 𝒢 c ⟩ ◯ Y —→ V ⟨ rename-crcn (Y •ᵗ idᵗ) c ⟩
+
+  -- V⟨ℐ X.c⟩             —→  νX=★. V[X]⟨c⟩
+  -- β-⟨ℐ⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}{B : Type Δ}
+  --           {V : Δ ∣ Σ ∣ Γ ⊢ (`∀ A)}
+  --           {c : Δ ,typ ∣ (Ztyp , ★) ∷ ⤊ Σ ⊢ A ⇒ (ren-type Styp B)}
+  --   → (V ⟨ ℐ c ⟩) —→ (ν ★ · (((rename-ty Styp V) ◯ Ztyp) ⟨ c ⟩))
+    
