@@ -327,6 +327,7 @@ data _—→_ : ∀ {Δ Σ Γ A} → (Δ ∣ Σ ∣ Γ ⊢ A) → (Δ ∣ Σ ∣
   β : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B : Type Δ}
           {N : Δ ∣ Σ ∣ Γ ▷ B ⊢ A}
           {V : Δ ∣ Σ ∣ Γ ⊢ B}
+    → Value V
     → (ƛ N) · V —→ N [ V ]
 
   -- (ΛX.V)[Y]             —→  V[Y/X]
@@ -398,6 +399,21 @@ data _↝_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set where
     → Σ₁ ↝ Σ₂
     → Σ₂ ↝ Σ₃
     → Σ₁ ↝ Σ₃
+
+ren-bind-map : ∀{Δ Δ′}{Σ₁ Σ₂ : BindCtx Δ}
+   (ρ : Δ ⇒ᵣ Δ′)
+  → Σ₁ ↝ Σ₂
+  → map (ren-pair ρ) Σ₁ ↝ map (ren-pair ρ) Σ₂
+ren-bind-map ρ ↝-extend = ↝-extend
+ren-bind-map ρ ↝-refl = ↝-refl
+ren-bind-map ρ (↝-trans s₁ s₂) = ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
+
+rbm : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx}{Σ₁ : BindCtx Δ₁}{Σ₂ : BindCtx Δ₂}
+        (ρ₁ : TyVar Δ₁ → TyVar Δ₂)
+        (ρ₂ : TyVar Δ₂ → TyVar Δ₃)
+  → map (ren-pair ρ₁) Σ₁ ↝ Σ₂
+  → map (ren-pair (ρ₁ ⨟ᵗ ρ₂)) Σ₁ ↝ map (ren-pair ρ₂) Σ₂
+rbm ρ₁ ρ₂ s = (let s' = ren-bind-map ρ₂ s in s')
 
 ⤊ᵇ : ∀{Δ}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ}{Γ}{A}
   → Σ ↝ Σ′
@@ -476,6 +492,83 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
 
 {- Reflexive and transitive closure -}
 
+infix  2 _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_
+--infix  1 begin_
+--infixr 2 _—→⟨_⟩_
+infix  3 _∎
+
+data _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ : BindCtx Δ₁)
+  → (Γ : Ctx Δ₁) → (A : Type Δ₁) → (Δ₁ ∣ Σ₁ ∣ Γ ⊢ A) 
+  → (Δ₂ : TyCtx)
+  → (ρ : Δ₁ ⇒ᵣ Δ₂)
+  → (Σ₂ : BindCtx Δ₂)
+  → (s : (map (ren-pair ρ) Σ₁) ↝ Σ₂)
+  → (Δ₂ ∣ Σ₂ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A)
+  → Set where
+
+  _∎ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}
+    → (M : Δ ∣ Σ ∣ Γ ⊢ A)
+      ---------------------------------------------
+    → Δ ∥ Σ ∥ Γ ⊢ A ∋ M —↠ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ M
+
+  step—→ : ∀{Δ₁ Δ₂ Δ₃}{Σ₁ Σ₂ Σ₃}{Γ}{A}{ρ₁}{s₁}{ρ₂}{s₂}
+      (L : Δ₁ ∣ Σ₁ ∣ Γ ⊢ A)
+      {M : Δ₂ ∣ Σ₂ ∣ ren-ctx ρ₁ Γ ⊢ ren-type ρ₁ A}
+      {N : Δ₃ ∣ Σ₃ ∣ ren-ctx ρ₂ (ren-ctx ρ₁ Γ) ⊢ ren-type ρ₂ (ren-type ρ₁ A)}
+    → Δ₁ ∥ Σ₁ ∥ Γ ⊢ A ∋ L —→ Δ₂ ∣ ρ₁ ∣ Σ₂ ∣ s₁ ⊢ M
+    → Δ₂ ∥ Σ₂ ∥ ren-ctx ρ₁ Γ ⊢ ren-type ρ₁ A ∋ M —↠ Δ₃ ∣ ρ₂ ∣ Σ₃ ∣ s₂ ⊢ N
+      ---------------------------------------------------------------------------
+    → Δ₁ ∥ Σ₁ ∥ Γ ⊢ A ∋ L —↠ Δ₃ ∣ (ρ₁ ⨟ᵗ ρ₂) ∣ Σ₃ ∣ ↝-trans (rbm ρ₁ ρ₂ s₁) s₂ ⊢ N
+
+
 {- Progress -}
+
+data Progress {Δ}{Σ}{A} (M : Δ ∣ Σ ∣ ∅ ⊢ A) : Set where
+  step : ∀ {Δ′}{ρ}{Σ′}{s} {N : Δ′ ∣ Σ′ ∣ ∅ ⊢ ren-type ρ A}
+    → Δ ∥ Σ ∥ ∅ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ N
+    → Progress M
+    
+  done :
+      Value M
+      -----------
+    → Progress M
+
+  blame :
+      M ≡ blame
+    → Progress M
+
+progress : ∀ {Δ Σ A} → (M : Δ ∣ Σ ∣ ∅ ⊢ A) → Progress M
+progress (# k) = done (# k)
+progress (ƛ N) = done (ƛ N)
+progress (L · M) with progress L
+... | step L→L′ = step (ξ-·₁ L→L′)
+... | done (V-⟨↦⟩ v) = step (pure β-⟨c→d⟩)
+... | blame refl = {!!}
+... | done (ƛ N) with progress M
+... | step M→M′ = step (ξ-·₂ (ƛ N) M→M′)
+... | done w = step (pure (β w))
+progress (Λ N) = done (Λ N)
+progress (M ◯ X) with progress M
+... | step M→M′ = step (ξ-◯ M→M′)
+... | done (Λ N) = step (pure β-Λ)
+... | done (_⟨∀_⟩ v) = step (pure β-⟨∀⟩)
+... | done (_⟨𝒢_⟩ v) = step (pure β-⟨𝒢⟩)
+progress (_⟨_⟩{A = A } M c) with progress M
+... | step M→M′ = step (ξ-⟨⟩ M→M′)
+... | done v
+    with c
+... | id = step (pure (⟨id⟩{B = A}))
+... | c ↦ d = done (V-⟨↦⟩ v)
+... | c ⨟ d = step (pure β-⟨c⨟d⟩)
+... | `∀ c = done (_⟨∀_⟩ v)
+... | 𝒢 c = done (_⟨𝒢_⟩ v)
+... | ℐ c = step (pure β-⟨ℐ⟩)
+... | X ↓ = done (v ⟨X↓⟩)
+... | X ↑ = {!!}
+... | G ! = done (v ⟨G!⟩)
+... | H `? = {!!}
+progress blame = {!!}
+progress (ν A · N) = {!!}
+
 
 {- Evaluation -}
