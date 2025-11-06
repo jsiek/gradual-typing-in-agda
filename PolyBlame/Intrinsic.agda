@@ -609,7 +609,7 @@ progress (_⟨_⟩{A = A } M c) u with progress M u
 progress blame u = blame refl
 progress (ν A · N) u = step β-ν
 
-{--- Type Safety ---}
+{--- Preservation of unique binding entries ---}
 
 helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
   → map (ren-pair Sᵗ) Σ ∋ Sᵗ X := B
@@ -653,6 +653,8 @@ unique-preservation u (ξ-◯ M→M′) = unique-preservation u M→M′
 unique-preservation u blame-◯ = u
 unique-preservation u (ξ-⟨⟩ M→M′) = unique-preservation u M→M′
 unique-preservation u blame-⟨⟩ = u
+
+{--- Type Safety ---}
 
 type-safety : ∀{Δ Δ′}{ρ}{Σ}{Σ′}{s}{A}{M}{N}
   → unique Σ
