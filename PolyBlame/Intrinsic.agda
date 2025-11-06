@@ -10,7 +10,9 @@ open import Data.Empty using (⊥)
 open import Data.Unit using (⊤)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
+open import Data.Sum using (_⊎_)
 open import Function using (_∘_)
+open import Relation.Nullary using (Dec; yes; no)
 
 open import PolyBlame.Rename
 
@@ -289,7 +291,7 @@ data Value : ∀ {Δ}{Σ}{Γ}{A} → Δ ∣ Σ ∣ Γ ⊢ A → Set where
        -------------------------------
      → Value{Δ}{Σ}{Γ} (Λ N)
 
-  _⟨G!⟩ : ∀{Δ Σ Γ G}{V : Δ ∣ Σ ∣ Γ ⊢ ⌈ G ⌉}
+  _⟨G!⟩ : ∀{Δ Σ Γ}{G : Grnd Δ}{V : Δ ∣ Σ ∣ Γ ⊢ ⌈ G ⌉}
      → Value V
        -----------------
      → Value (V ⟨ G ! ⟩)
@@ -363,8 +365,8 @@ data _—→_ : ∀ {Δ Σ Γ A} → (Δ ∣ Σ ∣ Γ ⊢ A) → (Δ ∣ Σ ∣
 
   -- V⟨X↓⟩⟨X↑⟩                  —→  V
   ⟨X↓⟩⟨X↑⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}{B : Type Δ}
-           {V : Δ ∣ Σ ∣ Γ ⊢ A}{X}{∋X : Σ ∋ X := A}
-    → (V ⟨ ∋X ↓ ⟩ ⟨ ∋X ↑ ⟩) —→ V
+           {V : Δ ∣ Σ ∣ Γ ⊢ A}{X}{∋X : Σ ∋ X := A}{∋X′ : Σ ∋ X := A}
+    → (V ⟨ ∋X ↓ ⟩ ⟨ ∋X′ ↑ ⟩) —→ V
 
   -- V⟨G!⟩⟨G?⟩              —→  V
   ⟨G!⟩⟨G?⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{G}
@@ -471,6 +473,16 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
       ----------------------------------------------------------------------
     → Δ ∥ Σ ∥ Γ ⊢ B ∋ (V · M) —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ ⤊ᵇ s (rename-ty ρ V) · M′
 
+  blame-·₁ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B}{M : Δ ∣ Σ ∣ Γ ⊢ A}
+      ----------------------------------------------------------
+    → Δ ∥ Σ ∥ Γ ⊢ B ∋ (blame · M) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
+
+  blame-·₂ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B}
+      {V : Δ ∣ Σ ∣ Γ ⊢ (A ⇒ B)}
+    → Value V
+      ----------------------------------------------------------
+    → Δ ∥ Σ ∥ Γ ⊢ B ∋ (V · blame) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
+    
   ξ-◯ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
      {s : map (ren-pair ρ) Σ ↝ Σ′}
      {Γ : Ctx Δ}{A}
@@ -481,6 +493,10 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
      --------------------------------------------------------------------------
    → Δ ∥ Σ ∥ Γ ⊢ A [ X ]ᵗ ∋ (M ◯ X) —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ (M′ ◯ ρ X)
 
+  blame-◯ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}{X : TyVar Δ}
+     ---------------------------------------------------------------------------
+   → Δ ∥ Σ ∥ Γ ⊢ A [ X ]ᵗ ∋ (_◯_{A = A} blame X) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
+
   ξ-⟨⟩ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
      {s : map (ren-pair ρ) Σ ↝ Σ′}
      {Γ : Ctx Δ}{A}{B}
@@ -489,6 +505,10 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
    → Δ ∥ Σ ∥ Γ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
      -----------------------------------------------------------------------------
    → Δ ∥ Σ ∥ Γ ⊢ B ∋ (M ⟨ c ⟩) —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ (M′ ⟨ ⇧ᵇ s (rename-crcn ρ c) ⟩)
+
+  blame-⟨⟩ : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}{B}{c : Δ ∣ Σ ⊢ A ⇒ B}
+     -------------------------------------------------------------
+   → Δ ∥ Σ ∥ Γ ⊢ B ∋ (blame ⟨ c ⟩) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
 
 {- Reflexive and transitive closure -}
 
@@ -537,24 +557,38 @@ data Progress {Δ}{Σ}{A} (M : Δ ∣ Σ ∣ ∅ ⊢ A) : Set where
       M ≡ blame
     → Progress M
 
-progress : ∀ {Δ Σ A} → (M : Δ ∣ Σ ∣ ∅ ⊢ A) → Progress M
-progress (# k) = done (# k)
-progress (ƛ N) = done (ƛ N)
-progress (L · M) with progress L
+progress-seal : ∀{Δ Σ}{Y}{A}
+  → unique Σ
+  → (M : Δ ∣ Σ ∣ ∅ ⊢ (` Y))
+  → (∋Y : Σ ∋ Y := A)
+  → (c : Crcn Δ Σ (` Y) A)
+  → Value M
+  → Progress (M ⟨ ∋Y ↑ ⟩)
+progress-seal {A = A} u (V ⟨ ∋X ↓ ⟩) ∋Y c (vM ⟨X↓⟩)
+    with lookup-unique ∋X ∋Y u
+... | refl = step (pure (⟨X↓⟩⟨X↑⟩{B = A}))
+
+progress : ∀ {Δ Σ A} → (M : Δ ∣ Σ ∣ ∅ ⊢ A) → unique Σ → Progress M
+progress (# k) u = done (# k)
+progress (ƛ N) u = done (ƛ N)
+progress (L · M) u with progress L u
 ... | step L→L′ = step (ξ-·₁ L→L′)
 ... | done (V-⟨↦⟩ v) = step (pure β-⟨c→d⟩)
-... | blame refl = {!!}
-... | done (ƛ N) with progress M
+... | blame refl = step blame-·₁
+... | done (ƛ N) with progress M u
 ... | step M→M′ = step (ξ-·₂ (ƛ N) M→M′)
 ... | done w = step (pure (β w))
-progress (Λ N) = done (Λ N)
-progress (M ◯ X) with progress M
+... | blame refl = step (blame-·₂ (ƛ N))
+progress (Λ N) u = done (Λ N)
+progress (M ◯ X) u with progress M u
 ... | step M→M′ = step (ξ-◯ M→M′)
 ... | done (Λ N) = step (pure β-Λ)
 ... | done (_⟨∀_⟩ v) = step (pure β-⟨∀⟩)
 ... | done (_⟨𝒢_⟩ v) = step (pure β-⟨𝒢⟩)
-progress (_⟨_⟩{A = A } M c) with progress M
+... | blame refl = step blame-◯
+progress (_⟨_⟩{A = A } M c) u with progress M u
 ... | step M→M′ = step (ξ-⟨⟩ M→M′)
+... | blame refl = step blame-⟨⟩
 ... | done v
     with c
 ... | id = step (pure (⟨id⟩{B = A}))
@@ -564,11 +598,65 @@ progress (_⟨_⟩{A = A } M c) with progress M
 ... | 𝒢 c = done (_⟨𝒢_⟩ v)
 ... | ℐ c = step (pure β-⟨ℐ⟩)
 ... | X ↓ = done (v ⟨X↓⟩)
-... | X ↑ = {!!}
+... | X ↑ = progress-seal u M X c v
 ... | G ! = done (v ⟨G!⟩)
-... | H `? = {!!}
-progress blame = {!!}
-progress (ν A · N) = {!!}
+... | H `?
+    with v
+... | _⟨G!⟩ {G = G} v′
+    with G ≡ᵍ H
+... | yes refl = step (pure ⟨G!⟩⟨G?⟩)
+... | no neq = step (pure (⟨G!⟩⟨H?⟩ neq))
+progress blame u = blame refl
+progress (ν A · N) u = step β-ν
 
+{--- Type Safety ---}
 
-{- Evaluation -}
+helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
+  → map (ren-pair Sᵗ) Σ ∋ Sᵗ X := B
+  → ((A : Type Δ) → Σ ∋ X := A → ⊥)
+  → ⊥
+helper {Δ} {(Y , C) ∷ Σ′} Zᵇ nl = nl C Zᵇ
+helper {Δ} {(Y , C) ∷ Σ′} (Sᵇ ∋Sx) nl = helper ∋Sx (λ A x → nl A (Sᵇ x))
+
+unique-⤊ : ∀ {Δ}{Σ : BindCtx Δ} → unique Σ → unique (⤊ Σ)
+unique-⤊ Umt = Umt
+unique-⤊ (Ucons u nolook) = Ucons (unique-⤊ u) λ { B y → helper y nolook }
+
+suc-bind-zero : ∀{Δ}{Σ : BindCtx Δ}{C}
+  → map (ren-pair Sᵗ) Σ ∋ Zᵗ := C
+  → ⊥
+suc-bind-zero {Δ} {(Y , A) ∷ Σ′} (Sᵇ ∋Z) = suc-bind-zero ∋Z
+
+unique-extend : ∀ {Δ}{A}
+  → (Σ : BindCtx Δ)
+  → unique Σ
+  → unique ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ)
+unique-extend [] u = Ucons Umt λ { B ()}
+unique-extend ((X , B) ∷ Σ) (Ucons u nolook) =
+  Ucons (Ucons (unique-⤊ u) λ {C x → helper x nolook})
+    λ { C (Sᵇ ∋Z) → suc-bind-zero ∋Z}
+
+unique-preservation : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
+     {s : map (ren-pair ρ) Σ ↝ Σ′} {Γ : Ctx Δ}{A}
+     {M : Δ ∣ Σ ∣ Γ ⊢ A}
+     {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A}
+  → unique Σ
+  → Δ ∥ Σ ∥ Γ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
+  → unique Σ′ 
+unique-preservation u (pure x) = u
+unique-preservation {Σ = Σ} u (β-ν{A = A}) = unique-extend{A = A} Σ u
+unique-preservation u (ξ-·₁ M→M′) = unique-preservation u M→M′
+unique-preservation u (ξ-·₂ x M→M′) = unique-preservation u M→M′
+unique-preservation u blame-·₁ = u
+unique-preservation u (blame-·₂ x) = u
+unique-preservation u (ξ-◯ M→M′) = unique-preservation u M→M′
+unique-preservation u blame-◯ = u
+unique-preservation u (ξ-⟨⟩ M→M′) = unique-preservation u M→M′
+unique-preservation u blame-⟨⟩ = u
+
+type-safety : ∀{Δ Δ′}{ρ}{Σ}{Σ′}{s}{A}{M}{N}
+  → unique Σ
+  → Δ ∥ Σ ∥ ∅ ⊢ A ∋ M —↠ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ N
+  → Progress N
+type-safety u (M ∎) = progress M u
+type-safety u (step—→ _ M→M′ M′→N) = type-safety (unique-preservation u M→M′) M′→N

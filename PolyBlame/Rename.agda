@@ -8,12 +8,14 @@ open import Data.Nat using (ℕ; zero; suc; _<_; _≤?_; z≤n; s≤s)
 open import Data.Nat.Properties using (suc-injective)
 open import Data.List hiding ([_])
 open import Data.List.Properties using (map-∘)
-open import Data.Empty using (⊥)
+open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Unit using (⊤)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
 open import Data.Fin
 open import Function using (_∘_)
+open import Relation.Nullary using (Dec; yes; no)
+open import Agda.Builtin.Bool
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
@@ -41,6 +43,16 @@ data TyVar : (Δ : TyCtx) → Set where
      → TyVar Δ
        --------------
      → TyVar (Δ ,typ)
+
+_≡ᵗ_ : ∀{Δ} → (X : TyVar Δ) → (Y : TyVar Δ) → Dec (X ≡ Y)
+Zᵗ ≡ᵗ Zᵗ = Agda.Builtin.Bool.Bool.true Relation.Nullary.because
+            Relation.Nullary.ofʸ refl
+Zᵗ ≡ᵗ Sᵗ Y = no λ ()
+Sᵗ X ≡ᵗ Zᵗ = no λ ()
+Sᵗ X ≡ᵗ Sᵗ Y
+    with X ≡ᵗ Y
+... | yes refl = yes refl
+... | no neq = no λ { refl → neq refl}
 
 {- Renaming Type Variables -}
 
@@ -187,6 +199,23 @@ data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set 
     → Σ ∋ X := A
     → ((Y , B) ∷ Σ) ∋ X := A
 
+data unique : ∀{Δ : TyCtx} → BindCtx Δ → Set where
+  Umt : ∀{Δ} → unique{Δ} []
+  Ucons : ∀{Δ}{Σ : BindCtx Δ}{X}{A}
+    → unique Σ
+    → (∀ B → Σ ∋ X := B → ⊥)
+    → unique ((X , A) ∷ Σ)
+
+lookup-unique : ∀{Δ : TyCtx}{Σ : BindCtx Δ}{X}{A B}
+  → (a : Σ ∋ X := A)
+  → (b : Σ ∋ X := B)
+  → unique Σ
+  → A ≡ B
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ Zᵇ (Ucons u x) = refl
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ (Sᵇ b) (Ucons u nolook) = ⊥-elim (nolook B b)
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) Zᵇ (Ucons u nolook) = ⊥-elim (nolook A a)
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) (Sᵇ b) (Ucons u nolook) = lookup-unique a b u
+
 data Grnd : TyCtx → Set where
   ★⇒★ : ∀{Δ} → Grnd Δ
   `ℕ  : ∀{Δ} → Grnd Δ
@@ -196,6 +225,21 @@ data Grnd : TyCtx → Set where
 ⌈ ★⇒★ ⌉ = ★ ⇒ ★
 ⌈ `ℕ ⌉ = `ℕ
 ⌈ ` X ⌉ = ` X
+
+
+_≡ᵍ_ : ∀{Δ} → (G : Grnd Δ) → (H : Grnd Δ) → Dec (G ≡ H)
+★⇒★ ≡ᵍ ★⇒★ = yes refl
+★⇒★ ≡ᵍ `ℕ = no λ ()
+★⇒★ ≡ᵍ (` X) = no λ ()
+`ℕ ≡ᵍ ★⇒★ = no λ ()
+`ℕ ≡ᵍ `ℕ = yes refl
+`ℕ ≡ᵍ (` X) = no λ ()
+(` X) ≡ᵍ ★⇒★ = no λ ()
+(` X) ≡ᵍ `ℕ = no λ ()
+(` X) ≡ᵍ (` Y)
+    with X ≡ᵗ Y
+... | yes refl = yes refl
+... | no neq = no λ { refl → neq refl}
 
 ren-grnd : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵣ Δ₂ → Grnd Δ₁ → Grnd Δ₂
 ren-grnd ρ ★⇒★ = ★⇒★
