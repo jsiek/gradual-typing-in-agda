@@ -36,8 +36,8 @@ data TyCtx where
 --  _,=_ : (Δ : TyCtx) → Type Δ → TyCtx
 
 data TyVar : (Δ : TyCtx) → Set where
-  Ztyp : ∀{Δ} → TyVar (Δ ,typ)
-  Styp : ∀{Δ}
+  Zᵗ : ∀{Δ} → TyVar (Δ ,typ)
+  Sᵗ : ∀{Δ}
      → TyVar Δ
        --------------
      → TyVar (Δ ,typ)
@@ -54,15 +54,15 @@ idᵗ = λ x → x
 
 infixr 6 _•ᵗ_
 _•ᵗ_ : ∀{Δ₁ Δ₂} → TyVar Δ₂ → (Δ₁ ⇒ᵣ Δ₂) → ((Δ₁ ,typ) ⇒ᵣ Δ₂)
-(Y •ᵗ ρ) Ztyp = Y
-(Y •ᵗ ρ) (Styp X) = ρ X
+(Y •ᵗ ρ) Zᵗ = Y
+(Y •ᵗ ρ) (Sᵗ X) = ρ X
 
 extᵗ : ∀{Δ₁ Δ₂} → (Δ₁ ⇒ᵣ Δ₂) → ((Δ₁ ,typ) ⇒ᵣ (Δ₂ ,typ))
-extᵗ ρ Ztyp = Ztyp
-extᵗ ρ (Styp X) = Styp (ρ X)
+extᵗ ρ Zᵗ = Zᵗ
+extᵗ ρ (Sᵗ X) = Sᵗ (ρ X)
 
 ⟰ᵗ : ∀{Δ₁ Δ₂} → (Δ₁ ⇒ᵣ Δ₂) → (Δ₁ ⇒ᵣ (Δ₂ ,typ))
-⟰ᵗ ρ x = Styp (ρ x)
+⟰ᵗ ρ x = Sᵗ (ρ x)
 
 abstract
   infixr 5 _⨟ᵗ_
@@ -74,15 +74,15 @@ abstract
   {-# REWRITE seq-def #-}
 
 suc-seq-cons : ∀{Δ₁ Δ₂ : TyCtx} (ρ : Δ₁ ⇒ᵣ Δ₂)(Y : TyVar Δ₂)
-  → Styp ⨟ᵗ (Y •ᵗ ρ) ≡ ρ
+  → Sᵗ ⨟ᵗ (Y •ᵗ ρ) ≡ ρ
 suc-seq-cons ρ Y = refl  
 -- {-# REWRITE suc-seq-cons #-}
 
-cons-zero-suc-id : ∀{Δ : TyCtx} → Ztyp{Δ} •ᵗ Styp ≡ idᵗ
+cons-zero-suc-id : ∀{Δ : TyCtx} → Zᵗ{Δ} •ᵗ Sᵗ ≡ idᵗ
 cons-zero-suc-id{Δ} = extensionality G
-  where G : (x : TyVar (Δ ,typ)) → (Ztyp •ᵗ Styp) x ≡ idᵗ x
-        G Ztyp = refl
-        G (Styp x) = refl
+  where G : (x : TyVar (Δ ,typ)) → (Zᵗ •ᵗ Sᵗ) x ≡ idᵗ x
+        G Zᵗ = refl
+        G (Sᵗ x) = refl
 {-# REWRITE cons-zero-suc-id #-}
 
 cons-seq-dist : ∀{Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : Δ₂ ⇒ᵣ Δ₃}
@@ -90,23 +90,23 @@ cons-seq-dist : ∀{Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : 
 cons-seq-dist {Δ₁}{Δ₂}{Δ₃}{Y}{ρ₁}{ρ₂} = extensionality G
   where G : (x : TyVar (Δ₁ ,typ)) →
              (Y •ᵗ ρ₁ ⨟ᵗ ρ₂) x ≡ (ρ₂ Y •ᵗ (ρ₁ ⨟ᵗ ρ₂)) x
-        G Ztyp = refl
-        G (Styp x) = refl
+        G Zᵗ = refl
+        G (Sᵗ x) = refl
 {-# REWRITE cons-seq-dist #-}
 
-ext-ren : ∀{Δ₁}{Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → Ztyp •ᵗ (⟰ᵗ ρ) ≡ extᵗ ρ
+ext-ren : ∀{Δ₁}{Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → Zᵗ •ᵗ (⟰ᵗ ρ) ≡ extᵗ ρ
 ext-ren {Δ₁}{Δ₂}{ρ} = extensionality G
-  where G : (X : TyVar (Δ₁ ,typ)) → (Ztyp •ᵗ ⟰ᵗ ρ) X ≡ extᵗ ρ X
-        G Ztyp = refl
-        G (Styp X) = refl
+  where G : (X : TyVar (Δ₁ ,typ)) → (Zᵗ •ᵗ ⟰ᵗ ρ) X ≡ extᵗ ρ X
+        G Zᵗ = refl
+        G (Sᵗ X) = refl
 
 ext-compose-dist : ∀ {Δ₁}{Δ₂}{Δ₃} (ρ₁ : Δ₁ ⇒ᵣ Δ₂)(ρ₂ : Δ₂ ⇒ᵣ Δ₃)
   → (extᵗ ρ₁) ⨟ᵗ (extᵗ ρ₂) ≡ extᵗ (ρ₁ ⨟ᵗ ρ₂)
 ext-compose-dist {Δ₁}{Δ₂}{Δ₃} ρ₁ ρ₂ = extensionality G
   where G : (x : TyVar (Δ₁ ,typ)) →
            (extᵗ ρ₁ ⨟ᵗ extᵗ ρ₂) x ≡ extᵗ (ρ₁ ⨟ᵗ ρ₂) x
-        G Ztyp = refl
-        G (Styp x) = refl
+        G Zᵗ = refl
+        G (Sᵗ x) = refl
 {-# REWRITE ext-compose-dist #-}
 
 seq-id : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → (idᵗ ⨟ᵗ ρ) ≡ ρ
@@ -131,12 +131,20 @@ ren-type ρ ★ = ★
 ren-type ρ (`∀ A) = `∀ (ren-type (extᵗ ρ) A)
 ren-type ρ (` X) = ` (ρ X)
 
+infix 6 _[_]ᵗ
+_[_]ᵗ : ∀{Δ} → Type (Δ ,typ) → TyVar Δ → Type Δ
+A [ X ]ᵗ = ren-type (X •ᵗ idᵗ) A
+
+⇑ᵗ : ∀{Δ} → Type Δ → Type (Δ ,typ)
+⇑ᵗ A = ren-type Sᵗ A
+
 ren-ren : ∀ {Δ₁}{Δ₂}{Δ₃} (ρ₁ : Δ₁ ⇒ᵣ Δ₂)(ρ₂ : Δ₂ ⇒ᵣ Δ₃){A}
   → ren-type ρ₂ (ren-type ρ₁ A) ≡ ren-type (ρ₁ ⨟ᵗ ρ₂) A
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {`ℕ} = refl
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {★} = refl
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {` X} = refl
-ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {A ⇒ B} = cong₂ _⇒_ (ren-ren ρ₁ ρ₂) (ren-ren ρ₁ ρ₂)
+ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {A ⇒ B} =
+   cong₂ _⇒_ (ren-ren ρ₁ ρ₂) (ren-ren ρ₁ ρ₂)
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {`∀ A} = cong `∀_ G
   where G : ren-type (extᵗ ρ₂) (ren-type (extᵗ ρ₁) A) ≡ ren-type (extᵗ (ρ₁ ⨟ᵗ ρ₂)) A
         G rewrite sym (ext-compose-dist ρ₁ ρ₂) = ren-ren (extᵗ ρ₁) (extᵗ ρ₂)
@@ -145,8 +153,8 @@ ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {`∀ A} = cong `∀_ G
 extᵗ-id : ∀{Δ} → extᵗ (idᵗ{Δ}) ≡ idᵗ
 extᵗ-id {Δ} = extensionality G
   where G : (x : TyVar (Δ ,typ)) → extᵗ idᵗ x ≡ idᵗ x
-        G Ztyp = refl
-        G (Styp x) = refl
+        G Zᵗ = refl
+        G (Sᵗ x) = refl
 {-# REWRITE extᵗ-id #-}
 
 ren-type-id : ∀{Δ}{A : Type Δ} → ren-type idᵗ A ≡ A
@@ -162,17 +170,20 @@ ext-seq-cons : ∀{Δ₁ Δ₂ Δ₃}{X}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : Δ�
 ext-seq-cons {Δ₁}{Δ₂}{Δ₃}{X}{ρ₁}{ρ₂} = extensionality G
   where G : (x : TyVar (Δ₁ ,typ)) →
               (X •ᵗ ρ₂) (extᵗ ρ₁ x) ≡ (X •ᵗ (ρ₁ ⨟ᵗ ρ₂)) x
-        G Ztyp = refl
-        G (Styp x) = refl
+        G Zᵗ = refl
+        G (Sᵗ x) = refl
 {-# REWRITE ext-seq-cons #-}
+
+ext-suc-cons : ∀{Δ₁}{A : Type Δ₁} → extᵗ{Δ₁ = Δ₁} Sᵗ ⨟ᵗ (Zᵗ •ᵗ idᵗ) ≡ idᵗ
+ext-suc-cons = refl
 
 BindCtx : TyCtx → Set
 BindCtx Δ = List (TyVar Δ × Type Δ)
 
 data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set where
-  here : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
+  Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
     → ((X , A) ∷ Σ) ∋ X := A
-  there : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{A B : Type Δ}
+  Sᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{A B : Type Δ}
     → Σ ∋ X := A
     → ((Y , B) ∷ Σ) ∋ X := A
 
@@ -195,7 +206,7 @@ ren-pair : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵣ Δ₂ → TyVar Δ₁ × Type Δ₁
 ren-pair ρ (X , A) = ρ X , ren-type ρ A
 
 ⤊ : ∀{Δ} → BindCtx Δ → BindCtx (Δ ,typ)
-⤊ = map (ren-pair Styp)
+⤊ = map (ren-pair Sᵗ)
 
 data Crcn : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set where
  id : ∀{Δ}{Σ}{A : Type Δ} → Crcn Δ Σ A A
@@ -211,10 +222,10 @@ data Crcn : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set where
    → Crcn (Δ ,typ) (⤊ Σ) A B
    → Crcn Δ Σ (`∀ A) (`∀ B)
  𝒢 : ∀{Δ}{Σ}{A : Type Δ} {B : Type (Δ ,typ)}
-   → Crcn (Δ ,typ) (⤊ Σ) (ren-type Styp A) B
+   → Crcn (Δ ,typ) (⤊ Σ) (⇑ᵗ A) B
    → Crcn Δ Σ A (`∀ B)
  ℐ : ∀{Δ}{Σ}{A : Type (Δ ,typ)} {B : Type Δ}
-   → Crcn (Δ ,typ) ((Ztyp , ★) ∷ ⤊ Σ) A (ren-type Styp B)
+   → Crcn (Δ ,typ) ((Zᵗ , ★) ∷ ⤊ Σ) A (⇑ᵗ B)
    → Crcn Δ Σ (`∀ A) B
  _↓ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A
@@ -234,15 +245,15 @@ _∣_⊢_⇒_ : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set
 Δ ∣ Σ ⊢ A ⇒ B = Crcn Δ Σ A B
 
 extr-suc-commute : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂}{A}
-  → (ren-type (extᵗ ρ) (ren-type Styp A)) ≡ (ren-type Styp (ren-type ρ A))
+  → (ren-type (extᵗ ρ) (⇑ᵗ A)) ≡ (⇑ᵗ (ren-type ρ A))
 extr-suc-commute = refl
 
 ren-bind : ∀{Δ₁ Δ₂ : TyCtx}{Σ : BindCtx Δ₁}{ρ : Δ₁ ⇒ᵣ Δ₂}
     {X : TyVar Δ₁}{A : Type Δ₁}
   → Σ ∋ X := A
   → map (ren-pair ρ) Σ ∋ ρ X := ren-type ρ A
-ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} here = here
-ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} (there ∋α) = there (ren-bind ∋α)
+ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} Zᵇ = Zᵇ
+ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} (Sᵇ ∋α) = Sᵇ (ren-bind ∋α)
 
 from-grnd-ren : ∀{Δ₁ Δ₂} (ρ : Δ₁ ⇒ᵣ Δ₂)(G : Grnd Δ₁)
   → ⌈ ren-grnd ρ G ⌉ ≡ ren-type ρ ⌈ G ⌉ 
@@ -274,6 +285,12 @@ rename-crcn ρ (∋α ↑) = (ren-bind ∋α) ↑
 rename-crcn ρ (G !) = ren-grnd ρ G !
 rename-crcn ρ (H `?) = ren-grnd ρ H `?
 
+infix 6 _[_]ᶜ
+_[_]ᶜ : ∀{Δ}{Σ}{A}{B} → (Δ ,typ) ∣ Σ ⊢ A ⇒ B
+  → (X : TyVar Δ)
+  → Δ ∣ map (ren-pair (X •ᵗ idᵗ)) Σ ⊢ ren-type (X •ᵗ idᵗ) A ⇒ ren-type (X •ᵗ idᵗ) B
+c [ X ]ᶜ = rename-crcn (X •ᵗ idᵗ) c
+
 {- Renaming Bind Variables -}
 
 infixr 7 _⇒ᵇ_
@@ -283,29 +300,33 @@ _⇒ᵇ_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set
 extᵇ : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}
   → Σ₁ ⇒ᵇ Σ₂
   → ⤊ Σ₁ ⇒ᵇ ⤊ Σ₂
-extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ here =
-    ren-bind{ρ = Styp} (ρ here)
-extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ (there ∋X) =
-    extᵇ (λ {X = X₂} {A = A₁} z → ρ (there z)) ∋X
+extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ Zᵇ =
+    ren-bind{ρ = Sᵗ} (ρ Zᵇ)
+extᵇ {Δ} {(X , B) ∷ Σ₁} {Σ₂} ρ (Sᵇ ∋X) =
+    extᵇ (λ {X = X₂} {A = A₁} z → ρ (Sᵇ z)) ∋X
 
 extᶜ : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{X A}
   → Σ₁ ⇒ᵇ Σ₂
   → ((X , A) ∷ Σ₁) ⇒ᵇ ((X , A) ∷ Σ₂)
-extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ here = here
-extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ (there ∋X) = there (ρ ∋X)
+extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ Zᵇ = Zᵇ
+extᶜ {Δ} {Σ₁} {Σ₂} {X} {A} ρ (Sᵇ ∋X) = Sᵇ (ρ ∋X)
 
 rename-crcn-bind : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{A B}
   → (ρ : Σ₁ ⇒ᵇ Σ₂)
   → Δ ∣ Σ₁ ⊢ A ⇒ B
   → Δ ∣ Σ₂ ⊢ A ⇒ B
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ id = id
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ↦ d) = rename-crcn-bind ρ c ↦ rename-crcn-bind ρ d
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ⨟ d) = rename-crcn-bind ρ c ⨟ rename-crcn-bind ρ d
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (`∀ c) = `∀ (rename-crcn-bind (extᵇ ρ) c)
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (𝒢 c) = 𝒢 (rename-crcn-bind (extᵇ ρ) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ↦ d) =
+   rename-crcn-bind ρ c ↦ rename-crcn-bind ρ d
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (c ⨟ d) =
+   rename-crcn-bind ρ c ⨟ rename-crcn-bind ρ d
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (`∀ c) =
+   `∀ (rename-crcn-bind (extᵇ ρ) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (𝒢 c) =
+   𝒢 (rename-crcn-bind (extᵇ ρ) c)
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (ℐ c) =
-    ℐ (rename-crcn-bind (extᶜ (extᵇ ρ)) c)
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↓) = {!!}
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↑) = {!!}
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (G !) = {!!}
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (H `?) = {!!}
+   ℐ (rename-crcn-bind (extᶜ (extᵇ ρ)) c)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↓) = ρ X ↓
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↑) = ρ X ↑
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (G !) = (G !)
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (H `?) = H `?

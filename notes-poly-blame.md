@@ -168,6 +168,7 @@ TODO
     Terms         L, M, N  ::=  x | λx.N | ΛX.V | L M | L[X] | νX=A.M
                              | M⟨c⟩ | blame
     Values        V, W     ::= λx.N | ΛX.V | V⟨c → d⟩ | V⟨∀X.c⟩ | V⟨𝒢 X.c⟩
+                             | V⟨G!⟩ | V⟨X↓⟩ 
     Coercions     c, d     ::= id | G? | G! | X↓ | X↑ | c → d | c ; d
                              | ∀X.c | 𝒢 X.c | ℐ X.c
 
