@@ -34,20 +34,20 @@ data Ctx : (Δ : TyCtx) → Set where
   ∅ : ∀{Δ} → Ctx Δ
   _▷_ : ∀{Δ : TyCtx} → Ctx Δ → Type Δ → Ctx Δ
 
-ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
+ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵗ Δ₂) → Ctx Δ₁ → Ctx Δ₂
 ren-ctx ρ ∅ = ∅
 ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ renᵗ ρ A
 
 ⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
 ⟰ Γ = ren-ctx Sᵗ Γ
 
-ext-suc-ctx : ∀{Δ₁ Δ₂ : TyCtx}{Γ : Ctx Δ₁}{ρ  : Δ₁ ⇒ᵣ Δ₂}
+ext-suc-ctx : ∀{Δ₁ Δ₂ : TyCtx}{Γ : Ctx Δ₁}{ρ  : Δ₁ ⇒ᵗ Δ₂}
      → ren-ctx (extᵗ ρ) (⟰ Γ) ≡ ⟰ (ren-ctx ρ Γ)
 ext-suc-ctx {Γ = ∅} {ρ} = refl
 ext-suc-ctx {Γ = Γ ▷ A} {ρ} = cong₂ _▷_ ext-suc-ctx refl
 {-# REWRITE ext-suc-ctx #-}
 
-ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵗ Δ₂) → (ρ₂ : Δ₂ ⇒ᵗ Δ₃)
   → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
 ren-ctx-∘ {Γ = ∅} ρ₁ ρ₂ = refl
 ren-ctx-∘ {Γ = Γ ▷ A} ρ₁ ρ₂ = cong₂ _▷_ (ren-ctx-∘ {Γ = Γ} ρ₁ ρ₂) refl
@@ -70,7 +70,7 @@ data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
      → Γ ▷ B ∋ A
 
 ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
-  → (ρ : Δ₁ ⇒ᵣ Δ₂) 
+  → (ρ : Δ₁ ⇒ᵗ Δ₂) 
   → Γ ∋ A
   → ren-ctx ρ Γ ∋ renᵗ ρ A
 ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ Z = Z
@@ -85,7 +85,7 @@ ext : ∀ {Δ : TyCtx}{Γ Γ′ : Ctx Δ}{A : Type Δ}
 ext ρ Z = Z
 ext ρ (S x) = S ρ x
 
-ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵣ Δ′}
+ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵗ Δ′}
   → ren-ctx r Γ ∋ A
   → Σ[ B ∈ Type Δ ] A ≡ renᵗ r B × Γ ∋ B
 ren-ctx-∋ {Δ}{Δ′} {Γ ▷ C} Z = C , refl , Z
@@ -93,7 +93,7 @@ ren-ctx-∋ {Δ}{Δ′}{Γ ▷ C}{A}{B} (S x)
     with ren-ctx-∋{Δ}{Δ′}{Γ}{A}{B} x
 ... | C , refl , y = C , refl , (S y)
 
-rename-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵣ Δ₂}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
+rename-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵗ Δ₂}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
   → Γ ⇨ᵣ Γ′
   → ren-ctx r Γ ⇨ᵣ ren-ctx r Γ′
 rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} Z = ren-var r (ρ Z)
@@ -155,7 +155,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
 {------- Renaming Type Variables ------------}
 
 rename-ty : ∀{Δ₁ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{A : Type Δ₁}
-  → (ρ : Δ₁ ⇒ᵣ Δ₂)
+  → (ρ : Δ₁ ⇒ᵗ Δ₂)
   → Δ₁ ∣ Σ ∣ Γ ⊢ A
   → Δ₂ ∣ map (renᵇ ρ) Σ ∣ (ren-ctx ρ Γ) ⊢ renᵗ ρ A
 rename-ty ρ (` x) = ` ren-var ρ x
@@ -230,7 +230,7 @@ exts : ∀ {Δ : TyCtx}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{A : Type Δ}
 exts σ Z = ` Z
 exts σ (S x) = rename S_ (σ x)
 
-sub-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵣ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
+sub-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵗ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
   → Δ₁ ∣ Σ ⊢ Γ ⇨ Γ′
   → Δ₂ ∣ map (renᵇ r) Σ ⊢ ren-ctx r Γ ⇨ ren-ctx r Γ′
 sub-ctx {Δ₁} {Δ₂} {r} {Σ} {Γ ▷ A} {Γ′} σ Z = rename-ty r (σ Z)

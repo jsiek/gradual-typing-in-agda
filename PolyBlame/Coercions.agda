@@ -79,18 +79,18 @@ data _∣_⊢_⇒_ : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → 
 
 {----  Renaming type variables in coercions -----}
 
-extr-suc-commute : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂}{A}
+extr-suc-commute : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵗ Δ₂}{A}
   → (renᵗ (extᵗ ρ) (⇑ᵗ A)) ≡ (⇑ᵗ (renᵗ ρ A))
 extr-suc-commute = refl
 
-ren-bind : ∀{Δ₁ Δ₂ : TyCtx}{Σ : BindCtx Δ₁}{ρ : Δ₁ ⇒ᵣ Δ₂}
+ren-bind : ∀{Δ₁ Δ₂ : TyCtx}{Σ : BindCtx Δ₁}{ρ : Δ₁ ⇒ᵗ Δ₂}
     {X : TyVar Δ₁}{A : Type Δ₁}
   → Σ ∋ X := A
   → map (renᵇ ρ) Σ ∋ ρ X := renᵗ ρ A
 ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} Zᵇ = Zᵇ
 ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} (Sᵇ ∋α) = Sᵇ (ren-bind ∋α)
 
-from-grnd-ren : ∀{Δ₁ Δ₂} (ρ : Δ₁ ⇒ᵣ Δ₂)(G : Grnd Δ₁)
+from-grnd-ren : ∀{Δ₁ Δ₂} (ρ : Δ₁ ⇒ᵗ Δ₂)(G : Grnd Δ₁)
   → ⌈ ren-grnd ρ G ⌉ ≡ renᵗ ρ ⌈ G ⌉ 
 from-grnd-ren ρ ★⇒★ = refl
 from-grnd-ren ρ `ℕ = refl
@@ -103,7 +103,7 @@ map-fusion {xs = xs} = sym (map-∘ xs)
 {-# REWRITE map-fusion #-}
 
 rename-crcn : ∀{Δ₁ Δ₂}{Σ}{A B}
-  → (ρ : Δ₁ ⇒ᵣ Δ₂)
+  → (ρ : Δ₁ ⇒ᵗ Δ₂)
   → Δ₁ ∣ Σ ⊢ A ⇒ B
   → Δ₂ ∣ map (renᵇ ρ) Σ ⊢ (renᵗ ρ A) ⇒ (renᵗ ρ B)
 rename-crcn ρ id = id
