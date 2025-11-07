@@ -32,10 +32,7 @@ infixl 5 _▷_
 
 data Ctx : (Δ : TyCtx) → Set where
   ∅ : ∀{Δ} → Ctx Δ
-  _▷_ : ∀{Δ : TyCtx}
-      → Ctx Δ
-      → Type Δ
-      → Ctx Δ
+  _▷_ : ∀{Δ : TyCtx} → Ctx Δ → Type Δ → Ctx Δ
 
 ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
 ren-ctx ρ ∅ = ∅
@@ -122,7 +119,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
   ƛ_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B : Type Δ}
      → Δ ∣ Σ ∣ (Γ ▷ A) ⊢ B
        --------------------
-     → Δ ∣ Σ ∣ Γ ⊢ (A ⇒ B)
+     → Δ ∣ Σ ∣ Γ ⊢ A ⇒ B
      
   _·_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B : Type Δ}
      → Δ ∣ Σ ∣ Γ ⊢ (A ⇒ B)
@@ -132,10 +129,11 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
      
   Λ_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}
      → (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ A
-     → Δ ∣ Σ ∣ Γ ⊢ (`∀ A)
+       --------------------------
+     → Δ ∣ Σ ∣ Γ ⊢ `∀ A
      
   _◯_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type (Δ ,typ)}
-     → Δ ∣ Σ ∣ Γ ⊢ (`∀ A)
+     → Δ ∣ Σ ∣ Γ ⊢ `∀ A
      → (X : TyVar Δ)
        --------------------
      → Δ ∣ Σ ∣ Γ ⊢ A [ X ]ᵗ
@@ -151,6 +149,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
   ν_·_ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{B : Type Δ}
     → (A : Type Δ)
     → (Δ ,typ) ∣ (Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ ∣ ⟰ Γ ⊢ ⇑ᵗ B
+      -------------------------------------------
     → Δ ∣ Σ ∣ Γ ⊢ B
 
 {------- Renaming Type Variables ------------}
@@ -180,6 +179,11 @@ _[_]ᵀ : ∀{Δ}{Σ}{Γ}{A} → (Δ ,typ) ∣ Σ ∣ Γ ⊢ A → (X : TyVar Δ
   → Δ ∣ map (renᵇ (X •ᵗ idᵗ)) Σ ∣ ren-ctx (X •ᵗ idᵗ) Γ ⊢ renᵗ (X •ᵗ idᵗ) A
 M [ X ]ᵀ = rename-ty (X •ᵗ idᵗ) M
 
+⇑ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}
+  → Δ ∣ Σ ∣ Γ ⊢ A
+  → (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ ⇑ᵗ A
+⇑ M = rename-ty Sᵗ M
+
 rename-bind : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}
   → (ρ : Σ₁ ⇒ᵇ Σ₂)
   → Δ ∣ Σ₁ ∣ Γ ⊢ A
@@ -193,11 +197,6 @@ rename-bind ρ (M ◯ X) = rename-bind ρ M ◯ X
 rename-bind ρ (M ⟨ c ⟩) = rename-bind ρ M ⟨ rename-crcn-bind ρ c ⟩
 rename-bind ρ blame = blame
 rename-bind ρ (ν A · N) = ν A · rename-bind (extᶜ (extᵇ ρ)) N
-
-⇑ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}
-  → Δ ∣ Σ ∣ Γ ⊢ A
-  → (Δ ,typ) ∣ ⤊ Σ ∣ ⟰ Γ ⊢ ⇑ᵗ A
-⇑ M = rename-ty Sᵗ M
 
 ⇑ᵇ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}{X}{B}
   → Δ ∣ Σ ∣ Γ ⊢ A
