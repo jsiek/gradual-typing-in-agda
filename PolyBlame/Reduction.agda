@@ -141,31 +141,6 @@ data _—→_ : ∀ {Δ Σ Γ A} → (Δ ∣ Σ ∣ Γ ⊢ A) → (Δ ∣ Σ ∣
 
 {- Helpers for Context Weaking -}
 
-infix 3 _↝_
-data _↝_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set where
-  ↝-extend : ∀ {Δ}{Σ : BindCtx Δ}{X}{A : Type Δ} → Σ ↝ (X , A) ∷ Σ
-  ↝-refl : ∀ {Δ}{Σ : BindCtx Δ} → Σ ↝ Σ
-  ↝-trans : ∀ {Δ}{Σ₁ Σ₂ Σ₃ : BindCtx Δ}
-    → Σ₁ ↝ Σ₂
-    → Σ₂ ↝ Σ₃
-    → Σ₁ ↝ Σ₃
-
-ren-bind-map : ∀{Δ Δ′}{Σ₁ Σ₂ : BindCtx Δ}
-   (ρ : Δ ⇒ᵣ Δ′)
-  → Σ₁ ↝ Σ₂
-  → map (ren-pair ρ) Σ₁ ↝ map (ren-pair ρ) Σ₂
-ren-bind-map ρ ↝-extend = ↝-extend
-ren-bind-map ρ ↝-refl = ↝-refl
-ren-bind-map ρ (↝-trans s₁ s₂) =
-   ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
-
-rbm : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx}{Σ₁ : BindCtx Δ₁}{Σ₂ : BindCtx Δ₂}
-        (ρ₁ : TyVar Δ₁ → TyVar Δ₂)
-        (ρ₂ : TyVar Δ₂ → TyVar Δ₃)
-  → map (ren-pair ρ₁) Σ₁ ↝ Σ₂
-  → map (ren-pair (ρ₁ ⨟ᵗ ρ₂)) Σ₁ ↝ map (ren-pair ρ₂) Σ₂
-rbm ρ₁ ρ₂ s = (let s' = ren-bind-map ρ₂ s in s')
-
 ⤊ᵇ : ∀{Δ}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ}{Γ}{A}
   → Σ ↝ Σ′
   → Δ ∣ Σ ∣ Γ ⊢ A
@@ -174,13 +149,12 @@ rbm ρ₁ ρ₂ s = (let s' = ren-bind-map ρ₂ s in s')
 ⤊ᵇ ↝-extend M = ⇑ᵇ M
 ⤊ᵇ (↝-trans a b) M = ⤊ᵇ b (⤊ᵇ a M)
 
-⇧ᵇ : ∀{Δ}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ}{A}{B}
-  → Σ ↝ Σ′
-  → Δ ∣ Σ ⊢ A ⇒ B
-  → Δ ∣ Σ′ ⊢ A ⇒ B
-⇧ᵇ ↝-extend c = rename-crcn-bind Sᵇ c
-⇧ᵇ ↝-refl c = c
-⇧ᵇ (↝-trans s s′) c = ⇧ᵇ s′ (⇧ᵇ s c)
+rbm : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx}{Σ₁ : BindCtx Δ₁}{Σ₂ : BindCtx Δ₂}
+        (ρ₁ : TyVar Δ₁ → TyVar Δ₂)
+        (ρ₂ : TyVar Δ₂ → TyVar Δ₃)
+  → map (renᵇ ρ₁) Σ₁ ↝ Σ₂
+  → map (renᵇ (ρ₁ ⨟ᵗ ρ₂)) Σ₁ ↝ map (renᵇ ρ₂) Σ₂
+rbm ρ₁ ρ₂ s = (let s' = ren-bind-map ρ₂ s in s')
 
 {- Reduction -}
 
@@ -190,8 +164,8 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
   → (Δ₂ : TyCtx)
   → (ρ : Δ₁ ⇒ᵣ Δ₂)
   → (Σ₂ : BindCtx Δ₂)
-  → (s : (map (ren-pair ρ) Σ₁) ↝ Σ₂)
-  → (Δ₂ ∣ Σ₂ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A)
+  → (s : (map (renᵇ ρ) Σ₁) ↝ Σ₂)
+  → (Δ₂ ∣ Σ₂ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ A)
   → Set where
   
   pure : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A}{M N : Δ ∣ Σ ∣ Γ ⊢ A}
@@ -204,20 +178,20 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
          (Δ ,typ) ∣ Sᵗ ∣ ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ) ∣ ↝-extend ⊢ N
 
   ξ-·₁ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
-      {s : map (ren-pair ρ) Σ ↝ Σ′}
+      {s : map (renᵇ ρ) Σ ↝ Σ′}
       {Γ : Ctx Δ}{A B}
       {L : Δ ∣ Σ ∣ Γ ⊢ (A ⇒ B)}
-      {L′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ (A ⇒ B)}
+      {L′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ (A ⇒ B)}
       {M : Δ ∣ Σ ∣ Γ ⊢ A}
     → Δ ∥ Σ ∥ Γ ⊢ (A ⇒ B) ∋ L —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ L′
       ------------------------------------------------------------------------
     → Δ ∥ Σ ∥ Γ ⊢ B ∋ (L · M) —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ (L′ · ⤊ᵇ s (rename-ty ρ M))
 
   ξ-·₂ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
-      {s : map (ren-pair ρ) Σ ↝ Σ′}
+      {s : map (renᵇ ρ) Σ ↝ Σ′}
       {Γ : Ctx Δ}{A B}
       {V : Δ ∣ Σ ∣ Γ ⊢ (A ⇒ B)}
-      {M : Δ ∣ Σ ∣ Γ ⊢ A} {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A}
+      {M : Δ ∣ Σ ∣ Γ ⊢ A} {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ A}
     → Value V
     → Δ ∥ Σ ∥ Γ  ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
       ----------------------------------------------------------------------
@@ -234,10 +208,10 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
     → Δ ∥ Σ ∥ Γ ⊢ B ∋ (V · blame) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
     
   ξ-◯ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
-     {s : map (ren-pair ρ) Σ ↝ Σ′}
+     {s : map (renᵇ ρ) Σ ↝ Σ′}
      {Γ : Ctx Δ}{A}
      {M : Δ ∣ Σ ∣ Γ ⊢ (`∀ A)}
-     {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ (`∀ A)}
+     {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ (`∀ A)}
      {X : TyVar Δ}
    → Δ ∥ Σ ∥ Γ ⊢ (`∀ A) ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
      --------------------------------------------------------------------------
@@ -248,9 +222,9 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
    → Δ ∥ Σ ∥ Γ ⊢ A [ X ]ᵗ ∋ (_◯_{A = A} blame X) —→ Δ ∣ idᵗ ∣ Σ ∣ ↝-refl ⊢ blame
 
   ξ-⟨⟩ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
-     {s : map (ren-pair ρ) Σ ↝ Σ′}
+     {s : map (renᵇ ρ) Σ ↝ Σ′}
      {Γ : Ctx Δ}{A}{B}
-     {M : Δ ∣ Σ ∣ Γ ⊢ A} {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A}
+     {M : Δ ∣ Σ ∣ Γ ⊢ A} {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ A}
      {c : Δ ∣ Σ ⊢ A ⇒ B}
    → Δ ∥ Σ ∥ Γ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
      -----------------------------------------------------------------------------
@@ -272,8 +246,8 @@ data _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
   → (Δ₂ : TyCtx)
   → (ρ : Δ₁ ⇒ᵣ Δ₂)
   → (Σ₂ : BindCtx Δ₂)
-  → (s : (map (ren-pair ρ) Σ₁) ↝ Σ₂)
-  → (Δ₂ ∣ Σ₂ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A)
+  → (s : (map (renᵇ ρ) Σ₁) ↝ Σ₂)
+  → (Δ₂ ∣ Σ₂ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ A)
   → Set where
 
   _∎ : ∀{Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}
@@ -283,18 +257,19 @@ data _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
 
   step—→ : ∀{Δ₁ Δ₂ Δ₃}{Σ₁ Σ₂ Σ₃}{Γ}{A}{ρ₁}{s₁}{ρ₂}{s₂}
       (L : Δ₁ ∣ Σ₁ ∣ Γ ⊢ A)
-      {M : Δ₂ ∣ Σ₂ ∣ ren-ctx ρ₁ Γ ⊢ ren-type ρ₁ A}
-      {N : Δ₃ ∣ Σ₃ ∣ ren-ctx ρ₂ (ren-ctx ρ₁ Γ) ⊢ ren-type ρ₂ (ren-type ρ₁ A)}
+      {M : Δ₂ ∣ Σ₂ ∣ ren-ctx ρ₁ Γ ⊢ renᵗ ρ₁ A}
+      {N : Δ₃ ∣ Σ₃ ∣ ren-ctx ρ₂ (ren-ctx ρ₁ Γ) ⊢ renᵗ ρ₂ (renᵗ ρ₁ A)}
     → Δ₁ ∥ Σ₁ ∥ Γ ⊢ A ∋ L —→ Δ₂ ∣ ρ₁ ∣ Σ₂ ∣ s₁ ⊢ M
-    → Δ₂ ∥ Σ₂ ∥ ren-ctx ρ₁ Γ ⊢ ren-type ρ₁ A ∋ M —↠ Δ₃ ∣ ρ₂ ∣ Σ₃ ∣ s₂ ⊢ N
-      ---------------------------------------------------------------------------
-    → Δ₁ ∥ Σ₁ ∥ Γ ⊢ A ∋ L —↠ Δ₃ ∣ (ρ₁ ⨟ᵗ ρ₂) ∣ Σ₃ ∣ ↝-trans (rbm ρ₁ ρ₂ s₁) s₂ ⊢ N
+    → Δ₂ ∥ Σ₂ ∥ ren-ctx ρ₁ Γ ⊢ renᵗ ρ₁ A ∋ M —↠ Δ₃ ∣ ρ₂ ∣ Σ₃ ∣ s₂ ⊢ N
+      -----------------------------------------------------------------------
+    → Δ₁ ∥ Σ₁ ∥ Γ ⊢ A ∋ L
+      —↠ Δ₃ ∣ (ρ₁ ⨟ᵗ ρ₂) ∣ Σ₃ ∣ ↝-trans (rbm ρ₁ ρ₂ s₁) s₂ ⊢ N
 
 
 {- Progress -}
 
 data Progress {Δ}{Σ}{A} (M : Δ ∣ Σ ∣ ∅ ⊢ A) : Set where
-  step : ∀ {Δ′}{ρ}{Σ′}{s} {N : Δ′ ∣ Σ′ ∣ ∅ ⊢ ren-type ρ A}
+  step : ∀ {Δ′}{ρ}{Σ′}{s} {N : Δ′ ∣ Σ′ ∣ ∅ ⊢ renᵗ ρ A}
     → Δ ∥ Σ ∥ ∅ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ N
     → Progress M
     
@@ -361,35 +336,10 @@ progress (ν A · N) u = step β-ν
 
 {--- Preservation of unique binding entries ---}
 
-helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
-  → map (ren-pair Sᵗ) Σ ∋ Sᵗ X := B
-  → ((A : Type Δ) → Σ ∋ X := A → ⊥)
-  → ⊥
-helper {Δ} {(Y , C) ∷ Σ′} Zᵇ nl = nl C Zᵇ
-helper {Δ} {(Y , C) ∷ Σ′} (Sᵇ ∋Sx) nl = helper ∋Sx (λ A x → nl A (Sᵇ x))
-
-unique-⤊ : ∀ {Δ}{Σ : BindCtx Δ} → unique Σ → unique (⤊ Σ)
-unique-⤊ Umt = Umt
-unique-⤊ (Ucons u nolook) = Ucons (unique-⤊ u) λ { B y → helper y nolook }
-
-suc-bind-zero : ∀{Δ}{Σ : BindCtx Δ}{C}
-  → map (ren-pair Sᵗ) Σ ∋ Zᵗ := C
-  → ⊥
-suc-bind-zero {Δ} {(Y , A) ∷ Σ′} (Sᵇ ∋Z) = suc-bind-zero ∋Z
-
-unique-extend : ∀ {Δ}{A}
-  → (Σ : BindCtx Δ)
-  → unique Σ
-  → unique ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ)
-unique-extend [] u = Ucons Umt λ { B ()}
-unique-extend ((X , B) ∷ Σ) (Ucons u nolook) =
-  Ucons (Ucons (unique-⤊ u) λ {C x → helper x nolook})
-    λ { C (Sᵇ ∋Z) → suc-bind-zero ∋Z}
-
 unique-preservation : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
-     {s : map (ren-pair ρ) Σ ↝ Σ′} {Γ : Ctx Δ}{A}
+     {s : map (renᵇ ρ) Σ ↝ Σ′} {Γ : Ctx Δ}{A}
      {M : Δ ∣ Σ ∣ Γ ⊢ A}
-     {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ ren-type ρ A}
+     {M′ : Δ′ ∣ Σ′ ∣ ren-ctx ρ Γ ⊢ renᵗ ρ A}
   → unique Σ
   → Δ ∥ Σ ∥ Γ ⊢ A ∋ M —→ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ M′
   → unique Σ′ 

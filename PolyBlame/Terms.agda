@@ -47,7 +47,7 @@ data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
 
 ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
 ren-ctx ρ ∅ = ∅
-ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ ren-type ρ A
+ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ renᵗ ρ A
 
 ⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
 ⟰ Γ = ren-ctx Sᵗ Γ
@@ -106,7 +106,7 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
 ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
   → (ρ : Δ₁ ⇒ᵣ Δ₂) 
   → Γ ∋ A
-  → ren-ctx ρ Γ ∋ ren-type ρ A
+  → ren-ctx ρ Γ ∋ renᵗ ρ A
 ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ Z = Z
 ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ (S x) = S ren-var ρ x
 
@@ -119,7 +119,7 @@ ext-suc-ctx {Γ = Γ ▷ A} {ρ} = cong₂ _▷_ ext-suc-ctx refl
 rename-ty : ∀{Δ₁ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{A : Type Δ₁}
   → (ρ : Δ₁ ⇒ᵣ Δ₂)
   → Δ₁ ∣ Σ ∣ Γ ⊢ A
-  → Δ₂ ∣ map (ren-pair ρ) Σ ∣ (ren-ctx ρ Γ) ⊢ ren-type ρ A
+  → Δ₂ ∣ map (renᵇ ρ) Σ ∣ (ren-ctx ρ Γ) ⊢ renᵗ ρ A
 rename-ty ρ (` x) = ` ren-var ρ x
 rename-ty ρ (# k) = # k
 rename-ty ρ (ƛ M) = ƛ rename-ty ρ M
@@ -134,22 +134,22 @@ rename-ty ρ (M ⟨ c ⟩) =
 rename-ty ρ blame = blame
 rename-ty ρ (ν A · N) =
   let N′ = rename-ty (extᵗ ρ) N in
-  ν (ren-type ρ A) · N′
+  ν (renᵗ ρ A) · N′
 
 infix 6 _[_]ᵀ
 _[_]ᵀ : ∀{Δ}{Σ}{Γ}{A} → (Δ ,typ) ∣ Σ ∣ Γ ⊢ A → (X : TyVar Δ)
-  → Δ ∣ map (ren-pair (X •ᵗ idᵗ)) Σ ∣ ren-ctx (X •ᵗ idᵗ) Γ ⊢ ren-type (X •ᵗ idᵗ) A
+  → Δ ∣ map (renᵇ (X •ᵗ idᵗ)) Σ ∣ ren-ctx (X •ᵗ idᵗ) Γ ⊢ renᵗ (X •ᵗ idᵗ) A
 M [ X ]ᵀ = rename-ty (X •ᵗ idᵗ) M
 
-ren-pair-∘ : ∀{Δ₁ Δ₂ Δ₃}{x : TyVar Δ₁ × Type Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
-  → ((ren-pair ρ₂) ∘ (ren-pair ρ₁)) x ≡ (ren-pair (ρ₁ ⨟ᵗ ρ₂)) x
-ren-pair-∘ {Δ₁}{Δ₂}{Δ₃}{x} ρ₁ ρ₂ = refl
+renᵇ-∘ : ∀{Δ₁ Δ₂ Δ₃}{x : TyVar Δ₁ × Type Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+  → ((renᵇ ρ₂) ∘ (renᵇ ρ₁)) x ≡ (renᵇ (ρ₁ ⨟ᵗ ρ₂)) x
+renᵇ-∘ {Δ₁}{Δ₂}{Δ₃}{x} ρ₁ ρ₂ = refl
 
-map-ren-pair-id : ∀{Δ} (Σ : BindCtx Δ)
-  → map (ren-pair idᵗ) Σ ≡ Σ
-map-ren-pair-id [] = refl
-map-ren-pair-id ((X , A) ∷ Σ) = cong₂ _∷_ refl (map-ren-pair-id Σ)
-{-# REWRITE map-ren-pair-id #-}
+map-renᵇ-id : ∀{Δ} (Σ : BindCtx Δ)
+  → map (renᵇ idᵗ) Σ ≡ Σ
+map-renᵇ-id [] = refl
+map-renᵇ-id ((X , A) ∷ Σ) = cong₂ _∷_ refl (map-renᵇ-id Σ)
+{-# REWRITE map-renᵇ-id #-}
 
 ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
   → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
@@ -200,7 +200,7 @@ ext ρ (S x) = S ρ x
 
 ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵣ Δ′}
   → ren-ctx r Γ ∋ A
-  → Σ[ B ∈ Type Δ ] A ≡ ren-type r B × Γ ∋ B
+  → Σ[ B ∈ Type Δ ] A ≡ renᵗ r B × Γ ∋ B
 ren-ctx-∋ {Δ}{Δ′} {Γ ▷ C} Z = C , refl , Z
 ren-ctx-∋ {Δ}{Δ′}{Γ ▷ C}{A}{B} (S x)
     with ren-ctx-∋{Δ}{Δ′}{Γ}{A}{B} x
@@ -241,7 +241,7 @@ exts σ (S x) = rename S_ (σ x)
 
 sub-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵣ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
   → Δ₁ ∣ Σ ⊢ Γ ⇨ Γ′
-  → Δ₂ ∣ map (ren-pair r) Σ ⊢ ren-ctx r Γ ⇨ ren-ctx r Γ′
+  → Δ₂ ∣ map (renᵇ r) Σ ⊢ ren-ctx r Γ ⇨ ren-ctx r Γ′
 sub-ctx {Δ₁} {Δ₂} {r} {Σ} {Γ ▷ A} {Γ′} σ Z = rename-ty r (σ Z)
 sub-ctx {Δ₁} {Δ₂} {r} {Σ} {Γ ▷ A} {Γ′} σ (S x)
     with ren-ctx-∋{Δ₁}{Δ₂}{Γ}{B = A} {r = r} x

@@ -30,12 +30,10 @@ data TyCtx : Set
 data Type : TyCtx → Set 
 
 infixl 5 _,typ
---infixl 5 _,=_
 
 data TyCtx where
   ∅ : TyCtx
   _,typ : TyCtx → TyCtx
---  _,=_ : (Δ : TyCtx) → Type Δ → TyCtx
 
 data TyVar : (Δ : TyCtx) → Set where
   Zᵗ : ∀{Δ} → TyVar (Δ ,typ)
@@ -112,14 +110,14 @@ ext-ren {Δ₁}{Δ₂}{ρ} = extensionality G
         G Zᵗ = refl
         G (Sᵗ X) = refl
 
-ext-compose-dist : ∀ {Δ₁}{Δ₂}{Δ₃} (ρ₁ : Δ₁ ⇒ᵣ Δ₂)(ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+ext-seq-dist : ∀ {Δ₁}{Δ₂}{Δ₃} (ρ₁ : Δ₁ ⇒ᵣ Δ₂)(ρ₂ : Δ₂ ⇒ᵣ Δ₃)
   → (extᵗ ρ₁) ⨟ᵗ (extᵗ ρ₂) ≡ extᵗ (ρ₁ ⨟ᵗ ρ₂)
-ext-compose-dist {Δ₁}{Δ₂}{Δ₃} ρ₁ ρ₂ = extensionality G
+ext-seq-dist {Δ₁}{Δ₂}{Δ₃} ρ₁ ρ₂ = extensionality G
   where G : (x : TyVar (Δ₁ ,typ)) →
            (extᵗ ρ₁ ⨟ᵗ extᵗ ρ₂) x ≡ extᵗ (ρ₁ ⨟ᵗ ρ₂) x
         G Zᵗ = refl
         G (Sᵗ x) = refl
-{-# REWRITE ext-compose-dist #-}
+{-# REWRITE ext-seq-dist #-}
 
 seq-id : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂} → (idᵗ ⨟ᵗ ρ) ≡ ρ
 seq-id {Δ₁}{Δ₂}{ρ} = refl
@@ -136,30 +134,30 @@ data Type where
   _⇒_ : ∀{Δ} → Type Δ → Type Δ → Type Δ
   `∀_  : ∀{Δ} → Type (Δ ,typ) → Type Δ
 
-ren-type : ∀{Δ₁ Δ₂} → (Δ₁ ⇒ᵣ Δ₂) → Type Δ₁ → Type Δ₂
-ren-type ρ (A ⇒ B) = (ren-type ρ A) ⇒ (ren-type ρ B)
-ren-type ρ `ℕ = `ℕ
-ren-type ρ ★ = ★
-ren-type ρ (`∀ A) = `∀ (ren-type (extᵗ ρ) A)
-ren-type ρ (` X) = ` (ρ X)
+renᵗ : ∀{Δ₁ Δ₂} → (Δ₁ ⇒ᵣ Δ₂) → Type Δ₁ → Type Δ₂
+renᵗ ρ (A ⇒ B) = (renᵗ ρ A) ⇒ (renᵗ ρ B)
+renᵗ ρ `ℕ = `ℕ
+renᵗ ρ ★ = ★
+renᵗ ρ (`∀ A) = `∀ (renᵗ (extᵗ ρ) A)
+renᵗ ρ (` X) = ` (ρ X)
 
 infix 6 _[_]ᵗ
 _[_]ᵗ : ∀{Δ} → Type (Δ ,typ) → TyVar Δ → Type Δ
-A [ X ]ᵗ = ren-type (X •ᵗ idᵗ) A
+A [ X ]ᵗ = renᵗ (X •ᵗ idᵗ) A
 
 ⇑ᵗ : ∀{Δ} → Type Δ → Type (Δ ,typ)
-⇑ᵗ A = ren-type Sᵗ A
+⇑ᵗ A = renᵗ Sᵗ A
 
 ren-ren : ∀ {Δ₁}{Δ₂}{Δ₃} (ρ₁ : Δ₁ ⇒ᵣ Δ₂)(ρ₂ : Δ₂ ⇒ᵣ Δ₃){A}
-  → ren-type ρ₂ (ren-type ρ₁ A) ≡ ren-type (ρ₁ ⨟ᵗ ρ₂) A
+  → renᵗ ρ₂ (renᵗ ρ₁ A) ≡ renᵗ (ρ₁ ⨟ᵗ ρ₂) A
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {`ℕ} = refl
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {★} = refl
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {` X} = refl
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {A ⇒ B} =
    cong₂ _⇒_ (ren-ren ρ₁ ρ₂) (ren-ren ρ₁ ρ₂)
 ren-ren {Δ₁} {Δ₂} {Δ₃} ρ₁ ρ₂ {`∀ A} = cong `∀_ G
-  where G : ren-type (extᵗ ρ₂) (ren-type (extᵗ ρ₁) A) ≡ ren-type (extᵗ (ρ₁ ⨟ᵗ ρ₂)) A
-        G rewrite sym (ext-compose-dist ρ₁ ρ₂) = ren-ren (extᵗ ρ₁) (extᵗ ρ₂)
+  where G : renᵗ (extᵗ ρ₂) (renᵗ (extᵗ ρ₁) A) ≡ renᵗ (extᵗ (ρ₁ ⨟ᵗ ρ₂)) A
+        G = ren-ren (extᵗ ρ₁) (extᵗ ρ₂)
 {-# REWRITE ren-ren #-}
 
 extᵗ-id : ∀{Δ} → extᵗ (idᵗ{Δ}) ≡ idᵗ
@@ -169,13 +167,13 @@ extᵗ-id {Δ} = extensionality G
         G (Sᵗ x) = refl
 {-# REWRITE extᵗ-id #-}
 
-ren-type-id : ∀{Δ}{A : Type Δ} → ren-type idᵗ A ≡ A
-ren-type-id {Δ} {`ℕ} = refl
-ren-type-id {Δ} {★} = refl
-ren-type-id {Δ} {` x} = refl
-ren-type-id {Δ} {A ⇒ B} = cong₂ _⇒_ ren-type-id ren-type-id
-ren-type-id {Δ} {`∀ A} = cong `∀_ ren-type-id
-{-# REWRITE ren-type-id #-}
+renᵗ-id : ∀{Δ}{A : Type Δ} → renᵗ idᵗ A ≡ A
+renᵗ-id {Δ} {`ℕ} = refl
+renᵗ-id {Δ} {★} = refl
+renᵗ-id {Δ} {` x} = refl
+renᵗ-id {Δ} {A ⇒ B} = cong₂ _⇒_ renᵗ-id renᵗ-id
+renᵗ-id {Δ} {`∀ A} = cong `∀_ renᵗ-id
+{-# REWRITE renᵗ-id #-}
 
 ext-seq-cons : ∀{Δ₁ Δ₂ Δ₃}{X}{ρ₁ : Δ₁ ⇒ᵣ Δ₂}{ρ₂ : Δ₂ ⇒ᵣ Δ₃}
   → (extᵗ ρ₁) ⨟ᵗ (X •ᵗ ρ₂) ≡ X •ᵗ (ρ₁ ⨟ᵗ ρ₂)
@@ -226,7 +224,6 @@ data Grnd : TyCtx → Set where
 ⌈ `ℕ ⌉ = `ℕ
 ⌈ ` X ⌉ = ` X
 
-
 _≡ᵍ_ : ∀{Δ} → (G : Grnd Δ) → (H : Grnd Δ) → Dec (G ≡ H)
 ★⇒★ ≡ᵍ ★⇒★ = yes refl
 ★⇒★ ≡ᵍ `ℕ = no λ ()
@@ -246,8 +243,58 @@ ren-grnd ρ ★⇒★ = ★⇒★
 ren-grnd ρ `ℕ = `ℕ
 ren-grnd ρ (` X) = ` (ρ X)
 
-ren-pair : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵣ Δ₂ → TyVar Δ₁ × Type Δ₁ → TyVar Δ₂ × Type Δ₂
-ren-pair ρ (X , A) = ρ X , ren-type ρ A
+renᵇ : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵣ Δ₂ → TyVar Δ₁ × Type Δ₁ → TyVar Δ₂ × Type Δ₂
+renᵇ ρ (X , A) = ρ X , renᵗ ρ A
 
 ⤊ : ∀{Δ} → BindCtx Δ → BindCtx (Δ ,typ)
-⤊ = map (ren-pair Sᵗ)
+⤊ = map (renᵇ Sᵗ)
+
+infix 3 _↝_
+data _↝_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set where
+  ↝-extend : ∀ {Δ}{Σ : BindCtx Δ}{X}{A : Type Δ}
+     → Σ ↝ (X , A) ∷ Σ
+     
+  ↝-refl : ∀ {Δ}{Σ : BindCtx Δ}
+     → Σ ↝ Σ
+     
+  ↝-trans : ∀ {Δ}{Σ₁ Σ₂ Σ₃ : BindCtx Δ}
+    → Σ₁ ↝ Σ₂
+    → Σ₂ ↝ Σ₃
+      --------
+    → Σ₁ ↝ Σ₃
+
+ren-bind-map : ∀{Δ Δ′}{Σ₁ Σ₂ : BindCtx Δ}
+   (ρ : Δ ⇒ᵣ Δ′)
+  → Σ₁ ↝ Σ₂
+  → map (renᵇ ρ) Σ₁ ↝ map (renᵇ ρ) Σ₂
+ren-bind-map ρ ↝-extend = ↝-extend
+ren-bind-map ρ ↝-refl = ↝-refl
+ren-bind-map ρ (↝-trans s₁ s₂) =
+   ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
+
+{---- extension preserves unique  ----}
+
+helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
+  → map (renᵇ Sᵗ) Σ ∋ Sᵗ X := B
+  → ((A : Type Δ) → Σ ∋ X := A → ⊥)
+  → ⊥
+helper {Δ} {(Y , C) ∷ Σ′} Zᵇ nl = nl C Zᵇ
+helper {Δ} {(Y , C) ∷ Σ′} (Sᵇ ∋Sx) nl = helper ∋Sx (λ A x → nl A (Sᵇ x))
+
+unique-⤊ : ∀ {Δ}{Σ : BindCtx Δ} → unique Σ → unique (⤊ Σ)
+unique-⤊ Umt = Umt
+unique-⤊ (Ucons u nolook) = Ucons (unique-⤊ u) λ { B y → helper y nolook }
+
+suc-bind-zero : ∀{Δ}{Σ : BindCtx Δ}{C}
+  → map (renᵇ Sᵗ) Σ ∋ Zᵗ := C
+  → ⊥
+suc-bind-zero {Δ} {(Y , A) ∷ Σ′} (Sᵇ ∋Z) = suc-bind-zero ∋Z
+
+unique-extend : ∀ {Δ}{A}
+  → (Σ : BindCtx Δ)
+  → unique Σ
+  → unique ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ)
+unique-extend [] u = Ucons Umt λ { B ()}
+unique-extend ((X , B) ∷ Σ) (Ucons u nolook) =
+  Ucons (Ucons (unique-⤊ u) λ {C x → helper x nolook})
+    λ { C (Sᵇ ∋Z) → suc-bind-zero ∋Z}

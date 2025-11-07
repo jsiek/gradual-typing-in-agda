@@ -22,55 +22,78 @@ open import Agda.Builtin.Equality.Rewrite
 
 open import PolyBlame.Types
 
+{-------------- Well-typed Coercions ---------------}
+
 data Crcn : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set where
+
  id : ∀{Δ}{Σ}{A : Type Δ} → Crcn Δ Σ A A
+ 
  _↦_ : ∀{Δ}{Σ}{A B C D : Type Δ}
    → Crcn Δ Σ C A
    → Crcn Δ Σ B D
+     -------------------------
    → Crcn Δ Σ (A ⇒ B) (C ⇒ D)
+   
  _⨟_ : ∀{Δ}{Σ}{A B C : Type Δ}
    → Crcn Δ Σ A B
    → Crcn Δ Σ B C
+     ------------
    → Crcn Δ Σ A C
+   
  `∀_ : ∀{Δ}{Σ}{A B : Type (Δ ,typ)}
    → Crcn (Δ ,typ) (⤊ Σ) A B
+     ------------------------
    → Crcn Δ Σ (`∀ A) (`∀ B)
+   
  𝒢 : ∀{Δ}{Σ}{A : Type Δ} {B : Type (Δ ,typ)}
    → Crcn (Δ ,typ) (⤊ Σ) (⇑ᵗ A) B
+     -----------------------------
    → Crcn Δ Σ A (`∀ B)
+   
  ℐ : ∀{Δ}{Σ}{A : Type (Δ ,typ)} {B : Type Δ}
    → Crcn (Δ ,typ) ((Zᵗ , ★) ∷ ⤊ Σ) A (⇑ᵗ B)
+     -----------------
    → Crcn Δ Σ (`∀ A) B
+   
  _↓ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A
+     ----------------
    → Crcn Δ Σ A (` X)
+   
  _↑ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A
+     ----------------
    → Crcn Δ Σ (` X) A
+   
  _! : ∀{Δ}{Σ}
    → (G : Grnd Δ)
+     ----------------
    → Crcn Δ Σ ⌈ G ⌉ ★
+   
  _`? : ∀{Δ}{Σ}
    → (H : Grnd Δ)
+     ----------------
    → Crcn Δ Σ ★ ⌈ H ⌉
 
 infix 4 _∣_⊢_⇒_
 _∣_⊢_⇒_ : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → Set
 Δ ∣ Σ ⊢ A ⇒ B = Crcn Δ Σ A B
 
+{----  Renaming type variables in coercions -----}
+
 extr-suc-commute : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵣ Δ₂}{A}
-  → (ren-type (extᵗ ρ) (⇑ᵗ A)) ≡ (⇑ᵗ (ren-type ρ A))
+  → (renᵗ (extᵗ ρ) (⇑ᵗ A)) ≡ (⇑ᵗ (renᵗ ρ A))
 extr-suc-commute = refl
 
 ren-bind : ∀{Δ₁ Δ₂ : TyCtx}{Σ : BindCtx Δ₁}{ρ : Δ₁ ⇒ᵣ Δ₂}
     {X : TyVar Δ₁}{A : Type Δ₁}
   → Σ ∋ X := A
-  → map (ren-pair ρ) Σ ∋ ρ X := ren-type ρ A
+  → map (renᵇ ρ) Σ ∋ ρ X := renᵗ ρ A
 ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} Zᵇ = Zᵇ
 ren-bind {Δ₁} {Δ₂} {Σ} {ρ} {X} {A} (Sᵇ ∋α) = Sᵇ (ren-bind ∋α)
 
 from-grnd-ren : ∀{Δ₁ Δ₂} (ρ : Δ₁ ⇒ᵣ Δ₂)(G : Grnd Δ₁)
-  → ⌈ ren-grnd ρ G ⌉ ≡ ren-type ρ ⌈ G ⌉ 
+  → ⌈ ren-grnd ρ G ⌉ ≡ renᵗ ρ ⌈ G ⌉ 
 from-grnd-ren ρ ★⇒★ = refl
 from-grnd-ren ρ `ℕ = refl
 from-grnd-ren ρ (` X) = refl
@@ -84,7 +107,7 @@ map-fusion {xs = xs} = sym (map-∘ xs)
 rename-crcn : ∀{Δ₁ Δ₂}{Σ}{A B}
   → (ρ : Δ₁ ⇒ᵣ Δ₂)
   → Δ₁ ∣ Σ ⊢ A ⇒ B
-  → Δ₂ ∣ map (ren-pair ρ) Σ ⊢ (ren-type ρ A) ⇒ (ren-type ρ B)
+  → Δ₂ ∣ map (renᵇ ρ) Σ ⊢ (renᵗ ρ A) ⇒ (renᵗ ρ B)
 rename-crcn ρ id = id
 rename-crcn ρ (c ↦ d) = rename-crcn ρ c ↦ rename-crcn ρ d
 rename-crcn ρ (c ⨟ d) = rename-crcn ρ c ⨟ rename-crcn ρ d
@@ -102,7 +125,7 @@ rename-crcn ρ (H `?) = ren-grnd ρ H `?
 infix 6 _[_]ᶜ
 _[_]ᶜ : ∀{Δ}{Σ}{A}{B} → (Δ ,typ) ∣ Σ ⊢ A ⇒ B
   → (X : TyVar Δ)
-  → Δ ∣ map (ren-pair (X •ᵗ idᵗ)) Σ ⊢ ren-type (X •ᵗ idᵗ) A ⇒ ren-type (X •ᵗ idᵗ) B
+  → Δ ∣ map (renᵇ (X •ᵗ idᵗ)) Σ ⊢ renᵗ (X •ᵗ idᵗ) A ⇒ renᵗ (X •ᵗ idᵗ) B
 c [ X ]ᶜ = rename-crcn (X •ᵗ idᵗ) c
 
 {- Renaming Bind Variables -}
@@ -144,3 +167,13 @@ rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↓) = ρ X ↓
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↑) = ρ X ↑
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (G !) = (G !)
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (H `?) = H `?
+
+{- Weakening the type binding context -}
+
+⇧ᵇ : ∀{Δ}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ}{A}{B}
+  → Σ ↝ Σ′
+  → Δ ∣ Σ ⊢ A ⇒ B
+  → Δ ∣ Σ′ ⊢ A ⇒ B
+⇧ᵇ ↝-extend c = rename-crcn-bind Sᵇ c
+⇧ᵇ ↝-refl c = c
+⇧ᵇ (↝-trans s s′) c = ⇧ᵇ s′ (⇧ᵇ s c)
