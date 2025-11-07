@@ -172,7 +172,7 @@ TODO
     Coercions     c, d     ::= id | G? | G! | X↓ | X↑ | c → d | c ; d
                              | ∀X.c | 𝒢 X.c | ℐ X.c
 
-    Environments  Γ        ::=  ∅ | Γ, x:A | Γ, X | Γ, X=A | Γ, X?
+    Environments  Γ        ::=  ∅ | Γ, x:A | Γ, X | Γ, X:=A
 
 ## Reductions
 
@@ -267,7 +267,7 @@ TODO
     -----------------                  Type application
     Γ ⊢ L[X] : A
 
-    Γ, X=A ⊢ N : B
+    Γ, X:=A ⊢ N : B
     --------------- (X ∉ B)            Generate fresh type variable
     Γ ⊢ νX=A.N : B
 
