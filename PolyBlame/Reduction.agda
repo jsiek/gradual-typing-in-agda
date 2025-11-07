@@ -320,8 +320,8 @@ progress (_⟨_⟩{A = A } M c) u with progress M u
 ... | `∀ c = done (_⟨∀_⟩ v)
 ... | 𝒢 c = done (_⟨𝒢_⟩ v)
 ... | ℐ c = step (pure β-⟨ℐ⟩)
-... | X ↓ = done (v ⟨X↓⟩)
-... | X ↑ = progress-seal u M X c v
+... | ∋X ↓ = done (v ⟨X↓⟩)
+... | ∋X ↑ = progress-seal u M ∋X c v
 ... | G ! = done (v ⟨G!⟩)
 ... | H `?
     with v
