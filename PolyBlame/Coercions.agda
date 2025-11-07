@@ -1,6 +1,6 @@
 {-# OPTIONS --rewriting #-}
 
-module PolyBlame.Rename where
+module PolyBlame.Coercions where
 
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; _≢_; refl; cong; cong₂; sym)
