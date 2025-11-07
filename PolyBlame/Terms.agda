@@ -28,7 +28,7 @@ infix  9 #_
 
 infixl 5 _▷_
 
-{--- Term Variables and Contexts ---}
+{--- Contexts for Term Variables ---}
 
 data Ctx : (Δ : TyCtx) → Set where
   ∅ : ∀{Δ} → Ctx Δ
@@ -36,6 +36,33 @@ data Ctx : (Δ : TyCtx) → Set where
       → Ctx Δ
       → Type Δ
       → Ctx Δ
+
+ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
+ren-ctx ρ ∅ = ∅
+ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ renᵗ ρ A
+
+⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
+⟰ Γ = ren-ctx Sᵗ Γ
+
+ext-suc-ctx : ∀{Δ₁ Δ₂ : TyCtx}{Γ : Ctx Δ₁}{ρ  : Δ₁ ⇒ᵣ Δ₂}
+     → ren-ctx (extᵗ ρ) (⟰ Γ) ≡ ⟰ (ren-ctx ρ Γ)
+ext-suc-ctx {Γ = ∅} {ρ} = refl
+ext-suc-ctx {Γ = Γ ▷ A} {ρ} = cong₂ _▷_ ext-suc-ctx refl
+{-# REWRITE ext-suc-ctx #-}
+
+ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+  → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
+ren-ctx-∘ {Γ = ∅} ρ₁ ρ₂ = refl
+ren-ctx-∘ {Γ = Γ ▷ A} ρ₁ ρ₂ = cong₂ _▷_ (ren-ctx-∘ {Γ = Γ} ρ₁ ρ₂) refl
+{-# REWRITE ren-ctx-∘ #-}
+
+ren-ctx-id : ∀{Δ} (Γ : Ctx Δ)
+  → ren-ctx idᵗ Γ ≡ Γ
+ren-ctx-id ∅ = refl
+ren-ctx-id (Γ ▷ A) = cong₂ _▷_ (ren-ctx-id Γ) refl
+{-# REWRITE ren-ctx-id #-}
+
+{--- Term Variables ---}
 
 infix  4 _∋_
 data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
@@ -45,12 +72,37 @@ data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
      → Γ ∋ A
      → Γ ▷ B ∋ A
 
-ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵣ Δ₂) → Ctx Δ₁ → Ctx Δ₂
-ren-ctx ρ ∅ = ∅
-ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ renᵗ ρ A
+ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
+  → (ρ : Δ₁ ⇒ᵣ Δ₂) 
+  → Γ ∋ A
+  → ren-ctx ρ Γ ∋ renᵗ ρ A
+ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ Z = Z
+ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ (S x) = S ren-var ρ x
 
-⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
-⟰ Γ = ren-ctx Sᵗ Γ
+_⇨ᵣ_ : ∀{Δ} → Ctx Δ → Ctx Δ → Set
+Γ ⇨ᵣ Γ′ = ∀ {A} → Γ ∋ A → Γ′ ∋ A
+
+ext : ∀ {Δ : TyCtx}{Γ Γ′ : Ctx Δ}{A : Type Δ}
+  → Γ ⇨ᵣ Γ′
+  → (Γ ▷ A) ⇨ᵣ (Γ′ ▷ A)
+ext ρ Z = Z
+ext ρ (S x) = S ρ x
+
+ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵣ Δ′}
+  → ren-ctx r Γ ∋ A
+  → Σ[ B ∈ Type Δ ] A ≡ renᵗ r B × Γ ∋ B
+ren-ctx-∋ {Δ}{Δ′} {Γ ▷ C} Z = C , refl , Z
+ren-ctx-∋ {Δ}{Δ′}{Γ ▷ C}{A}{B} (S x)
+    with ren-ctx-∋{Δ}{Δ′}{Γ}{A}{B} x
+... | C , refl , y = C , refl , (S y)
+
+rename-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵣ Δ₂}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
+  → Γ ⇨ᵣ Γ′
+  → ren-ctx r Γ ⇨ᵣ ren-ctx r Γ′
+rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} Z = ren-var r (ρ Z)
+rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} (S x)
+    with ren-ctx-∋{Δ₁}{Δ₂}{Γ}{B = A} {r = r} x
+... | C , refl , Γ∋C = ren-var r (ρ (S Γ∋C))
 
 {----------- Well-Typed Terms ---------------------------------}
 
@@ -103,19 +155,6 @@ data _∣_∣_⊢_ : (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Type Δ → Set
 
 {------- Renaming Type Variables ------------}
 
-ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
-  → (ρ : Δ₁ ⇒ᵣ Δ₂) 
-  → Γ ∋ A
-  → ren-ctx ρ Γ ∋ renᵗ ρ A
-ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ Z = Z
-ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ (S x) = S ren-var ρ x
-
-ext-suc-ctx : ∀{Δ₁ Δ₂ : TyCtx}{Γ : Ctx Δ₁}{ρ  : Δ₁ ⇒ᵣ Δ₂}
-     → ren-ctx (extᵗ ρ) (⟰ Γ) ≡ ⟰ (ren-ctx ρ Γ)
-ext-suc-ctx {Γ = ∅} {ρ} = refl
-ext-suc-ctx {Γ = Γ ▷ A} {ρ} = cong₂ _▷_ ext-suc-ctx refl
-{-# REWRITE ext-suc-ctx #-}
-
 rename-ty : ∀{Δ₁ Δ₂}{Σ : BindCtx Δ₁}{Γ : Ctx Δ₁}{A : Type Δ₁}
   → (ρ : Δ₁ ⇒ᵣ Δ₂)
   → Δ₁ ∣ Σ ∣ Γ ⊢ A
@@ -141,28 +180,6 @@ _[_]ᵀ : ∀{Δ}{Σ}{Γ}{A} → (Δ ,typ) ∣ Σ ∣ Γ ⊢ A → (X : TyVar Δ
   → Δ ∣ map (renᵇ (X •ᵗ idᵗ)) Σ ∣ ren-ctx (X •ᵗ idᵗ) Γ ⊢ renᵗ (X •ᵗ idᵗ) A
 M [ X ]ᵀ = rename-ty (X •ᵗ idᵗ) M
 
-renᵇ-∘ : ∀{Δ₁ Δ₂ Δ₃}{x : TyVar Δ₁ × Type Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
-  → ((renᵇ ρ₂) ∘ (renᵇ ρ₁)) x ≡ (renᵇ (ρ₁ ⨟ᵗ ρ₂)) x
-renᵇ-∘ {Δ₁}{Δ₂}{Δ₃}{x} ρ₁ ρ₂ = refl
-
-map-renᵇ-id : ∀{Δ} (Σ : BindCtx Δ)
-  → map (renᵇ idᵗ) Σ ≡ Σ
-map-renᵇ-id [] = refl
-map-renᵇ-id ((X , A) ∷ Σ) = cong₂ _∷_ refl (map-renᵇ-id Σ)
-{-# REWRITE map-renᵇ-id #-}
-
-ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
-  → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
-ren-ctx-∘ {Γ = ∅} ρ₁ ρ₂ = refl
-ren-ctx-∘ {Γ = Γ ▷ A} ρ₁ ρ₂ = cong₂ _▷_ (ren-ctx-∘ {Γ = Γ} ρ₁ ρ₂) refl
-{-# REWRITE ren-ctx-∘ #-}
-
-ren-ctx-id : ∀{Δ} (Γ : Ctx Δ)
-  → ren-ctx idᵗ Γ ≡ Γ
-ren-ctx-id ∅ = refl
-ren-ctx-id (Γ ▷ A) = cong₂ _▷_ (ren-ctx-id Γ) refl
-{-# REWRITE ren-ctx-id #-}
-
 rename-bind : ∀{Δ}{Σ₁ Σ₂ : BindCtx Δ}{Γ : Ctx Δ}{A : Type Δ}
   → (ρ : Σ₁ ⇒ᵇ Σ₂)
   → Δ ∣ Σ₁ ∣ Γ ⊢ A
@@ -187,32 +204,7 @@ rename-bind ρ (ν A · N) = ν A · rename-bind (extᶜ (extᵇ ρ)) N
   → Δ ∣ (X , B) ∷ Σ ∣ Γ ⊢ A
 ⇑ᵇ M = rename-bind Sᵇ M
 
-{---- Renaming Term Variables ----}
-
-_⇨ᵣ_ : ∀{Δ} → Ctx Δ → Ctx Δ → Set
-Γ ⇨ᵣ Γ′ = ∀ {A} → Γ ∋ A → Γ′ ∋ A
-
-ext : ∀ {Δ : TyCtx}{Γ Γ′ : Ctx Δ}{A : Type Δ}
-  → Γ ⇨ᵣ Γ′
-  → (Γ ▷ A) ⇨ᵣ (Γ′ ▷ A)
-ext ρ Z = Z
-ext ρ (S x) = S ρ x
-
-ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵣ Δ′}
-  → ren-ctx r Γ ∋ A
-  → Σ[ B ∈ Type Δ ] A ≡ renᵗ r B × Γ ∋ B
-ren-ctx-∋ {Δ}{Δ′} {Γ ▷ C} Z = C , refl , Z
-ren-ctx-∋ {Δ}{Δ′}{Γ ▷ C}{A}{B} (S x)
-    with ren-ctx-∋{Δ}{Δ′}{Γ}{A}{B} x
-... | C , refl , y = C , refl , (S y)
-
-rename-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵣ Δ₂}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
-  → Γ ⇨ᵣ Γ′
-  → ren-ctx r Γ ⇨ᵣ ren-ctx r Γ′
-rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} Z = ren-var r (ρ Z)
-rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} (S x)
-    with ren-ctx-∋{Δ₁}{Δ₂}{Γ}{B = A} {r = r} x
-... | C , refl , Γ∋C = ren-var r (ρ (S Γ∋C))
+{---- Renaming of Term Variables in Terms ----}
 
 rename : ∀{Δ}{Σ}{Γ}{Γ′}{A}
   → (ρ : Γ ⇨ᵣ Γ′)
@@ -228,7 +220,7 @@ rename ρ (M ⟨ c ⟩) = rename ρ M ⟨ c ⟩
 rename ρ blame = blame
 rename ρ (ν B · N) = ν B · rename (rename-ctx ρ) N
 
-{---- Substitution of Term Variables ----}
+{---- Substitution of Term Variables in Terms ----}
 
 _∣_⊢_⇨_ : ∀ (Δ : TyCtx) → BindCtx Δ → Ctx Δ → Ctx Δ → Set
 Δ ∣ Σ ⊢ Γ ⇨ Γ′ = ∀ {A} → Γ ∋ A → Δ ∣ Σ ∣ Γ′ ⊢ A

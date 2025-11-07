@@ -272,6 +272,18 @@ ren-bind-map ρ ↝-refl = ↝-refl
 ren-bind-map ρ (↝-trans s₁ s₂) =
    ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
 
+renᵇ-∘ : ∀{Δ₁ Δ₂ Δ₃}{x : TyVar Δ₁ × Type Δ₁} → (ρ₁ : Δ₁ ⇒ᵣ Δ₂) → (ρ₂ : Δ₂ ⇒ᵣ Δ₃)
+  → ((renᵇ ρ₂) ∘ (renᵇ ρ₁)) x ≡ (renᵇ (ρ₁ ⨟ᵗ ρ₂)) x
+renᵇ-∘ {Δ₁}{Δ₂}{Δ₃}{x} ρ₁ ρ₂ = refl
+
+map-renᵇ-id : ∀{Δ} (Σ : BindCtx Δ)
+  → map (renᵇ idᵗ) Σ ≡ Σ
+map-renᵇ-id [] = refl
+map-renᵇ-id ((X , A) ∷ Σ) = cong₂ _∷_ refl (map-renᵇ-id Σ)
+{-# REWRITE map-renᵇ-id #-}
+
+
+
 {---- extension preserves unique  ----}
 
 helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
