@@ -286,7 +286,7 @@ progress-seal : ∀{Δ Σ}{Y}{A}
   → unique Σ
   → (M : Δ ∣ Σ ∣ ∅ ⊢ (` Y))
   → (∋Y : Σ ∋ Y := A)
-  → (c : Crcn Δ Σ (` Y) A)
+  → (c : Δ ∣ Σ ⊢ (` Y) ⇒ A)
   → Value M
   → Progress (M ⟨ ∋Y ↑ ⟩)
 progress-seal {A = A} u (V ⟨ ∋X ↓ ⟩) ∋Y c (vM ⟨X↓⟩)
