@@ -1,5 +1,5 @@
 {-# OPTIONS --rewriting #-}
-module PolyBlame.Intrinsic where
+module PolyBlame.Reduction where
 
 import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; _≢_; refl; cong; cong₂; sym)
@@ -156,7 +156,8 @@ ren-bind-map : ∀{Δ Δ′}{Σ₁ Σ₂ : BindCtx Δ}
   → map (ren-pair ρ) Σ₁ ↝ map (ren-pair ρ) Σ₂
 ren-bind-map ρ ↝-extend = ↝-extend
 ren-bind-map ρ ↝-refl = ↝-refl
-ren-bind-map ρ (↝-trans s₁ s₂) = ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
+ren-bind-map ρ (↝-trans s₁ s₂) =
+   ↝-trans (ren-bind-map ρ s₁) (ren-bind-map ρ s₂)
 
 rbm : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx}{Σ₁ : BindCtx Δ₁}{Σ₂ : BindCtx Δ₂}
         (ρ₁ : TyVar Δ₁ → TyVar Δ₂)
@@ -199,7 +200,8 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
 
   β-ν : ∀ {Δ}{Σ : BindCtx Δ}{Γ : Ctx Δ}{A B : Type Δ}
       {N : (Δ ,typ) ∣ (Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ ∣ ⟰ Γ ⊢ (⇑ᵗ B)}
-    → Δ ∥ Σ ∥ Γ ⊢ B ∋ (ν A · N) —→ (Δ ,typ) ∣ Sᵗ ∣ ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ) ∣ ↝-extend ⊢ N
+    → Δ ∥ Σ ∥ Γ ⊢ B ∋ (ν A · N) —→
+         (Δ ,typ) ∣ Sᵗ ∣ ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ) ∣ ↝-extend ⊢ N
 
   ξ-·₁ : ∀ {Δ Δ′}{ρ : Δ ⇒ᵣ Δ′}{Σ : BindCtx Δ}{Σ′ : BindCtx Δ′}
       {s : map (ren-pair ρ) Σ ↝ Σ′}
@@ -409,4 +411,5 @@ type-safety : ∀{Δ Δ′}{ρ}{Σ}{Σ′}{s}{A}{M}{N}
   → Δ ∥ Σ ∥ ∅ ⊢ A ∋ M —↠ Δ′ ∣ ρ ∣ Σ′ ∣ s ⊢ N
   → Progress N
 type-safety u (M ∎) = progress M u
-type-safety u (step—→ _ M→M′ M′→N) = type-safety (unique-preservation u M→M′) M′→N
+type-safety u (step—→ _ M→M′ M′→N) =
+   type-safety (unique-preservation u M→M′) M′→N
