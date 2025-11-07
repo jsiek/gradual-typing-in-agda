@@ -323,8 +323,8 @@ TODO
     𝒞⟦ Γ ⊢ ι ⇒ ι ⟧        = id
     𝒞⟦ Γ ⊢ ★ ⇒ ★ ⟧       = id
     𝒞⟦ Γ ⊢ X ⇒ X ⟧       = id
-    𝒞⟦ Γ ⊢ G ⇒ ★ ⟧       = G!    if G ≠ X or G? ∈ Γ
-    𝒞⟦ Γ ⊢ ★ ⇒ G ⟧       = G?    if G ≠ X or G? ∈ Γ
+    𝒞⟦ Γ ⊢ G ⇒ ★ ⟧       = G!    if G ≠ X or G ∈ Γ
+    𝒞⟦ Γ ⊢ ★ ⇒ G ⟧       = G?    if G ≠ X or G ∈ Γ
     𝒞⟦ Γ ⊢ (A → B) ⇒ ★ ⟧ = (c → d) ; ★→★!
        where
        𝒞⟦ Γ ⊢ ★ ⇒ A ⟧ = c
@@ -333,18 +333,18 @@ TODO
        where
        𝒞⟦ Γ ⊢ A ⇒ ★ ⟧ = c
        𝒞⟦ Γ ⊢ ★ ⇒ B ⟧ = d
-    𝒞⟦ Γ ⊢ A ⇒ X ⟧ = X↓      if X=A ∈ Γ
-    𝒞⟦ Γ ⊢ X ⇒ B ⟧ = X↑      if X=B ∈ Γ
+    𝒞⟦ Γ ⊢ A ⇒ X ⟧ = X↓      if X:=A ∈ Γ
+    𝒞⟦ Γ ⊢ X ⇒ B ⟧ = X↑      if X:=B ∈ Γ
     𝒞⟦ Γ ⊢ (A → B) ⇒ (A′ → B′) ⟧ = c → d
        where
        𝒞⟦ Γ ⊢ A′ ⇒ A ⟧ = c
        𝒞⟦ Γ ⊢ B ⇒ B′ ⟧ = d
     𝒞⟦ Γ ⊢ A ⇒ ∀X.B ⟧ = 𝒢 X. c
            where
-           𝒞⟦ Γ, X? ⊢ A ⇒ B ⟧ = c
+           𝒞⟦ Γ, X ⊢ A ⇒ B ⟧ = c
     𝒞⟦ Γ ⊢ ∀X.A ⇒ B ⟧ = ℐ X. c
            where
-           𝒞⟦ Γ, X=★ ⊢ A ⇒ B ⟧ = c
+           𝒞⟦ Γ, X:=★ ⊢ A ⇒ B ⟧ = c
     𝒞⟦ Γ ⊢ ∀X.A ⇒ ∀X.B ⟧ = ∀X.c
            where
            𝒞⟦ Γ, X ⊢ A ⇒ B ⟧ = c
