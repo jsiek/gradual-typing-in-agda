@@ -26,6 +26,8 @@ postulate
       -----------------------
     → f ≡ g
 
+{--- Type variables and their Contexts ---}
+
 data TyCtx : Set 
 data Type : TyCtx → Set 
 
@@ -126,12 +128,16 @@ id-seq : ∀{Δ₁ Δ₂}{ρ : Δ₁ ⇒ᵗ Δ₂} → (ρ ⨟ᵗ idᵗ) ≡ ρ
 id-seq {Δ₁}{Δ₂}{ρ} = refl
 {-# REWRITE id-seq #-}
 
+{-----------     Types     -----------------}
+
 data Type where
   `ℕ  : ∀{Δ} → Type Δ
   ★   : ∀{Δ} → Type Δ
   `_ : ∀{Δ} → (x : TyVar Δ) → Type Δ
   _⇒_ : ∀{Δ} → Type Δ → Type Δ → Type Δ
   `∀_  : ∀{Δ} → Type (Δ ,typ) → Type Δ
+
+{- Renaming type variables in types -}
 
 renᵗ : ∀{Δ₁ Δ₂} → (Δ₁ ⇒ᵗ Δ₂) → Type Δ₁ → Type Δ₂
 renᵗ ρ (A ⇒ B) = (renᵗ ρ A) ⇒ (renᵗ ρ B)
@@ -189,6 +195,8 @@ ext-suc-cons = refl
 BindCtx : TyCtx → Set
 BindCtx Δ = List (TyVar Δ × Type Δ)
 
+{-- Looking up type variable bindings --}
+
 data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set where
   Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
     → ((X , A) ∷ Σ) ∋ X := A
@@ -212,6 +220,8 @@ lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ Zᵇ (Ucons u x) = refl
 lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ (Sᵇ b) (Ucons u nolook) = ⊥-elim (nolook B b)
 lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) Zᵇ (Ucons u nolook) = ⊥-elim (nolook A a)
 lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) (Sᵇ b) (Ucons u nolook) = lookup-unique a b u
+
+{----- Ground Types -----}
 
 data Grnd : TyCtx → Set where
   ★⇒★ : ∀{Δ} → Grnd Δ
@@ -242,12 +252,15 @@ ren-grnd ρ ★⇒★ = ★⇒★
 ren-grnd ρ `ℕ = `ℕ
 ren-grnd ρ (` X) = ` (ρ X)
 
+{--- Auxilliary notions regarding BindCtx  ---}
+
 renᵇ : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵗ Δ₂ → TyVar Δ₁ × Type Δ₁ → TyVar Δ₂ × Type Δ₂
 renᵇ ρ (X , A) = ρ X , renᵗ ρ A
 
 ⤊ : ∀{Δ} → BindCtx Δ → BindCtx (Δ ,typ)
 ⤊ = map (renᵇ Sᵗ)
 
+{- The prefix/extension relation on BindCtx. -}
 infix 3 _↝_
 data _↝_ : ∀{Δ} → BindCtx Δ → BindCtx Δ → Set where
   ↝-extend : ∀ {Δ}{Σ : BindCtx Δ}{X}{A : Type Δ}
