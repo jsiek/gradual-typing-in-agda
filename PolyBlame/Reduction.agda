@@ -237,8 +237,6 @@ data _∥_∥_⊢_∋_—→_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ :
 {- Reflexive and transitive closure -}
 
 infix  2 _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_
---infix  1 begin_
---infixr 2 _—→⟨_⟩_
 infix  3 _∎
 
 data _∥_∥_⊢_∋_—↠_∣_∣_∣_⊢_ : ∀ (Δ₁ : TyCtx) → (Σ₁ : BindCtx Δ₁)
