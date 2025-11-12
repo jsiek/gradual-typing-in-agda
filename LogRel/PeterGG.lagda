@@ -42,13 +42,13 @@ approximation is a straightforward induction on the step index $k$.
 
 \begin{code}
 LR⇒sem-approx : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}{k}{dir}
-  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k)  →  dir ⊨ M ⊑ M′ for k
+  → #(dir ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′) (suc k)  →  dir ⊨ M ⊑ M′ for k
 \end{code}
 \begin{code}[hide]
 LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≼} M⊑M′sk =
     inj₂ (inj₂ (M , (M END) , refl))
 LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≼} M⊑M′sk
-    with ⇔-to (LRₜ-suc{dir = ≼}) M⊑M′sk
+    with ⇔-to (LRᵀ-suc{dir = ≼}) M⊑M′sk
 ... | inj₂ (inj₁ M′→blame) =
       inj₂ (inj₁ M′→blame)
 ... | inj₂ (inj₂ (m , (V′ , M′→V′ , v′ , 𝒱≼V′M))) =
@@ -64,7 +64,7 @@ LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≼} M⊑M′sk
 LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {zero} {≽} M⊑M′sk =
     inj₂ (inj₂ (M′ , (M′ END) , refl))
 LR⇒sem-approx {A} {A′} {A⊑A′} {M} {M′} {suc k} {≽} M⊑M′sk
-    with ⇔-to (LRₜ-suc{dir = ≽}) M⊑M′sk
+    with ⇔-to (LRᵀ-suc{dir = ≽}) M⊑M′sk
 ... | inj₂ (inj₁ isBlame) =
       inj₂ (inj₁ (blame END))
 ... | inj₂ (inj₂ (m′ , V , M→V , v , 𝒱≽VM′)) =
@@ -137,7 +137,7 @@ sem-approx⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 relation implies the gradual guarantee.
 
 \begin{code}
-LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}  → [] ⊢ᵒ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′  →  gradual M M′ 
+LR⇒GG : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{M}{M′}  → [] ⊢ᵒ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′  →  gradual M M′ 
 \end{code}
 \begin{code}[hide]
 LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
@@ -152,7 +152,7 @@ LR⇒GG {A}{A′}{A⊑A′}{M}{M′} ⊨M⊑M′ =
 \end{code}
 
 \noindent The gradual guarantee then follows by use of the Fundamental
-Lemma to obtain $M$ ⊑ᴸᴿₜ $M′$ and then \textsf{LR⇒GG} to
+Lemma to obtain $M$ ⊑ᴸᴿᵀ $M′$ and then \textsf{LR⇒GG} to
 conclude that \textsf{gradual M M′}.
 
 \begin{code}

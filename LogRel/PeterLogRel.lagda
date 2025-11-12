@@ -110,8 +110,8 @@ LR-type = (Prec × Dir × Term × Term) ⊎ (Prec × Dir × Term × Term)
 LR-ctx : List Set
 LR-ctx = LR-type ∷ []
 
-_∣_ˢ⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A}{A′} (c : A ⊑ A′) → Setˢ LR-ctx (cons Now ∅)
-dir ∣ M ˢ⊑ᴸᴿₜ M′ ⦂ c = (inj₂ ((_ , _ , c) , dir , M , M′)) ∈ zeroˢ
+_∣_ˢ⊑ᴸᴿᵀ_⦂_ : Dir → Term → Term → ∀{A}{A′} (c : A ⊑ A′) → Setˢ LR-ctx (cons Now ∅)
+dir ∣ M ˢ⊑ᴸᴿᵀ M′ ⦂ c = (inj₂ ((_ , _ , c) , dir , M , M′)) ∈ zeroˢ
 
 _∣_ˢ⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A}{A′} (c : A ⊑ A′) → Setˢ LR-ctx (cons Now ∅)
 dir ∣ V ˢ⊑ᴸᴿᵥ V′ ⦂ c = (inj₁ ((_ , _ , c) , dir , V , V′)) ∈ zeroˢ
@@ -124,23 +124,23 @@ instance
 
 \begin{figure}[tbp]
 \begin{code}
-LRₜ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
+LRᵀ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 LRᵥ : Prec → Dir → Term → Term → Setˢ LR-ctx (cons Later ∅)
 
-LRₜ (A , A′ , c) ≼ M M′ =
-   (∃ˢ[ N ] (M ⟶ N)ˢ ×ˢ ▷ˢ (≼ ∣ N ˢ⊑ᴸᴿₜ M′ ⦂ c))
+LRᵀ (A , A′ , c) ≼ M M′ =
+   (∃ˢ[ N ] (M ⟶ N)ˢ ×ˢ ▷ˢ (≼ ∣ N ˢ⊑ᴸᴿᵀ M′ ⦂ c))
    ⊎ˢ (M′ ↠ blame)ˢ
    ⊎ˢ ((Value M)ˢ ×ˢ (∃ˢ[ V′ ] (M′ ↠ V′)ˢ ×ˢ (Value V′)ˢ ×ˢ (LRᵥ (_ , _ , c) ≼ M V′)))
-LRₜ (A , A′ , c) ≽ M M′ =
-   (∃ˢ[ N′ ] (M′ ⟶ N′)ˢ ×ˢ ▷ˢ (≽ ∣ M ˢ⊑ᴸᴿₜ N′ ⦂ c))
+LRᵀ (A , A′ , c) ≽ M M′ =
+   (∃ˢ[ N′ ] (M′ ⟶ N′)ˢ ×ˢ ▷ˢ (≽ ∣ M ˢ⊑ᴸᴿᵀ N′ ⦂ c))
    ⊎ˢ (Blame M′)ˢ
    ⊎ˢ ((Value M′)ˢ ×ˢ (∃ˢ[ V ] (M ↠ V)ˢ ×ˢ (Value V)ˢ ×ˢ (LRᵥ (_ , _ , c) ≽ V M′)))
 
-LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
-LRᵥ (.($ₜ ι) , .($ₜ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
+LRᵥ (.($ᵀ ι) , .($ᵀ ι) , base⊑{ι}) dir ($ c) ($ c′) = (c ≡ c′) ˢ
+LRᵥ (.($ᵀ ι) , .($ᵀ ι) , base⊑{ι}) dir V V′ = ⊥ ˢ
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir (ƛ N)(ƛ N′) =
     ∀ˢ[ W ] ∀ˢ[ W′ ] ▷ˢ (dir ∣ W ˢ⊑ᴸᴿᵥ W′ ⦂ A⊑A′)
-                  →ˢ ▷ˢ (dir ∣ (N [ W ]) ˢ⊑ᴸᴿₜ (N′ [ W′ ]) ⦂ B⊑B′) 
+                  →ˢ ▷ˢ (dir ∣ (N [ W ]) ˢ⊑ᴸᴿᵀ (N′ [ W′ ]) ⦂ B⊑B′) 
 LRᵥ (.(A ⇒ B) , .(A′ ⇒ B′) , fun⊑{A}{B}{A′}{B′} A⊑A′ B⊑B′) dir V V′ = ⊥ ˢ
 LRᵥ (.★ , .★ , unk⊑unk) dir (V ⟨ G !⟩) (V′ ⟨ H !⟩)
     with G ≡ᵍ H
@@ -198,31 +198,31 @@ argument $d$ is a subterm of $\mathsf{unk⊑}\,d$. This is why
 the $\mathsf{unk⊑}$ rule needs to be recursive, with the
 premise $⌈ G ⌉ ⊑ B$.
 
-The following definitions combine the LRᵥ and LRₜ functions into a
-single function, pre-LRₜ⊎LRᵥ, and than applies the μᵒ operator to
-produce the recursive relation LRₜ⊎LRᵥ. Finally, we define some
+The following definitions combine the LRᵥ and LRᵀ functions into a
+single function, pre-LRᵀ⊎LRᵥ, and than applies the μᵒ operator to
+produce the recursive relation LRᵀ⊎LRᵥ. Finally, we define some
 shorthand for the logical relation on values, written ⊑ᴸᴿᵥ, and the
-logical relation on terms, ⊑ᴸᴿₜ.
+logical relation on terms, ⊑ᴸᴿᵀ.
 
 \begin{code}
-pre-LRₜ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
-pre-LRₜ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ c dir V V′
-pre-LRₜ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRₜ c dir M M′
+pre-LRᵀ⊎LRᵥ : LR-type → Setˢ LR-ctx (cons Later ∅)
+pre-LRᵀ⊎LRᵥ (inj₁ (c , dir , V , V′)) = LRᵥ c dir V V′
+pre-LRᵀ⊎LRᵥ (inj₂ (c , dir , M , M′)) = LRᵀ c dir M M′
 
-LRₜ⊎LRᵥ : LR-type → Setᵒ
-LRₜ⊎LRᵥ X = μᵒ pre-LRₜ⊎LRᵥ X
+LRᵀ⊎LRᵥ : LR-type → Setᵒ
+LRᵀ⊎LRᵥ X = μᵒ pre-LRᵀ⊎LRᵥ X
 
 _∣_⊑ᴸᴿᵥ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
-dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
+dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′ = LRᵀ⊎LRᵥ (inj₁ ((_ , _ , A⊑A′) , dir , V , V′))
 
-_∣_⊑ᴸᴿₜ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
-dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = LRₜ⊎LRᵥ (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
+_∣_⊑ᴸᴿᵀ_⦂_ : Dir → Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+dir ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′ = LRᵀ⊎LRᵥ (inj₂ ((_ , _ , A⊑A′) , dir , M , M′))
 
-_⊑ᴸᴿₜ_⦂_ : Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
-M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ = (≼ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) ×ᵒ (≽ ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′)
+_⊑ᴸᴿᵀ_⦂_ : Term → Term → ∀{A A′} → A ⊑ A′ → Setᵒ
+M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′ = (≼ ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′) ×ᵒ (≽ ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′)
 \end{code}
 
-The relations that we have defined so far, ⊑ᴸᴿᵥ and ⊑ᴸᴿₜ, only apply
+The relations that we have defined so far, ⊑ᴸᴿᵥ and ⊑ᴸᴿᵀ, only apply
 to closed terms, that is, terms with no free variables.  We also need
 to relate open terms. The standard way to do that is to apply two
 substitutions to the two terms, replacing each free variable with
@@ -244,7 +244,7 @@ applying them to $M$ and $M′$ produces related terms.
 \begin{code}
 _∣_⊨_⊑ᴸᴿ_⦂_ : List Prec → Dir → Term → Term → Prec → Set
 Γ ∣ dir ⊨ M ⊑ᴸᴿ M′ ⦂ (_ , _ , A⊑A′) = ∀ (γ γ′ : Subst)
-   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿₜ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
+   → (Γ ∣ dir ⊨ γ ⊑ᴸᴿ γ′) ⊢ᵒ dir ∣ (⟪ γ ⟫ M) ⊑ᴸᴿᵀ (⟪ γ′ ⟫ M′) ⦂ A⊑A′
 \end{code}
 
 \noindent We use the following notation for the conjunction of the two
@@ -261,47 +261,47 @@ proj ≽ M M′ M⊑M′ = proj₂ M⊑M′
 \end{code}
 
 \begin{code}[hide]
-LRₜ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term → Setᵒ
-LRₜ-def A⊑A′ ≼ M M′ =
-   (∃ᵒ[ N ] (M ⟶ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿₜ M′ ⦂ A⊑A′))
+LRᵀ-def : ∀{A}{A′} → (A⊑A′ : A ⊑ A′) → Dir → Term → Term → Setᵒ
+LRᵀ-def A⊑A′ ≼ M M′ =
+   (∃ᵒ[ N ] (M ⟶ N)ᵒ ×ᵒ ▷ᵒ (≼ ∣ N ⊑ᴸᴿᵀ M′ ⦂ A⊑A′))
    ⊎ᵒ (M′ ↠ blame)ᵒ
    ⊎ᵒ ((Value M)ᵒ ×ᵒ (∃ᵒ[ V′ ] (M′ ↠ V′)ᵒ ×ᵒ (Value V′)ᵒ ×ᵒ (≼ ∣ M ⊑ᴸᴿᵥ V′ ⦂ A⊑A′)))
-LRₜ-def A⊑A′ ≽ M M′ =
-   (∃ᵒ[ N′ ] (M′ ⟶ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ⊑ᴸᴿₜ N′ ⦂ A⊑A′))
+LRᵀ-def A⊑A′ ≽ M M′ =
+   (∃ᵒ[ N′ ] (M′ ⟶ N′)ᵒ ×ᵒ ▷ᵒ (≽ ∣ M ⊑ᴸᴿᵀ N′ ⦂ A⊑A′))
    ⊎ᵒ (Blame M′)ᵒ
    ⊎ᵒ ((Value M′)ᵒ ×ᵒ (∃ᵒ[ V ] (M ↠ V)ᵒ ×ᵒ (Value V)ᵒ ×ᵒ (≽ ∣ V ⊑ᴸᴿᵥ M′ ⦂ A⊑A′)))
 \end{code}
 \begin{code}[hide]
-LRₜ-stmt : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}
-   → dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′ ≡ᵒ LRₜ-def A⊑A′ dir M M′
+LRᵀ-stmt : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}
+   → dir ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′ ≡ᵒ LRᵀ-def A⊑A′ dir M M′
 \end{code}
 \begin{code}[hide]
-LRₜ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
-  dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′                   ⩦⟨ ≡ᵒ-refl refl ⟩
-  μᵒ pre-LRₜ⊎LRᵥ (X₂ dir)                  ⩦⟨ fixpointᵒ pre-LRₜ⊎LRᵥ (X₂ dir) ⟩
-  # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ) ⩦⟨ EQ{dir} ⟩
-  LRₜ-def A⊑A′ dir M M′                    ∎
+LRᵀ-stmt {A}{A′}{A⊑A′}{dir}{M}{M′} =
+  dir ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′                   ⩦⟨ ≡ᵒ-refl refl ⟩
+  μᵒ pre-LRᵀ⊎LRᵥ (X₂ dir)                  ⩦⟨ fixpointᵒ pre-LRᵀ⊎LRᵥ (X₂ dir) ⟩
+  # (pre-LRᵀ⊎LRᵥ (X₂ dir)) (LRᵀ⊎LRᵥ , ttᵖ) ⩦⟨ EQ{dir} ⟩
+  LRᵀ-def A⊑A′ dir M M′                    ∎
   where
   c = (A , A′ , A⊑A′)
   X₁ : Dir → LR-type
   X₁ = λ dir → inj₁ (c , dir , M , M′)
   X₂ = λ dir → inj₂ (c , dir , M , M′)
-  EQ : ∀{dir} → # (pre-LRₜ⊎LRᵥ (X₂ dir)) (LRₜ⊎LRᵥ , ttᵖ) ≡ᵒ LRₜ-def A⊑A′ dir M M′
+  EQ : ∀{dir} → # (pre-LRᵀ⊎LRᵥ (X₂ dir)) (LRᵀ⊎LRᵥ , ttᵖ) ≡ᵒ LRᵀ-def A⊑A′ dir M M′
   EQ {≼} = cong-⊎ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl) 
              (cong-∃ λ V′ → cong-×ᵒ (≡ᵒ-refl refl) (cong-×ᵒ (≡ᵒ-refl refl)
-              ((≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≼ , M , V′)))))))))
+              ((≡ᵒ-sym (fixpointᵒ pre-LRᵀ⊎LRᵥ (inj₁ (c , ≼ , M , V′)))))))))
   EQ {≽} = cong-⊎ᵒ (≡ᵒ-refl refl) (cong-⊎ᵒ (≡ᵒ-refl refl)
             (cong-×ᵒ (≡ᵒ-refl refl) (cong-∃ λ V → cong-×ᵒ (≡ᵒ-refl refl)
               (cong-×ᵒ (≡ᵒ-refl refl)
-               (≡ᵒ-sym (fixpointᵒ pre-LRₜ⊎LRᵥ (inj₁ (c , ≽ , V , M′))))))))
+               (≡ᵒ-sym (fixpointᵒ pre-LRᵀ⊎LRᵥ (inj₁ (c , ≽ , V , M′))))))))
 \end{code}
 \begin{code}[hide]
-LRₜ-suc : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}{k}
-  → #(dir ∣ M ⊑ᴸᴿₜ M′ ⦂ A⊑A′) (suc k) ⇔ #(LRₜ-def A⊑A′ dir M M′) (suc k)
+LRᵀ-suc : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{dir}{M}{M′}{k}
+  → #(dir ∣ M ⊑ᴸᴿᵀ M′ ⦂ A⊑A′) (suc k) ⇔ #(LRᵀ-def A⊑A′ dir M M′) (suc k)
 \end{code}
 \begin{code}[hide]
-LRₜ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
-   ≡ᵒ⇒⇔{k = suc k} (LRₜ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
+LRᵀ-suc {A}{A′}{A⊑A′}{dir}{M}{M′}{k} =
+   ≡ᵒ⇒⇔{k = suc k} (LRᵀ-stmt{A}{A′}{A⊑A′}{dir}{M}{M′})
 \end{code}
 
 The definition of ⊑ᴸᴿᵥ includes several clauses that ensured that the
@@ -345,29 +345,29 @@ LRᵥ⇒Valueᵒ A⊑A′ M M′ M⊑M′ =
 \end{code}
 
 If two values are related via ⊑ᴸᴿᵥ, then they are also related via
-⊑ᴸᴿₜ.
+⊑ᴸᴿᵀ.
 
 \begin{code}[hide]
-LRᵥ⇒LRₜ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
-   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k  →  #(dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′) k
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
-   tz (dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′)
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
-  ⇔-fro (LRₜ-suc{dir = ≼})
+LRᵥ⇒LRᵀ-step : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{V V′}{dir}{k}
+   → #(dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′) k  →  #(dir ∣ V ⊑ᴸᴿᵀ V′ ⦂ A⊑A′) k
+LRᵥ⇒LRᵀ-step {A}{A′}{A⊑A′}{V} {V′} {dir} {zero} 𝒱VV′k =
+   tz (dir ∣ V ⊑ᴸᴿᵀ V′ ⦂ A⊑A′)
+LRᵥ⇒LRᵀ-step {A}{A′}{A⊑A′}{V} {V′} {≼} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRᵀ-suc{dir = ≼})
   (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
   (inj₂ (inj₂ (v , (V′ , (V′ END) , v′ , 𝒱VV′sk)))))
-LRᵥ⇒LRₜ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
-  ⇔-fro (LRₜ-suc{dir = ≽})
+LRᵥ⇒LRᵀ-step {A}{A′}{A⊑A′}{V} {V′} {≽} {suc k} 𝒱VV′sk =
+  ⇔-fro (LRᵀ-suc{dir = ≽})
   (let (v , v′) = LRᵥ⇒Value A⊑A′ V V′ 𝒱VV′sk in
   inj₂ (inj₂ (v′ , V , (V END) , v , 𝒱VV′sk)))
 \end{code}
 \begin{code}
-LRᵥ⇒LRₜ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
-   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′  →  𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿₜ V′ ⦂ A⊑A′
+LRᵥ⇒LRᵀ : ∀{A}{A′}{A⊑A′ : A ⊑ A′}{𝒫}{V V′}{dir}
+   → 𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵥ V′ ⦂ A⊑A′  →  𝒫 ⊢ᵒ dir ∣ V ⊑ᴸᴿᵀ V′ ⦂ A⊑A′
 \end{code}
 \begin{code}[hide]
-LRᵥ⇒LRₜ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
-  LRᵥ⇒LRₜ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
+LRᵥ⇒LRᵀ {A}{A′}{A⊑A′}{𝒫}{V}{V′}{dir} ⊢𝒱VV′ = ⊢ᵒ-intro λ k 𝒫k →
+  LRᵥ⇒LRᵀ-step{V = V}{V′}{dir}{k} (⊢ᵒ-elim ⊢𝒱VV′ k 𝒫k)
 \end{code}
 
 

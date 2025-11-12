@@ -34,7 +34,7 @@ infixr 6 _⊑_
 data _⊑_ : Type → Type → Set where
   unk⊑unk : ★ ⊑ ★
   unk⊑ : ∀{G}{B} → ⌈ G ⌉ ⊑ B → ★ ⊑ B
-  base⊑ : ∀{ι} → $ₜ ι ⊑ $ₜ ι
+  base⊑ : ∀{ι} → $ᵀ ι ⊑ $ᵀ ι
   fun⊑ : ∀{A B C D}  →  A ⊑ C  →  B ⊑ D  →  A ⇒ B ⊑ C ⇒ D
 \end{code}
 
@@ -55,7 +55,7 @@ Prec = (∃[ A ] ∃[ B ] A ⊑ B)
 
 Refl⊑ : ∀{A} → A ⊑ A
 Refl⊑ {★} = unk⊑unk
-Refl⊑ {$ₜ ι} = base⊑
+Refl⊑ {$ᵀ ι} = base⊑
 Refl⊑ {A ⇒ B} = fun⊑ Refl⊑ Refl⊑
 \end{code}
 
@@ -75,7 +75,7 @@ dyn-prec-unique {★} unk⊑unk (unk⊑ {$ᵍ ι} ())
 dyn-prec-unique {★} unk⊑unk (unk⊑ {★⇒★} ())
 dyn-prec-unique {★} (unk⊑ {$ᵍ ι} ()) d
 dyn-prec-unique {★} (unk⊑ {★⇒★} ()) d
-dyn-prec-unique {$ₜ ι} (unk⊑ {$ᵍ .ι} base⊑) (unk⊑ {$ᵍ .ι} base⊑) = refl
+dyn-prec-unique {$ᵀ ι} (unk⊑ {$ᵍ .ι} base⊑) (unk⊑ {$ᵍ .ι} base⊑) = refl
 dyn-prec-unique {A ⇒ A₁} (unk⊑ {★⇒★} (fun⊑ c c₁)) (unk⊑ {★⇒★} (fun⊑ d d₁))
     with dyn-prec-unique c d | dyn-prec-unique c₁ d₁
 ... | refl | refl = refl
@@ -84,7 +84,7 @@ gnd-prec-unique : ∀{G A}
    → (c : ⌈ G ⌉ ⊑ A)
    → (d : ⌈ G ⌉ ⊑ A)
    → c ≡ d
-gnd-prec-unique {$ᵍ ι} {.($ₜ ι)} base⊑ base⊑ = refl
+gnd-prec-unique {$ᵍ ι} {.($ᵀ ι)} base⊑ base⊑ = refl
 gnd-prec-unique {★⇒★} {.(_ ⇒ _)} (fun⊑ c c₁) (fun⊑ d d₁)
     with dyn-prec-unique c d | dyn-prec-unique c₁ d₁
 ... | refl | refl = refl

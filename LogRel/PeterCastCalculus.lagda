@@ -36,7 +36,7 @@ _≡$?_ : (ι : Base) → (ι′ : Base) → Dec (ι ≡ ι′)
 ′𝔹  ≡$? ′𝔹  =  yes refl
 
 infixr 7 _⇒_
-infix  8 $ₜ_
+infix  8 $ᵀ_
 infix  8 $ᵍ_
 \end{code}
 
@@ -48,7 +48,7 @@ just the base types and function types from ★ to ★.
 \begin{code}
 data Type : Set where
   ★ : Type
-  $ₜ_ : (ι : Base) → Type
+  $ᵀ_ : (ι : Base) → Type
   _⇒_ : (A : Type) → (B : Type) → Type
 \end{code}
 \end{minipage}
@@ -59,7 +59,7 @@ data Ground : Set where
   ★⇒★ : Ground
 
 ⌈_⌉ : Ground → Type
-⌈ $ᵍ ι ⌉ = $ₜ ι
+⌈ $ᵍ ι ⌉ = $ᵀ ι
 ⌈ ★⇒★ ⌉ = ★ ⇒ ★
 \end{code}
 \end{minipage}
@@ -265,7 +265,7 @@ data _∼_ : Type → Type → Set where
 
   ∼-base : ∀{ι}
        --------------
-     → ($ₜ ι) ∼ ($ₜ ι)
+     → ($ᵀ ι) ∼ ($ᵀ ι)
 
   ∼-fun : ∀{A B A′ B′}
      → A ∼ A′
@@ -359,7 +359,7 @@ equivalent.)
 infix 3 _⊢_⦂_
 data _⊢_⦂_ : List Type → Term → Type → Set where
   ⊢` : ∀ {Γ x A} → Γ ∋ x ⦂ A → Γ ⊢ ` x ⦂ A
-  ⊢$ : ∀ {Γ} (l : Lit) → Γ ⊢ $ l ⦂ $ₜ (typeof l)
+  ⊢$ : ∀ {Γ} (l : Lit) → Γ ⊢ $ l ⦂ $ᵀ (typeof l)
   ⊢· : ∀ {Γ L M A B} → Γ ⊢ L ⦂ (A ⇒ B) → Γ ⊢ M ⦂ A → Γ ⊢ L · M ⦂ B
   ⊢ƛ : ∀ {Γ N A B} → (A ∷ Γ) ⊢ N ⦂ B → Γ ⊢ ƛ N ⦂ (A ⇒ B)
   ⊢⟨!⟩ : ∀{Γ M G} → Γ ⊢ M ⦂ ⌈ G ⌉ → Γ ⊢ M ⟨ G !⟩ ⦂ ★
