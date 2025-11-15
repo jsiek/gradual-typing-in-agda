@@ -16,6 +16,7 @@ open import Relation.Nullary using (Dec; yes; no)
 
 open import PolyBlame.Types
 open import PolyBlame.Coercions
+open import PolyBlame.Variables
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
@@ -25,81 +26,6 @@ infixl 7 _·_
 infixl 7 _◯_
 infix  9 `_
 infix  9 #_
-
-infixl 5 _▷_
-
-{--- Contexts for Term Variables ---}
-
-data Ctx : (Δ : TyCtx) → Set where
-  ∅ : ∀{Δ} → Ctx Δ
-  _▷_ : ∀{Δ : TyCtx} → Ctx Δ → Type Δ → Ctx Δ
-
-ren-ctx : ∀{Δ₁ Δ₂} → (ρ : Δ₁ ⇒ᵗ Δ₂) → Ctx Δ₁ → Ctx Δ₂
-ren-ctx ρ ∅ = ∅
-ren-ctx ρ (Γ ▷ A) = ren-ctx ρ Γ ▷ renᵗ ρ A
-
-⟰ : ∀{Δ} → Ctx Δ → Ctx (Δ ,typ)
-⟰ Γ = ren-ctx Sᵗ Γ
-
-ext-suc-ctx : ∀{Δ₁ Δ₂ : TyCtx}{Γ : Ctx Δ₁}{ρ  : Δ₁ ⇒ᵗ Δ₂}
-     → ren-ctx (extᵗ ρ) (⟰ Γ) ≡ ⟰ (ren-ctx ρ Γ)
-ext-suc-ctx {Γ = ∅} {ρ} = refl
-ext-suc-ctx {Γ = Γ ▷ A} {ρ} = cong₂ _▷_ ext-suc-ctx refl
-{-# REWRITE ext-suc-ctx #-}
-
-ren-ctx-∘ : ∀{Δ₁ Δ₂ Δ₃}{Γ : Ctx Δ₁} → (ρ₁ : Δ₁ ⇒ᵗ Δ₂) → (ρ₂ : Δ₂ ⇒ᵗ Δ₃)
-  → ((ren-ctx ρ₂) ∘ (ren-ctx ρ₁)) Γ ≡ (ren-ctx (ρ₁ ⨟ᵗ ρ₂)) Γ
-ren-ctx-∘ {Γ = ∅} ρ₁ ρ₂ = refl
-ren-ctx-∘ {Γ = Γ ▷ A} ρ₁ ρ₂ = cong₂ _▷_ (ren-ctx-∘ {Γ = Γ} ρ₁ ρ₂) refl
-{-# REWRITE ren-ctx-∘ #-}
-
-ren-ctx-id : ∀{Δ} (Γ : Ctx Δ)
-  → ren-ctx idᵗ Γ ≡ Γ
-ren-ctx-id ∅ = refl
-ren-ctx-id (Γ ▷ A) = cong₂ _▷_ (ren-ctx-id Γ) refl
-{-# REWRITE ren-ctx-id #-}
-
-{--- Term Variables ---}
-
-infix  4 _∋_
-data _∋_ : ∀{Δ} → Ctx Δ → Type Δ → Set where
-  Z : ∀{Δ}{Γ : Ctx Δ}{A : Type Δ}
-     → Γ ▷ A ∋ A
-  S_ : ∀{Δ}{Γ : Ctx Δ}{A B : Type Δ}
-     → Γ ∋ A
-     → Γ ▷ B ∋ A
-
-ren-var : ∀{Δ₁ Δ₂}{Γ : Ctx Δ₁}{A : Type Δ₁}
-  → (ρ : Δ₁ ⇒ᵗ Δ₂) 
-  → Γ ∋ A
-  → ren-ctx ρ Γ ∋ renᵗ ρ A
-ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ Z = Z
-ren-var {Δ₁} {Δ₂} {Γ ▷ B} {A} ρ (S x) = S ren-var ρ x
-
-_⇨ᵣ_ : ∀{Δ} → Ctx Δ → Ctx Δ → Set
-Γ ⇨ᵣ Γ′ = ∀ {A} → Γ ∋ A → Γ′ ∋ A
-
-ext : ∀ {Δ : TyCtx}{Γ Γ′ : Ctx Δ}{A : Type Δ}
-  → Γ ⇨ᵣ Γ′
-  → (Γ ▷ A) ⇨ᵣ (Γ′ ▷ A)
-ext ρ Z = Z
-ext ρ (S x) = S ρ x
-
-ren-ctx-∋ : ∀ {Δ Δ′}{Γ : Ctx Δ}{A : Type Δ′}{B : Type Δ}{r : Δ ⇒ᵗ Δ′}
-  → ren-ctx r Γ ∋ A
-  → Σ[ B ∈ Type Δ ] A ≡ renᵗ r B × Γ ∋ B
-ren-ctx-∋ {Δ}{Δ′} {Γ ▷ C} Z = C , refl , Z
-ren-ctx-∋ {Δ}{Δ′}{Γ ▷ C}{A}{B} (S x)
-    with ren-ctx-∋{Δ}{Δ′}{Γ}{A}{B} x
-... | C , refl , y = C , refl , (S y)
-
-rename-ctx : ∀ {Δ₁ Δ₂ : TyCtx}{r : Δ₁ ⇒ᵗ Δ₂}{Γ : Ctx Δ₁}{Γ′ : Ctx Δ₁}
-  → Γ ⇨ᵣ Γ′
-  → ren-ctx r Γ ⇨ᵣ ren-ctx r Γ′
-rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} Z = ren-var r (ρ Z)
-rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} (S x)
-    with ren-ctx-∋{Δ₁}{Δ₂}{Γ}{B = A} {r = r} x
-... | C , refl , Γ∋C = ren-var r (ρ (S Γ∋C))
 
 {----------- Well-Typed Terms ---------------------------------}
 

@@ -9,10 +9,11 @@ open import Data.Nat.Properties using (suc-injective)
 open import Data.List hiding ([_])
 open import Data.List.Properties using (map-∘)
 open import Data.Empty using (⊥; ⊥-elim)
-open import Data.Unit using (⊤)
+open import Data.Bool.Base using (_∨_; _≤_)
+open import Data.Unit using (⊤; tt)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
-open import Data.Fin
+--open import Data.Fin
 open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
 open import Agda.Builtin.Bool
@@ -320,3 +321,242 @@ unique-extend [] u = Ucons Umt λ { B ()}
 unique-extend ((X , B) ∷ Σ) (Ucons u nolook) =
   Ucons (Ucons (unique-⤊ u) λ {C x → helper x nolook})
     λ { C (Sᵇ ∋Z) → suc-bind-zero ∋Z}
+
+{-- Precision --}
+
+data SubCtx : (Δ : TyCtx) → Set where
+  ∅ : SubCtx ∅
+  _,_ : ∀{Δ} → SubCtx Δ → Bool → SubCtx (Δ ,typ)
+
+mt : (Δ : TyCtx) → SubCtx Δ
+mt ∅ = ∅
+mt (Δ ,typ) = (mt Δ) , false
+
+data _∋ˢ_ : ∀{Δ} → SubCtx Δ → TyVar Δ → Set where
+  Zˢ : ∀{Δ}{Ψ : SubCtx Δ} → (Ψ , true) ∋ˢ Zᵗ
+  Sˢ : ∀{Δ}{Ψ : SubCtx Δ}{b}{x}
+     → Ψ ∋ˢ x
+     → (Ψ , b) ∋ˢ Sᵗ x
+
+infixr 6 _∣_⊢_⊑_
+data _∣_⊢_⊑_ : (Δ : TyCtx) → SubCtx Δ → Type Δ → Type Δ → Set where
+  ℕ⊑ℕ : ∀{Δ}{Ψ}
+      ------------------
+     → Δ ∣ Ψ ⊢ `ℕ ⊑ `ℕ
+     
+  X⊑X : ∀{Δ}{Ψ}{X}
+      --------------------
+     → Δ ∣ Ψ ⊢ ` X ⊑ ` X
+
+  ★⊑★ : ∀{Δ}{Ψ}
+      ----------------
+     → Δ ∣ Ψ ⊢ ★ ⊑ ★
+
+  ★⊑X : ∀{Δ}{Ψ}{X : TyVar Δ}
+     → Ψ ∋ˢ X
+      --------------------
+     → Δ ∣ Ψ ⊢ ★ ⊑ ` X
+
+  ★⊑ℕ : ∀{Δ}{Ψ}
+     --------------------
+     → Δ ∣ Ψ ⊢ ★ ⊑ `ℕ
+
+  ★⊑⇒ : ∀{Δ}{Ψ}{A B}
+     → Δ ∣ Ψ ⊢ ★ ⊑ A
+     → Δ ∣ Ψ ⊢ ★ ⊑ B
+       ------------------
+     → Δ ∣ Ψ ⊢ ★ ⊑ A ⇒ B
+  
+  ⇒⊑⇒ : ∀{Δ}{Ψ}{A B C D}
+     →  Δ ∣ Ψ ⊢ A ⊑ C
+     →  Δ ∣ Ψ ⊢ B ⊑ D
+      ------------------------
+     → Δ ∣ Ψ ⊢ A ⇒ B ⊑ C ⇒ D
+
+  ∀⊑∀ : ∀{Δ}{Ψ}{A B}
+     → (Δ ,typ) ∣ (Ψ , false) ⊢ A ⊑ B
+      --------------------------------
+     → Δ ∣ Ψ ⊢ `∀ A ⊑ `∀ B
+
+  ⊑∀ : ∀{Δ}{Ψ}{A B}
+     → (Δ ,typ) ∣ (Ψ , true) ⊢ ⇑ᵗ A ⊑ B
+      ----------------------------------
+     → Δ ∣ Ψ ⊢ A ⊑ `∀ B
+
+Refl⊑ : ∀{Δ}{Ψ : SubCtx Δ} → (A : Type Δ) → Δ ∣ Ψ ⊢ A ⊑ A
+Refl⊑ {Δ} {Ψ} `ℕ = ℕ⊑ℕ
+Refl⊑ {Δ} {Ψ} ★ = ★⊑★
+Refl⊑ {Δ} {Ψ} (` X) = X⊑X
+Refl⊑ {Δ} {Ψ} (A ⇒ B) = ⇒⊑⇒ (Refl⊑ A) (Refl⊑ B)
+Refl⊑ {Δ} {Ψ} (`∀ A) = ∀⊑∀ (Refl⊑ A)
+
+{-- Consistency --}
+
+infixr 6 _∣_⊢_∼_
+data _∣_⊢_∼_ : (Δ : TyCtx) → SubCtx Δ → Type Δ → Type Δ → Set where
+  ℕ∼ℕ : ∀{Δ}{Ψ}
+      ------------------
+     → Δ ∣ Ψ ⊢ `ℕ ∼ `ℕ
+     
+  X∼X : ∀{Δ}{Ψ}{X}
+      --------------------
+     → Δ ∣ Ψ ⊢ ` X ∼ ` X
+
+  ★∼★ : ∀{Δ}{Ψ}
+      ----------------
+     → Δ ∣ Ψ ⊢ ★ ∼ ★
+
+  ★∼X : ∀{Δ}{Ψ}{X : TyVar Δ}
+     → Ψ ∋ˢ X
+      ------------------
+     → Δ ∣ Ψ ⊢ ★ ∼ ` X
+
+  X∼★ : ∀{Δ}{Ψ}{X : TyVar Δ}
+     → Ψ ∋ˢ X
+      -----------------
+     → Δ ∣ Ψ ⊢ ` X ∼ ★
+
+  ★∼ℕ : ∀{Δ}{Ψ}
+     --------------------
+     → Δ ∣ Ψ ⊢ ★ ∼ `ℕ
+
+  ℕ∼★ : ∀{Δ}{Ψ}
+     ------------------
+     → Δ ∣ Ψ ⊢ `ℕ ∼ ★
+
+  ⇒∼★ : ∀{Δ}{Ψ}{A B}
+     → Δ ∣ Ψ ⊢ A ∼ ★
+     → Δ ∣ Ψ ⊢ B ∼ ★
+       ------------------
+     → Δ ∣ Ψ ⊢ A ⇒ B ∼ ★
+
+  ★∼⇒ : ∀{Δ}{Ψ}{A B}
+     → Δ ∣ Ψ ⊢ ★ ∼ A
+     → Δ ∣ Ψ ⊢ ★ ∼ B
+       ------------------
+     → Δ ∣ Ψ ⊢ ★ ∼ A ⇒ B
+
+  ⇒∼⇒ : ∀{Δ}{Ψ}{A B C D}
+     →  Δ ∣ Ψ ⊢ A ∼ C
+     →  Δ ∣ Ψ ⊢ B ∼ D
+      ------------------------
+     → Δ ∣ Ψ ⊢ A ⇒ B ∼ C ⇒ D
+
+  ∀∼∀ : ∀{Δ}{Ψ}{A B}
+     → (Δ ,typ) ∣ (Ψ , false) ⊢ A ∼ B
+      --------------------------------
+     → Δ ∣ Ψ ⊢ `∀ A ∼ `∀ B
+
+  ∼∀ : ∀{Δ}{Ψ}{A B}
+     → (Δ ,typ) ∣ (Ψ , true) ⊢ ⇑ᵗ A ∼ B
+      ----------------------------------
+     → Δ ∣ Ψ ⊢ A ∼ `∀ B
+
+  ∀∼ : ∀{Δ}{Ψ}{A B}
+     → (Δ ,typ) ∣ (Ψ , true) ⊢ A ∼ ⇑ᵗ B
+      ----------------------------------
+     → Δ ∣ Ψ ⊢ `∀ A ∼ B
+
+_⊑_ : ∀{Δ} → SubCtx Δ → SubCtx Δ → Set
+∅ ⊑ ∅ = ⊤
+(Ψ , b) ⊑ (Ψ′ , b′) = (Ψ ⊑ Ψ′) × (b ≤ b′)
+
+_⊔_ : ∀{Δ} → SubCtx Δ → SubCtx Δ → SubCtx Δ
+∅ ⊔ ∅ = ∅
+(Ψ , b) ⊔ (Ψ′ , b′) = (Ψ ⊔ Ψ′) , b ∨ b′
+
+≤-or-left : ∀ b b′ → b ≤ (b ∨ b′)
+≤-or-left false false = _≤_.b≤b
+≤-or-left false true = _≤_.f≤t
+≤-or-left true false = _≤_.b≤b
+≤-or-left true true = _≤_.b≤b
+
+≤-or-right : ∀ b b′ → b′ ≤ (b ∨ b′)
+≤-or-right false false = _≤_.b≤b
+≤-or-right false true = _≤_.b≤b
+≤-or-right true false = _≤_.f≤t
+≤-or-right true true = _≤_.b≤b
+
+less-refl : ∀{Δ}(Ψ : SubCtx Δ)
+  → Ψ ⊑ Ψ
+less-refl ∅ = tt
+less-refl (Ψ , b) = less-refl Ψ , _≤_.b≤b
+
+less-lub-left : ∀{Δ}(Ψ Ψ′ : SubCtx Δ)
+  → Ψ ⊑ (Ψ ⊔ Ψ′)
+less-lub-left {Δ} ∅ ∅ = tt
+less-lub-left {Δ} (Ψ , b) (Ψ′ , b′) = (less-lub-left Ψ Ψ′) , ≤-or-left b b′
+
+less-lub-right : ∀{Δ}(Ψ Ψ′ : SubCtx Δ)
+  → Ψ′ ⊑ (Ψ ⊔ Ψ′)
+less-lub-right {Δ} ∅ ∅ = tt
+less-lub-right {Δ} (Ψ , b) (Ψ′ , b′) = (less-lub-right Ψ Ψ′) , ≤-or-right b b′
+
+weaken-∋ : ∀{Δ}{Ψ Ψ′}{X : TyVar Δ}
+  → Ψ ⊑ Ψ′
+  → Ψ ∋ˢ X
+  → Ψ′ ∋ˢ X
+weaken-∋ {Ψ′ = Ψ′ , true} Ψ⊑Ψ′ Zˢ = Zˢ
+weaken-∋ {Ψ′ = Ψ′ , b′} Ψ⊑Ψ′ (Sˢ ∋X) = Sˢ (weaken-∋ (Ψ⊑Ψ′ .proj₁) ∋X)
+
+weaken-⊑ : ∀{Δ}{Ψ Ψ′}{A B : Type Δ}
+  → Ψ ⊑ Ψ′
+  → Δ ∣ Ψ ⊢ A ⊑ B
+  → Δ ∣ Ψ′ ⊢ A ⊑ B
+weaken-⊑ Ψ⊑Ψ′ ℕ⊑ℕ = ℕ⊑ℕ
+weaken-⊑ Ψ⊑Ψ′ X⊑X = X⊑X
+weaken-⊑ Ψ⊑Ψ′ ★⊑★ = ★⊑★
+weaken-⊑ Ψ⊑Ψ′ (★⊑X ∋X) = ★⊑X (weaken-∋ Ψ⊑Ψ′ ∋X)
+weaken-⊑ Ψ⊑Ψ′ ★⊑ℕ = ★⊑ℕ
+weaken-⊑ Ψ⊑Ψ′ (★⊑⇒ ★⊑A ★⊑B) = ★⊑⇒ (weaken-⊑ Ψ⊑Ψ′ ★⊑A) (weaken-⊑ Ψ⊑Ψ′ ★⊑B)
+weaken-⊑ Ψ⊑Ψ′ (⇒⊑⇒ A⊑C B⊑D) = ⇒⊑⇒ (weaken-⊑ Ψ⊑Ψ′ A⊑C) (weaken-⊑ Ψ⊑Ψ′ B⊑D)
+weaken-⊑ Ψ⊑Ψ′ (∀⊑∀ A⊑B) = ∀⊑∀ (weaken-⊑ (Ψ⊑Ψ′ , _≤_.b≤b) A⊑B)
+weaken-⊑ Ψ⊑Ψ′ (⊑∀ A⊑B) = ⊑∀ (weaken-⊑ (Ψ⊑Ψ′ , _≤_.b≤b) A⊑B)
+
+weaken-∼ : ∀{Δ}{Ψ Ψ′}{A B : Type Δ}
+  → Ψ ⊑ Ψ′
+  → Δ ∣ Ψ ⊢ A ∼ B
+  → Δ ∣ Ψ′ ⊢ A ∼ B
+weaken-∼ Ψ⊑Ψ′ ℕ∼ℕ = ℕ∼ℕ
+weaken-∼ Ψ⊑Ψ′ X∼X = X∼X
+weaken-∼ Ψ⊑Ψ′ ★∼★ = ★∼★
+weaken-∼ Ψ⊑Ψ′ (★∼X ∋X) = ★∼X (weaken-∋ Ψ⊑Ψ′ ∋X)
+weaken-∼ Ψ⊑Ψ′ (X∼★ ∋X) = X∼★ (weaken-∋ Ψ⊑Ψ′ ∋X)
+weaken-∼ Ψ⊑Ψ′ ★∼ℕ = ★∼ℕ
+weaken-∼ Ψ⊑Ψ′ ℕ∼★ = ℕ∼★
+weaken-∼ Ψ⊑Ψ′ (⇒∼★ A∼★ B∼★) = ⇒∼★ (weaken-∼ Ψ⊑Ψ′ A∼★) (weaken-∼ Ψ⊑Ψ′ B∼★)
+weaken-∼ Ψ⊑Ψ′ (★∼⇒ ★∼A ★∼B) = ★∼⇒ (weaken-∼ Ψ⊑Ψ′ ★∼A) (weaken-∼ Ψ⊑Ψ′ ★∼B)
+weaken-∼ Ψ⊑Ψ′ (⇒∼⇒ A∼C B∼D) = ⇒∼⇒ (weaken-∼ Ψ⊑Ψ′ A∼C) (weaken-∼ Ψ⊑Ψ′ B∼D)
+weaken-∼ Ψ⊑Ψ′ (∀∼∀ A∼B) = ∀∼∀ (weaken-∼ (Ψ⊑Ψ′ , _≤_.b≤b) A∼B)
+weaken-∼ Ψ⊑Ψ′ (∼∀ A∼B) = ∼∀ (weaken-∼ (Ψ⊑Ψ′ , _≤_.b≤b) A∼B)
+weaken-∼ Ψ⊑Ψ′ (∀∼ A∼B) = ∀∼ (weaken-∼ (Ψ⊑Ψ′ , _≤_.b≤b) A∼B)
+
+UB⇒consistent : ∀{Δ}{Ψ₁ Ψ₂}{A B C : Type Δ}
+  → Δ ∣ Ψ₁ ⊢ A ⊑ C
+  → Δ ∣ Ψ₂ ⊢ B ⊑ C
+  → Δ ∣ Ψ₁ ⊔ Ψ₂ ⊢ A ∼ B
+UB⇒consistent{Ψ₁ = Ψ₁} ℕ⊑ℕ ℕ⊑ℕ = ℕ∼ℕ
+UB⇒consistent{Ψ₁ = Ψ₁} ℕ⊑ℕ ★⊑ℕ = ℕ∼★
+UB⇒consistent{Ψ₁ = Ψ₁} X⊑X X⊑X =  X∼X
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} X⊑X (★⊑X ∋X) = X∼★ (weaken-∋ (less-lub-right Ψ₁ Ψ₂) ∋X)
+UB⇒consistent{Ψ₁ = Ψ₁} ★⊑★ ★⊑★ = ★∼★
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (★⊑X ∋X) X⊑X = ★∼X (weaken-∋ (less-lub-left Ψ₁ Ψ₂) ∋X)
+UB⇒consistent{Ψ₁ = Ψ₁} (★⊑X ∋X) (★⊑X ∋X′) =  ★∼★
+UB⇒consistent{Ψ₁ = Ψ₁} ★⊑ℕ ℕ⊑ℕ = ★∼ℕ
+UB⇒consistent{Ψ₁ = Ψ₁} ★⊑ℕ ★⊑ℕ = ★∼★
+UB⇒consistent{Ψ₁ = Ψ₁} (★⊑⇒ ac ac₁) (★⊑⇒ bc bc₁) = ★∼★
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (★⊑⇒{A = C₁}{B = C₂} ★⊑C₁ ★⊑C₂)
+                           (⇒⊑⇒{A = B₁}{B₂} B₁⊑C₁ B₂⊑C₂) =
+    ★∼⇒ (UB⇒consistent ★⊑C₁ B₁⊑C₁) (UB⇒consistent ★⊑C₂ B₂⊑C₂)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⇒⊑⇒ a⊑c b⊑d) (★⊑⇒ ⊑c ⊑d) =
+    ⇒∼★ (UB⇒consistent a⊑c ⊑c) (UB⇒consistent b⊑d ⊑d)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⇒⊑⇒ a⊑c b⊑d) (⇒⊑⇒ ac bd) =
+    ⇒∼⇒ (UB⇒consistent a⊑c ac) (UB⇒consistent b⊑d bd)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (∀⊑∀ a⊑b) (∀⊑∀ a′⊑b) =
+    ∀∼∀ (UB⇒consistent a⊑b a′⊑b)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (∀⊑∀{B = C} ac) (⊑∀{B = C}  bc) =
+  ∀∼ (UB⇒consistent ac bc)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (∀⊑∀ bc) = ∼∀ (UB⇒consistent ac bc)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (⊑∀ bc) =
+  let xx = UB⇒consistent ac bc in
+  {!!}

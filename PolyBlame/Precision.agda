@@ -12,7 +12,6 @@ open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Unit using (⊤)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
---open import Data.Fin
 open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
 open import Agda.Builtin.Bool
@@ -21,79 +20,8 @@ open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
 
 open import PolyBlame.Types
+open import PolyBlame.Variables
 open import PolyBlame.Terms
-
-data SubCtx : (Δ : TyCtx) → Set where
-  ∅ : SubCtx ∅
-  _,_ : ∀{Δ} → SubCtx Δ → Bool → SubCtx (Δ ,typ)
-
-mt : (Δ : TyCtx) → SubCtx Δ
-mt ∅ = ∅
-mt (Δ ,typ) = (mt Δ) , false
-
-data _∋ˢ_ : ∀{Δ} → SubCtx Δ → TyVar Δ → Set where
-  Zˢ : ∀{Δ}{Ψ : SubCtx Δ} → (Ψ , true) ∋ˢ Zᵗ
-  Sˢ : ∀{Δ}{Ψ : SubCtx Δ}{b}{x}
-     → Ψ ∋ˢ x
-     → (Ψ , b) ∋ˢ Sᵗ x
-
-infixr 6 _∣_⊢_⊑_
-data _∣_⊢_⊑_ : (Δ : TyCtx) → SubCtx Δ → Type Δ → Type Δ → Set where
-  ℕ⊑ℕ : ∀{Δ}{Ψ}
-      ------------------
-     → Δ ∣ Ψ ⊢ `ℕ ⊑ `ℕ
-     
-  X⊑X : ∀{Δ}{Ψ}{X}
-      --------------------
-     → Δ ∣ Ψ ⊢ ` X ⊑ ` X
-
-  ★⊑★ : ∀{Δ}{Ψ}
-      ----------------
-     → Δ ∣ Ψ ⊢ ★ ⊑ ★
-
-  ★⊑X : ∀{Δ}{Ψ}{X : TyVar Δ}
-     → Ψ ∋ˢ X
-      --------------------
-     → Δ ∣ Ψ ⊢ ★ ⊑ ` X
-
-  ★⊑ℕ : ∀{Δ}{Ψ}
-     --------------------
-     → Δ ∣ Ψ ⊢ ★ ⊑ `ℕ
-
-  ★⊑⇒ : ∀{Δ}{Ψ}{A B}
-     → Δ ∣ Ψ ⊢ ★ ⊑ A
-     → Δ ∣ Ψ ⊢ ★ ⊑ B
-       ------------------
-     → Δ ∣ Ψ ⊢ ★ ⊑ A ⇒ B
-  
-  ⇒⊑⇒ : ∀{Δ}{Ψ}{A B C D}
-     →  Δ ∣ Ψ ⊢ A ⊑ C
-     →  Δ ∣ Ψ ⊢ B ⊑ D
-      ------------------------
-     → Δ ∣ Ψ ⊢ A ⇒ B ⊑ C ⇒ D
-
-  ∀⊑∀ : ∀{Δ}{Ψ}{A B}
-     → (Δ ,typ) ∣ (Ψ , false) ⊢ A ⊑ B
-      --------------------------------
-     → Δ ∣ Ψ ⊢ `∀ A ⊑ `∀ B
-
-  ⊑∀ : ∀{Δ}{Ψ}{A B}
-     → (Δ ,typ) ∣ (Ψ , true) ⊢ ⇑ᵗ A ⊑ B
-      ----------------------------------
-     → Δ ∣ Ψ ⊢ A ⊑ `∀ B
-
-Refl⊑ : ∀{Δ}{Ψ : SubCtx Δ} → (A : Type Δ) → Δ ∣ Ψ ⊢ A ⊑ A
-Refl⊑ {Δ} {Ψ} `ℕ = ℕ⊑ℕ
-Refl⊑ {Δ} {Ψ} ★ = ★⊑★
-Refl⊑ {Δ} {Ψ} (` X) = X⊑X
-Refl⊑ {Δ} {Ψ} (A ⇒ B) = ⇒⊑⇒ (Refl⊑ A) (Refl⊑ B)
-Refl⊑ {Δ} {Ψ} (`∀ A) = ∀⊑∀ (Refl⊑ A)
-
--- ren-⊑ : ∀{Δ₁ Δ₂}{Ψ : SubCtx Δ₁}{A B : Type Δ₁}
---   → (ρ : Δ₁ ⇒ᵗ Δ₂)
---   → Δ₁ ∣ Ψ ⊢ A ⊑ B
---   → Δ₂ ∣ ren-sub-ctx ρ Ψ ⊢ ren-type ρ A ⊑ ren-type ρ B 
--- ren-⊑ ρ A⊑B = ?
 
 data PrecCtx : ∀{Δ}(Γ Γ′ : Ctx Δ) → Set where
   ∅ : PrecCtx{∅} ∅ ∅
