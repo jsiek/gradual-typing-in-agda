@@ -17,6 +17,7 @@ open import Data.Maybe hiding (map)
 open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
 open import Agda.Builtin.Bool
+open import Relation.Nullary using (¬_)
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
@@ -531,6 +532,97 @@ weaken-∼ Ψ⊑Ψ′ (∀∼∀ A∼B) = ∀∼∀ (weaken-∼ (Ψ⊑Ψ′ , _�
 weaken-∼ Ψ⊑Ψ′ (∼∀ A∼B) = ∼∀ (weaken-∼ (Ψ⊑Ψ′ , _≤_.b≤b) A∼B)
 weaken-∼ Ψ⊑Ψ′ (∀∼ A∼B) = ∀∼ (weaken-∼ (Ψ⊑Ψ′ , _≤_.b≤b) A∼B)
 
+injective : ∀{A B : Set} → (A → B) → Set
+injective{A} f = ∀ (x y : A) → (f x ≡ f y) → (x ≡ y)
+
+injective-Sᵗ : ∀{Δ} → injective (Sᵗ{Δ})
+injective-Sᵗ x y refl = refl
+
+injective-ext : ∀{Δ Δ′}
+    → (ρ : Δ ⇒ᵗ Δ′)
+    → injective ρ
+    → injective (extᵗ ρ)
+injective-ext ρ inj Zᵗ Zᵗ eq = refl
+injective-ext ρ inj (Sᵗ x) (Sᵗ y) eq =
+  cong Sᵗ (inj x y (injective-Sᵗ (ρ x) (ρ y) eq))
+
+X≡Y⇒X∼Y : ∀{Δ}{Ψ}{X Y : TyVar Δ}
+  → X ≡ Y
+  → Δ ∣ Ψ ⊢ ` X ∼ ` Y
+X≡Y⇒X∼Y refl = X∼X
+
+X∼Y⇒X≡Y : ∀{Δ}{Ψ}{X Y : TyVar Δ}
+  → Δ ∣ Ψ ⊢ ` X ∼ ` Y
+  → X ≡ Y
+X∼Y⇒X≡Y X∼X = refl
+
+data Pres-⇑ : ∀{Δ Δ′} → (ρ : Δ ⇒ᵗ Δ′)
+    → (Ψ : SubCtx Δ) → (Ψ′ : SubCtx Δ′) → Set where
+  Pres-Sᵗ : ∀{Δ}{Ψ}{b} → Pres-⇑{Δ}{Δ ,typ} Sᵗ Ψ (Ψ , b)
+  Pres-ext : ∀{Δ Δ′}{Ψ Ψ′}{b}{ρ : Δ ⇒ᵗ Δ′}
+    → Pres-⇑ ρ Ψ Ψ′
+    → Pres-⇑ (extᵗ ρ) (Ψ , b) (Ψ′ , b)
+
+Pres-⇑⇒∋ : ∀{Δ Δ′}{Ψ Ψ′}{X}
+  → (ρ : Δ ⇒ᵗ Δ′)
+  → Pres-⇑ ρ Ψ Ψ′
+  → Ψ′ ∋ˢ ρ X
+  → Ψ ∋ˢ X
+Pres-⇑⇒∋ ρ Pres-Sᵗ (Sˢ ∋ρX) = ∋ρX
+Pres-⇑⇒∋ {X = Zᵗ} ρ (Pres-ext IH) Zˢ = Zˢ
+Pres-⇑⇒∋ {X = Sᵗ X} ρ (Pres-ext {ρ = ρ′} IH) (Sˢ ∋ρX) =
+  Sˢ (Pres-⇑⇒∋ ρ′ IH ∋ρX)
+
+ren-type-∼ : ∀{Δ Δ′}{Ψ Ψ′}{A B : Type Δ}
+    → (ρ : Δ ⇒ᵗ Δ′)
+    → Δ′ ∣ Ψ′ ⊢ renᵗ ρ A ∼ renᵗ ρ B
+    → injective ρ
+    → Pres-⇑ ρ Ψ Ψ′
+    → Δ ∣ Ψ ⊢ A ∼ B
+ren-type-∼ {A = `ℕ} {`ℕ} ρ ρA∼ρB inj p = ℕ∼ℕ
+ren-type-∼ {A = `ℕ} {★} ρ ρA∼ρB inj p = ℕ∼★
+ren-type-∼ {A = `ℕ} {`∀ B} ρ (∼∀ ρA∼ρB) inj p =
+  ∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext p))
+ren-type-∼ {A = ★} {`ℕ} ρ ρA∼ρB inj pres = ★∼ℕ
+ren-type-∼ {A = ★} {★} ρ ρA∼ρB inj pres = ★∼★
+ren-type-∼ {A = ★} {` X} ρ (★∼X ∋ρX) inj pres =
+  ★∼X (Pres-⇑⇒∋ ρ pres ∋ρX)
+ren-type-∼ {A = ★} {B₁ ⇒ B₂} ρ (★∼⇒ ρA∼ρB ρA∼ρB₁) inj pres =
+  ★∼⇒ (ren-type-∼ ρ ρA∼ρB inj pres) (ren-type-∼ ρ ρA∼ρB₁ inj pres)
+ren-type-∼ {A = ★} {`∀ B} ρ (∼∀ ρA∼ρB) inj pres =
+  ∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = ` X} {★} ρ (X∼★ ∋ρX) inj pres =
+  X∼★ (Pres-⇑⇒∋ ρ pres ∋ρX)
+ren-type-∼ {A = ` X} {` Y} ρ ρA∼ρB inj pres =
+  X≡Y⇒X∼Y (inj X Y (X∼Y⇒X≡Y ρA∼ρB))
+ren-type-∼ {A = ` X} {`∀ B} ρ (∼∀ ρA∼ρB) inj pres =
+  ∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = A₁ ⇒ A₂} {★} ρ (⇒∼★ ρA∼ρB ρA∼ρB₁) inj pres =
+  ⇒∼★ (ren-type-∼ ρ ρA∼ρB inj pres) (ren-type-∼ ρ ρA∼ρB₁ inj pres)
+ren-type-∼ {A = A₁ ⇒ A₂} {B₁ ⇒ B₂} ρ (⇒∼⇒ ρA∼ρB ρA∼ρB₁) inj pres =
+  ⇒∼⇒ (ren-type-∼ ρ ρA∼ρB inj pres) (ren-type-∼ ρ ρA∼ρB₁ inj pres)
+ren-type-∼ {A = A₁ ⇒ A₂} {`∀ B} ρ (∼∀ ρA∼ρB) inj pres =
+  ∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {`ℕ} ρ (∀∼ ρA∼ρB) inj pres =
+  ∀∼ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {★} ρ (∀∼ ρA∼ρB) inj pres =
+  ∀∼ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {` x} ρ (∀∼ ρA∼ρB) inj pres =
+  ∀∼ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {B₁ ⇒ B₂} ρ (∀∼ ρA∼ρB) inj pres =
+  ∀∼ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {`∀ B} ρ (∀∼∀ ρA∼ρB) inj pres =
+  ∀∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {`∀ B} ρ (∼∀ ρA∼ρB) inj pres =
+  ∼∀ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+ren-type-∼ {A = `∀ A} {`∀ B} ρ (∀∼ ρA∼ρB) inj pres =
+  ∀∼ (ren-type-∼ (extᵗ ρ) ρA∼ρB (injective-ext ρ inj) (Pres-ext pres))
+
+dec-∼ : ∀{Δ}{Ψ}{A B : Type Δ}{b}
+    → (Δ ,typ) ∣ Ψ , b ⊢ ⇑ᵗ A ∼ ⇑ᵗ B
+    → Δ ∣ Ψ ⊢ A ∼ B
+dec-∼ ⇑A∼⇑B = ren-type-∼ Sᵗ ⇑A∼⇑B injective-Sᵗ Pres-Sᵗ
+
 UB⇒consistent : ∀{Δ}{Ψ₁ Ψ₂}{A B C : Type Δ}
   → Δ ∣ Ψ₁ ⊢ A ⊑ C
   → Δ ∣ Ψ₂ ⊢ B ⊑ C
@@ -538,9 +630,11 @@ UB⇒consistent : ∀{Δ}{Ψ₁ Ψ₂}{A B C : Type Δ}
 UB⇒consistent{Ψ₁ = Ψ₁} ℕ⊑ℕ ℕ⊑ℕ = ℕ∼ℕ
 UB⇒consistent{Ψ₁ = Ψ₁} ℕ⊑ℕ ★⊑ℕ = ℕ∼★
 UB⇒consistent{Ψ₁ = Ψ₁} X⊑X X⊑X =  X∼X
-UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} X⊑X (★⊑X ∋X) = X∼★ (weaken-∋ (less-lub-right Ψ₁ Ψ₂) ∋X)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} X⊑X (★⊑X ∋X) =
+  X∼★ (weaken-∋ (less-lub-right Ψ₁ Ψ₂) ∋X)
 UB⇒consistent{Ψ₁ = Ψ₁} ★⊑★ ★⊑★ = ★∼★
-UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (★⊑X ∋X) X⊑X = ★∼X (weaken-∋ (less-lub-left Ψ₁ Ψ₂) ∋X)
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (★⊑X ∋X) X⊑X =
+  ★∼X (weaken-∋ (less-lub-left Ψ₁ Ψ₂) ∋X)
 UB⇒consistent{Ψ₁ = Ψ₁} (★⊑X ∋X) (★⊑X ∋X′) =  ★∼★
 UB⇒consistent{Ψ₁ = Ψ₁} ★⊑ℕ ℕ⊑ℕ = ★∼ℕ
 UB⇒consistent{Ψ₁ = Ψ₁} ★⊑ℕ ★⊑ℕ = ★∼★
@@ -557,6 +651,4 @@ UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (∀⊑∀ a⊑b) (∀⊑∀ a′⊑b) =
 UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (∀⊑∀{B = C} ac) (⊑∀{B = C}  bc) =
   ∀∼ (UB⇒consistent ac bc)
 UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (∀⊑∀ bc) = ∼∀ (UB⇒consistent ac bc)
-UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (⊑∀ bc) =
-  let xx = UB⇒consistent ac bc in
-  {!!}
+UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (⊑∀ bc) = dec-∼ (UB⇒consistent ac bc)
