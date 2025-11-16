@@ -556,13 +556,17 @@ X∼Y⇒X≡Y : ∀{Δ}{Ψ}{X Y : TyVar Δ}
   → X ≡ Y
 X∼Y⇒X≡Y X∼X = refl
 
+-- Capture the initial renaming and changes in this relation
 data Pres-⇑ : ∀{Δ Δ′} → (ρ : Δ ⇒ᵗ Δ′)
     → (Ψ : SubCtx Δ) → (Ψ′ : SubCtx Δ′) → Set where
+    
   Pres-Sᵗ : ∀{Δ}{Ψ}{b} → Pres-⇑{Δ}{Δ ,typ} Sᵗ Ψ (Ψ , b)
+  
   Pres-ext : ∀{Δ Δ′}{Ψ Ψ′}{b}{ρ : Δ ⇒ᵗ Δ′}
     → Pres-⇑ ρ Ψ Ψ′
     → Pres-⇑ (extᵗ ρ) (Ψ , b) (Ψ′ , b)
 
+-- Prove that the each cast has the desired property
 Pres-⇑⇒∋ : ∀{Δ Δ′}{Ψ Ψ′}{X}
   → (ρ : Δ ⇒ᵗ Δ′)
   → Pres-⇑ ρ Ψ Ψ′
