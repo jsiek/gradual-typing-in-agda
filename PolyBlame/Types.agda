@@ -206,6 +206,44 @@ data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set 
     → Σ ∋ X := A
     → ((Y , B) ∷ Σ) ∋ X := A
 
+is-dyn : ∀{Δ : TyCtx} → (A : Type Δ) → Dec (A ≡ ★)
+is-dyn `ℕ = no λ ()
+is-dyn ★ = yes refl
+is-dyn (` X) = no λ ()
+is-dyn (A ⇒ B) = no λ ()
+is-dyn (`∀ A) = no λ ()
+
+lookup-★ : ∀{Δ : TyCtx} → (Σ : BindCtx Δ) → (X : TyVar Δ)
+  → Dec (Σ ∋ X := ★)
+lookup-★ [] X = no λ ()
+lookup-★ ((Y , A) ∷ Σ) X
+    with X ≡ᵗ Y
+... | yes refl
+    with is-dyn A
+... | yes refl = yes Zᵇ
+... | no nd
+    with lookup-★ Σ Y
+... | yes ∋Y = yes (Sᵇ ∋Y)
+... | no neq₂ = no λ { Zᵇ → nd refl ; (Sᵇ ∋Y) → neq₂ ∋Y}
+lookup-★ ((Y , A) ∷ Σ) X
+    | no neq₁
+    with lookup-★ Σ X
+... | yes ∋X = yes (Sᵇ ∋X)
+... | no neq₂ = no λ { Zᵇ → neq₁ refl
+                     ; (Sᵇ ∋X) → neq₂ ∋X}
+
+lookup-bind : ∀{Δ : TyCtx} → (Σ : BindCtx Δ) → (X : TyVar Δ)
+  → Dec (Σ[ A ∈ Type Δ ] (Σ ∋ X := A))
+lookup-bind [] X = no λ ()
+lookup-bind ((Y , A) ∷ Σ) X
+    with X ≡ᵗ Y
+... | yes refl = yes (A , Zᵇ)
+... | no neq₁
+    with lookup-bind Σ X
+... | yes (B , ∋X) = yes (B , (Sᵇ ∋X))
+... | no neq₂ = no λ { (B , Zᵇ) → neq₁ refl
+                     ; (B , Sᵇ ∋X) → neq₂ (B , ∋X)}
+
 data unique : ∀{Δ : TyCtx} → BindCtx Δ → Set where
   Umt : ∀{Δ} → unique{Δ} []
   Ucons : ∀{Δ}{Σ : BindCtx Δ}{X}{A}
@@ -556,7 +594,7 @@ X∼Y⇒X≡Y : ∀{Δ}{Ψ}{X Y : TyVar Δ}
   → X ≡ Y
 X∼Y⇒X≡Y X∼X = refl
 
--- Capture the initial renaming and changes in this relation
+-- Capture the initial one and changes needed for the IH
 data Pres-⇑ : ∀{Δ Δ′} → (ρ : Δ ⇒ᵗ Δ′)
     → (Ψ : SubCtx Δ) → (Ψ′ : SubCtx Δ′) → Set where
     
@@ -566,7 +604,7 @@ data Pres-⇑ : ∀{Δ Δ′} → (ρ : Δ ⇒ᵗ Δ′)
     → Pres-⇑ ρ Ψ Ψ′
     → Pres-⇑ (extᵗ ρ) (Ψ , b) (Ψ′ , b)
 
--- Prove that the each cast has the desired property
+-- Prove that the each case has the desired property
 Pres-⇑⇒∋ : ∀{Δ Δ′}{Ψ Ψ′}{X}
   → (ρ : Δ ⇒ᵗ Δ′)
   → Pres-⇑ ρ Ψ Ψ′
@@ -656,3 +694,9 @@ UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (∀⊑∀{B = C} ac) (⊑∀{B = C}  bc) 
   ∀∼ (UB⇒consistent ac bc)
 UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (∀⊑∀ bc) = ∼∀ (UB⇒consistent ac bc)
 UB⇒consistent{Ψ₁ = Ψ₁}{Ψ₂} (⊑∀ ac) (⊑∀ bc) = dec-∼ (UB⇒consistent ac bc)
+
+postulate
+  ∼-sym : ∀{Δ}{Ψ : SubCtx Δ}{Σ : BindCtx Δ}{A B : Type Δ}
+    → Δ ∣ Ψ ⊢ A ∼ B
+    → Δ ∣ Ψ ⊢ B ∼ A
+  
