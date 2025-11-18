@@ -85,6 +85,28 @@ open import Agda.Builtin.Equality.Rewrite
 ∼-⇐ (∼∀ A∼B) Σ = ℐ (∼-⇐ A∼B ((Zᵗ , ★) ∷ ⤊ Σ))
 ∼-⇐ (∀∼ A∼B) Σ = 𝒢 (∼-⇐ A∼B (⤊ Σ))
 
+
+conceal : ∀{Δ}
+    (B : Type (Δ ,typ))
+    (C : Type Δ)
+  → Δ ,typ ∣ (Zᵗ , ⇑ᵗ C) ∷ [] ⊢ ⇑ᵗ (B [ C ]ˢ) ⇒ B
+
+reveal : ∀{Δ}
+    (B : Type (Δ ,typ))
+    (C : Type Δ)
+  → Δ ,typ ∣ (Zᵗ , ⇑ᵗ C) ∷ [] ⊢ B ⇒ ⇑ᵗ (B [ C ]ˢ)
+reveal `ℕ C = id
+reveal ★ C = id
+reveal (` Zᵗ) C = Zᵇ ↑
+reveal (` Sᵗ X) C = id
+reveal (B₁ ⇒ B₂) C = conceal B₁ C ↦ reveal B₂ C
+reveal (`∀ B) C =
+  let c = reveal B (⇑ᵗ C) in
+  `∀ {!!} 
+
+conceal B C = {!!}
+
+
 compile : ∀{Δ : TyCtx}{Γ : Ctx Δ}{A : Type Δ} → Δ ∣ Γ ⊢ᵍ A → Δ ∣ [] ∣ Γ ⊢ A
 compile (` x) = ` x
 compile (# k) = # k
@@ -92,5 +114,8 @@ compile (ƛ N) = ƛ compile N
 compile ((L · M) A₁⏵C→A B∼C) =
   ((compile L) ⟨ ⏵-⇒ A₁⏵C→A ⟩) · ( (compile M) ⟨ ∼-⇒ B∼C [] ⟩)
 compile (Λ M) = Λ compile M
-compile (_◯_ M A⏵ X) = (compile M) ⟨ ⏵-∀ A⏵ ⟩ ◯ X
+compile{Δ}{Γ}{D} (_◯_{A = A}{B} M A⏵ C) =
+  let M′ = (⇑ᵇ (⇑ (compile M ⟨ ⏵-∀ A⏵ ⟩))) in
+  ν C · ((M′ ◯ Zᵗ) ⟨ reveal B C ⟩)
+
 

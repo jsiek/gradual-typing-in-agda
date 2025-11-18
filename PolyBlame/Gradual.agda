@@ -71,8 +71,8 @@ data _∣_⊢ᵍ_ : (Δ : TyCtx) → Ctx Δ → Type Δ → Set
   _◯_ : ∀{Δ}{Γ : Ctx Δ}{A : Type Δ}{B : Type (Δ ,typ)}
      → Δ ∣ Γ ⊢ᵍ A
      → Δ ⊢ A ⏵ `∀ B
-     → (X : TyVar Δ)
+     → (C : Type Δ)
        --------------------
-     → Δ ∣ Γ ⊢ᵍ B [ X ]ᵗ
+     → Δ ∣ Γ ⊢ᵍ B [ C ]ˢ
      
 

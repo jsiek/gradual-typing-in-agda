@@ -120,6 +120,11 @@ rename-crcn ρ (∋α ↑) = (ren-bind ∋α) ↑
 rename-crcn ρ (G !) = ren-grnd ρ G !
 rename-crcn ρ (H `?) = ren-grnd ρ H `?
 
+⇑ᶜ : ∀{Δ}{Σ}{A B}
+  → Δ ∣ Σ ⊢ A ⇒ B
+  → Δ ,typ ∣ ⤊ Σ ⊢ (⇑ᵗ A) ⇒ (⇑ᵗ B)
+⇑ᶜ c = rename-crcn Sᵗ c
+
 infix 6 _[_]ᶜ
 _[_]ᶜ : ∀{Δ}{Σ}{A}{B} → (Δ ,typ) ∣ Σ ⊢ A ⇒ B
   → (X : TyVar Δ)
