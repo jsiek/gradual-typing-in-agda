@@ -31,31 +31,31 @@ data PrecCtx : ∀{Δ}(Γ Γ′ : Ctx Δ) → Set where
           ------------------------
         → PrecCtx (Γ ▷ A) (Γ′ ▷ B)
 
-data _∋_⊑_ : ∀{Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Γ Γ′ → Type Δ → Type Δ → Set where
+data ⊢_∋_⊑_ : ∀{Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Γ Γ′ → Type Δ → Type Δ → Set where
 
   Zᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
       {p : Δ ∣ mt Δ ⊢ A ⊑ B}
       ----------------------
-    → (Φ , p) ∋ A ⊑ B
+    → ⊢ (Φ , p) ∋ A ⊑ B
     
   Sᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B C D : Type Δ}
       {p : Δ ∣ mt Δ ⊢ C ⊑ D}
-    → Φ ∋ A ⊑ B
+    → ⊢ Φ ∋ A ⊑ B
       -------------------
-    → (Φ , p) ∋ A ⊑ B
+    → ⊢ (Φ , p) ∋ A ⊑ B
 
 get-⊑ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : Φ ∋ A ⊑ B) → Δ ∣ mt Δ ⊢ A ⊑ B
+  → (x : ⊢ Φ ∋ A ⊑ B) → Δ ∣ mt Δ ⊢ A ⊑ B
 get-⊑ (Zᵖ{p = p}) = p
 get-⊑ (Sᵖ x) = get-⊑ x
 
 proj-left : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : Φ ∋ A ⊑ B) → Γ ∋ A
+  → (x : ⊢ Φ ∋ A ⊑ B) → Γ ∋ A
 proj-left Zᵖ = Z
 proj-left (Sᵖ x) = S proj-left x
 
 proj-right : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : Φ ∋ A ⊑ B) → Γ′ ∋ B
+  → (x : ⊢ Φ ∋ A ⊑ B) → Γ′ ∋ B
 proj-right Zᵖ = Z
 proj-right (Sᵖ x) = S proj-right x
 
@@ -78,7 +78,7 @@ data _∣_∣_⊩_⊑_⦂_ : ∀{Δ}(Σ Σ′ : BindCtx Δ){A B : Type Δ}{Γ Γ
   → Δ ∣ mt Δ ⊢ A ⊑ B → Set  where
   
   ⊑-var : ∀{Δ}{Σ Σ′ : BindCtx Δ}{A B}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
-     → (x : Φ ∋ A ⊑ B)
+     → (x : ⊢ Φ ∋ A ⊑ B)
        ---------------------------------------------------------
      → Σ ∣ Σ′ ∣ Φ ⊩ (` proj-left x) ⊑ (` proj-right x) ⦂ get-⊑ x
 

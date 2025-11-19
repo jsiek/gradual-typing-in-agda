@@ -14,6 +14,7 @@ open import Data.Sum using (_⊎_)
 open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
 
+open import PolyBlame.Variables
 open import PolyBlame.Types
 open import PolyBlame.Coercions
 open import PolyBlame.Terms
