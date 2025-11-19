@@ -23,7 +23,7 @@
     (λx.N) V               —→  N[V/x]
     (ΛX.V)[Y]              —→  V[Y/X]
     V⟨∀X.c⟩[Y]             —→  V[Y]⟨c[Y/X]⟩
-    V⟨𝒢 X.c⟩[Y]            —→ V⟨c[Y/X]⟩
+    V⟨𝒢 X.c⟩[Y]            —→  V⟨c[Y/X]⟩
     V⟨ℐ X.c⟩               —→  νX=★. V[X]⟨c⟩
     V⟨id⟩                  —→  V
     V⟨X-⟩⟨X+⟩              —→  V
