@@ -8,8 +8,8 @@
     Terms         L, M, N  ::=  x | λx.N | ΛX.V | L M | L[X] | νX=A.M
                              | M⟨c⟩ | blame
     Values        V, W     ::= λx.N | ΛX.V | V⟨c → d⟩ | V⟨∀X.c⟩ | V⟨𝒢 X.c⟩
-                             | V⟨G!⟩ | V⟨X↓⟩ 
-    Coercions     c, d     ::= id | G? | G! | X↓ | X↑ | c → d | c ; d
+                             | V⟨G!⟩ | V⟨X-⟩ 
+    Coercions     c, d     ::= id | G? | G! | X- | X+ | c → d | c ; d
                              | ∀X.c | 𝒢 X.c | ℐ X.c
 
     Environments  Γ        ::=  ∅ | Γ, x:A | Γ, X | Γ, X:=A
@@ -26,7 +26,7 @@
     V⟨𝒢 X.c⟩[Y]           —→ V⟨c[Y/X]⟩
     V⟨ℐ X.c⟩               —→  νX=★. V[X]⟨c⟩
     V⟨id⟩                  —→  V
-    V⟨X↓⟩⟨X↑⟩              —→  V
+    V⟨X-⟩⟨X+⟩              —→  V
     V⟨G!⟩⟨G?⟩              —→  V
     V⟨G!⟩⟨H?l⟩             —→  blame l    (G ≠ H)
     V⟨c → d⟩ W             —→  (V W⟨c⟩)⟨d⟩
@@ -67,10 +67,10 @@
     Γ ⊢ G! : G ⇒ ★
         
     --------------- (X=A ∈ Γ)
-    Γ ⊢ X↓ : A ⇒ X
+    Γ ⊢ X- : A ⇒ X
 
     --------------- (X=A ∈ Γ)
-    Γ ⊢ X↑ : X ⇒ A
+    Γ ⊢ X+ : X ⇒ A
 
     Γ, X ⊢ c : A ⇒ B
     ------------------------
@@ -333,8 +333,8 @@ TODO
        where
        𝒞⟦ Γ ⊢ A ⇒ ★ ⟧ = c
        𝒞⟦ Γ ⊢ ★ ⇒ B ⟧ = d
-    𝒞⟦ Γ ⊢ A ⇒ X ⟧ = X↓      if X:=A ∈ Γ
-    𝒞⟦ Γ ⊢ X ⇒ B ⟧ = X↑      if X:=B ∈ Γ
+    𝒞⟦ Γ ⊢ A ⇒ X ⟧ = X-      if X:=A ∈ Γ
+    𝒞⟦ Γ ⊢ X ⇒ B ⟧ = X+      if X:=B ∈ Γ
     𝒞⟦ Γ ⊢ (A → B) ⇒ (A′ → B′) ⟧ = c → d
        where
        𝒞⟦ Γ ⊢ A′ ⇒ A ⟧ = c

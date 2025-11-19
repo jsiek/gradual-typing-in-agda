@@ -51,11 +51,11 @@ open import Agda.Builtin.Equality.Rewrite
 ∼-⇒ ★∼★ Σ = id
 ∼-⇒ (★∼X{X = X} ∋X) Σ
     with lookup-★ Σ X
-... | yes l = l ↓
+... | yes l = l -
 ... | no nl = (` X) `?
 ∼-⇒ (X∼★{X = X} ∋X) Σ
     with lookup-★ Σ X
-... | yes l = l ↑
+... | yes l = l +
 ... | no nl = (` X) !
 ∼-⇒ ★∼ℕ Σ = `ℕ `?
 ∼-⇒ ℕ∼★ Σ = `ℕ !
@@ -71,11 +71,11 @@ open import Agda.Builtin.Equality.Rewrite
 ∼-⇐ ★∼★ Σ = id
 ∼-⇐ (★∼X{X = X} ∋X) Σ
     with lookup-★ Σ X
-... | yes l = l ↑
+... | yes l = l +
 ... | no nl = (` X) !
 ∼-⇐ (X∼★{X = X} ∋X) Σ
     with lookup-★ Σ X
-... | yes l = l ↓
+... | yes l = l -
 ... | no nl = (` X) `?
 ∼-⇐ ★∼ℕ Σ = `ℕ !
 ∼-⇐ ℕ∼★ Σ = `ℕ `?
@@ -147,7 +147,7 @@ reveal {Δ}{Σ}{σ} (` X) f nf
 reveal {Δ}{Σ}{σ} (` X) f nf
     | yes (A , ∋X)
     with f X A ∋X
-... | refl = ∋X ↑
+... | refl = ∋X +
 reveal (A ⇒ B) f nf = conceal A f nf ↦ reveal B f nf
 reveal{σ = σ} (`∀ B) f nf = `∀ reveal{σ = extsᵗ σ} B (exts-fun f) (exts-nolook nf)
 
@@ -159,7 +159,7 @@ conceal{Δ}{Σ}{σ} (` X) f nf
 conceal {Δ}{Σ}{σ} (` X) f nf
     | yes (A , ∋X)
     with f X A ∋X
-... | refl = ∋X ↓
+... | refl = ∋X -
 conceal (A ⇒ B) f nf = reveal A f nf ↦ conceal B f nf
 conceal{σ = σ} (`∀ B) f nf = `∀ conceal{σ = extsᵗ σ} B (exts-fun f) (exts-nolook nf)
 

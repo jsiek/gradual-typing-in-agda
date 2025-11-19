@@ -57,12 +57,12 @@ data _∣_⊢_⇒_ : ∀(Δ : TyCtx) → BindCtx Δ → Type Δ → Type Δ → 
      ------------------------------------------
    → Δ ∣ Σ ⊢ (`∀ A) ⇒ B
    
- _↓ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
+ _- : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A
      ----------------
    → Δ ∣ Σ ⊢ A ⇒ ` X
    
- _↑ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
+ _+ : ∀{Δ}{Σ}{A : Type Δ}{X : TyVar Δ}
    → Σ ∋ X := A
      -----------------
    → Δ ∣ Σ ⊢ (` X) ⇒ A
@@ -115,8 +115,8 @@ rename-crcn {Δ₁}{Δ₂}{Σ}{A}{`∀ B} ρ (𝒢{Δ₁}{Σ}{A}{B} c) =
   let IH = rename-crcn (extᵗ ρ) c in 𝒢 IH
 rename-crcn {Δ₁}{Δ₂}{Σ}{`∀ A}{B} ρ (ℐ c) =
   let IH = rename-crcn (extᵗ ρ) c in ℐ IH
-rename-crcn {Δ₁}{Δ₂}{Σ} ρ (∋α ↓)  = (ren-bind ∋α) ↓
-rename-crcn ρ (∋α ↑) = (ren-bind ∋α) ↑
+rename-crcn {Δ₁}{Δ₂}{Σ} ρ (∋α -)  = (ren-bind ∋α) -
+rename-crcn ρ (∋α +) = (ren-bind ∋α) +
 rename-crcn ρ (G !) = ren-grnd ρ G !
 rename-crcn ρ (H `?) = ren-grnd ρ H `?
 
@@ -166,8 +166,8 @@ rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (𝒢 c) =
    𝒢 (rename-crcn-bind (extᵇ ρ) c)
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (ℐ c) =
    ℐ (rename-crcn-bind (extᶜ (extᵇ ρ)) c)
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↓) = ρ X ↓
-rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X ↑) = ρ X ↑
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X -) = ρ X -
+rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (X +) = ρ X +
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (G !) = (G !)
 rename-crcn-bind {Δ} {Σ₁} {Σ₂} {A} {B} ρ (H `?) = H `?
 
