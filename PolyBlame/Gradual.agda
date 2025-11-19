@@ -15,6 +15,7 @@ open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
 
 open import PolyBlame.Types
+open import PolyBlame.TypeSubst
 open import PolyBlame.Variables
 
 open import Agda.Builtin.Equality

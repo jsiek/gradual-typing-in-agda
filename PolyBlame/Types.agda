@@ -19,6 +19,10 @@ open import Relation.Nullary using (Dec; yes; no)
 open import Agda.Builtin.Bool
 open import Relation.Nullary using (¬_)
 
+import Relation.Binary.PropositionalEquality as Eq
+--open Eq using (_≡_; _≢_; refl; sym; cong; cong₂; cong-app; subst)
+open Eq.≡-Reasoning
+
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
 
@@ -195,40 +199,18 @@ ext-suc-cons : ∀{Δ₁}{A : Type Δ₁} → extᵗ{Δ₁ = Δ₁} Sᵗ ⨟ᵗ 
 ext-suc-cons = refl
 
 
-{-- Substituting type variables in types -}
-
-infixr 7 _→ᵗ_
-_→ᵗ_ : TyCtx → TyCtx → Set
-Δ₁ →ᵗ Δ₂ = TyVar Δ₁ → Type Δ₂
-
-extsᵗ : ∀{Δ₁ Δ₂} → (Δ₁ →ᵗ Δ₂) → ((Δ₁ ,typ) →ᵗ (Δ₂ ,typ))
-extsᵗ σ Zᵗ = ` Zᵗ
-extsᵗ σ (Sᵗ X) = ⇑ᵗ (σ X)
-
-subᵗ : ∀{Δ₁ Δ₂} → (Δ₁ →ᵗ Δ₂) → Type Δ₁ → Type Δ₂
-subᵗ σ `ℕ = `ℕ
-subᵗ σ ★ = ★
-subᵗ σ (` X) = σ X
-subᵗ σ (A ⇒ B) = subᵗ σ A ⇒ subᵗ σ B
-subᵗ σ (`∀ A) = `∀ subᵗ (extsᵗ σ) A
-
-ids : ∀{Δ} → Δ →ᵗ Δ
-ids = `_
-
-infixr 6 _•ˢ_
-_•ˢ_ : ∀{Δ₁ Δ₂} → Type Δ₂ → (Δ₁ →ᵗ Δ₂) → ((Δ₁ ,typ) →ᵗ Δ₂)
-(A •ˢ σ) Zᵗ = A
-(A •ˢ σ) (Sᵗ X) = σ X
-
-infix 6 _[_]ˢ
-_[_]ˢ : ∀{Δ} → Type (Δ ,typ) → Type Δ → Type Δ
-A [ B ]ˢ = subᵗ (B •ˢ ids) A
-
-
 {-- Looking up type variable bindings --}
 
 BindCtx : TyCtx → Set
 BindCtx Δ = List (TyVar Δ × Type Δ)
+
+data _∌_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Set where
+  ∌-[] : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}
+    → [] ∌ X
+  ∌-∷ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{B : Type Δ}
+    → Σ ∌ X
+    → X ≢ Y
+    → ((Y , B) ∷ Σ) ∌ X
 
 data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set where
   Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
