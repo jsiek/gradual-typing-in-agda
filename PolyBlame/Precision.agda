@@ -23,48 +23,8 @@ open import PolyBlame.Types
 open import PolyBlame.Variables
 open import PolyBlame.Terms
 open import PolyBlame.Coercions
-
-data PrecCtx : ∀{Δ}(Γ Γ′ : Ctx Δ) → Set where
-  ∅ : PrecCtx{∅} ∅ ∅
-  _,_ : ∀{Δ}{Γ Γ′ : Ctx Δ}{A B : Type Δ}
-        → PrecCtx Γ Γ′
-        → Δ ∣ mt Δ ⊢ A ⊑ B
-          ------------------------
-        → PrecCtx (Γ ▷ A) (Γ′ ▷ B)
-
-data ⊢_∋_⊑_ : ∀{Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Γ Γ′ → Type Δ → Type Δ → Set where
-
-  Zᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ A ⊑ B}
-      ----------------------
-    → ⊢ (Φ , p) ∋ A ⊑ B
-    
-  Sᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B C D : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ C ⊑ D}
-    → ⊢ Φ ∋ A ⊑ B
-      -------------------
-    → ⊢ (Φ , p) ∋ A ⊑ B
-
-get-⊑ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Δ ∣ mt Δ ⊢ A ⊑ B
-get-⊑ (Zᵖ{p = p}) = p
-get-⊑ (Sᵖ x) = get-⊑ x
-
-proj-left : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Γ ∋ A
-proj-left Zᵖ = Z
-proj-left (Sᵖ x) = S proj-left x
-
-proj-right : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Γ′ ∋ B
-proj-right Zᵖ = Z
-proj-right (Sᵖ x) = S proj-right x
-
-postulate
-  ⟰ᵖ : ∀ {Δ}{Γ Γ′ : Ctx Δ}
-    → PrecCtx Γ Γ′
-    → PrecCtx (⟰ Γ) (⟰ Γ′)
---⟰ᵖ Φ = {!!}
+open import PolyBlame.Gradual
+open import PolyBlame.Compile
 
 postulate
   subᵗ-prec : ∀{Δ}{A B : Type (Δ ,typ)}{X}
@@ -141,6 +101,7 @@ data _∣_⊩_⊑_ : ∀(Δ : TyCtx)(Σ : BindCtx Δ){A B : Type Δ}
 ℕ-⊑-FV {Δ} {Ψ} {`ℕ} ℕ⊑A = mt-⊆
 ℕ-⊑-FV {Δ} {Ψ} {`∀ A} (⊑∀ ℕ⊑A) = ⊆-⤋ (ℕ-⊑-FV ℕ⊑A)
 
+{-
 ⇒-⊑-⊑ : ∀{Δ}{Σ : BindCtx Δ}{A B C : Type Δ}
     (c : Δ ∣ Σ ⊢ A ⇒ B)
   → Δ ∣ Σ ⊩ c ⊑ C
@@ -166,6 +127,7 @@ data _∣_⊩_⊑_ : ∀(Δ : TyCtx)(Σ : BindCtx Δ){A B : Type Δ}
 
    -}
 ⇒-⊑-⊑ {Δ} {Σ} {A} {B} {C} c (?-⊑ x) = {!!}
+-}
 
 infix 3 _∣_∣_⊩_⊑_⦂_
 data _∣_∣_⊩_⊑_⦂_ : ∀{Δ}(Σ Σ′ : BindCtx Δ){A B : Type Δ}{Γ Γ′ : Ctx Δ}
@@ -219,6 +181,18 @@ data _∣_∣_⊩_⊑_⦂_ : ∀{Δ}(Σ Σ′ : BindCtx Δ){A B : Type Δ}{Γ Γ
        --------------------------------
      → Σ ∣ Σ′ ∣ Φ ⊩ M ⊑ blame ⦂ Refl⊑ A
 
+  ⊑-⟨⟩ : ∀{Δ}{Σ Σ′ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+        {A B A′ B′ : Type Δ}
+        {M : Δ ∣ Σ ∣ Γ ⊢ A} {c : Δ ∣ Σ ⊢ A ⇒ B}
+        {M′ : Δ ∣ Σ′  ∣ Γ′ ⊢ A′} {c′ : Δ ∣ Σ′ ⊢ A′ ⇒ B′}
+        {A⊑A′ : Δ ∣ mt Δ ⊢ A ⊑ A′}
+        {B⊑B′ : Δ ∣ mt Δ ⊢ B ⊑ B′}
+     → Σ ∣ Σ′ ∣ Φ ⊩ M ⊑ M′ ⦂ A⊑A′
+     → Δ ∣ Σ ∣ Σ′ ⊩ c ⊑ c′
+       ----------------------------------------
+     → Σ ∣ Σ′ ∣ Φ ⊩ M ⟨ c ⟩ ⊑ M′ ⟨ c′ ⟩ ⦂ B⊑B′
+     
+{-
   ⊑-⟨⟩-L : ∀{Δ}{Σ Σ′ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
         {A B C : Type Δ}
         {M : Δ ∣ Σ ∣ Γ ⊢ A}
@@ -230,3 +204,107 @@ data _∣_∣_⊩_⊑_⦂_ : ∀{Δ}(Σ Σ′ : BindCtx Δ){A B : Type Δ}{Γ Γ
        ----------------------------------------------
      → Σ ∣ Σ′ ∣ Φ ⊩ M ⟨ c ⟩ ⊑ M′ ⦂ {!!}
   
+-}
+
+⏵⇒-⊑-⏵⇒ : ∀{Δ} {A B C A′ B′ C′ : Type Δ}
+  → (Δ ∣ mt Δ ⊢ C ⊑ C′)
+  → (f : Δ ⊢ C ⏵ (A ⇒ B))
+  → (f′ : Δ ⊢ C′ ⏵ (A′ ⇒ B′))
+  → Δ ∣ [] ∣ [] ⊩ (⏵-⇒ f) ⊑ (⏵-⇒ f′)
+⏵⇒-⊑-⏵⇒ cc ⏵-⇒-⇒ ⏵-⇒-⇒ = id-⊑ cc
+⏵⇒-⊑-⏵⇒ (★⊑⇒ ★⊑A′ ★⊑B′) ⏵-★-⇒ ⏵-⇒-⇒ = ?-⊑-id (⇒⊑⇒ ★⊑A′ ★⊑B′)
+⏵⇒-⊑-⏵⇒ cc ⏵-★-⇒ ⏵-★-⇒ = ?-⊑
+
+⊑-⏵-⏵-⊑ : ∀{Δ} {A B C A′ B′ C′ : Type Δ}
+  → (Δ ∣ mt Δ ⊢ C ⊑ C′)
+  → (Δ ⊢ C ⏵ (A ⇒ B))
+  → (Δ ⊢ C′ ⏵ (A′ ⇒ B′))
+  → Δ ∣ mt Δ ⊢ A ⊑ A′
+⊑-⏵-⏵-⊑ (⇒⊑⇒ cc dd) ⏵-⇒-⇒ ⏵-⇒-⇒ = cc
+⊑-⏵-⏵-⊑ (★⊑⇒ cc dd) ⏵-★-⇒ ⏵-⇒-⇒ = cc
+⊑-⏵-⏵-⊑ ★⊑★ ⏵-★-⇒ ⏵-★-⇒ = ★⊑★
+
+∼⇐-⊑-∼⇐ : ∀ {Δ} {B C B′ C′ : Type Δ}
+  → (Δ ∣ mt Δ ⊢ B ⊑ B′)
+  → (Δ ∣ mt Δ ⊢ C ⊑ C′)
+  → (bc : Δ ∣ mt Δ ⊢ B ∼ C)
+  → (bc′ : Δ ∣ mt Δ ⊢ B′ ∼ C′)
+  → Δ ∣ [] ∣ [] ⊩ ∼-⇐ bc [] ⊑ ∼-⇐ bc′ []
+  
+∼⇒-⊑-∼⇒ : ∀ {Δ} {B C B′ C′ : Type Δ}
+  → (Δ ∣ mt Δ ⊢ B ⊑ B′)
+  → (Δ ∣ mt Δ ⊢ C ⊑ C′)
+  → (bc : Δ ∣ mt Δ ⊢ B ∼ C)
+  → (bc′ : Δ ∣ mt Δ ⊢ B′ ∼ C′)
+  → Δ ∣ [] ∣ [] ⊩ ∼-⇒ bc [] ⊑ ∼-⇒ bc′ []
+∼⇒-⊑-∼⇒ ℕ⊑ℕ ℕ⊑ℕ ℕ∼ℕ ℕ∼ℕ = id-⊑ ℕ⊑ℕ
+∼⇒-⊑-∼⇒ ℕ⊑ℕ ★⊑★ ℕ∼★ ℕ∼★ = !-⊑
+∼⇒-⊑-∼⇒ ℕ⊑ℕ ★⊑ℕ ℕ∼★ ℕ∼ℕ = !-⊑-id ℕ⊑ℕ
+∼⇒-⊑-∼⇒ ℕ⊑ℕ (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ ℕ⊑ℕ (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ X⊑X X⊑X X∼X X∼X = id-⊑ X⊑X
+∼⇒-⊑-∼⇒ X⊑X ★⊑★ (X∼★ ∋X) (X∼★ ∋X′) = !-⊑   -- Remember ∋X ?
+∼⇒-⊑-∼⇒ X⊑X (★⊑X x) (X∼★ x₁) X∼X = !-⊑-id X⊑X
+∼⇒-⊑-∼⇒ X⊑X (∀⊑∀ cc) (∼∀ bc) (∼∀ bc′) = {!!}
+∼⇒-⊑-∼⇒ X⊑X (⊑∀ cc) X∼X (∼∀ bc′) = {!!}
+∼⇒-⊑-∼⇒ X⊑X (⊑∀ cc) (X∼★ x) (∼∀ bc′) = {!!}
+∼⇒-⊑-∼⇒ X⊑X (⊑∀ cc) (∼∀ bc) bc′ = {!!}
+∼⇒-⊑-∼⇒ ★⊑★ ℕ⊑ℕ ★∼ℕ ★∼ℕ = ?-⊑
+∼⇒-⊑-∼⇒ ★⊑★ X⊑X (★∼X x) (★∼X x₁) = ?-⊑
+∼⇒-⊑-∼⇒ ★⊑★ ★⊑★ ★∼★ ★∼★ = id-⊑ ★⊑★
+∼⇒-⊑-∼⇒ ★⊑★ (★⊑X ∋X) ★∼★ (★∼X x₁) = id-⊑-? (★⊑X x₁)
+∼⇒-⊑-∼⇒ ★⊑★ ★⊑ℕ ★∼★ ★∼ℕ = id-⊑-? ★⊑ℕ
+∼⇒-⊑-∼⇒ ★⊑★ (★⊑⇒ cc cc₁) ★∼★ (★∼⇒ bc′ bc′₁) =
+  ⊑-⨟ (id-⊑-? (★⊑⇒ ★⊑★ ★⊑★)) (id★-⊑-↦ {!!} {!!})
+∼⇒-⊑-∼⇒ ★⊑★ (⇒⊑⇒ cc cc₁) (★∼⇒ bc bc₁) (★∼⇒ bc′ bc′₁) =
+  ⨟-⊑-⨟ ?-⊑ (↦-⊑ (∼⇐-⊑-∼⇐ ★⊑★ cc bc bc′) (∼⇒-⊑-∼⇒ ★⊑★ cc₁ bc₁ bc′₁))
+∼⇒-⊑-∼⇒ ★⊑★ (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ ★⊑★ (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (★⊑X x) X⊑X (★∼X x₁) X∼X = ?-⊑-id X⊑X
+∼⇒-⊑-∼⇒ (★⊑X x) ★⊑★ ★∼★ (X∼★ x₁) = id-⊑-! (★⊑X x)
+∼⇒-⊑-∼⇒ (★⊑X x) (★⊑X x₁) ★∼★ X∼X = id-⊑ (★⊑X x)
+∼⇒-⊑-∼⇒ (★⊑X x) (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (★⊑X x) (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ ★⊑ℕ ℕ⊑ℕ ★∼ℕ ℕ∼ℕ = ?-⊑-id ℕ⊑ℕ
+∼⇒-⊑-∼⇒ ★⊑ℕ ★⊑★ ★∼★ ℕ∼★ = id-⊑-! ★⊑ℕ
+∼⇒-⊑-∼⇒ ★⊑ℕ ★⊑ℕ ★∼★ ℕ∼ℕ = id-⊑ ★⊑ℕ
+∼⇒-⊑-∼⇒ ★⊑ℕ (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ ★⊑ℕ (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (★⊑⇒ bb bb₁) ★⊑★ ★∼★ (⇒∼★ bc′ bc′₁) =
+  ⊑-⨟ (id★-⊑-↦ {!!} {!!}) (id-⊑-! (★⊑⇒ ★⊑★ ★⊑★))
+∼⇒-⊑-∼⇒ (★⊑⇒ bb bb₁) (★⊑⇒ cc cc₁) ★∼★ (⇒∼⇒ bc′ bc′₁) =
+  id★-⊑-↦ {!!} {!!}
+∼⇒-⊑-∼⇒ (★⊑⇒ bb bb₁) (⇒⊑⇒ cc cc₁) (★∼⇒ bc bc₁) (⇒∼⇒ bc′ bc′₁) =
+  ⨟-⊑ (?-⊑-↦ (★⊑⇒ bb bb₁) (⇒⊑⇒ {!!} {!!}))
+      (↦-⊑ (∼⇐-⊑-∼⇐ bb cc bc bc′) (∼⇒-⊑-∼⇒ bb₁ cc₁ bc₁ bc′₁))
+∼⇒-⊑-∼⇒ (★⊑⇒ bb bb₁) (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (★⊑⇒ bb bb₁) (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (⇒⊑⇒ bb bb₁) ★⊑★ (⇒∼★ bc bc₁) (⇒∼★ bc′ bc′₁) =
+  ⨟-⊑-⨟ (↦-⊑ (∼⇐-⊑-∼⇐ bb ★⊑★ bc bc′) (∼⇒-⊑-∼⇒ bb₁ ★⊑★ bc₁ bc′₁)) !-⊑
+∼⇒-⊑-∼⇒ (⇒⊑⇒ bb bb₁) (★⊑⇒ cc cc₁) (⇒∼★ bc bc₁) (⇒∼⇒ bc′ bc′₁) =
+  ⨟-⊑ (↦-⊑ (∼⇐-⊑-∼⇐ bb cc bc bc′) (∼⇒-⊑-∼⇒ bb₁ cc₁ bc₁ bc′₁))
+      (!-⊑-↦ (⇒⊑⇒ {!!} {!!}) (★⊑⇒ cc cc₁))
+∼⇒-⊑-∼⇒ (⇒⊑⇒ bb bb₁) (⇒⊑⇒ cc cc₁) (⇒∼⇒ bc bc₁) (⇒∼⇒ bc′ bc′₁) =
+  ↦-⊑ (∼⇐-⊑-∼⇐ bb cc bc bc′) (∼⇒-⊑-∼⇒ bb₁ cc₁ bc₁ bc′₁)
+∼⇒-⊑-∼⇒ (⇒⊑⇒ bb bb₁) (∀⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (⇒⊑⇒ bb bb₁) (⊑∀ cc) bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (∀⊑∀ bb) cc bc bc′ = {!!}
+∼⇒-⊑-∼⇒ (⊑∀ bb) cc bc bc′ = {!!}
+
+∼⇐-⊑-∼⇐ bb cc bc bc′ = {!!}
+
+compile-pres-precision : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  {A A′ : Type Δ} {A⊑A′ : Δ ∣ mt Δ ⊢ A ⊑ A′}
+  {M : Δ ∣ Γ ⊢ᵍ A} {M′ : Δ ∣ Γ′ ⊢ᵍ A′}
+  → Δ ∣ Φ ⊢ᵍ M ⊑ M′ ⦂ A⊑A′
+  → [] ∣ [] ∣ Φ ⊩ compile M ⊑ compile M′ ⦂ A⊑A′
+compile-pres-precision (⊑-var ∋⊑) = ⊑-var ∋⊑
+compile-pres-precision ⊑-nat = ⊑-nat
+compile-pres-precision (⊑-lam M⊑M′) = ⊑-lam (compile-pres-precision M⊑M′)
+compile-pres-precision (⊑-app{a = a}{b}{d}{f}{bc}{f′}{bc′} L⊑L′ M⊑M′) =
+    let IH1 = compile-pres-precision L⊑L′ in
+    let IH2 = compile-pres-precision M⊑M′ in
+    let cc = ⊑-⏵-⏵-⊑ a f f′ in
+    ⊑-app (⊑-⟨⟩ IH1 (⏵⇒-⊑-⏵⇒ a f f′)) (⊑-⟨⟩ IH2 (∼⇒-⊑-∼⇒ b cc bc bc′))
+compile-pres-precision (⊑-Λ N⊑N′) = {!!}
+compile-pres-precision (⊑-◯ M⊑M′) = {!!}

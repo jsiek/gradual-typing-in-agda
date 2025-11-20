@@ -13,6 +13,7 @@ open import Data.Maybe hiding (map)
 open import Data.Sum using (_⊎_)
 open import Function using (_∘_)
 open import Relation.Nullary using (Dec; yes; no)
+open import Agda.Builtin.Bool
 
 open import PolyBlame.Types
 open import PolyBlame.TypeSubst
@@ -71,50 +72,25 @@ data _∣_⊢ᵍ_ : (Δ : TyCtx) → Ctx Δ → Type Δ → Set
      
   _◯_ : ∀{Δ}{Γ : Ctx Δ}{A : Type Δ}{B : Type (Δ ,typ)}
      → Δ ∣ Γ ⊢ᵍ A
-     → Δ ⊢ A ⏵ `∀ B
      → (C : Type Δ)
+     → Δ ⊢ A ⏵ `∀ B
        --------------------
      → Δ ∣ Γ ⊢ᵍ B [ C ]ˢ
      
 
+postulate
+  subˢ-prec : ∀{Δ}{A B : Type (Δ ,typ)}{C C′ : Type Δ}
+    → (Δ ,typ) ∣ mt Δ , false ⊢ A ⊑ B
+    → Δ ∣ mt Δ ⊢ C ⊑ C′
+    → Δ ∣ mt Δ ⊢ A [ C ]ˢ ⊑ (B [ C′ ]ˢ)
 
+postulate
+  ⏵∀-⊑ : ∀{Δ}{A A′ : Type Δ}{B B′ : Type (Δ ,typ)}
+       → Δ ⊢ A ⏵ (`∀ B)
+       → Δ ⊢ A′ ⏵ (`∀ B′)
+       → Δ ∣ mt Δ ⊢ A ⊑ A′
+       → (Δ ,typ) ∣ (mt Δ , false) ⊢ B ⊑ B′
 
-
-data PrecCtx : ∀{Δ}(Γ Γ′ : Ctx Δ) → Set where
-  ∅ : PrecCtx{∅} ∅ ∅
-  _,_ : ∀{Δ}{Γ Γ′ : Ctx Δ}{A B : Type Δ}
-        → PrecCtx Γ Γ′
-        → Δ ∣ mt Δ ⊢ A ⊑ B
-          ------------------------
-        → PrecCtx (Γ ▷ A) (Γ′ ▷ B)
-
-data ⊢_∋_⊑_ : ∀{Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Γ Γ′ → Type Δ → Type Δ → Set where
-
-  Zᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ A ⊑ B}
-      ----------------------
-    → ⊢ (Φ , p) ∋ A ⊑ B
-    
-  Sᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B C D : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ C ⊑ D}
-    → ⊢ Φ ∋ A ⊑ B
-      -------------------
-    → ⊢ (Φ , p) ∋ A ⊑ B
-
-get-⊑ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Δ ∣ mt Δ ⊢ A ⊑ B
-get-⊑ (Zᵖ{p = p}) = p
-get-⊑ (Sᵖ x) = get-⊑ x
-
-proj-left : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Γ ∋ A
-proj-left Zᵖ = Z
-proj-left (Sᵖ x) = S proj-left x
-
-proj-right : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Γ′ ∋ B
-proj-right Zᵖ = Z
-proj-right (Sᵖ x) = S proj-right x
 
 infix 3 _∣_⊢ᵍ_⊑_⦂_
 data _∣_⊢ᵍ_⊑_⦂_ : ∀(Δ : TyCtx){A B : Type Δ}{Γ Γ′ : Ctx Δ}
@@ -152,4 +128,26 @@ data _∣_⊢ᵍ_⊑_⦂_ : ∀(Δ : TyCtx){A B : Type Δ}{Γ Γ′ : Ctx Δ}
        --------------------------------------------
      → Δ ∣ Φ ⊢ᵍ (L · M) f bc ⊑ (L′ · M′) f′ bc′ ⦂ d
 
-  
+  ⊑-Λ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+       {A A′ : Type (Δ ,typ)}
+       {N : Δ ,typ ∣ ⟰ Γ ⊢ᵍ A}
+       {N′ : Δ ,typ ∣ ⟰ Γ′ ⊢ᵍ A′}
+       {a : (Δ ,typ) ∣ mt (Δ ,typ) ⊢ A ⊑ A′}
+    → Δ ,typ ∣ ⟰ᵖ Φ ⊢ᵍ N ⊑ N′ ⦂ a
+     --------------------------------
+    → Δ ∣ Φ ⊢ᵍ (Λ N) ⊑ (Λ N′) ⦂ ∀⊑∀ a
+
+  ⊑-◯ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+       {A A′ C C′ : Type Δ}
+       {B B′ : Type (Δ ,typ)}
+       {M : Δ ∣ Γ ⊢ᵍ A}
+       {M′ : Δ ∣ Γ′ ⊢ᵍ A′}
+       {c : Δ ⊢ A ⏵ `∀ B}
+       {c′ : Δ ⊢ A′ ⏵ `∀ B′}
+       {a : Δ ∣ mt Δ ⊢ A ⊑ A′}
+       {cc : Δ ∣ mt Δ ⊢ C ⊑ C′}
+    → Δ ∣ Φ ⊢ᵍ M ⊑ M′ ⦂ a
+     ---------------------------------------
+    → Δ ∣ Φ ⊢ᵍ (M ◯ C) c ⊑ (M′ ◯ C′) c′ ⦂ subˢ-prec (⏵∀-⊑ c c′ a) cc
+
+    

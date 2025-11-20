@@ -170,7 +170,7 @@ compile (ƛ N) = ƛ compile N
 compile ((L · M) A₁⏵C→A B∼C) =
   ((compile L) ⟨ ⏵-⇒ A₁⏵C→A ⟩) · ( (compile M) ⟨ ∼-⇒ B∼C [] ⟩)
 compile (Λ M) = Λ compile M
-compile{Δ}{Γ}{D} (_◯_{A = A}{B} M A⏵ C) =
+compile{Δ}{Γ}{D} (_◯_{A = A}{B} M C A⏵) =
   let M′ = (⇑ᵇ (⇑ (compile M ⟨ ⏵-∀ A⏵ ⟩))) in
   ν C · ((M′ ◯ Zᵗ) ⟨ c ⟩)
   where
