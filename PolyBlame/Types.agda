@@ -10,6 +10,7 @@ open import Data.List hiding ([_])
 open import Data.List.Properties using (map-∘)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Bool.Base using (_∨_; _≤_)
+open import Data.Bool.Properties
 open import Data.Unit using (⊤; tt)
 open import Data.Product hiding (map)
 open import Data.Maybe hiding (map)
@@ -34,12 +35,9 @@ postulate
 
 {--- Type variables and their Contexts ---}
 
-data TyCtx : Set 
-data Type : TyCtx → Set 
-
 infixl 5 _,typ
 
-data TyCtx where
+data TyCtx : Set where
   ∅ : TyCtx
   _,typ : TyCtx → TyCtx
 
@@ -86,7 +84,8 @@ abstract
   _⨟ᵗ_ : ∀{Δ₁ Δ₂ Δ₃ : TyCtx} → (Δ₁ ⇒ᵗ Δ₂) → (Δ₂ ⇒ᵗ Δ₃) → (Δ₁ ⇒ᵗ Δ₃)
   (ρ₁ ⨟ᵗ ρ₂) x = ρ₂ (ρ₁ x)
 
-  seq-def : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx} (σ : Δ₁ ⇒ᵗ Δ₂) (τ : Δ₂ ⇒ᵗ Δ₃) x → (σ ⨟ᵗ τ) x ≡ τ (σ x)
+  seq-def : ∀ {Δ₁ Δ₂ Δ₃ : TyCtx} (σ : Δ₁ ⇒ᵗ Δ₂) (τ : Δ₂ ⇒ᵗ Δ₃) x
+     → (σ ⨟ᵗ τ) x ≡ τ (σ x)
   seq-def σ τ x = refl
   {-# REWRITE seq-def #-}
 
@@ -136,7 +135,7 @@ id-seq {Δ₁}{Δ₂}{ρ} = refl
 
 {-----------     Types     -----------------}
 
-data Type where
+data Type : TyCtx → Set where
   `ℕ  : ∀{Δ} → Type Δ
   ★   : ∀{Δ} → Type Δ
   `_ : ∀{Δ} → (x : TyVar Δ) → Type Δ
@@ -203,14 +202,6 @@ ext-suc-cons = refl
 
 BindCtx : TyCtx → Set
 BindCtx Δ = List (TyVar Δ × Type Δ)
-
-data _∌_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Set where
-  ∌-[] : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}
-    → [] ∌ X
-  ∌-∷ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{B : Type Δ}
-    → Σ ∌ X
-    → X ≢ Y
-    → ((Y , B) ∷ Σ) ∌ X
 
 data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set where
   Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
@@ -307,6 +298,7 @@ ren-grnd ρ (` X) = ` (ρ X)
 
 {--- Auxilliary notions regarding BindCtx  ---}
 
+{- TODO: replace with map for pairs -}
 renᵇ : ∀{Δ₁ Δ₂} → Δ₁ ⇒ᵗ Δ₂ → TyVar Δ₁ × Type Δ₁ → TyVar Δ₂ × Type Δ₂
 renᵇ ρ (X , A) = ρ X , renᵗ ρ A
 
@@ -442,6 +434,128 @@ Refl⊑ {Δ} {Ψ} (` X) = X⊑X
 Refl⊑ {Δ} {Ψ} (A ⇒ B) = ⇒⊑⇒ (Refl⊑ A) (Refl⊑ B)
 Refl⊑ {Δ} {Ψ} (`∀ A) = ∀⊑∀ (Refl⊑ A)
 
+≤-or-left : ∀ b b′ → b ≤ (b ∨ b′)
+≤-or-left false false = _≤_.b≤b
+≤-or-left false true = _≤_.f≤t
+≤-or-left true false = _≤_.b≤b
+≤-or-left true true = _≤_.b≤b
+
+≤-or-right : ∀ b b′ → b′ ≤ (b ∨ b′)
+≤-or-right false false = _≤_.b≤b
+≤-or-right false true = _≤_.b≤b
+≤-or-right true false = _≤_.f≤t
+≤-or-right true true = _≤_.b≤b
+
+or-≤-left : ∀{a b c : Bool}
+  → a ∨ b ≤ c
+  → a ≤ c
+or-≤-left {false} {false} {true} _≤_.f≤t = _≤_.f≤t
+or-≤-left {false} {false} {b} _≤_.b≤b = _≤_.b≤b
+or-≤-left {false} {true} {b} _≤_.b≤b = _≤_.f≤t
+or-≤-left {true} {b} {c} _≤_.b≤b = _≤_.b≤b
+
+or-≤-right : ∀{a b c : Bool}
+  → a ∨ b ≤ c
+  → b ≤ c
+or-≤-right {false} {false} {true} _≤_.f≤t = _≤_.f≤t
+or-≤-right {false} {false} {b} _≤_.b≤b = _≤_.b≤b
+or-≤-right {false} {true} {b} _≤_.b≤b = _≤_.b≤b
+or-≤-right {true} {false} {c} _≤_.b≤b = _≤_.f≤t
+or-≤-right {true} {true} {c} _≤_.b≤b = _≤_.b≤b
+
+≤-∨-≤ : ∀{x y z : Bool}
+  → x ≤ z
+  → y ≤ z
+  → x ∨ y ≤ z
+≤-∨-≤ {false} {false} {z} _≤_.f≤t _≤_.f≤t = _≤_.f≤t
+≤-∨-≤ {false} {false} {z} _≤_.b≤b y≤z = y≤z
+≤-∨-≤ {false} {true} {z} x≤z y≤z = y≤z
+≤-∨-≤ {true} {y} {z} x≤z y≤z = x≤z
+
+single : ∀{Δ} → (X : TyVar Δ) → SubCtx Δ
+single {Δ ,typ} Zᵗ = mt Δ , true
+single {Δ ,typ} (Sᵗ X) = single X , false
+
+single-∋ : ∀{Δ} → (X : TyVar Δ)
+  → single X ∋ˢ X
+single-∋ Zᵗ = Zˢ
+single-∋ (Sᵗ X) = Sˢ (single-∋ X)
+
+_∪_ : ∀{Δ}(Ψ₁ : SubCtx Δ) (Ψ₂ : SubCtx Δ) → SubCtx Δ
+∅ ∪ ∅ = ∅
+(Ψ₁ , a) ∪ (Ψ₂ , b) = (Ψ₁ ∪ Ψ₂) , (a ∨ b)
+
+⤋ : ∀{Δ} → SubCtx (Δ ,typ) → SubCtx Δ
+⤋ {Δ} (Ψ , b) = Ψ
+
+FV : ∀{Δ} → (B : Type Δ) → SubCtx Δ
+FV{Δ} `ℕ = mt Δ
+FV{Δ} ★ = mt Δ
+FV{Δ} (` X) = single X
+FV{Δ} (B₁ ⇒ B₂) = FV B₁ ∪ FV B₂
+FV{Δ} (`∀ B) = ⤋ (FV B)
+
+_⊆_ : ∀{Δ} → SubCtx Δ → SubCtx Δ → Set
+∅ ⊆ Ψ₂ = ⊤
+(Ψ₁ , a) ⊆ (Ψ₂ , b) = Ψ₁ ⊆ Ψ₂ × a ≤ b
+
+mt-⊆ : ∀{Δ}{Ψ : SubCtx Δ}
+  → mt Δ ⊆ Ψ
+mt-⊆ {∅} {Ψ} = tt
+mt-⊆ {Δ ,typ} {Ψ , false} = mt-⊆ , _≤_.b≤b
+mt-⊆ {Δ ,typ} {Ψ , true} = mt-⊆ , _≤_.f≤t
+
+⊆-∋ : ∀{Δ}{Ψ₁ Ψ₂ : SubCtx Δ}{X : TyVar Δ}
+  → Ψ₁ ⊆ Ψ₂
+  → Ψ₁ ∋ˢ X
+  → Ψ₂ ∋ˢ X
+⊆-∋ {Δ ,typ} {Ψ₁ , a} {Ψ₂ , b} {Zᵗ} (Ψ₁⊆Ψ₂ , _≤_.b≤b) Zˢ = Zˢ
+⊆-∋ {Δ ,typ} {Ψ₁ , a} {Ψ₂ , b} {Sᵗ X} (Ψ₁⊆Ψ₂ , lt) (Sˢ Ψ₁∋ˢX) = Sˢ (⊆-∋ Ψ₁⊆Ψ₂ Ψ₁∋ˢX)
+
+∪-⊆ : ∀{Δ}{Ψ₁ Ψ₂ Ψ₃ : SubCtx Δ}
+  → (Ψ₁ ∪ Ψ₂) ⊆ Ψ₃
+  → Ψ₁ ⊆ Ψ₃ × Ψ₂ ⊆ Ψ₃
+∪-⊆ {∅} {∅} {∅} {∅} Y123 = tt , tt
+∪-⊆ {Δ ,typ} {Ψ₁ , a} {Ψ₂ , b} {Ψ₃ , c} (Y123 , abc) =
+  (∪-⊆ Y123 .proj₁ , or-≤-left abc) , (∪-⊆ Y123 .proj₂ , or-≤-right abc)
+
+⊆-∪ : ∀{Δ}{Ψ₁ Ψ₂ Ψ₃ : SubCtx Δ}
+  → Ψ₁ ⊆ Ψ₃
+  → Ψ₂ ⊆ Ψ₃
+  → (Ψ₁ ∪ Ψ₂) ⊆ Ψ₃
+⊆-∪ {Δ} {∅} {∅} {Ψ₃} Ψ₁⊆Ψ₃ Ψ₂⊆Ψ₃ = tt
+⊆-∪ {Δ} {Ψ₁ , x} {Ψ₂ , y} {Ψ₃ , z} (Ψ₁⊆Ψ₃ , x≤z) (Ψ₂⊆Ψ₃ , y≤z) =
+  (⊆-∪ Ψ₁⊆Ψ₃ Ψ₂⊆Ψ₃) , ≤-∨-≤ x≤z y≤z
+
+∋-single-⊆ : ∀{Δ : TyCtx}{Ψ : SubCtx Δ}{X : TyVar Δ}
+  → Ψ ∋ˢ X
+  → single X ⊆ Ψ
+∋-single-⊆ {Δ} {Ψ} {X} Zˢ = mt-⊆ , _≤_.b≤b
+∋-single-⊆ {Δ ,typ} {Ψ , false} {Sᵗ X} (Sˢ Ψ∋X) = ∋-single-⊆ Ψ∋X , _≤_.b≤b
+∋-single-⊆ {Δ ,typ} {Ψ , true} {Sᵗ X} (Sˢ Ψ∋X) = ∋-single-⊆ Ψ∋X , _≤_.f≤t
+
+⤋-⊆ : ∀{Δ}{Ψ₁ : SubCtx (Δ ,typ)}{Ψ₂ : SubCtx Δ}
+  → (⤋ Ψ₁) ⊆ Ψ₂
+  → Ψ₁ ⊆ (Ψ₂ , true)
+⤋-⊆ {Δ} {Ψ₁ , false} {Ψ₂} Ψ₁⊆Ψ₂ = Ψ₁⊆Ψ₂ , _≤_.f≤t
+⤋-⊆ {Δ} {Ψ₁ , true} {Ψ₂} Ψ₁⊆Ψ₂ = Ψ₁⊆Ψ₂ , _≤_.b≤b
+
+⊆-⤋ : ∀{Δ}{Ψ₁ : SubCtx (Δ ,typ)}{Ψ₂ : SubCtx Δ}{b : Bool}
+  → Ψ₁ ⊆ (Ψ₂ , b)
+  → (⤋ Ψ₁) ⊆ Ψ₂
+⊆-⤋ {Δ} {Ψ₁ , x} {Ψ₂} Ψ₁⊆Ψ₂ = Ψ₁⊆Ψ₂ .proj₁
+
+★-⊑ : ∀{Δ}{Ψ : SubCtx Δ} → (B : Type Δ)
+  → FV B ⊆ Ψ
+  → Δ ∣ Ψ ⊢ ★ ⊑ B
+★-⊑ `ℕ B⊆Ψ = ★⊑ℕ
+★-⊑ ★ B⊆Ψ = ★⊑★
+★-⊑ (` X) B⊆Ψ = ★⊑X (⊆-∋ B⊆Ψ (single-∋ X))
+★-⊑ (B₁ ⇒ B₂) B⊆Ψ =
+  ★⊑⇒ (★-⊑ B₁ (∪-⊆ B⊆Ψ .proj₁)) (★-⊑ B₂ (∪-⊆ B⊆Ψ .proj₂))
+★-⊑ (`∀ B) B⊆Ψ = ⊑∀ (★-⊑ B (⤋-⊆ B⊆Ψ))
+
+
 {-- Consistency --}
 
 infixr 6 _∣_⊢_∼_
@@ -516,18 +630,6 @@ _⊑_ : ∀{Δ} → SubCtx Δ → SubCtx Δ → Set
 _⊔_ : ∀{Δ} → SubCtx Δ → SubCtx Δ → SubCtx Δ
 ∅ ⊔ ∅ = ∅
 (Ψ , b) ⊔ (Ψ′ , b′) = (Ψ ⊔ Ψ′) , b ∨ b′
-
-≤-or-left : ∀ b b′ → b ≤ (b ∨ b′)
-≤-or-left false false = _≤_.b≤b
-≤-or-left false true = _≤_.f≤t
-≤-or-left true false = _≤_.b≤b
-≤-or-left true true = _≤_.b≤b
-
-≤-or-right : ∀ b b′ → b′ ≤ (b ∨ b′)
-≤-or-right false false = _≤_.b≤b
-≤-or-right false true = _≤_.b≤b
-≤-or-right true false = _≤_.f≤t
-≤-or-right true true = _≤_.b≤b
 
 less-refl : ∀{Δ}(Ψ : SubCtx Δ)
   → Ψ ⊑ Ψ
@@ -713,3 +815,11 @@ postulate
     → Δ ∣ Ψ ⊢ A ∼ B
     → Δ ∣ Ψ ⊢ B ∼ A
   
+data _∌_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Set where
+  ∌-[] : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}
+    → [] ∌ X
+  ∌-∷ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{B : Type Δ}
+    → Σ ∌ X
+    → X ≢ Y
+    → ((Y , B) ∷ Σ) ∌ X
+
