@@ -161,7 +161,8 @@ conceal {Δ}{Σ}{σ} (` X) f nf
     with f X A ∋X
 ... | refl = ∋X -
 conceal (A ⇒ B) f nf = reveal A f nf ↦ conceal B f nf
-conceal{σ = σ} (`∀ B) f nf = `∀ conceal{σ = extsᵗ σ} B (exts-fun f) (exts-nolook nf)
+conceal{σ = σ} (`∀ B) f nf =
+  `∀ conceal{σ = extsᵗ σ} B (exts-fun f) (exts-nolook nf)
 
 compile : ∀{Δ : TyCtx}{Γ : Ctx Δ}{A : Type Δ} → Δ ∣ Γ ⊢ᵍ A → Δ ∣ [] ∣ Γ ⊢ A
 compile (` x) = ` x
@@ -176,12 +177,12 @@ compile{Δ}{Γ}{D} (_◯_{A = A}{B} M C A⏵) =
   where
   L : (X : TyVar (Δ ,typ)) (A : Type (Δ ,typ))
       → ((Zᵗ , ⇑ᵗ C) ∷ []) ∋ X := A
-      → subᵗ (λ z → ` Sᵗ z) ((C •ˢ ids) X) ≡ A
+      → subᵗ (r2s Sᵗ) ((C •ˢ ids) X) ≡ A
   L X A Zᵇ = refl
 
   NL : (X : TyVar (Δ ,typ))
       → ¬ Σ-syntax (Type (Δ ,typ)) (_∋_:=_ ((Zᵗ , ⇑ᵗ C) ∷ []) X)
-      → subᵗ (λ z → ` Sᵗ z) ((C •ˢ ids) X) ≡ (` X)
+      → subᵗ (r2s Sᵗ) ((C •ˢ ids) X) ≡ (` X)
   NL Zᵗ nl = ⊥-elim (nl ((⇑ᵗ C) , Zᵇ))
   NL (Sᵗ X) nl = refl
 
