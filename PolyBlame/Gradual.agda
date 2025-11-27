@@ -16,8 +16,10 @@ open import Relation.Nullary using (Dec; yes; no)
 open import Agda.Builtin.Bool
 
 open import PolyBlame.Types
+open import PolyBlame.TypePrecision
 open import PolyBlame.TypeSubst
 open import PolyBlame.Variables
+open import PolyBlame.Consistency
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite

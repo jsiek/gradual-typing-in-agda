@@ -21,6 +21,7 @@ open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
 
 open import PolyBlame.Types
+open import PolyBlame.TypePrecision
 
 {-------------- Well-typed Coercions ---------------}
 

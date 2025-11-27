@@ -18,6 +18,8 @@ open import Relation.Nullary using (Dec; yes; no; ¬_)
 open import PolyBlame.Types
 open import PolyBlame.TypeSubst
 open import PolyBlame.Variables
+open import PolyBlame.TypePrecision
+open import PolyBlame.Consistency
 open import PolyBlame.Gradual
 open import PolyBlame.Coercions
 open import PolyBlame.Terms
