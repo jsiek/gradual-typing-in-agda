@@ -19,7 +19,7 @@ open import PolyBlame.Types
 open import PolyBlame.TypePrecision
 open import PolyBlame.TypeSubst
 open import PolyBlame.Variables
-open import PolyBlame.Consistency
+open import PolyBlame.ConsistentSubtyping
 
 open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
@@ -63,7 +63,7 @@ data _∣_⊢ᵍ_ : (Δ : TyCtx) → Ctx Δ → Type Δ → Set
      → Δ ∣ Γ ⊢ᵍ A
      → Δ ∣ Γ ⊢ᵍ B
      → Δ ⊢ A ⏵ C ⇒ D
-     → Δ ∣ mt Δ ⊢ B ∼ C
+     → Δ ∣ [] ⊢ B ≲ C
        -----------------
      → Δ ∣ Γ ⊢ᵍ D
      
@@ -81,73 +81,73 @@ data _∣_⊢ᵍ_ : (Δ : TyCtx) → Ctx Δ → Type Δ → Set
      
 
 postulate
-  subˢ-prec : ∀{Δ}{A B : Type (Δ ,typ)}{C C′ : Type Δ}
-    → (Δ ,typ) ∣ mt Δ , false ⊢ A ⊑ B
-    → Δ ∣ mt Δ ⊢ C ⊑ C′
-    → Δ ∣ mt Δ ⊢ A [ C ]ˢ ⊑ (B [ C′ ]ˢ)
+  subˢ-prec : ∀{Δ}{Σ : BindCtx Δ}{A B : Type (Δ ,typ)}{C C′ : Type Δ}
+    → (Δ ,typ) ∣ ⤊ Σ ⊢ A ⊑ B
+    → Δ ∣ Σ ⊢ C ⊑ C′
+    → Δ ∣ Σ ⊢ A [ C ]ˢ ⊑ (B [ C′ ]ˢ)
 
 postulate
-  ⏵∀-⊑ : ∀{Δ}{A A′ : Type Δ}{B B′ : Type (Δ ,typ)}
+  ⏵∀-⊑ : ∀{Δ}{Σ : BindCtx Δ}{A A′ : Type Δ}{B B′ : Type (Δ ,typ)}
        → Δ ⊢ A ⏵ (`∀ B)
        → Δ ⊢ A′ ⏵ (`∀ B′)
-       → Δ ∣ mt Δ ⊢ A ⊑ A′
-       → (Δ ,typ) ∣ (mt Δ , false) ⊢ B ⊑ B′
+       → Δ ∣ Σ ⊢ A ⊑ A′
+       → (Δ ,typ) ∣ ⤊ Σ ⊢ B ⊑ B′
 
 
 infix 3 _∣_⊢ᵍ_⊑_⦂_
 data _∣_⊢ᵍ_⊑_⦂_ : ∀(Δ : TyCtx){A B : Type Δ}{Γ Γ′ : Ctx Δ}
-  → PrecCtx Γ Γ′ → (Δ ∣ Γ ⊢ᵍ A) → (Δ ∣ Γ′ ⊢ᵍ B)
-  → Δ ∣ mt Δ ⊢ A ⊑ B → Set  where
+  → PrecCtx [] Γ Γ′ → (Δ ∣ Γ ⊢ᵍ A) → (Δ ∣ Γ′ ⊢ᵍ B)
+  → Δ ∣ [] ⊢ A ⊑ B → Set  where
 
-  ⊑-var : ∀{Δ}{A B}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  ⊑-var : ∀{Δ}{A B}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
      → (x : ⊢ Φ ∋ A ⊑ B)
        ---------------------------------------------------------
      → Δ ∣ Φ ⊢ᵍ (` proj-left x) ⊑ (` proj-right x) ⦂ get-⊑ x
 
-  ⊑-nat : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{k : ℕ}
+  ⊑-nat : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}{k : ℕ}
      → Δ ∣ Φ ⊢ᵍ (# k) ⊑ (# k) ⦂ ℕ⊑ℕ
 
-  ⊑-lam : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  ⊑-lam : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
       {A B C D : Type Δ}{N : Δ ∣ (Γ ▷ A) ⊢ᵍ B} {N′ : Δ ∣ (Γ′ ▷ C) ⊢ᵍ D}
-      {c : Δ ∣ mt Δ ⊢ A ⊑ C}{d : Δ ∣ mt Δ ⊢ B ⊑ D}
+      {c : Δ ∣ [] ⊢ A ⊑ C}{d : Δ ∣ [] ⊢ B ⊑ D}
      → Δ ∣ (Φ , c) ⊢ᵍ N ⊑ N′ ⦂ d
        ---------------------------------
      → Δ ∣ Φ ⊢ᵍ ƛ N ⊑ ƛ N′ ⦂ ⇒⊑⇒ c d
   
-  ⊑-app : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  ⊑-app : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
        {A B A′ B′ C D C′ D′ : Type Δ}
        {L : Δ ∣ Γ ⊢ᵍ A}    {M : Δ ∣ Γ ⊢ᵍ B}
        {L′ : Δ ∣ Γ′ ⊢ᵍ A′}  {M′ : Δ ∣ Γ′ ⊢ᵍ B′}
-       {a : Δ ∣ mt Δ ⊢ A ⊑ A′}
-       {b : Δ ∣ mt Δ ⊢ B ⊑ B′}
-       {d : Δ ∣ mt Δ ⊢ D ⊑ D′}
+       {a : Δ ∣ [] ⊢ A ⊑ A′}
+       {b : Δ ∣ [] ⊢ B ⊑ B′}
+       {d : Δ ∣ [] ⊢ D ⊑ D′}
        {f : Δ ⊢ A ⏵ C ⇒ D}
-       {bc : Δ ∣ mt Δ ⊢ B ∼ C}
+       {bc : Δ ∣ [] ⊢ B ≲ C}
        {f′ : Δ ⊢ A′ ⏵ C′ ⇒ D′}
-       {bc′ : Δ ∣ mt Δ ⊢ B′ ∼ C′}
+       {bc′ : Δ ∣ [] ⊢ B′ ≲ C′}
      → Δ ∣ Φ ⊢ᵍ L ⊑ L′ ⦂ a
      → Δ ∣ Φ ⊢ᵍ M ⊑ M′ ⦂ b
        --------------------------------------------
      → Δ ∣ Φ ⊢ᵍ (L · M) f bc ⊑ (L′ · M′) f′ bc′ ⦂ d
 
-  ⊑-Λ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  ⊑-Λ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
        {A A′ : Type (Δ ,typ)}
        {N : Δ ,typ ∣ ⟰ Γ ⊢ᵍ A}
        {N′ : Δ ,typ ∣ ⟰ Γ′ ⊢ᵍ A′}
-       {a : (Δ ,typ) ∣ mt (Δ ,typ) ⊢ A ⊑ A′}
+       {a : (Δ ,typ) ∣ [] ⊢ A ⊑ A′}
     → Δ ,typ ∣ ⟰ᵖ Φ ⊢ᵍ N ⊑ N′ ⦂ a
      --------------------------------
     → Δ ∣ Φ ⊢ᵍ (Λ N) ⊑ (Λ N′) ⦂ ∀⊑∀ a
 
-  ⊑-◯ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}
+  ⊑-◯ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
        {A A′ C C′ : Type Δ}
        {B B′ : Type (Δ ,typ)}
        {M : Δ ∣ Γ ⊢ᵍ A}
        {M′ : Δ ∣ Γ′ ⊢ᵍ A′}
        {c : Δ ⊢ A ⏵ `∀ B}
        {c′ : Δ ⊢ A′ ⏵ `∀ B′}
-       {a : Δ ∣ mt Δ ⊢ A ⊑ A′}
-       {cc : Δ ∣ mt Δ ⊢ C ⊑ C′}
+       {a : Δ ∣ [] ⊢ A ⊑ A′}
+       {cc : Δ ∣ [] ⊢ C ⊑ C′}
     → Δ ∣ Φ ⊢ᵍ M ⊑ M′ ⦂ a
      ---------------------------------------
     → Δ ∣ Φ ⊢ᵍ (M ◯ C) c ⊑ (M′ ◯ C′) c′ ⦂ subˢ-prec (⏵∀-⊑ c c′ a) cc

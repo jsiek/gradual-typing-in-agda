@@ -5,7 +5,7 @@ module PolyBlame.PolyBlame where
 open import PolyBlame.Variables
 open import PolyBlame.Types
 open import PolyBlame.TypePrecision
-open import PolyBlame.Consistency
+open import PolyBlame.ConsistentSubtyping
 open import PolyBlame.Coercions
 open import PolyBlame.TypeSubst
 open import PolyBlame.Terms

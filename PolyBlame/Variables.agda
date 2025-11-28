@@ -95,43 +95,43 @@ rename-ctx {Δ₁} {Δ₂} {r} {Γ ▷ A} {Γ′} ρ {B} (S x)
     with ren-ctx-∋{Δ₁}{Δ₂}{Γ}{B = A} {r = r} x
 ... | C , refl , Γ∋C = ren-var r (ρ (S Γ∋C))
 
-data PrecCtx : ∀{Δ}(Γ Γ′ : Ctx Δ) → Set where
-  ∅ : PrecCtx{∅} ∅ ∅
-  _,_ : ∀{Δ}{Γ Γ′ : Ctx Δ}{A B : Type Δ}
-        → PrecCtx Γ Γ′
-        → Δ ∣ mt Δ ⊢ A ⊑ B
+data PrecCtx : ∀{Δ} (Σ : BindCtx Δ) (Γ Γ′ : Ctx Δ) → Set where
+  ∅ : ∀{Δ}{Σ : BindCtx Δ} → PrecCtx Σ ∅ ∅
+  _,_ : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{A B : Type Δ}
+        → PrecCtx Σ Γ Γ′
+        → Δ ∣ Σ ⊢ A ⊑ B
           ------------------------
-        → PrecCtx (Γ ▷ A) (Γ′ ▷ B)
+        → PrecCtx Σ (Γ ▷ A) (Γ′ ▷ B)
 
-data ⊢_∋_⊑_ : ∀{Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Γ Γ′ → Type Δ → Type Δ → Set where
+data ⊢_∋_⊑_ : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ} → PrecCtx Σ Γ Γ′ → Type Δ → Type Δ → Set where
 
-  Zᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ A ⊑ B}
+  Zᵖ : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Σ Γ Γ′}{A B : Type Δ}
+      {p : Δ ∣ Σ ⊢ A ⊑ B}
       ----------------------
     → ⊢ (Φ , p) ∋ A ⊑ B
     
-  Sᵖ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B C D : Type Δ}
-      {p : Δ ∣ mt Δ ⊢ C ⊑ D}
+  Sᵖ : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Σ Γ Γ′}{A B C D : Type Δ}
+      {p : Δ ∣ Σ ⊢ C ⊑ D}
     → ⊢ Φ ∋ A ⊑ B
       -------------------
     → ⊢ (Φ , p) ∋ A ⊑ B
 
-get-⊑ : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
-  → (x : ⊢ Φ ∋ A ⊑ B) → Δ ∣ mt Δ ⊢ A ⊑ B
+get-⊑ : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Σ Γ Γ′}{A B : Type Δ}
+  → (x : ⊢ Φ ∋ A ⊑ B) → Δ ∣ Σ ⊢ A ⊑ B
 get-⊑ (Zᵖ{p = p}) = p
 get-⊑ (Sᵖ x) = get-⊑ x
 
-proj-left : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
+proj-left : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Σ Γ Γ′}{A B : Type Δ}
   → (x : ⊢ Φ ∋ A ⊑ B) → Γ ∋ A
 proj-left Zᵖ = Z
 proj-left (Sᵖ x) = S proj-left x
 
-proj-right : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Γ Γ′}{A B : Type Δ}
+proj-right : ∀{Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx Σ Γ Γ′}{A B : Type Δ}
   → (x : ⊢ Φ ∋ A ⊑ B) → Γ′ ∋ B
 proj-right Zᵖ = Z
 proj-right (Sᵖ x) = S proj-right x
 
 postulate
-  ⟰ᵖ : ∀ {Δ}{Γ Γ′ : Ctx Δ}
-    → PrecCtx Γ Γ′
-    → PrecCtx (⟰ Γ) (⟰ Γ′)
+  ⟰ᵖ : ∀ {Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}
+    → PrecCtx Σ Γ Γ′
+    → PrecCtx (⤊ Σ) (⟰ Γ) (⟰ Γ′)
