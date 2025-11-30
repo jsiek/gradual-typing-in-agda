@@ -148,7 +148,7 @@ compile ((L · M) A₁⏵C→A B∼C) =
 compile (Λ M) = Λ compile M
 compile{Δ}{Γ}{D} (_◯_{A = A}{B} M C A⏵) =
   let M′ = (⇑ᵇ (⇑ (compile M ⟨ ⏵-∀ A⏵ ⟩))) in
-  ν C · ((M′ ◯ Zᵗ) ⟨ c ⟩)
+  ν C · ((M′ ◯ Zᵗ) ⟨ reveal{σ = (C •ˢ ids) ⨟ᵀ r2s Sᵗ} B L NL ⟩)
   where
   L : (X : TyVar (Δ ,typ)) (A : Type (Δ ,typ))
       → ((Zᵗ , ⇑ᵗ C) ∷ []) ∋ X := A
@@ -161,6 +161,4 @@ compile{Δ}{Γ}{D} (_◯_{A = A}{B} M C A⏵) =
   NL Zᵗ nl = ⊥-elim (nl ((⇑ᵗ C) , Zᵇ))
   NL (Sᵗ X) nl = refl
 
-  c : Δ ,typ ∣ (Zᵗ , ⇑ᵗ C) ∷ [] ⊢ B ⇒ ⇑ᵗ (subᵗ (C •ˢ ids) B)
-  c = reveal{σ = (C •ˢ ids) ⨟ᵀ r2s Sᵗ} B L NL
 

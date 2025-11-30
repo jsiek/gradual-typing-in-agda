@@ -218,3 +218,8 @@ or-≤-right {true} {true} {c} _≤_.b≤b = _≤_.b≤b
 -- ★-⊑ (B₁ ⇒ B₂) B⊆Ψ =
 --   ★⊑⇒ (★-⊑ B₁ (∪-⊆ B⊆Ψ .proj₁)) (★-⊑ B₂ (∪-⊆ B⊆Ψ .proj₂))
 -- ★-⊑ (`∀ B) B⊆Ψ = ⊑∀ (★-⊑ B (⤋-⊆ B⊆Ψ))
+
+postulate
+  ⊑-⇑ᵗ : ∀{Δ}{Σ : BindCtx Δ} → (A B : Type Δ)
+    → Δ ∣ Σ ⊢ A ⊑ B
+    → (Δ ,typ) ∣ ⤊ Σ ⊢ ⇑ᵗ A ⊑ ⇑ᵗ B

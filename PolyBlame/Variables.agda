@@ -135,3 +135,9 @@ postulate
   ⟰ᵖ : ∀ {Δ}{Σ : BindCtx Δ}{Γ Γ′ : Ctx Δ}
     → PrecCtx Σ Γ Γ′
     → PrecCtx (⤊ Σ) (⟰ Γ) (⟰ Γ′)
+
+postulate
+  extend-⊑ : ∀ {Δ}{Σ′ : BindCtx Δ}{Γ Γ′ : Ctx Δ}
+    → PrecCtx Σ′ Γ Γ′
+    → (A : Type Δ)
+    → PrecCtx ((Zᵗ , ⇑ᵗ A) ∷ ⤊ Σ′) (⟰ Γ) (⟰ Γ′)
