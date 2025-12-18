@@ -20,6 +20,7 @@ open import Agda.Builtin.Equality
 open import Agda.Builtin.Equality.Rewrite
 
 open import PolyBlame.Types
+open import PolyBlame.TypeSubst
 open import PolyBlame.TypePrecision
 open import PolyBlame.Variables
 open import PolyBlame.Terms
@@ -350,6 +351,15 @@ postulate
       → [] ∣ [] ∣ Φ ⊩ M ⊑ M′ ⦂ A⊑A′
       → ⤊ [] ∣ ⤊ [] ∣ ⟰ᵖ Φ ⊩ ⇑ M ⊑ ⇑ M′ ⦂ ⊑-⇑ᵗ A A′ A⊑A′
 
+_∣_⊢_⊑ˢ_ : ∀ (Δ : TyCtx) (Σ : BindCtx Δ) (σ σ′ : Δ →ᵗ Δ) → Set
+Δ ∣ Σ ⊢ σ ⊑ˢ σ′ = ∀ X → Δ ∣ Σ ⊢ σ X ⊑ σ′ X
+
+postulate
+  reveal-⊑ : ∀{Δ}{σ σ′ : (Δ ,typ) →ᵗ (Δ ,typ)}
+       {B B′ : Type (Δ ,typ)}{C C′ : Type Δ}{s1}{s2}{s3}{s4}
+     → (Δ ,typ) ∣ (Zᵗ , ⇑ᵗ C′) ∷ [] ⊢ σ ⊑ˢ σ′
+     → (Δ ,typ) ∣ (Zᵗ , ⇑ᵗ C) ∷ [] ∣ (Zᵗ , ⇑ᵗ C′) ∷ []
+       ⊩ reveal{σ = σ} B s1 s2 ⊑ reveal{σ = σ′} B′ s3 s4
 
 compile-pres-precision : ∀{Δ}{Γ Γ′ : Ctx Δ}{Φ : PrecCtx [] Γ Γ′}
   {A A′ : Type Δ} {A⊑A′ : Δ ∣ [] ⊢ A ⊑ A′}
@@ -370,4 +380,4 @@ compile-pres-precision (⊑-Λ N⊑N′) =
 compile-pres-precision{Δ}{Γ}{Γ′}{Φ} (⊑-◯{M = M}{M′}{a = a} M⊑M′) =
     let IH  : [] ∣ [] ∣ Φ ⊩ compile M ⊑ compile M′ ⦂ a
         IH = compile-pres-precision M⊑M′ in
-    ⊑-ν (⊑-⟨⟩ {!!} {!!})
+    ⊑-ν (⊑-⟨⟩ {!!} (reveal-⊑ λ { Zᵗ → {!!} ; (Sᵗ X) → {!!}}))

@@ -30,9 +30,9 @@
       (string-append "\\mathsf{gen}\\," (sym->string alpha) ".\\,"
                      (print-coercion c))]
      [`(seal ,X)
-      (string-append (sym->string X) "\\downarrow")]
+      (string-append (sym->string X) "-")]
      [`(unseal ,X)
-      (string-append (sym->string X) "\\uparrow")]
+      (string-append (sym->string X) "+")]
      [`(seq ,c ,d)
       (string-append "\\left(" (print-coercion c) ";"
                      (print-coercion d) "\\right)")]
@@ -85,9 +85,9 @@
                      (print-term e1)
 		     "\\end{array}")]
      [`(,e1 ,e2)
-      (string-append (print-term e1) "\\cdot " (print-term e2))]
+      (string-append "\\left(" (print-term e1) "\\cdot " (print-term e2) "\\right)")]
      [`(,e1 ,e2 ,label)
-      (string-append (print-term e1) "\\cdot^{" (sym->string label) "} " (print-term e2))]
+      (string-append "\\left(" (print-term e1) "\\cdot^{" (sym->string label) "} " (print-term e2) "\\right)")]
      [else
       (error 'print-term "unmatched ~s" e)]
      ))
@@ -802,6 +802,14 @@
     42 L4))
 
 (assert "test p4" (equal? 42 (run p4 "./p4.tex")))
+
+(define p4s
+  `((inst ,(cast (cast Id '(all Z (-> Z Z)) 'L1)
+                 '(all Y (-> Y Y)) 'L2)
+          int L3)
+    42 L4))
+
+(assert "test p4s" (equal? 42 (run p4s "./p4s.tex")))
 
 (define K `(All X (All Y (lambda [x : X] (lambda [y : Y] x)))))
 (define p5
