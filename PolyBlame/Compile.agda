@@ -72,7 +72,7 @@ data SubOne : ∀ {Δ Δ′} (C : Type Δ′) → (Δ →ᵗ Δ′) → Set wher
 ⤊-∋ : ∀{Δ}{Σ : BindCtx Δ}{X : TyVar (Δ ,typ)}{A : Type (Δ ,typ)}
   → ⤊ Σ ∋ X := A
   → Σ[ A′ ∈ Type Δ ] Σ[ Y ∈ TyVar Δ ] Σ ∋ Y := A′ × A ≡ ⇑ᵗ A′ × X ≡ Sᵗ Y
-⤊-∋ {Δ} {(Y , B) ∷ Σ}{X} Zᵇ = B , Y , Zᵇ , refl , refl
+⤊-∋ {Δ} {(Y , B) ∷ Σ}{X} (Zᵇ refl refl) = B , Y , (Zᵇ refl refl) , refl , refl
 ⤊-∋ {Δ} {(Y , B) ∷ Σ} (Sᵇ ∋X)
     with ⤊-∋ ∋X
 ... | C , W , ∋X′ , refl , refl = C , W , Sᵇ ∋X′ , refl , refl
@@ -153,12 +153,12 @@ compile{Δ}{Γ}{D} (_◯_{A = A}{B} M C A⏵) =
   L : (X : TyVar (Δ ,typ)) (A : Type (Δ ,typ))
       → ((Zᵗ , ⇑ᵗ C) ∷ []) ∋ X := A
       → subᵗ (r2s Sᵗ) ((C •ˢ ids) X) ≡ A
-  L X A Zᵇ = refl
+  L X A (Zᵇ refl refl) = refl
 
   NL : (X : TyVar (Δ ,typ))
       → ¬ Σ-syntax (Type (Δ ,typ)) (_∋_:=_ ((Zᵗ , ⇑ᵗ C) ∷ []) X)
       → subᵗ (r2s Sᵗ) ((C •ˢ ids) X) ≡ (` X)
-  NL Zᵗ nl = ⊥-elim (nl ((⇑ᵗ C) , Zᵇ))
+  NL Zᵗ nl = ⊥-elim (nl ((⇑ᵗ C) , (Zᵇ refl refl)))
   NL (Sᵗ X) nl = refl
 
 

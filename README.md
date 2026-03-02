@@ -37,43 +37,43 @@ to the files in this project.
 2. Gradually Typed Lambda Calculus: [GTLC](./GTLC.agda)
 3. Parameterized Cast Calculus
     1. [PreCastStructure](./PreCastStructure.agda)
-	2. [ParamCastAux](./ParamCastAux.agda)
-	3. [ParamCastAux](./ParamCastAux.agda)
-	4. [CastStructure](./CastStructure.agda)
-	5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
-	6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
-	7. [ParamCastDeterministic](./ParamCastDeterministic.agda)
-	8. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
-	9. [ParamCastCalculus](./ParamCastCalculus.agda), 
-	   [ParamCastReduction](./ParamCastReduction.agda)
+    2. [ParamCastAux](./ParamCastAux.agda)
+    3. [ParamCastAux](./ParamCastAux.agda)
+    4. [CastStructure](./CastStructure.agda)
+    5. [ParamCastCalculusOrig](./ParamCastCalculusOrig.agda)
+    6. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+    7. [ParamCastDeterministic](./ParamCastDeterministic.agda)
+    8. [ParamCastReductionOrig](./ParamCastReductionOrig.agda)
+    9. [ParamCastCalculus](./ParamCastCalculus.agda), 
+       [ParamCastReduction](./ParamCastReduction.agda)
     10. [PreCastStructureWithBlameSafety](./PreCastStructureWithBlameSafety)
-	   [CastStructureWithBlameSafety](./CastStructureWithBlameSafety),
-	   [Subtyping](./Subtyping.agda),
-	   [ParamCastSubtyping](./ParamCastSubtyping.agda),
-	   and [ParamBlameSubtyping](./ParamBlameSubtyping.agda).
-	11. [PreCastStructureWithPrecision](./PreCastStructureWithPrecision.agda),
-	    [CastStructureWithPrecision](./CastStructureWithPrecision.agda),
-        [ParamCCPrecision](./ParamCCPrecision.agda),
-		[ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda), 
-		[ParamGradualGuaranteeSim](./ParamGradualGuaranteeSim.agda), and
-		[ParamGradualGuarantee](./ParamGradualGuarantee.agda).
+       [CastStructureWithBlameSafety](./CastStructureWithBlameSafety),
+       [Subtyping](./Subtyping.agda),
+       [ParamCastSubtyping](./ParamCastSubtyping.agda),
+       and [ParamBlameSubtyping](./ParamBlameSubtyping.agda).
+    11. [PreCastStructureWithPrecision](./PreCastStructureWithPrecision.agda),
+        [CastStructureWithPrecision](./CastStructureWithPrecision.agda),
+            [ParamCCPrecision](./ParamCCPrecision.agda),
+            [ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda), 
+        [ParamGradualGuaranteeSim](./ParamGradualGuaranteeSim.agda), and
+        [ParamGradualGuarantee](./ParamGradualGuarantee.agda).
 4. Compilation of GTLC to CC: [GTLC2CCOrig](./GTLC2CCOrig.agda)
 5. A Half-Dozen Cast Calculi
     1. EDA: [SimpleCast](./SimpleCast.agda)
-	2. EDI: [SimpleFunCast](./SimpleFunCast.agda)
-	3. λB: [GroundCast](./GroundCast.agda), [GroundCastGG](./GroundCastGG.agda)
-	4. EDC: [SimpleCoercions](./SimpleCoercions.agda)
-	5. LDC: [LazyCoercions](./LazyCoercions.agda)
-	6. λC: [GroundCoercion](./GroundCoercion.agda)
+    2. EDI: [SimpleFunCast](./SimpleFunCast.agda)
+    3. λB: [GroundCast](./GroundCast.agda), [GroundCastGG](./GroundCastGG.agda)
+    4. EDC: [SimpleCoercions](./SimpleCoercions.agda)
+    5. LDC: [LazyCoercions](./LazyCoercions.agda)
+    6. λC: [GroundCoercion](./GroundCoercion.agda)
 6. Space-Efficient Parameterized Cast Caclulus
-	1. [EfficientParamCastAux](./EfficientParamCastAux.agda)
-	2. [CastStructure](./CastStructure.agda) (`ComposableCasts` is named `EfficientCastStruct`)
-	3. [EfficientParamCasts](./EfficientParamCasts.agda)
-	4. [EfficientParamCasts](./EfficientParamCasts.agda)
-	5. [PreserveHeight](./PreserveHeight.agda) and [SpaceEfficient](./SpaceEfficient.agda)
+    1. [EfficientParamCastAux](./EfficientParamCastAux.agda)
+    2. [CastStructure](./CastStructure.agda) (`ComposableCasts` is named `EfficientCastStruct`)
+    3. [EfficientParamCasts](./EfficientParamCasts.agda)
+    4. [EfficientParamCasts](./EfficientParamCasts.agda)
+    5. [PreserveHeight](./PreserveHeight.agda) and [SpaceEfficient](./SpaceEfficient.agda)
 7. Space-Efficient Cast Calculi
-	1. [EfficientGroundCoercions](./EfficientGroundCoercions.agda)
-	2. [HyperCoercions](./HyperCoercions.agda)
+    1. [EfficientGroundCoercions](./EfficientGroundCoercions.agda)
+    2. [HyperCoercions](./HyperCoercions.agda)
 
 
 ### Inventory
@@ -202,7 +202,7 @@ to the files in this project.
    less precise and more precise terms.
 
     - [ParamCCPrecision](./ParamCCPrecision.agda): 
-	   The definition of precision for the Parameterized Cast Calculus.
+       The definition of precision for the Parameterized Cast Calculus.
     - [ParamGradualGuaranteeAux](./ParamGradualGuaranteeAux.agda):
        This module is parameterized by `PreCastStructWithPrecision` and 
        contains inversion lemmas about less precise and more precise values,

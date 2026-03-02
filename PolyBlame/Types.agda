@@ -204,8 +204,10 @@ BindCtx : TyCtx → Set
 BindCtx Δ = List (TyVar Δ × Type Δ)
 
 data _∋_:=_ : ∀{Δ : TyCtx} → BindCtx Δ → TyVar Δ → Type Δ → Set where
-  Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X : TyVar Δ}{A : Type Δ}
-    → ((X , A) ∷ Σ) ∋ X := A
+  Zᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{A B : Type Δ}
+    → X ≡ Y
+    → A ≡ B
+    → ((Y , B) ∷ Σ) ∋ X := A
   Sᵇ : ∀ {Δ}{Σ : BindCtx Δ}{X Y : TyVar Δ}{A B : Type Δ}
     → Σ ∋ X := A
     → ((Y , B) ∷ Σ) ∋ X := A
@@ -224,16 +226,16 @@ lookup-★ ((Y , A) ∷ Σ) X
     with X ≡ᵗ Y
 ... | yes refl
     with is-dyn A
-... | yes refl = yes Zᵇ
+... | yes refl = yes (Zᵇ refl refl)
 ... | no nd
     with lookup-★ Σ Y
 ... | yes ∋Y = yes (Sᵇ ∋Y)
-... | no neq₂ = no λ { Zᵇ → nd refl ; (Sᵇ ∋Y) → neq₂ ∋Y}
+... | no neq₂ = no λ { (Zᵇ refl refl) → nd refl ; (Sᵇ ∋Y) → neq₂ ∋Y}
 lookup-★ ((Y , A) ∷ Σ) X
     | no neq₁
     with lookup-★ Σ X
 ... | yes ∋X = yes (Sᵇ ∋X)
-... | no neq₂ = no λ { Zᵇ → neq₁ refl
+... | no neq₂ = no λ { (Zᵇ refl refl) → neq₁ refl
                      ; (Sᵇ ∋X) → neq₂ ∋X}
 
 lookup-bind : ∀{Δ : TyCtx} → (Σ : BindCtx Δ) → (X : TyVar Δ)
@@ -241,11 +243,11 @@ lookup-bind : ∀{Δ : TyCtx} → (Σ : BindCtx Δ) → (X : TyVar Δ)
 lookup-bind [] X = no λ ()
 lookup-bind ((Y , A) ∷ Σ) X
     with X ≡ᵗ Y
-... | yes refl = yes (A , Zᵇ)
+... | yes refl = yes (A , (Zᵇ refl refl))
 ... | no neq₁
     with lookup-bind Σ X
 ... | yes (B , ∋X) = yes (B , (Sᵇ ∋X))
-... | no neq₂ = no λ { (B , Zᵇ) → neq₁ refl
+... | no neq₂ = no λ { (B , (Zᵇ refl refl)) → neq₁ refl
                      ; (B , Sᵇ ∋X) → neq₂ (B , ∋X)}
 
 data unique : ∀{Δ : TyCtx} → BindCtx Δ → Set where
@@ -260,9 +262,9 @@ lookup-unique : ∀{Δ : TyCtx}{Σ : BindCtx Δ}{X}{A B}
   → (b : Σ ∋ X := B)
   → unique Σ
   → A ≡ B
-lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ Zᵇ (Ucons u x) = refl
-lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} Zᵇ (Sᵇ b) (Ucons u nolook) = ⊥-elim (nolook B b)
-lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) Zᵇ (Ucons u nolook) = ⊥-elim (nolook A a)
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Zᵇ refl refl) (Zᵇ refl refl) (Ucons u x) = refl
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Zᵇ refl refl) (Sᵇ b) (Ucons u nolook) = ⊥-elim (nolook B b)
+lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) (Zᵇ refl refl) (Ucons u nolook) = ⊥-elim (nolook A a)
 lookup-unique {Δ} {(Y , C) ∷ Σ} {X} {A} {B} (Sᵇ a) (Sᵇ b) (Ucons u nolook) = lookup-unique a b u
 
 {----- Ground Types -----}
@@ -345,7 +347,7 @@ helper : ∀{Δ}{Σ : BindCtx Δ}{B : Type (Δ ,typ)}{X}
   → map (renᵇ Sᵗ) Σ ∋ Sᵗ X := B
   → ((A : Type Δ) → Σ ∋ X := A → ⊥)
   → ⊥
-helper {Δ} {(Y , C) ∷ Σ′} Zᵇ nl = nl C Zᵇ
+helper {Δ} {(Y , C) ∷ Σ′} (Zᵇ refl refl) nl = nl C (Zᵇ refl refl)
 helper {Δ} {(Y , C) ∷ Σ′} (Sᵇ ∋Sx) nl = helper ∋Sx (λ A x → nl A (Sᵇ x))
 
 unique-⤊ : ∀ {Δ}{Σ : BindCtx Δ} → unique Σ → unique (⤊ Σ)

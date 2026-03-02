@@ -594,21 +594,38 @@ private
     → ∅ , ∅ ⊢ V ⊑ᶜ V′ ⟪ i′ ⟫ → ∅ , ∅ ⊢ W ⊑ᶜ W′
       ----------------------------------------------------------------------------------
     → ∃[ N ] ((V · W —↠ N) × (∅ , ∅ ⊢ N ⊑ᶜ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩))
+  -- Case 1
+  --     V ⊑ᶜ V′
+  --     ---------------------- ⊑ᶜ-wrap
+  -- V = V ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
   sim-app-wrap-v {W = W} (V-wrap {c = c} v i) w v′ w′ i′ x′ (⊑ᶜ-wrap {M = V} lpii lpV imp) lpW
     with lpii→⊑ lpii
   ... | ⟨ unk⊑ , fun⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ fun⊑ lp₁₁ lp₁₂ , fun⊑ lp₂₁ lp₂₂ ⟩ =
     let x = proj₁ (Inert-Cross⇒ _ i) in
+      -- V ⟨ c ⟩ · W --> (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩
+      -- have V ⊑ᶜ V′
+      -- have W ⊑ᶜ W′  so W ⟨ dom c x ⟩ ⊑ᶜ W′ ⟨ dom c′ x′ ⟩
+      -- 
+      -- -------------------------------------------------------------------------------
+      -- (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩ ⊑ᶜ (V′ · (W′ ⟨ dom c′ x′ ⟩)) ⟨ cod c′ x′ ⟩))
       ⟨ (V · (W ⟨ dom c x ⟩)) ⟨ cod c x ⟩ ,
         ⟨ _ —→⟨ fun-cast v w {x} ⟩ _ ∎ , ⊑ᶜ-cast lp₁₂ lp₂₂ (⊑ᶜ-· lpV (⊑ᶜ-cast lp₂₁ lp₁₁ lpW)) ⟩ ⟩
+  -- Case 2
+  --     V₁ ⊑ᶜ V′ ⟪ i′ ⟫
+  --     ---------------------- ⊑ᶜ-wrapl
+  -- V = V₁ ⟪ i ⟫ ⊑ᶜ V′ ⟪ i′ ⟫
   sim-app-wrap-v {W = W} (V-wrap {c = c} v i) w v′ w′ i′ x′ (⊑ᶜ-wrapl {M = V} lpit lpV) lpW
     with lpit→⊑ lpit
   ... | ⟨ unk⊑ , fun⊑ lp₂₁ lp₂₂ ⟩ = contradiction i (projNotInert (λ ()) _)
   ... | ⟨ fun⊑ lp₁₁ lp₁₂ , fun⊑ lp₂₁ lp₂₂ ⟩ =
     let x = proj₁ (Inert-Cross⇒ _ i)
         ⟨ W₁ , ⟨ w₁ , ⟨ rd*₁ , lpW₁ ⟩ ⟩ ⟩ = catchup w′ (⊑ᶜ-castl {c = dom c x} lp₂₁ lp₁₁ lpW)
+        --  W<dom c> -->* W₁
         ⟨ N , ⟨ rd*₂ , lpN ⟩ ⟩ = sim-app-wrap-v v w₁ v′ w′ i′ x′ lpV lpW₁ in
-      ⟨ N ⟨ cod c x ⟩ ,
+        --  V · W₁ -->* N
+        -- (V< dom(c) -> cod(c) > · W) --> (V · W<dom(c)>)<cod(c)> -->* (V · W₁)<cod(c)> -->* N<cod(c)>
+      ⟨ N ⟨ cod c x ⟩ , 
         ⟨ _ —→⟨ fun-cast v w {x} ⟩ ↠-trans (plug-cong (F-cast _) (plug-cong (F-·₂ _ {v}) rd*₁)) (plug-cong (F-cast _) rd*₂) ,
           ⊑ᶜ-castl lp₁₂ lp₂₂ lpN ⟩ ⟩
   sim-app-wrap-v {V = V} {W} v w v′ w′ i′ x′ (⊑ᶜ-wrapr lpti lpV A≢⋆) lpW
